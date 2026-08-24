@@ -16,7 +16,7 @@ pipeline {
         stage('Run smoke test') {
             steps {
                 sh 'docker run -d --name "$CONTAINER" -p 8081:8081 "$IMAGE:$BUILD_NUMBER"'
-                sh 'curl --fail --retry 10 --retry-delay 1 http://localhost:8081/ | grep -F "Hello from LeMarketJames!"'
+                sh 'curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 1 http://localhost:8081/ | grep -F "Hello from LeMarketJames!"'
             }
         }
     }
