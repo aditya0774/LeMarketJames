@@ -1,13 +1,15 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
-COPY Greeter.java .
-RUN javac Greeter.java
+COPY pom.xml .
+COPY src ./src
+RUN mvn -q package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
-COPY --from=build /app/Greeter.class .
+COPY --from=build /app/target/le-market-james-0.0.1-SNAPSHOT.jar app.jar
 
 USER 10001
-CMD ["java", "Greeter"]
+EXPOSE 8081
+CMD ["java", "-jar", "app.jar"]
