@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    tools {
+        jdk 'JDK21'
+    }
     environment {
         IMAGE = 'le-market-james'
         CONTAINER = 'le-market-james-test'
