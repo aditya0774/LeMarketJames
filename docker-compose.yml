@@ -1,6 +1,33 @@
 services:
   app:
-    build:
-      context: .
+    build: .
+    # No ports: mapping — the app service is intentionally unreachable from the
+    # host. It can reach `db` by the service name "db" (Docker bridge DNS),
+    # but nothing outside Docker can reach `app` unless a ports: entry is added.
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/paysprint
+      SPRING_DATASOURCE_USERNAME: paysprint
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paysprint
+      POSTGRES_USER: paysprint
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
-      - "8081:8081"
+      # Only db is reachable from the host. app is not. This mirrors a real
+      # deployment where the database is internal but needs to be accessible
+      # to DBA tooling running on the developer's machine during development.
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
+    # Named volume: persists Postgres data across `docker compose down` and
+    # `docker compose up`. Use `docker compose down -v` to also remove this
+    # volume, which wipes the database and starts fresh on the next `up`.
+
