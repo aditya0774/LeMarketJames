@@ -10,6 +10,7 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/le-market-james-0.0.1-SNAPSHOT.jar app.jar
 
-USER 10001
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 EXPOSE 8081
 CMD ["java", "-jar", "app.jar"]

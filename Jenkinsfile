@@ -11,9 +11,30 @@ pipeline {
             }
         }
 
+        stage('Verify Docker Compose') {
+            steps {
+                sh '''
+                    if docker compose version >/dev/null 2>&1; then
+                        echo "Using Docker Compose v2"
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        echo "Using legacy docker-compose"
+                    else
+                        echo "Docker Compose is not installed on this Jenkins agent"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
         stage('Start application with Docker Compose') {
             steps {
-                sh 'docker compose up -d --build'
+                sh '''
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose up -d --build
+                    else
+                        docker-compose up -d --build
+                    fi
+                '''
             }
         }
 
@@ -24,7 +45,11 @@ pipeline {
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
                     echo "Spring Boot container logs:"
-                    docker compose logs app
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose logs app
+                    else
+                        docker-compose logs app
+                    fi
                 '''
             }
         }
@@ -32,7 +57,13 @@ pipeline {
 
     post {
         always {
-            sh 'docker compose down --rmi local --remove-orphans || true'
+            sh '''
+                if docker compose version >/dev/null 2>&1; then
+                    docker compose down --rmi local --remove-orphans || true
+                elif command -v docker-compose >/dev/null 2>&1; then
+                    docker-compose down --rmi local --remove-orphans || true
+                fi
+            '''
         }
     }
 }
