@@ -41,6 +41,12 @@ pipeline {
         stage('Run smoke test') {
             steps {
                 sh '''
+                    echo "Container user and group:"
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose exec -T app id
+                    else
+                        docker-compose exec -T app id
+                    fi
                     response=$(curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 1 http://localhost:8081/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
