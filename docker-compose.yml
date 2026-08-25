@@ -1,9 +1,8 @@
 services:
   app:
     build: .
-    # No ports: mapping — the app service is intentionally unreachable from the
-    # host. It can reach `db` by the service name "db" (Docker bridge DNS),
-    # but nothing outside Docker can reach `app` unless a ports: entry is added.
+    ports:
+      - "8081:8081"
     depends_on:
       - db
     environment:
