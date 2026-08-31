@@ -1,5 +1,7 @@
-<<<<<<< Updated upstream
-com\lemarketjames\Main.class
-=======
+com\lemarketjames\controller\AuthController.class
+com\lemarketjames\dto\RegisterRequest.class
 com\lemarketjames\Greeter.class
->>>>>>> Stashed changes
+com\lemarketjames\Main.class
+com\lemarketjames\service\AuthService.class
+com\lemarketjames\dto\LoginRequest.class
+com\lemarketjames\service\AuthService$AuthResponse.class
