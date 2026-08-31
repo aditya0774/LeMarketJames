@@ -5,7 +5,17 @@ pipeline {
     }
 
     stages {
+<<<<<<< Updated upstream
         stage('Test Spring Boot application') {
+=======
+        stage('Test with Maven') {
+            steps {
+                sh 'mvn -B clean test'
+            }
+        }
+
+        stage('Build image') {
+>>>>>>> Stashed changes
             steps {
                 sh 'mvn test'
             }
