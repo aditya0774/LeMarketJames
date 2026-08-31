@@ -15,11 +15,13 @@ DROP TABLE IF EXISTS clients;
 CREATE TABLE clients (
     client_id       SERIAL PRIMARY KEY,
     username        VARCHAR(100) UNIQUE NOT NULL,
+    password        VARCHAR(255) NOT NULL, -- hashed password
     email           VARCHAR(100) NOT NULL,
     full_name       TEXT NOT NULL,
     phone           VARCHAR(20),
     registered_date TIMESTAMP NOT NULL DEFAULT NOW(),
     last_login      TIMESTAMP,
+    ssn            VARCHAR(11) UNIQUE, -- format: XXX-XX-XXXX
     account_status  VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' 
                     CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'CLOSED'))
 );
