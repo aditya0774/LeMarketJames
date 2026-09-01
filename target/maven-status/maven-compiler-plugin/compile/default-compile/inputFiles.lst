@@ -4,4 +4,6 @@ C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\d
 C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\dto\RegisterRequest.java
 C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\Greeter.java
 C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\Main.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\security\JwtAuthenticationFilter.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\security\JwtService.java
 C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\service\AuthService.java

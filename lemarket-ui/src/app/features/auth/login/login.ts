@@ -5,11 +5,11 @@ import { Auth } from '../../../core/auth/auth';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
-  selector: 'app-register',
-  styleUrl: './register.css',
-  templateUrl: './register.html',
+  selector: 'app-login',
+  styleUrl: './login.css',
+  templateUrl: './login.html',
 })
-export class Register {
+export class Login {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
   protected readonly form: ReturnType<FormBuilder['group']>;
@@ -21,9 +21,7 @@ export class Register {
   ) {
     this.form = this.fb.group({
       username: ['', Validators.required],
-      fullName: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', Validators.required],
     });
   }
 
@@ -36,15 +34,10 @@ export class Register {
     this.errorMessage.set(null);
     this.submitting.set(true);
     try {
-      await this.auth.register(this.form.getRawValue() as {
-        username: string;
-        fullName: string;
-        email: string;
-        password: string;
-      });
-      await this.router.navigate(['/login']);
+      await this.auth.login(this.form.getRawValue() as { username: string; password: string });
+      await this.router.navigate(['/']);
     } catch {
-      this.errorMessage.set('Registration failed. The username may already be taken.');
+      this.errorMessage.set('Invalid username or password.');
     } finally {
       this.submitting.set(false);
     }

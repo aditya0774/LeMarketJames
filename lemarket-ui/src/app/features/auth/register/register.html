@@ -1,37 +1,33 @@
 <section class="register-page">
   <h2>Create your account</h2>
 
-  <form>
+  <form [formGroup]="form" (ngSubmit)="submit()">
     <div>
-      <label for="firstName">First name</label>
-      <input id="firstName" name="firstName" type="text" />
+      <label for="username">Username</label>
+      <input id="username" formControlName="username" type="text" />
     </div>
 
     <div>
-      <label for="lastName">Last name</label>
-      <input id="lastName" name="lastName" type="text" />
-    </div>
-
-    <div>
-      <label for="address">Address</label>
-      <input id="address" name="address" type="text" />
+      <label for="fullName">Full name</label>
+      <input id="fullName" formControlName="fullName" type="text" />
     </div>
 
     <div>
       <label for="email">Email</label>
-      <input id="email" name="email" type="email" />
-    </div>
-
-    <div>
-      <label for="phoneNumber">Phone number</label>
-      <input id="phoneNumber" name="phoneNumber" type="tel" />
+      <input id="email" formControlName="email" type="email" />
     </div>
 
     <div>
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" />
+      <input id="password" formControlName="password" type="password" />
     </div>
 
-    <button type="submit">Register</button>
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting()">Register</button>
   </form>
+
+  <p><a routerLink="/login">Already have an account? Log in</a></p>
 </section>
