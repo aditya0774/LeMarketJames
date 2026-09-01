@@ -2,9 +2,17 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.7.
 
+## Initial Setup
+
+If you are running the app for the first time, install the npm package using the following command:
+
+```bash
+npm install
+```
+
 ## Development server
 
-To start a local development server, run:
+To start a local development server, run the following command in the lemarket-ui directory:
 
 ```bash
 ng serve

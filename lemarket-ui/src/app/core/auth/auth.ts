@@ -8,6 +8,17 @@ export interface RegisterRequest {
   password: string;
   email: string;
   fullName: string;
+  streetAddress: string;
+  apartment?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  ssn: string;
+  initialDeposit: number;
+  investmentExperience: string;
+  dateOfBirth: string;
+  phoneNumber: string;
 }
 
 export interface LoginRequest {

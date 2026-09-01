@@ -71,6 +71,20 @@ public class AuthService {
         validateRequired(request.getPassword(), "Password is required");
         validateRequired(request.getEmail(), "Email is required");
         validateRequired(request.getFullName(), "Full name is required");
+        validateRequired(request.getStreetAddress(), "Street address is required");
+        validateRequired(request.getCity(), "City is required");
+        validateRequired(request.getState(), "State is required");
+        validateRequired(request.getZipCode(), "ZIP code is required");
+        validateRequired(request.getCountry(), "Country is required");
+        validateRequired(request.getSsn(), "SSN is required");
+        validateRequired(request.getPhoneNumber(), "Phone number is required");
+        validateRequired(request.getInvestmentExperience(), "Investment experience is required");
+        if (request.getInitialDeposit() == null) {
+            throw new IllegalArgumentException("Initial deposit amount is required");
+        }
+        if (request.getDateOfBirth() == null) {
+            throw new IllegalArgumentException("Date of birth is required");
+        }
     }
 
     private void validateLoginRequest(LoginRequest request) {

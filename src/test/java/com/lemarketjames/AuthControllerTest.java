@@ -44,7 +44,17 @@ class AuthControllerTest {
                   "username": "testuser",
                   "password": "Pass123!",
                   "email": "test@example.com",
-                  "fullName": "Test User"
+                  "fullName": "Test User",
+                  "streetAddress": "123 Main St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "USA",
+                  "ssn": "123-45-6789",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
