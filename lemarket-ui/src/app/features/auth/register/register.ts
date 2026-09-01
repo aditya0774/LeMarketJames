@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
 
 @Component({
-  imports: [],
+  imports: [CommonModule, FormsModule],
   selector: 'app-register',
   styleUrl: './register.css',
   templateUrl: './register.html',

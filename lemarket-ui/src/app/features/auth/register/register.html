@@ -1,22 +1,6 @@
 <section class="register-page">
   <h2>Create your account</h2>
 
-<<<<<<< Updated upstream
-  <form>
-    <div>
-      <label for="firstName">First name</label>
-      <input id="firstName" name="firstName" type="text" />
-    </div>
-
-    <div>
-      <label for="lastName">Last name</label>
-      <input id="lastName" name="lastName" type="text" />
-    </div>
-
-    <div>
-      <label for="address">Address</label>
-      <input id="address" name="address" type="text" />
-=======
   <!-- The form submit event calls the onSubmit method in the component -->
   <form (ngSubmit)="onSubmit()">
     <div class="field-group">
@@ -190,19 +174,10 @@
       <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
         {{ validationErrors['dateOfBirth'] }}
       </div>
->>>>>>> Stashed changes
     </div>
 
     <div>
       <label for="email">Email</label>
-<<<<<<< Updated upstream
-      <input id="email" name="email" type="email" />
-    </div>
-
-    <div>
-      <label for="phoneNumber">Phone number</label>
-      <input id="phoneNumber" name="phoneNumber" type="tel" />
-=======
       <input
         id="email"
         name="email"
@@ -230,14 +205,10 @@
       <div *ngIf="validationErrors['phoneNumber']" class="field-error">
         {{ validationErrors['phoneNumber'] }}
       </div>
->>>>>>> Stashed changes
     </div>
 
     <div>
       <label for="password">Password</label>
-<<<<<<< Updated upstream
-      <input id="password" name="password" type="password" />
-=======
       <div class="password-field">
         <input
           id="password"
@@ -254,7 +225,6 @@
       <div *ngIf="validationErrors['password']" class="field-error">
         {{ validationErrors['password'] }}
       </div>
->>>>>>> Stashed changes
     </div>
 
     <div class="field-group">
