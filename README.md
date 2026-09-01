@@ -25,6 +25,23 @@ Open `http://localhost:8081/` to view the greeting.
 
 ## Jenkins
 
-Create a Pipeline job pointing at this repository and choose **Pipeline script from SCM**. The Jenkins agent must have Docker and permission to run Docker commands. Jenkins will build the image, run the greeter, verify its output, and clean up the image.
+Create a Pipeline job pointing at this repository and choose **Pipeline script from SCM**. The Linux Jenkins agent must have Java 21, Maven, Docker, and permission to run Docker commands. Jenkins will run the Maven unit test, build the image, run the greeter, verify its output, and clean up the image.
+
+## Frontend notes
+
+
+
+The `lemarket-ui` Angular app uses the [Zod](https://zod.dev) library for form validation (see `lemarket-ui/src/app/features/auth/register/register.schema.ts`). This dependency is pending approval from our architect.
+
+### Running the register page
+
+```powershell
+cd lemarket-ui
+npm install
+npm start
+```
+
+Open `http://localhost:4200/register` to view the registration form.
+
 
 LeBron is the goat 

@@ -1,6 +1,7 @@
 <section class="register-page">
   <h2>Create your account</h2>
 
+<<<<<<< Updated upstream
   <form>
     <div>
       <label for="firstName">First name</label>
@@ -15,21 +16,265 @@
     <div>
       <label for="address">Address</label>
       <input id="address" name="address" type="text" />
+=======
+  <!-- The form submit event calls the onSubmit method in the component -->
+  <form (ngSubmit)="onSubmit()">
+    <div class="field-group">
+      <label for="fullName">Full name</label>
+      <!-- This binds the input to registerData.fullName and validates it when the user leaves the field -->
+      <input
+        id="fullName"
+        name="fullName"
+        type="text"
+        [(ngModel)]="registerData.fullName"
+        (blur)="validateField('fullName')"
+        (input)="clearFieldError('fullName')"
+      />
+      <div *ngIf="validationErrors['fullName']" class="field-error">
+        {{ validationErrors['fullName'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Address</label>
+      <!-- Professional address forms usually split the address into multiple fields for clarity and accuracy -->
+      <div class="nested-field">
+        <label for="streetAddress">Street address</label>
+        <input
+          id="streetAddress"
+          name="streetAddress"
+          type="text"
+          [(ngModel)]="registerData.streetAddress"
+          (blur)="validateField('streetAddress')"
+          (input)="clearFieldError('streetAddress')"
+        />
+        <div *ngIf="validationErrors['streetAddress']" class="field-error">
+          {{ validationErrors['streetAddress'] }}
+        </div>
+      </div>
+
+      <div class="nested-field">
+        <label for="apartment">Apartment, unit, suite, etc.</label>
+        <input
+          id="apartment"
+          name="apartment"
+          type="text"
+          [(ngModel)]="registerData.apartment"
+          (blur)="validateField('apartment')"
+          (input)="clearFieldError('apartment')"
+        />
+        <div *ngIf="validationErrors['apartment']" class="field-error">
+          {{ validationErrors['apartment'] }}
+        </div>
+      </div>
+
+      <div class="nested-field">
+        <label for="city">City</label>
+        <input
+          id="city"
+          name="city"
+          type="text"
+          [(ngModel)]="registerData.city"
+          (blur)="validateField('city')"
+          (input)="clearFieldError('city')"
+        />
+        <div *ngIf="validationErrors['city']" class="field-error">
+          {{ validationErrors['city'] }}
+        </div>
+      </div>
+
+      <div class="nested-field">
+        <label for="state">State</label>
+        <input
+          id="state"
+          name="state"
+          type="text"
+          [(ngModel)]="registerData.state"
+          (blur)="validateField('state')"
+          (input)="clearFieldError('state')"
+        />
+        <div *ngIf="validationErrors['state']" class="field-error">
+          {{ validationErrors['state'] }}
+        </div>
+      </div>
+
+      <div class="nested-field">
+        <label for="zipCode">ZIP code</label>
+        <input
+          id="zipCode"
+          name="zipCode"
+          type="text"
+          maxlength="5"
+          [(ngModel)]="registerData.zipCode"
+          (blur)="validateField('zipCode')"
+          (input)="onZipCodeInput($event)"
+        />
+        <div *ngIf="validationErrors['zipCode']" class="field-error">
+          {{ validationErrors['zipCode'] }}
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="ssn">SSN</label>
+      <input
+        id="ssn"
+        name="ssn"
+        type="text"
+        maxlength="11"
+        [(ngModel)]="registerData.ssn"
+        (blur)="validateField('ssn')"
+        (input)="onSsnInput($event)"
+      />
+      <div *ngIf="validationErrors['ssn']" class="field-error">
+        {{ validationErrors['ssn'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="initialDeposit">Initial deposit amount</label>
+      <div class="currency-field">
+        <span class="currency-symbol">$</span>
+        <input
+          id="initialDeposit"
+          name="initialDeposit"
+          type="number"
+          min="5000"
+          [(ngModel)]="registerData.initialDeposit"
+          (blur)="validateField('initialDeposit')"
+          (input)="onInitialDepositInput()"
+        />
+      </div>
+      <div *ngIf="validationErrors['initialDeposit']" class="field-error">
+        {{ validationErrors['initialDeposit'] }}
+      </div>
+    </div>
+
+    <div>
+      <label>Investing experience</label>
+      <!-- Radio buttons give the user exactly two choices: beginner or experienced -->
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="investmentExperience" value="beginner" [(ngModel)]="registerData.investmentExperience" />
+          Beginner
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="investmentExperience"
+            value="experienced"
+            [(ngModel)]="registerData.investmentExperience"
+            [disabled]="!isExperiencedAllowed()"
+          />
+          Experienced
+        </label>
+      </div>
+      <div *ngIf="!isExperiencedAllowed()" class="field-hint">
+        Experienced requires an initial deposit of $100,000 or more.
+      </div>
+      <div *ngIf="validationErrors['investmentExperience']" class="field-error">
+        {{ validationErrors['investmentExperience'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="dateOfBirth">Date of birth</label>
+      <input
+        id="dateOfBirth"
+        name="dateOfBirth"
+        type="date"
+        [(ngModel)]="registerData.dateOfBirth"
+        (blur)="validateField('dateOfBirth')"
+        (input)="clearFieldError('dateOfBirth')"
+      />
+      <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
+        {{ validationErrors['dateOfBirth'] }}
+      </div>
+>>>>>>> Stashed changes
     </div>
 
     <div>
       <label for="email">Email</label>
+<<<<<<< Updated upstream
       <input id="email" name="email" type="email" />
     </div>
 
     <div>
       <label for="phoneNumber">Phone number</label>
       <input id="phoneNumber" name="phoneNumber" type="tel" />
+=======
+      <input
+        id="email"
+        name="email"
+        type="email"
+        [(ngModel)]="registerData.email"
+        (blur)="validateField('email')"
+        (input)="clearFieldError('email')"
+      />
+      <div *ngIf="validationErrors['email']" class="field-error">
+        {{ validationErrors['email'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="phoneNumber">Phone</label>
+      <input
+        id="phoneNumber"
+        name="phoneNumber"
+        type="tel"
+        maxlength="14"
+        [(ngModel)]="registerData.phoneNumber"
+        (blur)="validateField('phoneNumber')"
+        (input)="onPhoneInput($event)"
+      />
+      <div *ngIf="validationErrors['phoneNumber']" class="field-error">
+        {{ validationErrors['phoneNumber'] }}
+      </div>
+>>>>>>> Stashed changes
     </div>
 
     <div>
       <label for="password">Password</label>
+<<<<<<< Updated upstream
       <input id="password" name="password" type="password" />
+=======
+      <div class="password-field">
+        <input
+          id="password"
+          name="password"
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="registerData.password"
+          (blur)="validateField('password')"
+          (input)="clearFieldError('password')"
+        />
+        <button type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div *ngIf="validationErrors['password']" class="field-error">
+        {{ validationErrors['password'] }}
+      </div>
+>>>>>>> Stashed changes
+    </div>
+
+    <div class="field-group">
+      <label for="confirmPassword">Confirm password</label>
+      <div class="password-field">
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="registerData.confirmPassword"
+          (blur)="validateField('confirmPassword')"
+          (input)="clearFieldError('confirmPassword')"
+        />
+        <button type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div *ngIf="validationErrors['confirmPassword']" class="field-error">
+        {{ validationErrors['confirmPassword'] }}
+      </div>
     </div>
 
     <button type="submit">Register</button>
