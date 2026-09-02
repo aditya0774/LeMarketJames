@@ -1,10 +1,16 @@
 <section class="register-page">
   <h2>Create your account</h2>
 
+  <!-- Registration form: collects user identity, address, financial, and security information -->
+  <!-- All validation rules are defined in register.schema.ts using Zod -->
   <!-- The form submit event calls the onSubmit method in the component -->
   <form (ngSubmit)="onSubmit()">
+    <!-- Name fields: split into first, middle (optional), and last name for better data accuracy and internationalization support -->
+    <!-- This structure allows for flexible name handling (many cultures have multiple name components) -->
+    <!-- First name and last name are required; middle name is optional -->
     <div class="field-group">
-      <label for="firstName">First name <span class="required"></span></label>
+      <label for="firstName">First name <span class="required">*</span></label>
+      <!-- Required field: validates on blur and clears error on input -->
       <input
         id="firstName"
         name="firstName"
@@ -20,6 +26,7 @@
 
     <div class="field-group">
       <label for="middleName">Middle name <span class="optional">(optional)</span></label>
+      <!-- Optional field: validation is skipped if empty, but format is checked if provided -->
       <input
         id="middleName"
         name="middleName"
@@ -34,7 +41,8 @@
     </div>
 
     <div class="field-group">
-      <label for="lastName">Last name <span class="required"></span></label>
+      <label for="lastName">Last name <span class="required">*</span></label>
+      <!-- Required field: validates on blur and clears error on input -->
       <input
         id="lastName"
         name="lastName"

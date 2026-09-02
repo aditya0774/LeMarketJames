@@ -10,10 +10,36 @@ import { registerSchema, RegisterFormData } from './register.schema';
   styleUrl: './register.css',
   templateUrl: './register.html',
 })
+/**
+ * Register Component
+ * 
+ * Handles user registration with comprehensive form validation and error handling.
+ * All validation rules are defined in register.schema.ts using the Zod schema validation library.
+ * 
+ * Form Data Structure:
+ * - Name fields: firstName (required), middleName (optional), lastName (required)
+ * - Address fields: streetAddress, apartment (optional), city, state, zipCode
+ * - Identity fields: ssn, dateOfBirth
+ * - Financial fields: initialDeposit (minimum $5,000), investmentExperience
+ * - Contact fields: email, phoneNumber
+ * - Security fields: password, confirmPassword
+ * 
+ * Validation Strategy:
+ * - Field-level validation occurs on blur and input (error cleared on input)
+ * - Schema-level validation occurs on form submission
+ * - Cross-field rules (password match, experience level requirements) are checked via superRefine()
+ * 
+ * Form Binding:
+ * - Two-way binding via [(ngModel)] syncs form inputs to registerData object
+ * - Input formatting happens in real-time (phone, SSN, ZIP, deposit)
+ * - All formatted values are tracked by the component for display
+ */
 export class Register {
-  // This object stores exactly the data required by the registration acceptance criteria.
+  // This object stores exactly the data required by the registration form.
   // Its shape matches RegisterFormData (inferred from register.schema.ts), so the form
   // fields and the validation rules defined in the schema can never fall out of sync.
+  // Names are now split: firstName (required), middleName (optional), lastName (required)
+  // This allows for better international name support and data accuracy.
   registerData: RegisterFormData = {
     firstName: '',
     middleName: '',
@@ -39,14 +65,29 @@ export class Register {
   // Tracks whether the password field currently shows plain text or is masked.
   showPassword = false;
 
-  // This method returns true only when the initial deposit is $100,000 or more.
-  // 'Experienced' is only selectable once this threshold is met.
+  /**
+   * Checks if the user's investment experience level can be set to 'experienced'.
+   * 
+   * @returns {boolean} True if initial deposit is $100,000 or more, false otherwise
+   * 
+   * Note: This method is used to conditionally enable/disable the 'experienced' option
+   * in the investment experience dropdown. Users must meet the minimum deposit requirement.
+   */
   isExperiencedAllowed(): boolean {
     return Number(this.registerData.initialDeposit) >= 100000;
   }
 
-  // This method is called every time the user types into the initial deposit field.
-  // It clears the field error and downgrades the experience level if it's no longer allowed.
+  /**
+   * Handles input changes to the initial deposit field.
+   * 
+   * Responsibilities:
+   * - Clears any existing validation error for this field
+   * - Downgrades investment experience from 'experienced' to 'beginner' if the deposit
+   *   amount drops below the $100,000 threshold
+   * 
+   * This prevents users from having an invalid state where they've selected 'experienced'
+   * but don't have sufficient funds.
+   */
   onInitialDepositInput() {
     this.clearFieldError('initialDeposit');
 
@@ -55,20 +96,45 @@ export class Register {
     }
   }
 
-  // This method toggles the password field between masked and plain text.
+  /**
+   * Toggles the password field visibility between masked and plain text.
+   * 
+   * Used by the "Show/Hide password" button to allow users to verify their password
+   * before submission without accidentally typing characters they didn't intend.
+   */
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
   }
 
-  // This method clears the error for a single field when the user starts editing it.
+  /**
+   * Clears the validation error message for a specific field.
+   * 
+   * Called when the user starts editing a field (on input event), providing immediate
+   * feedback that their change is being recognized.
+   * 
+   * @param {string} fieldName - The name of the field to clear the error for
+   */
   clearFieldError(fieldName: string) {
     this.validationErrors[fieldName] = '';
   }
 
-  // This method re-checks the whole form against the Zod schema (see register.schema.ts) and
-  // surfaces only the first error found for the one field passed in. The whole schema has to be
-  // parsed (not just this field in isolation) because some rules span multiple fields — e.g. the
-  // confirm password match and the "experienced needs $100k+ deposit" rule.
+  /**
+   * Validates a single form field against the complete Zod schema.
+   * 
+   * Why validate the entire schema?
+   * - Some validation rules depend on multiple fields (e.g., password match, experience level requirements)
+   * - Zod's error path tracking lets us extract issues for a specific field
+   * - This ensures consistent validation logic between field-level and form-level checks
+   * 
+   * @param {keyof RegisterFormData} fieldName - The field to check and report errors for
+   * @returns {boolean} True if validation passes, false if there's an error
+   * 
+   * Logic:
+   * 1. Parse entire form against schema
+   * 2. If successful, clear any error for this field and return true
+   * 3. If failed, find the first error issue for this field and store its message
+   * 4. If this field has no errors (but others do), clear the error for this field
+   */
   validateField(fieldName: keyof RegisterFormData): boolean {
     const result = registerSchema.safeParse(this.registerData);
 
@@ -89,8 +155,20 @@ export class Register {
     return true;
   }
 
-  // This method converts a raw phone number into the format (XXX) XXX-XXXX.
-  // It strips out any non-digit characters so the user cannot type letters or symbols.
+  /**
+   * Formats a phone number string into (XXX) XXX-XXXX format.
+   * 
+   * @param {string} value - Raw phone number input (may contain non-digit characters)
+   * @returns {string} Formatted phone number, or partial format if user is still typing
+   * 
+   * Behavior:
+   * - Strips all non-digit characters
+   * - Limits to 10 digits (US phone numbers)
+   * - Progressively formats as user types:
+   *   - 1-3 digits: "123"
+   *   - 4-6 digits: "(123) 456"
+   *   - 7-10 digits: "(123) 456-7890"
+   */
   formatPhoneNumber(value: string): string {
     const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
 
@@ -105,8 +183,20 @@ export class Register {
     return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
   }
 
-  // This method converts a raw SSN into the format XXX-XX-XXXX.
-  // It strips out any non-digit characters so the user cannot type letters or symbols.
+  /**
+   * Formats a Social Security Number into XXX-XX-XXXX format.
+   * 
+   * @param {string} value - Raw SSN input (may contain non-digit characters)
+   * @returns {string} Formatted SSN, or partial format if user is still typing
+   * 
+   * Behavior:
+   * - Strips all non-digit characters
+   * - Limits to 9 digits (US SSN length)
+   * - Progressively formats as user types:
+   *   - 1-3 digits: "123"
+   *   - 4-5 digits: "123-45"
+   *   - 6-9 digits: "123-45-6789"
+   */
   formatSsn(value: string): string {
     const digitsOnly = value.replace(/\D/g, '').slice(0, 9);
 
@@ -121,13 +211,32 @@ export class Register {
     return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 5)}-${digitsOnly.slice(5)}`;
   }
 
-  // This method strips non-digit characters from the ZIP code and caps it at 5 digits.
+  /**
+   * Formats a ZIP code to exactly 5 digits.
+   * 
+   * @param {string} value - Raw ZIP code input (may contain non-digit characters)
+   * @returns {string} ZIP code with only digits, capped at 5 characters
+   * 
+   * US ZIP codes are always 5 digits (basic format; ZIP+4 not supported here)
+   */
   formatZipCode(value: string): string {
     return value.replace(/\D/g, '').slice(0, 5);
   }
 
-  // This method is called every time the user types into the phone field.
-  // It sanitizes the input and updates the model with the formatted value.
+  /**
+   * Handles input changes to the phone number field.
+   * 
+   * Event handler for the input event on the phone number field.
+   * 
+   * Responsibilities:
+   * - Formats the raw input using formatPhoneNumber()
+   * - Updates both the DOM input and the component's registerData model
+   * - Clears any validation error for this field
+   * 
+   * This ensures the displayed value, stored value, and validation state stay in sync.
+   * 
+   * @param {Event} event - The input event containing the phone number field
+   */
   onPhoneInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const formattedValue = this.formatPhoneNumber(input.value);
@@ -139,8 +248,20 @@ export class Register {
     this.clearFieldError('phoneNumber');
   }
 
-  // This method is called every time the user types into the SSN field.
-  // It sanitizes the input and updates the model with the formatted value.
+  /**
+   * Handles input changes to the SSN field.
+   * 
+   * Event handler for the input event on the SSN field.
+   * 
+   * Responsibilities:
+   * - Formats the raw input using formatSsn()
+   * - Updates both the DOM input and the component's registerData model
+   * - Clears any validation error for this field
+   * 
+   * This ensures the displayed value, stored value, and validation state stay in sync.
+   * 
+   * @param {Event} event - The input event containing the SSN field
+   */
   onSsnInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const formattedValue = this.formatSsn(input.value);
@@ -152,8 +273,20 @@ export class Register {
     this.clearFieldError('ssn');
   }
 
-  // This method is called every time the user types into the ZIP code field.
-  // It sanitizes the input and updates the model with the formatted value.
+  /**
+   * Handles input changes to the ZIP code field.
+   * 
+   * Event handler for the input event on the ZIP code field.
+   * 
+   * Responsibilities:
+   * - Formats the raw input using formatZipCode()
+   * - Updates both the DOM input and the component's registerData model
+   * - Clears any validation error for this field
+   * 
+   * This ensures the displayed value, stored value, and validation state stay in sync.
+   * 
+   * @param {Event} event - The input event containing the ZIP code field
+   */
   onZipCodeInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const formattedValue = this.formatZipCode(input.value);
@@ -165,9 +298,26 @@ export class Register {
     this.clearFieldError('zipCode');
   }
 
-  // This method runs when the registration form is submitted.
-  // It validates the entire form against the Zod schema in one pass and stops
-  // submission if any field is missing or invalid.
+
+  /**
+   * Handles form submission.
+   * 
+   * Called when the user clicks the "Create account" button or submits the form.
+   * 
+   * Process:
+   * 1. Validates the entire form against the Zod schema in one pass
+   * 2. If validation fails:
+   *    - Rebuilds the error map from scratch
+   *    - Keeps only the first error message per field (fields can fail multiple rules)
+   *    - Falls back 'experienced' to 'beginner' if the investment experience field failed
+   *    - Stops execution; form is not submitted
+   * 3. If validation succeeds:
+   *    - Clears all error messages
+   *    - Logs the registration data to the console (ready for API integration)
+   *    - Would typically make an API call to submit the registration
+   * 
+   * Note: Currently logs to console; integrate with actual registration API endpoint
+   */
   onSubmit() {
     const result = registerSchema.safeParse(this.registerData);
 

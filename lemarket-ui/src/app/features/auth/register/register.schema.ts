@@ -1,14 +1,37 @@
 import { z } from 'zod';
 
-// This file defines every validation rule for the registration form in one place.
-// Instead of hand-writing a separate "validateX" method for each field (the old approach),
-// Zod lets us describe the shape and rules of the data as a single schema, and then
-// call `.safeParse(data)` to check a whole object against every rule at once.
+/**
+ * Registration Form Schema
+ * 
+ * This file defines all validation rules for the registration form using Zod schema validation.
+ * Zod provides a declarative approach to data validation, allowing us to define both the shape
+ * of the data and all validation rules in one place.
+ * 
+ * Benefits of this approach:
+ * - Single source of truth for all validation rules
+ * - Type-safe validation (RegisterFormData type is automatically inferred)
+ * - Detailed error messages for each validation rule
+ * - Composable validation logic (useful for cross-field rules)
+ * - Easy to maintain and update validation rules
+ * 
+ * Name Field Structure:
+ * - firstName: Required field for the user's given name
+ * - middleName: Optional field for middle name(s)
+ * - lastName: Required field for the user's family name
+ * 
+ * This split allows for:
+ * - Better international name support (many cultures have complex name structures)
+ * - More accurate data storage and retrieval
+ * - Flexible display formatting (can combine as needed)
+ * - Optional middle name for users who don't have or want to provide one
+ */
 
 // Reused character patterns -------------------------------------------------
 
 // Letters, spaces, hyphens, and apostrophes only (e.g. "Mary-Jane O'Neil").
 // Used for fields where a name is expected, so digits and symbols can't be typed in.
+// Allows 2-60 characters to accommodate a wide variety of name formats.
+// Works for firstName, middleName, lastName, city, and state fields.
 const namePattern = /^[A-Za-z' -]{2,60}$/;
 
 // Letters, numbers, spaces, and . , # - only.
@@ -46,8 +69,22 @@ function calculateAge(dateOfBirth: string): number {
 
 // The schema itself ----------------------------------------------------------
 // Each field lists its rules top to bottom; Zod stops at (and reports) the first rule that fails.
+//
+// Name Fields Validation:
+// - firstName: Required string, 2-60 characters, letters/spaces/hyphens/apostrophes only
+// - middleName: Optional string, same character restrictions as firstName
+// - lastName: Required string, 2-60 characters, letters/spaces/hyphens/apostrophes only
+//
+// Why split names?
+// 1. Many cultures have first name(s) and family name(s) that need to be separate
+// 2. Provides more accurate data structure for international users
+// 3. Allows flexible formatting and personalization (e.g., addressing users by first name)
+// 4. Makes API integrations and reporting easier with structured data
+// 5. Optional middle name accommodates users from cultures/regions where it's not common
 export const registerSchema = z
   .object({
+    // Name fields: split into first, middle (optional), and last name
+    // First name and last name are required; middle name is optional
     firstName: z
       .string()
       .trim()
@@ -151,10 +188,11 @@ export const registerSchema = z
 
     confirmPassword: z.string().min(1, 'Confirm password is required.'),
   })
-  // Cross-field rules that need more than one property must go in .superRefine(),
-  // since a single field's own z.string() rules can't see the rest of the object.
+  // Cross-field validation rules that depend on multiple properties
+  // These rules must go in .superRefine() since individual field rules can't access other fields
   .superRefine((data, ctx) => {
-    // The confirm password field must match the password field exactly.
+    // Rule 1: Password confirmation must match
+    // Ensures users entered their password correctly before submission
     if (data.confirmPassword !== data.password) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -163,7 +201,9 @@ export const registerSchema = z
       });
     }
 
-    // 'Experienced' may only be selected alongside a $100,000+ initial deposit.
+    // Rule 2: 'Experienced' requires minimum deposit
+    // Business rule: Users must have at least $100,000 initial deposit to select 'experienced'
+    // This prevents over-claiming expertise while having low financial commitment
     if (data.investmentExperience === 'experienced' && Number(data.initialDeposit) < 100000) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -173,6 +213,24 @@ export const registerSchema = z
     }
   });
 
+/**
+ * RegisterFormData Type
+ * 
+ * Automatically inferred from the Zod schema above using z.infer<typeof registerSchema>.
+ * 
+ * This means:
+ * - Any changes to validation rules immediately update the type
+ * - The component's registerData object is always type-safe
+ * - TypeScript catches mismatches between form fields and validation rules at compile time
+ * 
+ * Structure:
+ * - Name: firstName (required), middleName (optional), lastName (required)
+ * - Address: streetAddress, apartment (optional), city, state, zipCode
+ * - Identity: ssn, dateOfBirth
+ * - Financial: initialDeposit, investmentExperience ('beginner' | 'experienced')
+ * - Contact: email, phoneNumber
+ * - Security: password, confirmPassword
+ */
 // Zod infers the exact TypeScript type of valid data straight from the schema above,
 // so the shape of RegisterFormData and the validation rules can never drift apart.
 export type RegisterFormData = z.infer<typeof registerSchema>;
