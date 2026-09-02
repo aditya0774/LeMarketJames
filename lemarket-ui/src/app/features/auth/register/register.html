@@ -1,378 +1,460 @@
-<section class="register-page">
-  <h2>Create your account</h2>
+<div class="register-container">
+  <mat-card class="register-card">
+    <mat-card-header>
+      <mat-card-title>Create your account</mat-card-title>
+      <mat-card-subtitle>Join LeMarket James to start investing</mat-card-subtitle>
+    </mat-card-header>
 
-  <!-- Registration form: collects user identity, address, financial, and security information -->
-  <!-- All validation rules are defined in register.schema.ts using Zod -->
-  <!-- The form submit event calls the onSubmit method in the component -->
-  <form (ngSubmit)="onSubmit()">
-    <!-- Name fields: split into first, middle (optional), and last name for better data accuracy and internationalization support -->
-    <!-- This structure allows for flexible name handling (many cultures have multiple name components) -->
-    <!-- First name and last name are required; middle name is optional -->
-    <div class="field-group">
-      <label for="firstName">First name <span class="required"></span></label>
-      <!-- Required field: validates on blur and clears error on input -->
-      <input
-        id="firstName"
-        name="firstName"
-        type="text"
-        [(ngModel)]="registerData.firstName"
-        (blur)="validateField('firstName')"
-        (input)="clearFieldError('firstName')"
-      />
-      <div *ngIf="validationErrors['firstName']" class="field-error">
-        {{ validationErrors['firstName'] }}
-      </div>
-    </div>
+    <mat-card-content>
+      <!-- Registration form: collects user identity, address, financial, and security information -->
+      <!-- All validation rules are defined in register.schema.ts using Zod -->
+      <!-- The form submit event calls the onSubmit method in the component -->
+      <form (ngSubmit)="onSubmit()" class="register-form">
+        <!-- NAME SECTION -->
+        <h3 class="section-title">Personal Information</h3>
+        
+        <!-- Name fields: split into first, middle (optional), and last name -->
+        <div class="form-row">
+          <mat-form-field class="form-field">
+            <mat-label>First name <span class="required">*</span></mat-label>
+            <input
+              matInput
+              id="firstName"
+              name="firstName"
+              [(ngModel)]="registerData.firstName"
+              (blur)="validateField('firstName')"
+              (input)="clearFieldError('firstName')"
+            />
+            <mat-error *ngIf="validationErrors['firstName']">
+              {{ validationErrors['firstName'] }}
+            </mat-error>
+          </mat-form-field>        @if (validationErrors['firstName']) {
+          <div class="error-display">{{ validationErrors['firstName'] }}</div>
+        }
+          <mat-form-field class="form-field">
+            <mat-label>Middle name (optional)</mat-label>
+            <input
+              matInput
+              id="middleName"
+              name="middleName"
+              [(ngModel)]="registerData.middleName"
+              (blur)="validateField('middleName')"
+              (input)="clearFieldError('middleName')"
+            />
+            <mat-error *ngIf="validationErrors['middleName']">
+              {{ validationErrors['middleName'] }}
+            </mat-error>
+          </mat-form-field>        @if (validationErrors['middleName']) {
+          <div class="error-display">{{ validationErrors['middleName'] }}</div>
+        }
+          <mat-form-field class="form-field">
+            <mat-label>Last name <span class="required">*</span></mat-label>
+            <input
+              matInput
+              id="lastName"
+              name="lastName"
+              [(ngModel)]="registerData.lastName"
+              (blur)="validateField('lastName')"
+              (input)="clearFieldError('lastName')"
+            />
+            <mat-error *ngIf="validationErrors['lastName']">
+              {{ validationErrors['lastName'] }}
+            </mat-error>
+          </mat-form-field>        @if (validationErrors['lastName']) {
+          <div class="error-display">{{ validationErrors['lastName'] }}</div>
+        }        </div>
 
-    <div class="field-group">
-      <label for="middleName">Middle name <span class="optional">(optional)</span></label>
-      <!-- Optional field: validation is skipped if empty, but format is checked if provided -->
-      <input
-        id="middleName"
-        name="middleName"
-        type="text"
-        [(ngModel)]="registerData.middleName"
-        (blur)="validateField('middleName')"
-        (input)="clearFieldError('middleName')"
-      />
-      <div *ngIf="validationErrors['middleName']" class="field-error">
-        {{ validationErrors['middleName'] }}
-      </div>
-    </div>
+        <!-- ADDRESS SECTION -->
+        <h3 class="section-title">Address</h3>
 
-    <div class="field-group">
-      <label for="lastName">Last name <span class="required"></span></label>
-      <!-- Required field: validates on blur and clears error on input -->
-      <input
-        id="lastName"
-        name="lastName"
-        type="text"
-        [(ngModel)]="registerData.lastName"
-        (blur)="validateField('lastName')"
-        (input)="clearFieldError('lastName')"
-      />
-      <div *ngIf="validationErrors['lastName']" class="field-error">
-        {{ validationErrors['lastName'] }}
-      </div>
-    </div>
-
-    <div class="field-group">
-      <label>Address</label>
-      <!-- Professional address forms usually split the address into multiple fields for clarity and accuracy -->
-      <div class="nested-field">
-        <label for="streetAddress">Street address</label>
-        <input
-          id="streetAddress"
-          name="streetAddress"
-          type="text"
-          [(ngModel)]="registerData.streetAddress"
-          (blur)="validateField('streetAddress')"
-          (input)="clearFieldError('streetAddress')"
-        />
-        <div *ngIf="validationErrors['streetAddress']" class="field-error">
-          {{ validationErrors['streetAddress'] }}
-        </div>
-      </div>
-
-      <div class="nested-field">
-        <label for="apartment">Apartment, unit, suite, etc.</label>
-        <input
-          id="apartment"
-          name="apartment"
-          type="text"
-          [(ngModel)]="registerData.apartment"
-          (blur)="validateField('apartment')"
-          (input)="clearFieldError('apartment')"
-        />
-        <div *ngIf="validationErrors['apartment']" class="field-error">
-          {{ validationErrors['apartment'] }}
-        </div>
-      </div>
-
-      <div class="nested-field">
-        <label for="city">City</label>
-        <input
-          id="city"
-          name="city"
-          type="text"
-          [(ngModel)]="registerData.city"
-          (blur)="validateField('city')"
-          (input)="clearFieldError('city')"
-        />
-        <div *ngIf="validationErrors['city']" class="field-error">
-          {{ validationErrors['city'] }}
-        </div>
-      </div>
-
-      <div class="nested-field">
-        <label for="state">State</label>
-        <select
-          id="state"
-          name="state"
-          [(ngModel)]="registerData.state"
-          (blur)="validateField('state')"
-          (input)="clearFieldError('state')"
-        >
-          <option value="">Select a state</option>
-          <option value="Alabama">Alabama</option>
-          <option value="Alaska">Alaska</option>
-          <option value="Arizona">Arizona</option>
-          <option value="Arkansas">Arkansas</option>
-          <option value="California">California</option>
-          <option value="Colorado">Colorado</option>
-          <option value="Connecticut">Connecticut</option>
-          <option value="Delaware">Delaware</option>
-          <option value="Florida">Florida</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Hawaii">Hawaii</option>
-          <option value="Idaho">Idaho</option>
-          <option value="Illinois">Illinois</option>
-          <option value="Indiana">Indiana</option>
-          <option value="Iowa">Iowa</option>
-          <option value="Kansas">Kansas</option>
-          <option value="Kentucky">Kentucky</option>
-          <option value="Louisiana">Louisiana</option>
-          <option value="Maine">Maine</option>
-          <option value="Maryland">Maryland</option>
-          <option value="Massachusetts">Massachusetts</option>
-          <option value="Michigan">Michigan</option>
-          <option value="Minnesota">Minnesota</option>
-          <option value="Mississippi">Mississippi</option>
-          <option value="Missouri">Missouri</option>
-          <option value="Montana">Montana</option>
-          <option value="Nebraska">Nebraska</option>
-          <option value="Nevada">Nevada</option>
-          <option value="New Hampshire">New Hampshire</option>
-          <option value="New Jersey">New Jersey</option>
-          <option value="New Mexico">New Mexico</option>
-          <option value="New York">New York</option>
-          <option value="North Carolina">North Carolina</option>
-          <option value="North Dakota">North Dakota</option>
-          <option value="Ohio">Ohio</option>
-          <option value="Oklahoma">Oklahoma</option>
-          <option value="Oregon">Oregon</option>
-          <option value="Pennsylvania">Pennsylvania</option>
-          <option value="Rhode Island">Rhode Island</option>
-          <option value="South Carolina">South Carolina</option>
-          <option value="South Dakota">South Dakota</option>
-          <option value="Tennessee">Tennessee</option>
-          <option value="Texas">Texas</option>
-          <option value="Utah">Utah</option>
-          <option value="Vermont">Vermont</option>
-          <option value="Virginia">Virginia</option>
-          <option value="Washington">Washington</option>
-          <option value="West Virginia">West Virginia</option>
-          <option value="Wisconsin">Wisconsin</option>
-          <option value="Wyoming">Wyoming</option>
-        </select>
-        <div *ngIf="validationErrors['state']" class="field-error">
-          {{ validationErrors['state'] }}
-        </div>
-      </div>
-
-      <div class="nested-field">
-        <label for="zipCode">ZIP code</label>
-        <input
-          id="zipCode"
-          name="zipCode"
-          type="text"
-          maxlength="5"
-          [(ngModel)]="registerData.zipCode"
-          (blur)="validateField('zipCode')"
-          (input)="onZipCodeInput($event)"
-        />
-        <div *ngIf="validationErrors['zipCode']" class="field-error">
-          {{ validationErrors['zipCode'] }}
-        </div>
-      </div>
-    </div>
-
-    <div class="field-group">
-      <label for="ssn">SSN</label>
-      <input
-        id="ssn"
-        name="ssn"
-        type="text"
-        maxlength="11"
-        [(ngModel)]="registerData.ssn"
-        (blur)="validateField('ssn')"
-        (input)="onSsnInput($event)"
-      />
-      <div *ngIf="validationErrors['ssn']" class="field-error">
-        {{ validationErrors['ssn'] }}
-      </div>
-    </div>
-
-    <div class="field-group">
-      <label for="initialDeposit">Initial deposit amount</label>
-      <div class="currency-field">
-        <span class="currency-symbol">$</span>
-        <input
-          id="initialDeposit"
-          name="initialDeposit"
-          type="number"
-          min="5000"
-          [(ngModel)]="registerData.initialDeposit"
-          (blur)="validateField('initialDeposit')"
-          (input)="onInitialDepositInput()"
-        />
-      </div>
-      <div *ngIf="validationErrors['initialDeposit']" class="field-error">
-        {{ validationErrors['initialDeposit'] }}
-      </div>
-    </div>
-
-    <div>
-      <label>Investing experience</label>
-      <!-- Radio buttons give the user exactly two choices: beginner or experienced -->
-      <div class="radio-group">
-        <label class="radio-option">
-          <input type="radio" name="investmentExperience" value="beginner" [(ngModel)]="registerData.investmentExperience" />
-          Beginner
-        </label>
-        <label class="radio-option">
+        <mat-form-field class="full-width">
+          <mat-label>Street address <span class="required">*</span></mat-label>
           <input
-            type="radio"
-            name="investmentExperience"
-            value="experienced"
+            matInput
+            id="streetAddress"
+            name="streetAddress"
+            [(ngModel)]="registerData.streetAddress"
+            (blur)="validateField('streetAddress')"
+            (input)="clearFieldError('streetAddress')"
+          />
+          <mat-error *ngIf="validationErrors['streetAddress']">
+            {{ validationErrors['streetAddress'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['streetAddress']) {
+          <div class="error-display">{{ validationErrors['streetAddress'] }}</div>
+        }
+
+        <mat-form-field class="full-width">
+          <mat-label>Apartment, unit, suite, etc. (optional)</mat-label>
+          <input
+            matInput
+            id="apartment"
+            name="apartment"
+            [(ngModel)]="registerData.apartment"
+            (blur)="validateField('apartment')"
+            (input)="clearFieldError('apartment')"
+          />
+          <mat-error *ngIf="validationErrors['apartment']">
+            {{ validationErrors['apartment'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['apartment']) {
+          <div class="error-display">{{ validationErrors['apartment'] }}</div>
+        }
+
+        <div class="form-row">
+          <mat-form-field class="form-field">
+            <mat-label>City <span class="required">*</span></mat-label>
+            <input
+              matInput
+              id="city"
+              name="city"
+              [(ngModel)]="registerData.city"
+              (blur)="validateField('city')"
+              (input)="clearFieldError('city')"
+            />
+            <mat-error *ngIf="validationErrors['city']">
+              {{ validationErrors['city'] }}
+            </mat-error>
+          </mat-form-field>
+          @if (validationErrors['city']) {
+            <div class="error-display">{{ validationErrors['city'] }}</div>
+          }
+
+          <mat-form-field class="form-field">
+            <mat-label>State <span class="required">*</span></mat-label>
+            <mat-select
+              id="state"
+              name="state"
+              [(ngModel)]="registerData.state"
+              (blur)="validateField('state')"
+            >
+              <mat-option value="">Select a state</mat-option>
+              <mat-option value="Alabama">Alabama</mat-option>
+              <mat-option value="Alaska">Alaska</mat-option>
+              <mat-option value="Arizona">Arizona</mat-option>
+              <mat-option value="Arkansas">Arkansas</mat-option>
+              <mat-option value="California">California</mat-option>
+              <mat-option value="Colorado">Colorado</mat-option>
+              <mat-option value="Connecticut">Connecticut</mat-option>
+              <mat-option value="Delaware">Delaware</mat-option>
+              <mat-option value="Florida">Florida</mat-option>
+              <mat-option value="Georgia">Georgia</mat-option>
+              <mat-option value="Hawaii">Hawaii</mat-option>
+              <mat-option value="Idaho">Idaho</mat-option>
+              <mat-option value="Illinois">Illinois</mat-option>
+              <mat-option value="Indiana">Indiana</mat-option>
+              <mat-option value="Iowa">Iowa</mat-option>
+              <mat-option value="Kansas">Kansas</mat-option>
+              <mat-option value="Kentucky">Kentucky</mat-option>
+              <mat-option value="Louisiana">Louisiana</mat-option>
+              <mat-option value="Maine">Maine</mat-option>
+              <mat-option value="Maryland">Maryland</mat-option>
+              <mat-option value="Massachusetts">Massachusetts</mat-option>
+              <mat-option value="Michigan">Michigan</mat-option>
+              <mat-option value="Minnesota">Minnesota</mat-option>
+              <mat-option value="Mississippi">Mississippi</mat-option>
+              <mat-option value="Missouri">Missouri</mat-option>
+              <mat-option value="Montana">Montana</mat-option>
+              <mat-option value="Nebraska">Nebraska</mat-option>
+              <mat-option value="Nevada">Nevada</mat-option>
+              <mat-option value="New Hampshire">New Hampshire</mat-option>
+              <mat-option value="New Jersey">New Jersey</mat-option>
+              <mat-option value="New Mexico">New Mexico</mat-option>
+              <mat-option value="New York">New York</mat-option>
+              <mat-option value="North Carolina">North Carolina</mat-option>
+              <mat-option value="North Dakota">North Dakota</mat-option>
+              <mat-option value="Ohio">Ohio</mat-option>
+              <mat-option value="Oklahoma">Oklahoma</mat-option>
+              <mat-option value="Oregon">Oregon</mat-option>
+              <mat-option value="Pennsylvania">Pennsylvania</mat-option>
+              <mat-option value="Rhode Island">Rhode Island</mat-option>
+              <mat-option value="South Carolina">South Carolina</mat-option>
+              <mat-option value="South Dakota">South Dakota</mat-option>
+              <mat-option value="Tennessee">Tennessee</mat-option>
+              <mat-option value="Texas">Texas</mat-option>
+              <mat-option value="Utah">Utah</mat-option>
+              <mat-option value="Vermont">Vermont</mat-option>
+              <mat-option value="Virginia">Virginia</mat-option>
+              <mat-option value="Washington">Washington</mat-option>
+              <mat-option value="West Virginia">West Virginia</mat-option>
+              <mat-option value="Wisconsin">Wisconsin</mat-option>
+              <mat-option value="Wyoming">Wyoming</mat-option>
+            </mat-select>
+            <mat-error *ngIf="validationErrors['state']">
+              {{ validationErrors['state'] }}
+            </mat-error>
+          </mat-form-field>
+          @if (validationErrors['state']) {
+            <div class="error-display">{{ validationErrors['state'] }}</div>
+          }
+
+          <mat-form-field class="form-field">
+            <mat-label>ZIP code <span class="required">*</span></mat-label>
+            <input
+              matInput
+              id="zipCode"
+              name="zipCode"
+              maxlength="5"
+              [(ngModel)]="registerData.zipCode"
+              (blur)="validateField('zipCode')"
+              (input)="onZipCodeInput($event)"
+            />
+            <mat-error *ngIf="validationErrors['zipCode']">
+              {{ validationErrors['zipCode'] }}
+            </mat-error>
+          </mat-form-field>
+          @if (validationErrors['zipCode']) {
+            <div class="error-display">{{ validationErrors['zipCode'] }}</div>
+          }
+        </div>
+
+        <!-- IDENTITY SECTION -->
+        <h3 class="section-title">Identity</h3>
+
+        <mat-form-field class="form-field">
+          <mat-label>SSN <span class="required">*</span></mat-label>
+          <input
+            matInput
+            id="ssn"
+            name="ssn"
+            maxlength="11"
+            placeholder="XXX-XX-XXXX"
+            [(ngModel)]="registerData.ssn"
+            (blur)="validateField('ssn')"
+            (input)="onSsnInput($event)"
+          />
+          <mat-error *ngIf="validationErrors['ssn']">
+            {{ validationErrors['ssn'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['ssn']) {
+          <div class="error-display">{{ validationErrors['ssn'] }}</div>
+        }
+
+        <mat-form-field class="form-field">
+          <mat-label>Date of birth <span class="required">*</span></mat-label>
+          <input
+            matInput
+            [matDatepicker]="picker"
+            id="dateOfBirth"
+            name="dateOfBirth"
+            [(ngModel)]="registerData.dateOfBirth"
+            (dateChange)="onDateOfBirthChange($event.value)"
+            (blur)="validateField('dateOfBirth')"
+          />
+          <mat-hint>MM/DD/YYYY</mat-hint>
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="validationErrors['dateOfBirth']">
+            {{ validationErrors['dateOfBirth'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['dateOfBirth']) {
+          <div class="error-display">{{ validationErrors['dateOfBirth'] }}</div>
+        }
+
+        <!-- FINANCIAL SECTION -->
+        <h3 class="section-title">Financial Information</h3>
+
+        <mat-form-field class="full-width">
+          <mat-label>Initial deposit amount <span class="required">*</span></mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input
+            matInput
+            id="initialDeposit"
+            name="initialDeposit"
+            type="number"
+            min="5000"
+            [(ngModel)]="registerData.initialDeposit"
+            (blur)="validateField('initialDeposit')"
+            (input)="onInitialDepositInput()"
+          />
+          <mat-hint>Minimum $5,000</mat-hint>
+          <mat-error *ngIf="validationErrors['initialDeposit']">
+            {{ validationErrors['initialDeposit'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['initialDeposit']) {
+          <div class="error-display">{{ validationErrors['initialDeposit'] }}</div>
+        }
+
+        <div class="form-section">
+          <label class="section-label">Investing experience <span class="required">*</span></label>
+          <mat-radio-group
             [(ngModel)]="registerData.investmentExperience"
-            [disabled]="!isExperiencedAllowed()"
-          />
-          Experienced
-        </label>
-      </div>
-      <div *ngIf="!isExperiencedAllowed()" class="field-hint">
-        Experienced requires an initial deposit of $100,000 or more.
-      </div>
-      <div *ngIf="validationErrors['investmentExperience']" class="field-error">
-        {{ validationErrors['investmentExperience'] }}
-      </div>
-    </div>
+            name="investmentExperience"
+            class="radio-group-material"
+          >
+            <mat-radio-button value="beginner">Beginner</mat-radio-button>
+            <mat-radio-button value="experienced" [disabled]="!isExperiencedAllowed()">
+              Experienced
+            </mat-radio-button>
+          </mat-radio-group>
+          <p class="form-hint" *ngIf="!isExperiencedAllowed()">
+            Experienced requires an initial deposit of $100,000 or more.
+          </p>
+          <p class="form-error" *ngIf="validationErrors['investmentExperience']">
+            {{ validationErrors['investmentExperience'] }}
+          </p>
+          @if (validationErrors['investmentExperience']) {
+            <div class="error-display">{{ validationErrors['investmentExperience'] }}</div>
+          }
+        </div>
 
-    <div>
-      <label>Employment status <span class="required"></span></label>
-      <!-- Employment status is required: users must select either 'employed' or 'notEmployed' -->
-      <!-- Using radio buttons to clearly show the two mutually exclusive options -->
-      <div class="radio-group">
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="employmentStatus"
-            value="employed"
+        <div class="form-section">
+          <label class="section-label">Employment status <span class="required">*</span></label>
+          <mat-radio-group
             [(ngModel)]="registerData.employmentStatus"
-            (blur)="validateField('employmentStatus')"
-          />
-          Employed
-        </label>
-        <label class="radio-option">
-          <input
-            type="radio"
             name="employmentStatus"
-            value="notEmployed"
-            [(ngModel)]="registerData.employmentStatus"
             (blur)="validateField('employmentStatus')"
+            class="radio-group-material"
+          >
+            <mat-radio-button value="employed">Employed</mat-radio-button>
+            <mat-radio-button value="notEmployed">Not employed</mat-radio-button>
+          </mat-radio-group>
+          <p class="form-error" *ngIf="validationErrors['employmentStatus']">
+            {{ validationErrors['employmentStatus'] }}
+          </p>
+          @if (validationErrors['employmentStatus']) {
+            <div class="error-display">{{ validationErrors['employmentStatus'] }}</div>
+          }
+        </div>
+
+        <!-- CONTACT SECTION -->
+        <h3 class="section-title">Contact Information</h3>
+
+        <mat-form-field class="full-width">
+          <mat-label>Email <span class="required">*</span></mat-label>
+          <input
+            matInput
+            id="email"
+            name="email"
+            type="email"
+            [(ngModel)]="registerData.email"
+            (blur)="validateField('email')"
+            (input)="clearFieldError('email')"
           />
-          Not employed
-        </label>
-      </div>
-      <div *ngIf="validationErrors['employmentStatus']" class="field-error">
-        {{ validationErrors['employmentStatus'] }}
-      </div>
-    </div>
+          <mat-error *ngIf="validationErrors['email']">
+            {{ validationErrors['email'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['email']) {
+          <div class="error-display">{{ validationErrors['email'] }}</div>
+        }
 
-    <div class="field-group">
-      <label for="dateOfBirth">Date of birth</label>
-      <input
-        id="dateOfBirth"
-        name="dateOfBirth"
-        type="date"
-        [(ngModel)]="registerData.dateOfBirth"
-        (blur)="validateField('dateOfBirth')"
-        (input)="clearFieldError('dateOfBirth')"
-      />
-      <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
-        {{ validationErrors['dateOfBirth'] }}
-      </div>
-    </div>
+        <mat-form-field class="full-width">
+          <mat-label>Phone number <span class="required">*</span></mat-label>
+          <input
+            matInput
+            id="phoneNumber"
+            name="phoneNumber"
+            type="tel"
+            maxlength="14"
+            placeholder="(XXX) XXX-XXXX"
+            [(ngModel)]="registerData.phoneNumber"
+            (blur)="validateField('phoneNumber')"
+            (input)="onPhoneInput($event)"
+          />
+          <mat-error *ngIf="validationErrors['phoneNumber']">
+            {{ validationErrors['phoneNumber'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['phoneNumber']) {
+          <div class="error-display">{{ validationErrors['phoneNumber'] }}</div>
+        }
 
-    <div class="field-group">
-      <label for="email">Email</label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        [(ngModel)]="registerData.email"
-        (blur)="validateField('email')"
-        (input)="clearFieldError('email')"
-      />
-      <div *ngIf="validationErrors['email']" class="field-error">
-        {{ validationErrors['email'] }}
-      </div>
-    </div>
+        <!-- SECURITY SECTION -->
+        <h3 class="section-title">Security</h3>
 
-    <div class="field-group">
-      <label for="phoneNumber">Phone</label>
-      <input
-        id="phoneNumber"
-        name="phoneNumber"
-        type="tel"
-        maxlength="14"
-        [(ngModel)]="registerData.phoneNumber"
-        (blur)="validateField('phoneNumber')"
-        (input)="onPhoneInput($event)"
-      />
-      <div *ngIf="validationErrors['phoneNumber']" class="field-error">
-        {{ validationErrors['phoneNumber'] }}
-      </div>
-    </div>
+        <div class="password-field-wrapper">
+          <mat-form-field class="full-width">
+            <mat-label>Password <span class="required">*</span></mat-label>
+            <input
+              matInput
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              name="password"
+              [(ngModel)]="registerData.password"
+              (blur)="validateField('password')"
+              (input)="validatePasswordMatch()"
+            />
+            <mat-error *ngIf="validationErrors['password']">
+              {{ validationErrors['password'] }}
+            </mat-error>
+          </mat-form-field>
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
+        @if (validationErrors['password']) {
+          <div class="error-display">{{ validationErrors['password'] }}</div>
+        }
 
-    <div class="field-group">
-      <label for="password">Password</label>
-      <div class="password-field">
-        <input
-          id="password"
-          name="password"
-          [type]="showPassword ? 'text' : 'password'"
-          [(ngModel)]="registerData.password"
-          (blur)="validateField('password')"
-          (input)="clearFieldError('password')"
-        />
-        <button type="button" (click)="togglePasswordVisibility()">
-          {{ showPassword ? 'Hide' : 'Show' }}
-        </button>
-      </div>
-      <div *ngIf="validationErrors['password']" class="field-error">
-        {{ validationErrors['password'] }}
-      </div>
-    </div>
+        <div class="password-field-wrapper">
+          <mat-form-field class="full-width">
+            <mat-label>Confirm password <span class="required">*</span></mat-label>
+            <input
+              matInput
+              [type]="showPassword ? 'text' : 'password'"
+              id="confirmPassword"
+              name="confirmPassword"
+              [(ngModel)]="registerData.confirmPassword"
+              (blur)="validateField('confirmPassword')"
+              (input)="validatePasswordMatch()"
+            />
+            <mat-error *ngIf="validationErrors['confirmPassword']">
+              {{ validationErrors['confirmPassword'] }}
+            </mat-error>
+          </mat-form-field>
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
+        @if (validationErrors['confirmPassword']) {
+          <div class="error-display">{{ validationErrors['confirmPassword'] }}</div>
+        }
 
-    <div class="field-group">
-      <label for="confirmPassword">Confirm password</label>
-      <div class="password-field">
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          [type]="showPassword ? 'text' : 'password'"
-          [(ngModel)]="registerData.confirmPassword"
-          (blur)="validateField('confirmPassword')"
-          (input)="clearFieldError('confirmPassword')"
-        />
-        <button type="button" (click)="togglePasswordVisibility()">
-          {{ showPassword ? 'Hide' : 'Show' }}
-        </button>
-      </div>
-      <div *ngIf="validationErrors['confirmPassword']" class="field-error">
-        {{ validationErrors['confirmPassword'] }}
-      </div>
-    </div>
+        <!-- SUBMIT SECTION -->
+        <div class="form-actions">
+          @if (errorMessage()) {
+            <div class="error-message">
+              <mat-icon>error</mat-icon>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
 
-    @if (errorMessage()) {
-      <p class="error">{{ errorMessage() }}</p>
-    }
+          <button mat-raised-button color="primary" type="submit" [disabled]="submitting()" class="submit-button">
+            @if (submitting()) {
+              <ng-container>
+                <mat-icon>hourglass_empty</mat-icon>
+                <span>Registering...</span>
+              </ng-container>
+            } @else {
+              <ng-container>
+                <mat-icon>person_add</mat-icon>
+                <span>Create Account</span>
+              </ng-container>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
 
-    <button type="submit" [disabled]="submitting()">Register</button>
-  </form>
-
-  <p><a routerLink="/login">Already have an account? Log in</a></p>
-</section>
+    <mat-card-footer class="footer">
+      <p>Already have an account? <a routerLink="/login" class="login-link">Log in</a></p>
+    </mat-card-footer>
+  </mat-card>
+</div>
 

@@ -2,11 +2,33 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
 
 @Component({
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatRadioModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatCardModule,
+    MatIconModule,
+  ],
   selector: 'app-register',
   standalone: true,
   templateUrl: './register.html',
@@ -100,6 +122,42 @@ export class Register {
 
     if (!this.isExperiencedAllowed() && this.registerData.investmentExperience === 'experienced') {
       this.registerData.investmentExperience = 'beginner';
+    }
+  }
+
+  /**
+   * Handles date of birth selection from Material datepicker.
+   * 
+   * Converts the Date object returned by the datepicker into an ISO string (YYYY-MM-DD)
+   * so it matches the format expected by the validation schema.
+   * 
+   * @param {Date} date - The date selected from the datepicker
+   */
+  onDateOfBirthChange(date: Date) {
+    if (date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      this.registerData.dateOfBirth = `${year}-${month}-${day}`;
+      this.clearFieldError('dateOfBirth');
+    }
+  }
+
+  /**
+   * Validates that the password and confirm password fields match.
+   * 
+   * Called in real-time as the user types in either password field.
+   * Shows an error message if the passwords don't match, clears it if they do.
+   * 
+   * This provides immediate feedback without requiring the user to blur the field.
+   */
+  validatePasswordMatch() {
+    if (this.registerData.password && this.registerData.confirmPassword) {
+      if (this.registerData.password !== this.registerData.confirmPassword) {
+        this.validationErrors['confirmPassword'] = 'Passwords do not match.';
+      } else {
+        this.clearFieldError('confirmPassword');
+      }
     }
   }
 
@@ -357,7 +415,7 @@ export class Register {
     this.submitting.set(true);
     
     try {
-      console.log('Registration data:', result.data);
+      console.log('Registration successful! Data:', result.data);
       // TODO: Integrate with actual registration API endpoint
       // After successful API call, navigate to login:
       // await this.router.navigate(['/login']);
