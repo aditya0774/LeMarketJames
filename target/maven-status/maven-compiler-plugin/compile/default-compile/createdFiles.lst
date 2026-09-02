@@ -1,1 +1,8 @@
+com\lemarketjames\controller\AuthController.class
+com\lemarketjames\dto\RegisterRequest.class
+com\lemarketjames\Greeter.class
 com\lemarketjames\Main.class
+com\lemarketjames\service\AuthService.class
+com\lemarketjames\config\SecurityConfig.class
+com\lemarketjames\dto\LoginRequest.class
+com\lemarketjames\service\AuthService$AuthResponse.class

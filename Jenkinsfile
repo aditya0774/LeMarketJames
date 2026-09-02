@@ -5,7 +5,13 @@ pipeline {
     }
 
     stages {
-        stage('Test Spring Boot application') {
+        stage('Test with Maven') {
+            steps {
+                sh 'mvn -B clean test'
+            }
+        }
+
+        stage('Build image') {
             steps {
                 sh 'mvn test'
             }

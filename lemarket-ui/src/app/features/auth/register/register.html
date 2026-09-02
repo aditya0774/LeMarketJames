@@ -245,6 +245,28 @@
     </div>
 
     <div>
+      <label>Investing experience</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" formControlName="investmentExperience" value="beginner" />
+          Beginner
+        </label>
+        <label class="radio-option">
+          <input type="radio" formControlName="investmentExperience" value="experienced" />
+          Experienced
+        </label>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="dateOfBirth">Date of birth</label>
+      <input id="dateOfBirth" formControlName="dateOfBirth" type="date" />
+      @if (form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched) {
+        <div class="field-error">Date of birth is required.</div>
+      }
+    </div>
+
+    <div class="field-group">
       <label for="email">Email</label>
       <input
         id="email"
@@ -275,7 +297,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="field-group">
       <label for="password">Password</label>
       <div class="password-field">
         <input
@@ -315,6 +337,13 @@
       </div>
     </div>
 
-    <button type="submit">Register</button>
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting()">Register</button>
   </form>
+
+  <p><a routerLink="/login">Already have an account? Log in</a></p>
 </section>
+
