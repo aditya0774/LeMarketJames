@@ -198,6 +198,37 @@
       </div>
     </div>
 
+    <div>
+      <label>Employment status <span class="required"></span></label>
+      <!-- Employment status is required: users must select either 'employed' or 'notEmployed' -->
+      <!-- Using radio buttons to clearly show the two mutually exclusive options -->
+      <div class="radio-group">
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="employmentStatus"
+            value="employed"
+            [(ngModel)]="registerData.employmentStatus"
+            (blur)="validateField('employmentStatus')"
+          />
+          Employed
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="employmentStatus"
+            value="notEmployed"
+            [(ngModel)]="registerData.employmentStatus"
+            (blur)="validateField('employmentStatus')"
+          />
+          Not employed
+        </label>
+      </div>
+      <div *ngIf="validationErrors['employmentStatus']" class="field-error">
+        {{ validationErrors['employmentStatus'] }}
+      </div>
+    </div>
+
     <div class="field-group">
       <label for="dateOfBirth">Date of birth</label>
       <input

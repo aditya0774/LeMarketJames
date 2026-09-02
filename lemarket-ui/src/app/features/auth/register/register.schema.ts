@@ -154,6 +154,11 @@ export const registerSchema = z
 
     investmentExperience: z.enum(['beginner', 'experienced']),
 
+    // Employment status is required: users must select either 'employed' or 'notEmployed'
+    employmentStatus: z.enum(['employed', 'notEmployed'], {
+      message: 'Employment status is required.',
+    }),
+
     dateOfBirth: z
       .string()
       .trim()
@@ -227,7 +232,7 @@ export const registerSchema = z
  * - Name: firstName (required), middleName (optional), lastName (required)
  * - Address: streetAddress, apartment (optional), city, state, zipCode
  * - Identity: ssn, dateOfBirth
- * - Financial: initialDeposit, investmentExperience ('beginner' | 'experienced')
+ * - Financial: initialDeposit, investmentExperience ('beginner' | 'experienced'), employmentStatus ('employed' | 'notEmployed')
  * - Contact: email, phoneNumber
  * - Security: password, confirmPassword
  */

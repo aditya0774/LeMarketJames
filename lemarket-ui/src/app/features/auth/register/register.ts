@@ -20,7 +20,7 @@ import { registerSchema, RegisterFormData } from './register.schema';
  * - Name fields: firstName (required), middleName (optional), lastName (required)
  * - Address fields: streetAddress, apartment (optional), city, state, zipCode
  * - Identity fields: ssn, dateOfBirth
- * - Financial fields: initialDeposit (minimum $5,000), investmentExperience
+ * - Financial fields: initialDeposit (minimum $5,000), investmentExperience, employmentStatus
  * - Contact fields: email, phoneNumber
  * - Security fields: password, confirmPassword
  * 
@@ -52,6 +52,7 @@ export class Register {
     ssn: '',
     initialDeposit: '',
     investmentExperience: 'beginner',
+    employmentStatus: 'employed',
     dateOfBirth: '',
     email: '',
     phoneNumber: '',
