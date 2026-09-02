@@ -246,24 +246,44 @@
 
     <div>
       <label>Investing experience</label>
+      <!-- Radio buttons give the user exactly two choices: beginner or experienced -->
       <div class="radio-group">
         <label class="radio-option">
-          <input type="radio" formControlName="investmentExperience" value="beginner" />
+          <input type="radio" name="investmentExperience" value="beginner" [(ngModel)]="registerData.investmentExperience" />
           Beginner
         </label>
         <label class="radio-option">
-          <input type="radio" formControlName="investmentExperience" value="experienced" />
+          <input
+            type="radio"
+            name="investmentExperience"
+            value="experienced"
+            [(ngModel)]="registerData.investmentExperience"
+            [disabled]="!isExperiencedAllowed()"
+          />
           Experienced
         </label>
+      </div>
+      <div *ngIf="!isExperiencedAllowed()" class="field-hint">
+        Experienced requires an initial deposit of $100,000 or more.
+      </div>
+      <div *ngIf="validationErrors['investmentExperience']" class="field-error">
+        {{ validationErrors['investmentExperience'] }}
       </div>
     </div>
 
     <div class="field-group">
       <label for="dateOfBirth">Date of birth</label>
-      <input id="dateOfBirth" formControlName="dateOfBirth" type="date" />
-      @if (form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched) {
-        <div class="field-error">Date of birth is required.</div>
-      }
+      <input
+        id="dateOfBirth"
+        name="dateOfBirth"
+        type="date"
+        [(ngModel)]="registerData.dateOfBirth"
+        (blur)="validateField('dateOfBirth')"
+        (input)="clearFieldError('dateOfBirth')"
+      />
+      <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
+        {{ validationErrors['dateOfBirth'] }}
+      </div>
     </div>
 
     <div class="field-group">
