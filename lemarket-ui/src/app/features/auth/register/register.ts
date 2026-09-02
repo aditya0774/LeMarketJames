@@ -15,7 +15,9 @@ export class Register {
   // Its shape matches RegisterFormData (inferred from register.schema.ts), so the form
   // fields and the validation rules defined in the schema can never fall out of sync.
   registerData: RegisterFormData = {
-    fullName: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
     streetAddress: '',
     apartment: '',
     city: '',

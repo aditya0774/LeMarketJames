@@ -4,18 +4,47 @@
   <!-- The form submit event calls the onSubmit method in the component -->
   <form (ngSubmit)="onSubmit()">
     <div class="field-group">
-      <label for="fullName">Full name</label>
-      <!-- This binds the input to registerData.fullName and validates it when the user leaves the field -->
+      <label for="firstName">First name <span class="required"></span></label>
       <input
-        id="fullName"
-        name="fullName"
+        id="firstName"
+        name="firstName"
         type="text"
-        [(ngModel)]="registerData.fullName"
-        (blur)="validateField('fullName')"
-        (input)="clearFieldError('fullName')"
+        [(ngModel)]="registerData.firstName"
+        (blur)="validateField('firstName')"
+        (input)="clearFieldError('firstName')"
       />
-      <div *ngIf="validationErrors['fullName']" class="field-error">
-        {{ validationErrors['fullName'] }}
+      <div *ngIf="validationErrors['firstName']" class="field-error">
+        {{ validationErrors['firstName'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="middleName">Middle name <span class="optional">(optional)</span></label>
+      <input
+        id="middleName"
+        name="middleName"
+        type="text"
+        [(ngModel)]="registerData.middleName"
+        (blur)="validateField('middleName')"
+        (input)="clearFieldError('middleName')"
+      />
+      <div *ngIf="validationErrors['middleName']" class="field-error">
+        {{ validationErrors['middleName'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="lastName">Last name <span class="required"></span></label>
+      <input
+        id="lastName"
+        name="lastName"
+        type="text"
+        [(ngModel)]="registerData.lastName"
+        (blur)="validateField('lastName')"
+        (input)="clearFieldError('lastName')"
+      />
+      <div *ngIf="validationErrors['lastName']" class="field-error">
+        {{ validationErrors['lastName'] }}
       </div>
     </div>
 

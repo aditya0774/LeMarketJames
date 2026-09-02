@@ -48,11 +48,24 @@ function calculateAge(dateOfBirth: string): number {
 // Each field lists its rules top to bottom; Zod stops at (and reports) the first rule that fails.
 export const registerSchema = z
   .object({
-    fullName: z
+    firstName: z
       .string()
       .trim()
-      .min(1, 'Full name is required.')
-      .regex(namePattern, 'Full name may only contain letters, spaces, hyphens, and apostrophes.'),
+      .min(1, 'First name is required.')
+      .regex(namePattern, 'First name may only contain letters, spaces, hyphens, and apostrophes.'),
+
+    middleName: z
+      .string()
+      .trim()
+      .refine((value) => value === '' || namePattern.test(value), {
+        message: 'Middle name may only contain letters, spaces, hyphens, and apostrophes.',
+      }),
+
+    lastName: z
+      .string()
+      .trim()
+      .min(1, 'Last name is required.')
+      .regex(namePattern, 'Last name may only contain letters, spaces, hyphens, and apostrophes.'),
 
     streetAddress: z
       .string()
