@@ -1,131 +1,360 @@
 <section class="register-page">
   <h2>Create your account</h2>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
+  <!-- Registration form: collects user identity, address, financial, and security information -->
+  <!-- All validation rules are defined in register.schema.ts using Zod -->
+  <!-- The form submit event calls the onSubmit method in the component -->
+  <form (ngSubmit)="onSubmit()">
+    <!-- Name fields: split into first, middle (optional), and last name for better data accuracy and internationalization support -->
+    <!-- This structure allows for flexible name handling (many cultures have multiple name components) -->
+    <!-- First name and last name are required; middle name is optional -->
     <div class="field-group">
-      <label for="username">Username</label>
-      <input id="username" formControlName="username" type="text" />
-      @if (form.get('username')?.invalid && form.get('username')?.touched) {
-        <div class="field-error">Username is required.</div>
-      }
+      <label for="firstName">First name <span class="required">*</span></label>
+      <!-- Required field: validates on blur and clears error on input -->
+      <input
+        id="firstName"
+        name="firstName"
+        type="text"
+        [(ngModel)]="registerData.firstName"
+        (blur)="validateField('firstName')"
+        (input)="clearFieldError('firstName')"
+      />
+      <div *ngIf="validationErrors['firstName']" class="field-error">
+        {{ validationErrors['firstName'] }}
+      </div>
     </div>
 
     <div class="field-group">
-      <label for="fullName">Name</label>
-      <input id="fullName" formControlName="fullName" type="text" />
-      @if (form.get('fullName')?.invalid && form.get('fullName')?.touched) {
-        <div class="field-error">Name is required.</div>
-      }
+      <label for="middleName">Middle name <span class="optional">(optional)</span></label>
+      <!-- Optional field: validation is skipped if empty, but format is checked if provided -->
+      <input
+        id="middleName"
+        name="middleName"
+        type="text"
+        [(ngModel)]="registerData.middleName"
+        (blur)="validateField('middleName')"
+        (input)="clearFieldError('middleName')"
+      />
+      <div *ngIf="validationErrors['middleName']" class="field-error">
+        {{ validationErrors['middleName'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="lastName">Last name <span class="required">*</span></label>
+      <!-- Required field: validates on blur and clears error on input -->
+      <input
+        id="lastName"
+        name="lastName"
+        type="text"
+        [(ngModel)]="registerData.lastName"
+        (blur)="validateField('lastName')"
+        (input)="clearFieldError('lastName')"
+      />
+      <div *ngIf="validationErrors['lastName']" class="field-error">
+        {{ validationErrors['lastName'] }}
+      </div>
     </div>
 
     <div class="field-group">
       <label>Address</label>
+      <!-- Professional address forms usually split the address into multiple fields for clarity and accuracy -->
       <div class="nested-field">
         <label for="streetAddress">Street address</label>
-        <input id="streetAddress" formControlName="streetAddress" type="text" />
-        @if (form.get('streetAddress')?.invalid && form.get('streetAddress')?.touched) {
-          <div class="field-error">Street address is required.</div>
-        }
+        <input
+          id="streetAddress"
+          name="streetAddress"
+          type="text"
+          [(ngModel)]="registerData.streetAddress"
+          (blur)="validateField('streetAddress')"
+          (input)="clearFieldError('streetAddress')"
+        />
+        <div *ngIf="validationErrors['streetAddress']" class="field-error">
+          {{ validationErrors['streetAddress'] }}
+        </div>
       </div>
 
       <div class="nested-field">
         <label for="apartment">Apartment, unit, suite, etc.</label>
-        <input id="apartment" formControlName="apartment" type="text" />
+        <input
+          id="apartment"
+          name="apartment"
+          type="text"
+          [(ngModel)]="registerData.apartment"
+          (blur)="validateField('apartment')"
+          (input)="clearFieldError('apartment')"
+        />
+        <div *ngIf="validationErrors['apartment']" class="field-error">
+          {{ validationErrors['apartment'] }}
+        </div>
       </div>
 
       <div class="nested-field">
         <label for="city">City</label>
-        <input id="city" formControlName="city" type="text" />
-        @if (form.get('city')?.invalid && form.get('city')?.touched) {
-          <div class="field-error">City is required.</div>
-        }
+        <input
+          id="city"
+          name="city"
+          type="text"
+          [(ngModel)]="registerData.city"
+          (blur)="validateField('city')"
+          (input)="clearFieldError('city')"
+        />
+        <div *ngIf="validationErrors['city']" class="field-error">
+          {{ validationErrors['city'] }}
+        </div>
       </div>
 
       <div class="nested-field">
         <label for="state">State</label>
-        <input id="state" formControlName="state" type="text" />
-        @if (form.get('state')?.invalid && form.get('state')?.touched) {
-          <div class="field-error">State is required.</div>
-        }
+        <input
+          id="state"
+          name="state"
+          type="text"
+          [(ngModel)]="registerData.state"
+          (blur)="validateField('state')"
+          (input)="clearFieldError('state')"
+        />
+        <div *ngIf="validationErrors['state']" class="field-error">
+          {{ validationErrors['state'] }}
+        </div>
       </div>
 
       <div class="nested-field">
         <label for="zipCode">ZIP code</label>
-        <input id="zipCode" formControlName="zipCode" type="text" />
-        @if (form.get('zipCode')?.invalid && form.get('zipCode')?.touched) {
-          <div class="field-error">ZIP code is required.</div>
-        }
-      </div>
-
-      <div class="nested-field">
-        <label for="country">Country</label>
-        <input id="country" formControlName="country" type="text" />
-        @if (form.get('country')?.invalid && form.get('country')?.touched) {
-          <div class="field-error">Country is required.</div>
-        }
+        <input
+          id="zipCode"
+          name="zipCode"
+          type="text"
+          maxlength="5"
+          [(ngModel)]="registerData.zipCode"
+          (blur)="validateField('zipCode')"
+          (input)="onZipCodeInput($event)"
+        />
+        <div *ngIf="validationErrors['zipCode']" class="field-error">
+          {{ validationErrors['zipCode'] }}
+        </div>
       </div>
     </div>
 
     <div class="field-group">
       <label for="ssn">SSN</label>
-      <input id="ssn" formControlName="ssn" type="text" maxlength="11" (input)="onSsnInput($event)" />
-      @if (form.get('ssn')?.invalid && form.get('ssn')?.touched) {
-        <div class="field-error">SSN must be 9 digits in the format xxx-xx-xxxx.</div>
-      }
+      <input
+        id="ssn"
+        name="ssn"
+        type="text"
+        maxlength="11"
+        [(ngModel)]="registerData.ssn"
+        (blur)="validateField('ssn')"
+        (input)="onSsnInput($event)"
+      />
+      <div *ngIf="validationErrors['ssn']" class="field-error">
+        {{ validationErrors['ssn'] }}
+      </div>
     </div>
 
     <div class="field-group">
       <label for="initialDeposit">Initial deposit amount</label>
-      <input id="initialDeposit" formControlName="initialDeposit" type="number" />
-      @if (form.get('initialDeposit')?.invalid && form.get('initialDeposit')?.touched) {
-        <div class="field-error">Initial deposit amount is required.</div>
-      }
+      <div class="currency-field">
+        <span class="currency-symbol">$</span>
+        <input
+          id="initialDeposit"
+          name="initialDeposit"
+          type="number"
+          min="5000"
+          [(ngModel)]="registerData.initialDeposit"
+          (blur)="validateField('initialDeposit')"
+          (input)="onInitialDepositInput()"
+        />
+      </div>
+      <div *ngIf="validationErrors['initialDeposit']" class="field-error">
+        {{ validationErrors['initialDeposit'] }}
+      </div>
     </div>
 
     <div>
       <label>Investing experience</label>
+      <!-- Radio buttons give the user exactly two choices: beginner or experienced -->
       <div class="radio-group">
         <label class="radio-option">
-          <input type="radio" formControlName="investmentExperience" value="beginner" />
+          <input type="radio" name="investmentExperience" value="beginner" [(ngModel)]="registerData.investmentExperience" />
           Beginner
         </label>
         <label class="radio-option">
-          <input type="radio" formControlName="investmentExperience" value="experienced" />
+          <input
+            type="radio"
+            name="investmentExperience"
+            value="experienced"
+            [(ngModel)]="registerData.investmentExperience"
+            [disabled]="!isExperiencedAllowed()"
+          />
           Experienced
         </label>
+      </div>
+      <div *ngIf="!isExperiencedAllowed()" class="field-hint">
+        Experienced requires an initial deposit of $100,000 or more.
+      </div>
+      <div *ngIf="validationErrors['investmentExperience']" class="field-error">
+        {{ validationErrors['investmentExperience'] }}
+      </div>
+    </div>
+
+    <div>
+      <label>Employment status <span class="required"></span></label>
+      <!-- Employment status is required: users must select either 'employed' or 'notEmployed' -->
+      <!-- Using radio buttons to clearly show the two mutually exclusive options -->
+      <div class="radio-group">
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="employmentStatus"
+            value="employed"
+            [(ngModel)]="registerData.employmentStatus"
+            (blur)="validateField('employmentStatus')"
+          />
+          Employed
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="employmentStatus"
+            value="notEmployed"
+            [(ngModel)]="registerData.employmentStatus"
+            (blur)="validateField('employmentStatus')"
+          />
+          Not employed
+        </label>
+      </div>
+      <div *ngIf="validationErrors['employmentStatus']" class="field-error">
+        {{ validationErrors['employmentStatus'] }}
       </div>
     </div>
 
     <div class="field-group">
       <label for="dateOfBirth">Date of birth</label>
-      <input id="dateOfBirth" formControlName="dateOfBirth" type="date" />
-      @if (form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched) {
-        <div class="field-error">Date of birth is required.</div>
-      }
+      <input
+        id="dateOfBirth"
+        name="dateOfBirth"
+        type="date"
+        [(ngModel)]="registerData.dateOfBirth"
+        (blur)="validateField('dateOfBirth')"
+        (input)="clearFieldError('dateOfBirth')"
+      />
+      <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
+        {{ validationErrors['dateOfBirth'] }}
+      </div>
+    </div>
+
+    <div>
+      <label>Investing experience</label>
+      <!-- Radio buttons give the user exactly two choices: beginner or experienced -->
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="investmentExperience" value="beginner" [(ngModel)]="registerData.investmentExperience" />
+          Beginner
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="investmentExperience"
+            value="experienced"
+            [(ngModel)]="registerData.investmentExperience"
+            [disabled]="!isExperiencedAllowed()"
+          />
+          Experienced
+        </label>
+      </div>
+      <div *ngIf="!isExperiencedAllowed()" class="field-hint">
+        Experienced requires an initial deposit of $100,000 or more.
+      </div>
+      <div *ngIf="validationErrors['investmentExperience']" class="field-error">
+        {{ validationErrors['investmentExperience'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="dateOfBirth">Date of birth</label>
+      <input
+        id="dateOfBirth"
+        name="dateOfBirth"
+        type="date"
+        [(ngModel)]="registerData.dateOfBirth"
+        (blur)="validateField('dateOfBirth')"
+        (input)="clearFieldError('dateOfBirth')"
+      />
+      <div *ngIf="validationErrors['dateOfBirth']" class="field-error">
+        {{ validationErrors['dateOfBirth'] }}
+      </div>
     </div>
 
     <div class="field-group">
       <label for="email">Email</label>
-      <input id="email" formControlName="email" type="email" />
-      @if (form.get('email')?.invalid && form.get('email')?.touched) {
-        <div class="field-error">A valid email is required.</div>
-      }
+      <input
+        id="email"
+        name="email"
+        type="email"
+        [(ngModel)]="registerData.email"
+        (blur)="validateField('email')"
+        (input)="clearFieldError('email')"
+      />
+      <div *ngIf="validationErrors['email']" class="field-error">
+        {{ validationErrors['email'] }}
+      </div>
     </div>
 
     <div class="field-group">
       <label for="phoneNumber">Phone</label>
-      <input id="phoneNumber" formControlName="phoneNumber" type="tel" maxlength="14" (input)="onPhoneInput($event)" />
-      @if (form.get('phoneNumber')?.invalid && form.get('phoneNumber')?.touched) {
-        <div class="field-error">Phone number must be 10 digits.</div>
-      }
+      <input
+        id="phoneNumber"
+        name="phoneNumber"
+        type="tel"
+        maxlength="14"
+        [(ngModel)]="registerData.phoneNumber"
+        (blur)="validateField('phoneNumber')"
+        (input)="onPhoneInput($event)"
+      />
+      <div *ngIf="validationErrors['phoneNumber']" class="field-error">
+        {{ validationErrors['phoneNumber'] }}
+      </div>
     </div>
 
     <div class="field-group">
       <label for="password">Password</label>
-      <input id="password" formControlName="password" type="password" />
-      @if (form.get('password')?.invalid && form.get('password')?.touched) {
-        <div class="field-error">Password must be at least 8 characters.</div>
-      }
+      <div class="password-field">
+        <input
+          id="password"
+          name="password"
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="registerData.password"
+          (blur)="validateField('password')"
+          (input)="clearFieldError('password')"
+        />
+        <button type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div *ngIf="validationErrors['password']" class="field-error">
+        {{ validationErrors['password'] }}
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="confirmPassword">Confirm password</label>
+      <div class="password-field">
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="registerData.confirmPassword"
+          (blur)="validateField('confirmPassword')"
+          (input)="clearFieldError('confirmPassword')"
+        />
+        <button type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div *ngIf="validationErrors['confirmPassword']" class="field-error">
+        {{ validationErrors['confirmPassword'] }}
+      </div>
     </div>
 
     @if (errorMessage()) {
