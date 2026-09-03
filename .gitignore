@@ -1,5 +1,5 @@
 # Java / Maven build output
-/target/
+/apps/backend/target/
 **/target/
 **/surefire-reports/
 **/test-classes/
@@ -7,11 +7,11 @@
 **/generated-test-sources/
 
 # Frontend build output
-lemarket-ui/node_modules/
-lemarket-ui/.angular/
-lemarket-ui/dist/
-lemarket-ui/coverage/
-lemarket-ui/.sass-cache/
+apps/frontend/node_modules/
+apps/frontend/.angular/
+apps/frontend/dist/
+apps/frontend/coverage/
+apps/frontend/.sass-cache/
 
 # IDE / editor metadata
 .idea/
