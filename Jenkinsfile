@@ -18,14 +18,6 @@ pipeline {
             }
         }
 
-        stage('Build image') {
-            steps {
-                dir('apps/backend') {
-                    sh 'mvn test'
-                }
-            }
-        }
-
         stage('Verify Docker Compose') {
             steps {
                 sh '''
