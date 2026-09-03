@@ -39,7 +39,7 @@ public class AuthService {
      *
      * @param jwtService the JWT service for token generation and validation
      */
-    public AuthService(JwtService jwtService) {
+    public AuthService(JwtService jwtService, @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
         this.lockoutDurationMs = lockoutDurationMs;
@@ -108,6 +108,14 @@ public class AuthService {
         String token = jwtService.generateToken(username);
         log.info("Login succeeded for username={}", username);
         return new LoginResult(username, "Login successful", token);
+    }
+
+    // Tracks a failed login and locks the account once MAX_FAILED_ATTEMPTS is reached
+    private void registerFailedAttempt(String username) {
+        int attempts = failedLoginAttempts.merge(username, 1, Integer::sum);
+        if (attempts >= MAX_FAILED_ATTEMPTS) {
+            lockedUntil.put(username, Instant.now().plusMillis(lockoutDurationMs));
+        }
     }
 
     /**
