@@ -3,11 +3,16 @@ package com.lemarketjames.auth;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,9 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    private static final int MAX_FAILED_ATTEMPTS = 3;
+
     private final Map<String, String> userStore = new ConcurrentHashMap<>();
+    private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
+    private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
+    private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final long lockoutDurationMs;
 
     /**
      * Constructs an AuthService with the given JwtService.
@@ -30,6 +42,7 @@ public class AuthService {
     public AuthService(JwtService jwtService) {
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
+        this.lockoutDurationMs = lockoutDurationMs;
     }
 
     /**
@@ -45,12 +58,17 @@ public class AuthService {
 
         String username = request.getUsername();
         String password = request.getPassword();
+        String email = request.getEmail().toLowerCase();
 
         if (userStore.containsKey(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
+        if (!registeredEmails.add(email)) {
+            throw new IllegalArgumentException("Email is already registered");
+        }
 
         userStore.put(username, encodePassword(password));
+        log.info("Registration succeeded for username={}", username);
         return new AuthResponse(username, "User registered successfully");
     }
 
@@ -67,13 +85,28 @@ public class AuthService {
 
         String username = request.getUsername();
         String password = request.getPassword();
+
+        Instant lockExpiry = lockedUntil.get(username);
+        if (lockExpiry != null) {
+            if (Instant.now().isBefore(lockExpiry)) {
+                log.warn("Login blocked for username={} due to active lockout", username);
+                throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
+            }
+            lockedUntil.remove(username);
+            failedLoginAttempts.remove(username);
+        }
+
         String storedPassword = userStore.get(username);
 
         if (storedPassword == null || !matchesPassword(password, storedPassword)) {
+            registerFailedAttempt(username);
+            log.warn("Login failed for username={}", username);
             throw new IllegalArgumentException("Invalid username or password");
         }
 
+        failedLoginAttempts.remove(username);
         String token = jwtService.generateToken(username);
+        log.info("Login succeeded for username={}", username);
         return new LoginResult(username, "Login successful", token);
     }
 
@@ -134,6 +167,9 @@ public class AuthService {
         }
         if (request.getDateOfBirth() == null) {
             throw new IllegalArgumentException("Date of birth is required");
+        }
+        if (!Boolean.TRUE.equals(request.getTermsAccepted())) {
+            throw new IllegalArgumentException("Terms and conditions must be accepted");
         }
     }
 
