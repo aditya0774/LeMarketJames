@@ -40,4 +40,5 @@ Three separate processes/containers, each on its own port: `frontend` (4200) →
 
 - Keep files small and single-responsibility — a class/component should do one thing.
 - Mirror naming across layers where it helps (e.g. `auth` package ↔ `features/auth` folder), but don't force a 1:1 mapping where it doesn't make sense.
+- Always document and comment while developing for better readability 
 - Develop with security as a priority
