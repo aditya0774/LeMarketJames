@@ -1,18 +1,40 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { Auth } from '../../../core/auth/auth';
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+  ],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
 })
+/**
+ * Login Component
+ *
+ * Renders the login form and delegates authentication to the Auth service.
+ * Styling mirrors the register page (mat-card, gradient background, password
+ * show/hide toggle) for visual consistency between the two auth screens.
+ */
 export class Login {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
   protected readonly form: ReturnType<FormBuilder['group']>;
+  // Tracks whether the password field currently shows plain text or is masked.
+  protected showPassword = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -41,5 +63,9 @@ export class Login {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  protected togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 }
