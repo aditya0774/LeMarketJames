@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthServiceTest {
 
@@ -19,7 +20,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(new JwtService("unit-test-signing-key-please-32bytes-minimum", 3600000));
+        authService = new AuthService(new JwtService("unit-test-signing-key-please-32bytes-minimum", 3600000), 200);
     }
 
     // A fully filled-out registration should succeed and return the new username.
@@ -111,6 +112,37 @@ class AuthServiceTest {
         String encoded = authService.encodePassword("Pass123!");
 
         assertEquals(true, authService.matchesPassword("Pass123!", encoded));
+    }
+
+    // Three consecutive wrong-password attempts must lock the account, even for the correct password afterwards.
+    @Test
+    void loginLocksAccountAfterThreeFailedAttempts() {
+        authService.register(validRegisterRequest("alice"));
+
+        for (int i = 0; i < 3; i++) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> authService.login(new LoginRequest("alice", "WrongPass!")));
+        }
+
+        IllegalArgumentException lockedException = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("alice", "Pass123!")));
+        assertTrue(lockedException.getMessage().contains("locked"));
+    }
+
+    // Once the lockout duration has passed, the account should accept correct credentials again.
+    @Test
+    void loginSucceedsAfterLockoutExpires() throws InterruptedException {
+        authService.register(validRegisterRequest("alice"));
+
+        for (int i = 0; i < 3; i++) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> authService.login(new LoginRequest("alice", "WrongPass!")));
+        }
+
+        Thread.sleep(250);
+
+        AuthService.LoginResult result = authService.login(new LoginRequest("alice", "Pass123!"));
+        assertEquals("alice", result.getUsername());
     }
 
     private RegisterRequest validRegisterRequest(String username) {

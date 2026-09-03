@@ -229,4 +229,52 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid username or password"));
     }
+
+    // The session cookie must be HttpOnly/Secure/SameSite so it can be safely reused on a later visit.
+    @Test
+    void loginCookieIsHardenedForSecureReturnVisits() throws Exception {
+        String registerJson = """
+                {
+                  "username": "cookieuser",
+                  "password": "Pass123!",
+                  "email": "cookieuser@example.com",
+                  "fullName": "Cookie User",
+                  "streetAddress": "123 Main St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "USA",
+                  "ssn": "123-45-6799",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "(555) 123-4567",
+                  "termsAccepted": true
+                }
+                """;
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerJson))
+                .andExpect(status().isCreated());
+
+        String loginJson = """
+                {
+                  "username": "cookieuser",
+                  "password": "Pass123!"
+                }
+                """;
+
+        String setCookieHeader = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getHeader("Set-Cookie");
+
+        assertNotNull(setCookieHeader);
+        assertTrue(setCookieHeader.contains("HttpOnly"));
+        assertTrue(setCookieHeader.contains("Secure"));
+        assertTrue(setCookieHeader.contains("SameSite=Lax"));
+    }
 }
