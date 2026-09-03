@@ -1,4 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.lemarketjames.GreeterTest
 -------------------------------------------------------------------------------
+<<<<<<< HEAD
 Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.102 s -- in com.lemarketjames.GreeterTest
+=======
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.lemarketjames.GreeterTest
+>>>>>>> 5520df7cd03c6a55e8f50681ffcc0088fdb4196a

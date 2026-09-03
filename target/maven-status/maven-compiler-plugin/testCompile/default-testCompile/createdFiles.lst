@@ -1,2 +1,4 @@
+com\lemarketjames\AuthControllerTest.class
 com\lemarketjames\GreeterTest.class
 com\lemarketjames\registration\RegistrationControllerTest.class
+com\lemarketjames\MainTest.class

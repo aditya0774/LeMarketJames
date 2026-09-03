@@ -1,6 +1,9 @@
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\Greeter.java
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\Main.java
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\registration\RegistrationController.java
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\registration\RegistrationRequest.java
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\UserAccount.java
-C:\Users\Administrator\Documents\Sprints\LeMarketJames\src\main\java\com\lemarketjames\UserAccountRepository.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\config\SecurityConfig.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\controller\AuthController.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\dto\LoginRequest.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\dto\RegisterRequest.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\Greeter.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\Main.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\security\JwtAuthenticationFilter.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\security\JwtService.java
+C:\Users\Administrator\Downloads\LeMarketJames\src\main\java\com\lemarketjames\service\AuthService.java

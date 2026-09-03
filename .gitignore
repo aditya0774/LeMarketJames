@@ -1,4 +1,24 @@
-target/
+# Java / Maven build output
+/target/
+**/target/
+**/surefire-reports/
+**/test-classes/
+**/generated-sources/
+**/generated-test-sources/
+
+# Frontend build output
+lemarket-ui/node_modules/
+lemarket-ui/.angular/
+lemarket-ui/dist/
+lemarket-ui/coverage/
+lemarket-ui/.sass-cache/
+
+# IDE / editor metadata
 .idea/
-*.iml
 .vscode/
+*.iml
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
