@@ -95,6 +95,7 @@ export class Register {
   // Tracks whether the password field currently shows plain text or is masked.
   showPassword = false;
 
+  // Auth sends the mapped registration payload to the backend.
   constructor(private readonly auth: Auth) {}
 
   /**
@@ -417,6 +418,7 @@ export class Register {
     this.submitting.set(true);
     
     try {
+      // Convert UI-only form fields into the backend registration DTO shape.
       const request: RegisterRequest = {
         username: `${result.data.firstName}${result.data.lastName}`.replace(/\s+/g, ''),
         password: result.data.password,

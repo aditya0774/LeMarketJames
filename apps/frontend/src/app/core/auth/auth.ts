@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 
 export interface RegisterRequest {
+  // Registration payload aligned with the Spring Boot RegisterRequest DTO.
   username: string;
   password: string;
   email: string;
