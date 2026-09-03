@@ -38,6 +38,9 @@ const namePattern = /^[A-Za-z' -]{2,60}$/;
 // Used for street address / apartment, since those legitimately need numbers (e.g. "123 Main St #4B").
 const addressPattern = /^[A-Za-z0-9\s.,#-]{2,100}$/;
 
+// Letters, numbers, underscores, and hyphens only, 3-20 characters.
+const usernamePattern = /^[A-Za-z0-9_-]{3,20}$/;
+
 // (XXX) XXX-XXXX — the format produced by formatPhoneNumber() in register.ts as the user types.
 const phonePattern = /^\(\d{3}\) \d{3}-\d{4}$/;
 
@@ -103,6 +106,14 @@ export const registerSchema = z
       .trim()
       .min(1, 'Last name is required.')
       .regex(namePattern, 'Last name may only contain letters, spaces, hyphens, and apostrophes.'),
+
+    username: z
+      .string()
+      .trim()
+      .min(1, 'Username is required.')
+      .min(3, 'Username must be between 3 and 20 characters.')
+      .max(20, 'Username must be between 3 and 20 characters.')
+      .regex(usernamePattern, 'Username may only contain letters, numbers, underscores, and hyphens.'),
 
     streetAddress: z
       .string()
