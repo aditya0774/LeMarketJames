@@ -7,10 +7,11 @@ RUN mvn -q package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 WORKDIR /app
 COPY --from=build /app/target/le-market-james-0.0.1-SNAPSHOT.jar app.jar
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
 EXPOSE 8081
 CMD ["java", "-jar", "app.jar"]

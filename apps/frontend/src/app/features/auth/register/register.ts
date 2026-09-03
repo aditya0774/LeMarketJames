@@ -13,6 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
+import { Auth, RegisterRequest } from '../../../core/auth/auth';
 
 @Component({
   imports: [
@@ -93,6 +94,8 @@ export class Register {
   validationErrors: Record<string, string> = {};
   // Tracks whether the password field currently shows plain text or is masked.
   showPassword = false;
+
+  constructor(private readonly auth: Auth) {}
 
   /**
    * Checks if the user's investment experience level can be set to 'experienced'.
@@ -380,12 +383,11 @@ export class Register {
    *    - Clears all error messages
    *    - Sets the general error message to null
    *    - Sets submitting state (disables submit button)
-   *    - Logs the registration data to the console (ready for API integration)
-   *    - Would typically make an API call to submit the registration
+  *    - Maps the validated form data to the backend registration DTO
+  *    - Sends the registration request through the Auth service
    * 
-   * Note: Currently logs to console; integrate with actual registration API endpoint
    */
-  onSubmit() {
+  async onSubmit() {
     const result = registerSchema.safeParse(this.registerData);
 
     if (!result.success) {
@@ -415,10 +417,27 @@ export class Register {
     this.submitting.set(true);
     
     try {
-      console.log('Registration successful! Data:', result.data);
-      // TODO: Integrate with actual registration API endpoint
-      // After successful API call, navigate to login:
-      // await this.router.navigate(['/login']);
+      const request: RegisterRequest = {
+        username: `${result.data.firstName}${result.data.lastName}`.replace(/\s+/g, ''),
+        password: result.data.password,
+        email: result.data.email,
+        fullName: [result.data.firstName, result.data.middleName, result.data.lastName]
+          .filter((name) => name.trim())
+          .join(' '),
+        streetAddress: result.data.streetAddress,
+        apartment: result.data.apartment,
+        city: result.data.city,
+        state: result.data.state,
+        zipCode: result.data.zipCode,
+        country: 'USA',
+        ssn: result.data.ssn,
+        initialDeposit: Number(result.data.initialDeposit),
+        investmentExperience: result.data.investmentExperience,
+        dateOfBirth: result.data.dateOfBirth,
+        phoneNumber: result.data.phoneNumber,
+      };
+
+      await this.auth.register(request);
     } catch (error) {
       this.errorMessage.set('Registration failed. Please try again.');
     } finally {

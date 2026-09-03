@@ -9,14 +9,14 @@ export interface RegisterRequest {
   email: string;
   fullName: string;
   streetAddress: string;
-  apartment?: string;
+  apartment: string;
   city: string;
   state: string;
   zipCode: string;
   country: string;
   ssn: string;
   initialDeposit: number;
-  investmentExperience: string;
+  investmentExperience: 'beginner' | 'experienced';
   dateOfBirth: string;
   phoneNumber: string;
 }
