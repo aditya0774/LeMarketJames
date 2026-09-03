@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS holdings;
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS instruments;
 DROP TABLE IF EXISTS clients;
+DROP TABLE IF EXISTS addresses;
 
 -- Clients: retail traders
 CREATE TABLE clients (
