@@ -8,12 +8,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
 
     private final Map<String, String> userStore = new ConcurrentHashMap<>();
+    private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -27,9 +29,13 @@ public class AuthService {
 
         String username = request.getUsername();
         String password = request.getPassword();
+        String email = request.getEmail().toLowerCase();
 
         if (userStore.containsKey(username)) {
             throw new IllegalArgumentException("Username is already taken");
+        }
+        if (!registeredEmails.add(email)) {
+            throw new IllegalArgumentException("Email is already registered");
         }
 
         userStore.put(username, encodePassword(password));
@@ -84,6 +90,9 @@ public class AuthService {
         }
         if (request.getDateOfBirth() == null) {
             throw new IllegalArgumentException("Date of birth is required");
+        }
+        if (!Boolean.TRUE.equals(request.getTermsAccepted())) {
+            throw new IllegalArgumentException("Terms and conditions must be accepted");
         }
     }
 

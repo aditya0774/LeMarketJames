@@ -11,6 +11,11 @@ pipeline {
                     sh 'mvn -B clean test'
                 }
             }
+            post {
+                always {
+                    junit 'apps/backend/target/surefire-reports/*.xml'
+                }
+            }
         }
 
         stage('Build image') {

@@ -19,6 +19,7 @@ public class RegisterRequest {
     private String investmentExperience;
     private LocalDate dateOfBirth;
     private String phoneNumber;
+    private Boolean termsAccepted;
 
     public RegisterRequest() {
     }
@@ -148,6 +149,14 @@ public class RegisterRequest {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public Boolean getTermsAccepted() {
+        return termsAccepted;
+    }
+
+    public void setTermsAccepted(Boolean termsAccepted) {
+        this.termsAccepted = termsAccepted;
     }
 }
 
