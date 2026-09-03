@@ -341,3 +341,5 @@ The Jenkins agent requires:
 - Permission to run Docker commands
 
 To set up the pipeline, create a **Pipeline job** in Jenkins and point it to this repository with "Pipeline script from SCM" selected.
+
+## ER Diagram

@@ -10,6 +10,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for the Main controller endpoints.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class MainTest {
@@ -17,6 +20,11 @@ class MainTest {
     @Autowired
     private MockMvc mockMvc;
 
+    /**
+     * Tests that the greeting endpoint returns the expected message.
+     *
+     * @throws Exception if a test error occurs
+     */
     @Test
     void greetingEndpointReturnsExpectedMessage() throws Exception {
         mockMvc.perform(get("/"))

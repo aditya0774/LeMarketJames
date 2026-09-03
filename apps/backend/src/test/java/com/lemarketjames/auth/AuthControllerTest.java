@@ -17,6 +17,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for the AuthController endpoints.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
@@ -27,7 +30,9 @@ class AuthControllerTest {
     @Autowired
     private AuthService authService;
 
-    // Passwords must be stored as a salted hash, never in plain text.
+    /**
+     * Tests that passwords are properly encoded with bcrypt hashing.
+     */
     @Test
     void passwordIsHashedWithSaltedHash() {
         String rawPassword = "Pass123!";
@@ -37,7 +42,12 @@ class AuthControllerTest {
         assertTrue(authService.matchesPassword(rawPassword, encodedPassword));
     }
 
-    // Full end-to-end flow: register over HTTP, then log in, access a protected route, and reject unauthenticated access.
+    /**
+     * Tests the complete registration and login flow.
+     * Verifies that a user can register, login, and access protected endpoints with the JWT token.
+     *
+     * @throws Exception if a test error occurs
+     */
     @Test
     void registerAndLoginEndpointsWork() throws Exception {
         String registerJson = """
