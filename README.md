@@ -44,6 +44,90 @@ LeMarketJames/
 └── README.md                      # This file
 ```
 
+## Architecture
+
+This section describes the current system architecture. As new features are added, this will be updated to reflect changes.
+
+### System Topology
+
+LeMarketJames is a **3-tier distributed architecture** with three independent services communicating over HTTP:
+
+```
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
+│   Angular       │         │   Spring Boot    │         │   PostgreSQL    │
+│   Frontend      │────────▶│   Backend        │────────▶│   Database      │
+│  (port 4200)    │ REST    │  (port 8081)     │ JDBC    │  (port 5432)    │
+│                 │◀────────│                  │◀────────│                 │
+│                 │ Cookies │                  │         │                 │
+└─────────────────┘         └──────────────────┘         └─────────────────┘
+```
+
+**Key Characteristics:**
+- **Stateless backend:** No session state; authentication via JWT tokens
+- **Unidirectional data flow:** Browser → Backend → Database (only backend talks to database)
+- **Containerized:** Each service can run independently or together via Docker Compose
+- **Separation of concerns:** Frontend handles UI/UX; backend handles business logic and security; database stores persistent state
+
+### Authentication Flow
+
+The application implements **JWT (JSON Web Token) based authentication** with HTTP-only cookies:
+
+1. **Registration:** User submits credentials and profile info to `/api/auth/register`
+   - Backend validates input, hashes password with BCrypt, stores user in database
+   - Returns success/error response
+
+2. **Login:** User submits username/password to `/api/auth/login`
+   - Backend verifies credentials, generates JWT token
+   - Returns JWT token in an HTTP-only, secure cookie
+   - Token includes username as subject, issued-at time, and expiration time
+
+3. **Authenticated Requests:** Subsequent requests include JWT cookie automatically
+   - `JwtAuthenticationFilter` extracts token from cookie
+   - `JwtService` validates token signature and expiration
+   - If valid, request is authenticated; invalid tokens return 401 Unauthorized
+
+4. **Logout:** Clears the JWT cookie on the client side
+
+### Technology Stack
+
+| Layer | Technology | Purpose | Version |
+|-------|-----------|---------|---------|
+| **Frontend** | Angular | Reactive UI framework | 22 |
+| | Angular Material | Design system and component library | 22 |
+| | TypeScript | Type-safe JavaScript | Latest |
+| | Zod | Schema validation (client-side) | Latest |
+| **Backend** | Spring Boot | Web framework and server | 3 |
+| | Spring Security | Authentication and authorization | 6 |
+| | JWT (io.jsonwebtoken) | Token generation and validation | Latest |
+| | Maven | Dependency management and build | 3.9.9+ |
+| | JUnit 5 | Unit and integration testing | 5 |
+| **Database** | PostgreSQL | Relational database | 16 |
+| | Raw SQL | Schema definition (no migration tool) | SQL |
+| **Deployment** | Docker | Container runtime | Latest |
+| | Docker Compose | Multi-container orchestration | v2+ |
+
+### Current Features & Endpoints
+
+**Authentication Module** (`com.lemarketjames.auth`):
+- `POST /api/auth/register` — Register new user with profile information
+- `POST /api/auth/login` — Authenticate user and receive JWT token
+- `POST /api/auth/logout` — Clear authentication cookie
+- `GET /api/auth/me` — Retrieve current authenticated user (requires valid JWT)
+
+**Data Models:**
+- User registration captures: username, password, email, full name, address, SSN, date of birth, initial deposit, investment experience, phone number
+- Passwords stored as BCrypt hashes with salt
+- User data stored in PostgreSQL (schema: `database/schema/001_core_schema.sql`)
+
+### Design Principles
+
+- **Feature-based organization:** Code organized by business capability (e.g., `auth/` package contains all auth-related classes)
+- **Separation of layers:** Controllers handle HTTP; services handle business logic; DTOs transfer data
+- **Security first:** Passwords hashed with BCrypt; JWT tokens signed; HTTP-only cookies prevent XSS attacks
+- **Scalability:** Stateless backend allows horizontal scaling; database can be scaled independently
+
+---
+
 ## Prerequisites
 
 Before running the application, ensure you have the following installed:
