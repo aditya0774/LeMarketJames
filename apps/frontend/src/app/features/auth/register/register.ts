@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
+import { Auth } from '../../../core/auth/auth';
 
 @Component({
   imports: [
@@ -62,6 +63,8 @@ export class Register {
   // Error message and submitting state as signals for reactive template updates
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
+
+  constructor(private readonly auth: Auth, private readonly router: Router) {}
 
   // This object stores exactly the data required by the registration form.
   // Its shape matches RegisterFormData (inferred from register.schema.ts), so the form
@@ -382,8 +385,8 @@ export class Register {
    *    - Sets submitting state (disables submit button)
    *    - Logs the registration data to the console (ready for API integration)
    *    - Would typically make an API call to submit the registration
-   * 
-   * Note: Currently logs to console; integrate with actual registration API endpoint
+   * Note: submits to POST /api/auth/register via the Auth service; on success
+   * navigates to /login, on failure surfaces field or general error messages.
    */
   onSubmit() {
     const result = registerSchema.safeParse(this.registerData);
@@ -413,16 +416,43 @@ export class Register {
     this.validationErrors = {};
     this.errorMessage.set(null);
     this.submitting.set(true);
-    
-    try {
-      console.log('Registration successful! Data:', result.data);
-      // TODO: Integrate with actual registration API endpoint
-      // After successful API call, navigate to login:
-      // await this.router.navigate(['/login']);
-    } catch (error) {
-      this.errorMessage.set('Registration failed. Please try again.');
-    } finally {
-      this.submitting.set(false);
-    }
+
+    const data = result.data;
+    // No standalone username field is collected; email doubles as the login identifier.
+    this.auth
+      .register({
+        username: data.email,
+        password: data.password,
+        email: data.email,
+        fullName: [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' '),
+        streetAddress: data.streetAddress,
+        apartment: data.apartment || undefined,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        country: 'US',
+        ssn: data.ssn,
+        initialDeposit: Number(data.initialDeposit),
+        investmentExperience: data.investmentExperience,
+        employmentStatus: data.employmentStatus === 'employed' ? 'EMPLOYED' : 'UNEMPLOYED',
+        dateOfBirth: data.dateOfBirth,
+        phoneNumber: data.phoneNumber,
+      })
+      .then(
+        () => {
+          this.router.navigate(['/login']);
+        },
+        (error) => {
+          const body = error?.error;
+          if (body?.errors) {
+            this.validationErrors = body.errors;
+          } else {
+            this.errorMessage.set(body?.message ?? 'Registration failed. Please try again.');
+          }
+        },
+      )
+      .finally(() => {
+        this.submitting.set(false);
+      });
   }
 }

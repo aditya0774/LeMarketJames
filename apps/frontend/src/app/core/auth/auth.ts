@@ -17,6 +17,7 @@ export interface RegisterRequest {
   ssn: string;
   initialDeposit: number;
   investmentExperience: string;
+  employmentStatus: string;
   dateOfBirth: string;
   phoneNumber: string;
 }

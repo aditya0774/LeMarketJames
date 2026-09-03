@@ -52,6 +52,7 @@ class AuthControllerTest {
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567"
                 }
@@ -89,5 +90,77 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void registerRejectsMissingMandatoryFieldsWithMessages() throws Exception {
+        String incompleteJson = """
+                {
+                  "username": "incomplete",
+                  "password": "Pass123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(incompleteJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.email").exists())
+                .andExpect(jsonPath("$.errors.fullName").exists())
+                .andExpect(jsonPath("$.errors.streetAddress").exists());
+    }
+
+    @Test
+    void registerRejectsDuplicateEmail() throws Exception {
+        String registerJson = """
+                {
+                  "username": "firstuser",
+                  "password": "Pass123!",
+                  "email": "duplicate@example.com",
+                  "fullName": "First User",
+                  "streetAddress": "1 First St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "USA",
+                  "ssn": "123-45-6789",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "(555) 123-4567"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerJson))
+                .andExpect(status().isCreated());
+
+        String duplicateEmailJson = """
+                {
+                  "username": "seconduser",
+                  "password": "Pass123!",
+                  "email": "duplicate@example.com",
+                  "fullName": "Second User",
+                  "streetAddress": "2 Second St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "USA",
+                  "ssn": "987-65-4321",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "(555) 987-6543"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateEmailJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Email is already registered"));
     }
 }

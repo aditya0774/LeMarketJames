@@ -37,7 +37,8 @@ LeMarketJames/
 │       ├── nginx.conf             # SPA routing config for the container
 │       └── Dockerfile             # Frontend container image definition
 ├── database/                      # Database schemas (raw SQL, no migration tool)
-│   └── schema/001_core_schema.sql # PostgreSQL schema
+│   └── schema/                    # Numbered, ordered SQL files applied in order
+│       ├── 001_core_schema.sql
 ├── docker-compose.yml             # 3 services: frontend (4200), backend (8081), db (5432)
 ├── Jenkinsfile                    # CI/CD pipeline
 ├── AGENTS.md                      # Conventions for contributors and AI agents
@@ -54,8 +55,11 @@ Before running the application, ensure you have the following installed:
 | Maven | 3.9.9 or higher | `mvn -version` |
 | Node.js | 11.16.0 or higher | `node -version` |
 | npm | 11.16.0 or higher | `npm -version` |
-| Docker | (optional, for containerized deployment) | `docker --version` |
-| Docker Compose | v2+ (optional, for full stack) | `docker compose version` |
+| Docker | required (runs PostgreSQL locally; also used for containerized deployment) | `docker --version` |
+| Docker Compose | v2+ | `docker compose version` |
+| psql / a Postgres client | to apply `database/schema/*.sql` | `psql --version` |
+
+**PostgreSQL is required even for local (non-Docker) backend development.** The backend persists to Postgres via JPA and fails to start without a reachable database — there is no in-memory fallback.
 
 ## Running the Application
 
@@ -64,6 +68,20 @@ Choose one of the three methods below based on your use case:
 ### Method 1: Local Development (Maven + npm)
 
 This is the recommended approach for active development, as it provides hot-reload for both backend and frontend.
+
+**Database Setup (required before starting the backend):**
+
+1. Start just the `db` service (Postgres 16) in the background:
+   ```bash
+   docker compose up -d db
+   ```
+
+2. Apply the schema files **in numeric order** (only needed once, or after `docker compose down -v`):
+   ```bash
+   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
+   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   ```
+   Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
 
 **Backend Setup (Spring Boot on port 8081):**
 
@@ -81,7 +99,13 @@ This is the recommended approach for active development, as it provides hot-relo
    ```bash
    mvn spring-boot:run
    ```
-   The backend will be available at `http://localhost:8081`
+   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/paysprint` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
+
+4. Confirm the backend can reach the database:
+   ```bash
+   curl http://localhost:8081/actuator/health
+   ```
+   Expect `{"status":"UP"}`. `{"status":"DOWN"}` usually means the `db` container isn't running or the schema hasn't been applied yet.
 
 **Frontend Setup (Angular on port 4200):**
 
@@ -103,6 +127,7 @@ This is the recommended approach for active development, as it provides hot-relo
 
 4. Access the application:
    - **Registration Form:** `http://localhost:4200/register`
+   - **Login:** `http://localhost:4200/login`
    - **Home:** `http://localhost:4200`
 
 **Frontend Features:**
@@ -118,7 +143,7 @@ This is the recommended approach for active development, as it provides hot-relo
 - **State-based Management:** Using Angular signals for reactive state updates
 - **Responsive Design:** Mobile, tablet, and desktop layouts
 
-**Note:** The database is not required for local frontend development. If you need to test the full registration flow with backend validation, ensure the Spring Boot backend is also running on `http://localhost:8081`
+**Note:** The frontend itself has no database dependency. But to exercise registration/login end-to-end, the backend must be running on `http://localhost:8081` *and* connected to a schema-initialized Postgres instance (see Database Setup above).
 
 ---
 
@@ -155,12 +180,23 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
    - Spring Boot backend: `http://localhost:8081`
    - PostgreSQL database: `localhost:5432`
 
-2. View logs:
+2. Apply the schema (schema application is manual, not automated — see `database/README.md`):
+   ```bash
+   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
+   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   ```
+
+3. Confirm the backend is up and connected to the database:
+   ```bash
+   curl http://localhost:8081/actuator/health
+   ```
+
+4. View logs:
    ```bash
    docker compose logs -f backend
    ```
 
-3. Stop all services:
+5. Stop all services:
    ```bash
    docker compose down
    ```
@@ -213,11 +249,12 @@ Once the application is running (via any of the three methods), you can access:
 | **Spring Boot Backend** | `http://localhost:8081` | REST API endpoints |
 | **Auth Register API** | `POST http://localhost:8081/api/auth/register` | Register new user |
 | **Auth Login API** | `POST http://localhost:8081/api/auth/login` | User login |
-| **PostgreSQL Database** | `localhost:5432` | Database server (Method 3 only) |
+| **Health Check** | `GET http://localhost:8081/actuator/health` | Backend + DB liveness (`UP`/`DOWN`) |
+| **PostgreSQL Database** | `localhost:5432` | Database server |
 
 **Frontend Routes:**
 - `/register` - User registration page with comprehensive form
-- `/login` - User login (if implemented)
+- `/login` - User login
 
 See [apps/backend/src/main/java/com/lemarketjames/auth/AuthController.java](apps/backend/src/main/java/com/lemarketjames/auth/AuthController.java) for complete API endpoint definitions.
 
@@ -287,17 +324,26 @@ java -version
   npm cache clean --force
   ```
 
-### Database Connection Refused (Docker Compose)
+### Database Connection Refused (Docker Compose or Local Dev)
 
-- Verify all services are running:
+- Check `GET http://localhost:8081/actuator/health` first — `{"status":"DOWN"}` means the backend can't reach Postgres.
+
+- Verify all services are running (Docker Compose):
   ```bash
   docker compose ps
   ```
 
-- Check if the database is healthy:
+- For local dev (Method 1), confirm the `db` container is up:
   ```bash
+  docker compose up -d db
   docker compose logs db
   ```
+
+- Confirm the schema was applied — `spring.jpa.hibernate.ddl-auto=validate` means the backend refuses to start if expected tables/columns are missing:
+  ```bash
+  psql -h localhost -U paysprint -d paysprint -c "\dt"
+  ```
+  If tables are missing, re-run the `psql -f database/schema/...sql` commands from the Database Setup section, in order.
 
 - Ensure PostgreSQL has time to start (it may take 10-15 seconds):
   ```bash

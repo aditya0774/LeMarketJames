@@ -33,7 +33,7 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                     (request, response, authException) -> response.sendError(401)))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/auth/register", "/api/auth/login").permitAll()
+                .requestMatchers("/", "/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 

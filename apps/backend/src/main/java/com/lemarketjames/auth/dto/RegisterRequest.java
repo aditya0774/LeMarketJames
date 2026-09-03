@@ -17,6 +17,7 @@ public class RegisterRequest {
     private String ssn;
     private BigDecimal initialDeposit;
     private String investmentExperience;
+    private String employmentStatus;
     private LocalDate dateOfBirth;
     private String phoneNumber;
 
@@ -132,6 +133,14 @@ public class RegisterRequest {
 
     public void setInvestmentExperience(String investmentExperience) {
         this.investmentExperience = investmentExperience;
+    }
+
+    public String getEmploymentStatus() {
+        return employmentStatus;
+    }
+
+    public void setEmploymentStatus(String employmentStatus) {
+        this.employmentStatus = employmentStatus;
     }
 
     public LocalDate getDateOfBirth() {
