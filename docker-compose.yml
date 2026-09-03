@@ -1,6 +1,13 @@
 services:
-  app:
-    build: .
+  frontend:
+    build: ./apps/frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./apps/backend
     ports:
       - "8081:8081"
     depends_on:
@@ -9,6 +16,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/paysprint
       SPRING_DATASOURCE_USERNAME: paysprint
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   db:
     image: postgres:16-alpine
@@ -17,9 +25,9 @@ services:
       POSTGRES_USER: paysprint
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
-      # Only db is reachable from the host. app is not. This mirrors a real
-      # deployment where the database is internal but needs to be accessible
-      # to DBA tooling running on the developer's machine during development.
+      # Db is reachable from the host too, for DBA tooling on the developer's
+      # machine during development (frontend/backend never call db directly
+      # from the browser — only the backend container talks to db).
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data

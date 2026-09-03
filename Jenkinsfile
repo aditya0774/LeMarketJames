@@ -7,13 +7,17 @@ pipeline {
     stages {
         stage('Test with Maven') {
             steps {
-                sh 'mvn -B clean test'
+                dir('apps/backend') {
+                    sh 'mvn -B clean test'
+                }
             }
         }
 
         stage('Build image') {
             steps {
-                sh 'mvn test'
+                dir('apps/backend') {
+                    sh 'mvn test'
+                }
             }
         }
 
@@ -74,18 +78,18 @@ pipeline {
                 sh '''
                     echo "Container user and group:"
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose exec -T app id
+                        docker compose exec -T backend id
                     else
-                        docker-compose exec -T app id
+                        docker-compose exec -T backend id
                     fi
                     response=$(curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 1 http://localhost:8081/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
                     echo "Spring Boot container logs:"
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose logs app
+                        docker compose logs backend
                     else
-                        docker-compose logs app
+                        docker-compose logs backend
                     fi
                 '''
             }
