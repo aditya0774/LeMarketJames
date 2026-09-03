@@ -1,37 +1,39 @@
 <section class="register-page">
   <h2>Create your account:</h2>
 
-  <form>
+  <form (ngSubmit)="register()" #registrationForm="ngForm">
     <div>
       <label for="firstName">First name: </label>
-      <input id="firstName" name="firstName" type="text" />
+      <input id="firstName" name="firstName" type="text" [(ngModel)]="form.firstName" required />
     </div>
 
     <div>
       <label for="lastName">Last name: </label>
-      <input id="lastName" name="lastName" type="text" />
+      <input id="lastName" name="lastName" type="text" [(ngModel)]="form.lastName" required />
     </div>
 
     <div>
       <label for="address">Address: </label>
-      <input id="address" name="address" type="text" />
+      <input id="address" name="address" type="text" [(ngModel)]="form.address" required />
     </div>
 
     <div>
       <label for="email">Email: </label>
-      <input id="email" name="email" type="email" />
+      <input id="email" name="email" type="email" [(ngModel)]="form.email" required />
     </div>
 
     <div>
       <label for="phoneNumber">Phone number: </label>
-      <input id="phoneNumber" name="phoneNumber" type="tel" />
+      <input id="phoneNumber" name="phoneNumber" type="tel" [(ngModel)]="form.phoneNumber" required />
     </div>
 
     <div>
       <label for="password">Password: </label>
-      <input id="password" name="password" type="password" />
+      <input id="password" name="password" type="password" [(ngModel)]="form.password" required minlength="8" />
     </div>
 
-    <button type="submit">Register</button>
+    <button type="submit" [disabled]="registrationForm.invalid">Register</button>
   </form>
+  @if (message) { <p>{{ message }}</p> }
+  @if (error) { <p>{{ error }}</p> }
 </section>
