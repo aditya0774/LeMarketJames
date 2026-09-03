@@ -1,23 +1,71 @@
-<section class="login-page">
-  <h2>Log in</h2>
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Welcome back</mat-card-title>
+      <mat-card-subtitle>Log in to your LeMarket James account</mat-card-subtitle>
+    </mat-card-header>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <div>
-      <label for="username">Username</label>
-      <input id="username" formControlName="username" type="text" />
-    </div>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <mat-form-field class="full-width">
+          <mat-label>Username</mat-label>
+          <input matInput id="username" formControlName="username" type="text" />
+          @if (form.get('username')?.hasError('required')) {
+            <mat-error>Username is required.</mat-error>
+          }
+        </mat-form-field>
 
-    <div>
-      <label for="password">Password</label>
-      <input id="password" formControlName="password" type="password" />
-    </div>
+        <div class="password-field-wrapper">
+          <mat-form-field class="full-width">
+            <mat-label>Password</mat-label>
+            <input
+              matInput
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              formControlName="password"
+            />
+            @if (form.get('password')?.hasError('required')) {
+              <mat-error>Password is required.</mat-error>
+            }
+          </mat-form-field>
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
 
-    @if (errorMessage()) {
-      <p class="error">{{ errorMessage() }}</p>
-    }
+        <div class="form-actions">
+          @if (errorMessage()) {
+            <div class="error-message">
+              <mat-icon>error</mat-icon>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
 
-    <button type="submit" [disabled]="submitting()">Log in</button>
-  </form>
+          <button mat-raised-button color="primary" type="submit" [disabled]="submitting()" class="submit-button">
+            @if (submitting()) {
+              <ng-container>
+                <mat-icon>hourglass_empty</mat-icon>
+                <span>Logging in...</span>
+              </ng-container>
+            } @else {
+              <ng-container>
+                <mat-icon>login</mat-icon>
+                <span>Log in</span>
+              </ng-container>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
 
-  <p><a routerLink="/register">Need an account? Register</a></p>
-</section>
+    <mat-card-footer class="footer">
+      <p>Need an account? <a routerLink="/register" class="login-link">Register</a></p>
+    </mat-card-footer>
+  </mat-card>
+</div>
+
