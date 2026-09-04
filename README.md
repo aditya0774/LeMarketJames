@@ -53,13 +53,12 @@ This section describes the current system architecture. As new features are adde
 LeMarketJames is a **3-tier distributed architecture** with three independent services communicating over HTTP:
 
 ```
-┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   Angular       │         │   Spring Boot    │         │   PostgreSQL    │
-│   Frontend      │────────▶│   Backend        │────────▶│   Database      │
-│  (port 4200)    │ REST    │  (port 8081)     │ JDBC    │  (port 5432)    │
-│                 │◀────────│                  │◀────────│                 │
-│                 │ Cookies │                  │         │                 │
-└─────────────────┘         └──────────────────┘         └─────────────────┘
+┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
+│  Angular        │            │  Spring Boot    │            │  PostgreSQL     │
+│  Frontend       │ --REST-->  │  Backend        │   JDBC     │  Database       │
+│  (port 4200)    │<-Cookies-- │  (port 8081)    │<---------> │  (port 5432)    │
+│                 │            │                 │            │                 │
+└─────────────────┘            └─────────────────┘            └─────────────────┘
 ```
 
 **Key Characteristics:**
@@ -426,4 +425,12 @@ The Jenkins agent requires:
 
 To set up the pipeline, create a **Pipeline job** in Jenkins and point it to this repository with "Pipeline script from SCM" selected.
 
+## Javadocs
+
+Local path to Javadocs, see Amara for access
+
+C:\Users\Administrator\LeMarketJames\apps\backend\target\reports\apidocs\index.html
+
 ## ER Diagram
+
+Will be added later to GitHub later but is completed, see Amara for access
