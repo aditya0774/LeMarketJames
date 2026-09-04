@@ -425,37 +425,35 @@ The Jenkins agent requires:
 
 To set up the pipeline, create a **Pipeline job** in Jenkins and point it to this repository with "Pipeline script from SCM" selected.
 
-## Javadocs
+## API Documentation (Javadoc)
 
-The backend API is documented using Javadoc comments. To generate and view the documentation:
+The backend API is fully documented with Javadoc comments. The documentation is automatically generated and published to GitHub Pages on every push.
 
-### Generating Updated Javadoc
+**View the Javadoc online:** [LeMarketJames API Documentation](https://aditya0774.github.io/LeMarketJames/apidocs/)
 
-1. Navigate to the backend directory:
-   ```bash
-   cd apps/backend
-   ```
+### GitHub Pages Setup
 
-2. Generate updated Javadoc:
-   ```bash
-   mvn javadoc:javadoc
-   ```
+GitHub Pages is configured to host the Javadoc automatically. The workflow:
 
-3. Documentation will be generated at `apps/backend/target/reports/apidocs/index.html`
+1. On every push to the repository, a GitHub Actions workflow generates the Javadoc
+2. The generated documentation is deployed to the `gh-pages` branch
+3. GitHub automatically serves it at `https://aditya0774/LeMarketJames/apidocs/`
 
-### Viewing Javadoc in Your Browser
+**Requirements:**
+- Repository must be public (or private with GitHub Pages enabled)
+- GitHub Actions must be enabled in repository settings
+- Configure GitHub Pages to deploy from the `gh-pages` branch
 
-**Windows:** Run the provided script from the project root:
+### Generating Javadoc Locally
+
+To generate and view Javadoc locally:
+
 ```bash
-open-javadoc.bat
+cd apps/backend
+mvn javadoc:javadoc
 ```
 
-**Mac/Linux:** Run the provided script from the project root:
-```bash
-./open-javadoc.sh
-```
-
-The scripts will automatically open the Javadoc in your default browser.
+Documentation will be generated at `apps/backend/target/reports/apidocs/index.html`
 
 ## ER Diagram
 
