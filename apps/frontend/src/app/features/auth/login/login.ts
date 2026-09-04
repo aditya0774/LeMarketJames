@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -58,8 +59,14 @@ export class Login {
     try {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
       await this.router.navigate(['/']);
-    } catch {
-      this.errorMessage.set('Invalid username or password.');
+    } catch (error) {
+      const serverMessage =
+        error instanceof HttpErrorResponse &&
+        typeof error.error === 'object' &&
+        typeof error.error?.message === 'string'
+          ? error.error.message
+          : null;
+      this.errorMessage.set(serverMessage ?? 'Invalid username or password.');
     } finally {
       this.submitting.set(false);
     }
