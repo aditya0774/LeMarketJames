@@ -55,8 +55,8 @@ LeMarketJames is a **3-tier distributed architecture** with three independent se
 ```
 ┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
 │  Angular        │            │  Spring Boot    │            │  PostgreSQL     │
-│  Frontend       │ --REST-->  │  Backend        │   JDBC     │  Database       │
-│  (port 4200)    │<-Cookies-- │  (port 8081)    │<---------> │  (port 5432)    │
+│  Frontend       │  --REST->  │  Backend        │            │  Database       │
+│  (port 4200)    │ <-Cookies- │  (port 8081)    │<---JDBC--->│  (port 5432)    │
 │                 │            │                 │            │                 │
 └─────────────────┘            └─────────────────┘            └─────────────────┘
 ```
@@ -427,9 +427,35 @@ To set up the pipeline, create a **Pipeline job** in Jenkins and point it to thi
 
 ## Javadocs
 
-Local path to Javadocs, see Amara for access
+The backend API is documented using Javadoc comments. To generate and view the documentation:
 
-C:\Users\Administrator\LeMarketJames\apps\backend\target\reports\apidocs\index.html
+### Generating Updated Javadoc
+
+1. Navigate to the backend directory:
+   ```bash
+   cd apps/backend
+   ```
+
+2. Generate updated Javadoc:
+   ```bash
+   mvn javadoc:javadoc
+   ```
+
+3. Documentation will be generated at `apps/backend/target/reports/apidocs/index.html`
+
+### Viewing Javadoc in Your Browser
+
+**Windows:** Run the provided script from the project root:
+```bash
+open-javadoc.bat
+```
+
+**Mac/Linux:** Run the provided script from the project root:
+```bash
+./open-javadoc.sh
+```
+
+The scripts will automatically open the Javadoc in your default browser.
 
 ## ER Diagram
 
