@@ -105,7 +105,6 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-<<<<<<< HEAD
     @Test
     void registerRejectsMissingMandatoryFieldsWithMessages() throws Exception {
         String incompleteJson = """
@@ -125,17 +124,6 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerRejectsDuplicateEmail() throws Exception {
-        String registerJson = """
-                {
-                  "username": "firstuser",
-                  "password": "Pass123!",
-                  "email": "duplicate@example.com",
-                  "fullName": "First User",
-                  "streetAddress": "1 First St",
-=======
-    // Registering with a username that already exists should return a 400 with an explanatory message.
-    @Test
     void registerRejectsDuplicateUsername() throws Exception {
         String registerJson = """
                 {
@@ -144,7 +132,6 @@ class AuthControllerTest {
                   "email": "dup@example.com",
                   "fullName": "Dup User",
                   "streetAddress": "123 Main St",
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
@@ -152,15 +139,10 @@ class AuthControllerTest {
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
-<<<<<<< HEAD
                   "employmentStatus": "employed",
-                  "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567"
-=======
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": true
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
                 }
                 """;
 
@@ -169,15 +151,6 @@ class AuthControllerTest {
                         .content(registerJson))
                 .andExpect(status().isCreated());
 
-<<<<<<< HEAD
-        String duplicateEmailJson = """
-                {
-                  "username": "seconduser",
-                  "password": "Pass123!",
-                  "email": "duplicate@example.com",
-                  "fullName": "Second User",
-                  "streetAddress": "2 Second St",
-=======
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerJson))
@@ -185,7 +158,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Username is already taken"));
     }
 
-    // Registering with an email that's already in use (different username) should return a 400.
     @Test
     void registerRejectsDuplicateEmail() throws Exception {
         String firstRegisterJson = """
@@ -195,22 +167,14 @@ class AuthControllerTest {
                   "email": "shared@example.com",
                   "fullName": "First User",
                   "streetAddress": "123 Main St",
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
                   "country": "USA",
-<<<<<<< HEAD
-                  "ssn": "987-65-4321",
-                  "initialDeposit": 500,
-                  "investmentExperience": "beginner",
-                  "employmentStatus": "employed",
-                  "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 987-6543"
-=======
                   "ssn": "123-45-6780",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": true
@@ -230,21 +194,15 @@ class AuthControllerTest {
                   "ssn": "123-45-6781",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": true
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
                 }
                 """;
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-<<<<<<< HEAD
-                        .content(duplicateEmailJson))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Email is already registered"));
-    }
-=======
                         .content(firstRegisterJson))
                 .andExpect(status().isCreated());
 
@@ -255,7 +213,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Email is already registered"));
     }
 
-    // Registering without accepting the terms and conditions should return a 400.
     @Test
     void registerRejectsWhenTermsNotAccepted() throws Exception {
         String registerJson = """
@@ -272,6 +229,7 @@ class AuthControllerTest {
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": false
@@ -285,7 +243,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Terms and conditions must be accepted"));
     }
 
-    // Logging in with a username/password that doesn't match any account should return a 400.
     @Test
     void loginRejectsInvalidCredentials() throws Exception {
         String loginJson = """
@@ -302,7 +259,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Invalid username or password"));
     }
 
-    // The session cookie must be HttpOnly/Secure/SameSite so it can be safely reused on a later visit.
     @Test
     void loginCookieIsHardenedForSecureReturnVisits() throws Exception {
         String registerJson = """
@@ -319,6 +275,7 @@ class AuthControllerTest {
                   "ssn": "123-45-6799",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": true
@@ -349,5 +306,4 @@ class AuthControllerTest {
         assertTrue(setCookieHeader.contains("Secure"));
         assertTrue(setCookieHeader.contains("SameSite=Lax"));
     }
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
 }

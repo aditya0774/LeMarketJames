@@ -55,13 +55,14 @@
         </dependency>
 
         <dependency>
-<<<<<<< HEAD
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-=======
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
             <scope>test</scope>
         </dependency>
 
