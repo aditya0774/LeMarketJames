@@ -98,6 +98,9 @@ export class Register {
   // Tracks whether the password field currently shows plain text or is masked.
   showPassword = false;
 
+  // Auth sends the mapped registration payload to the backend.
+  constructor(private readonly auth: Auth) {}
+
   /**
    * Checks if the user's investment experience level can be set to 'experienced'.
    * 
@@ -389,7 +392,7 @@ export class Register {
    * Note: submits to POST /api/auth/register via the Auth service; on success
    * navigates to /login, on failure surfaces field or general error messages.
    */
-  onSubmit() {
+  async onSubmit() {
     const result = registerSchema.safeParse(this.registerData);
 
     if (!result.success) {
