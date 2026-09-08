@@ -75,6 +75,7 @@ export class Register {
     firstName: '',
     middleName: '',
     lastName: '',
+    username: '',
     streetAddress: '',
     apartment: '',
     city: '',

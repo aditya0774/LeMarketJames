@@ -368,6 +368,24 @@
         <!-- SECURITY SECTION -->
         <h3 class="section-title">Security</h3>
 
+        <mat-form-field class="full-width">
+          <mat-label>Username <span class="required">*</span></mat-label>
+          <input
+            matInput
+            id="username"
+            name="username"
+            [(ngModel)]="registerData.username"
+            (blur)="validateField('username')"
+            (input)="clearFieldError('username')"
+          />
+          <mat-error *ngIf="validationErrors['username']">
+            {{ validationErrors['username'] }}
+          </mat-error>
+        </mat-form-field>
+        @if (validationErrors['username']) {
+          <div class="error-display">{{ validationErrors['username'] }}</div>
+        }
+
         <div class="password-field-wrapper">
           <mat-form-field class="full-width">
             <mat-label>Password <span class="required">*</span></mat-label>

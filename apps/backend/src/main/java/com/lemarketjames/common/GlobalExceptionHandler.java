@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+<<<<<<< HEAD
 /** Translates feature-thrown exceptions into structured, consistent error responses. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,5 +22,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", ex.getMessage()));
+=======
+/** Converts validation errors into 400 responses instead of leaking a 500 with a stack trace. */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+>>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
     }
 }

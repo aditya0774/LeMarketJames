@@ -55,8 +55,13 @@
         </dependency>
 
         <dependency>
+<<<<<<< HEAD
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+=======
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+>>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
             <scope>test</scope>
         </dependency>
 
@@ -84,6 +89,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Print each test's status to the console instead of only the final summary. -->
+                    <useFile>false</useFile>
+                    <reportFormat>plain</reportFormat>
+                </configuration>
             </plugin>
         </plugins>
     </build>
