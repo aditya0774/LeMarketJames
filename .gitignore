@@ -6,11 +6,6 @@
 **/generated-sources/
 **/generated-test-sources/
 
-# Allow javadocs to be committed
-!/apps/backend/target/reports/
-!/apps/backend/target/reports/apidocs/
-!/apps/backend/target/reports/apidocs/**
-
 # Frontend build output
 apps/frontend/node_modules/
 apps/frontend/.angular/
