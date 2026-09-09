@@ -9,29 +9,22 @@ import com.lemarketjames.auth.domain.ClientRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
-<<<<<<< HEAD
 import com.lemarketjames.common.ValidationException;
-=======
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< HEAD
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
-=======
 import java.time.Instant;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
 
 /**
  * Service class providing authentication and authorization business logic.
@@ -40,26 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class AuthService {
 
-<<<<<<< HEAD
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final ClientRepository clientRepository;
-    private final AddressRepository addressRepository;
-    private final AccountRepository accountRepository;
-
-    public AuthService(JwtService jwtService,
-                        ClientRepository clientRepository,
-                        AddressRepository addressRepository,
-                        AccountRepository accountRepository) {
-        this.passwordEncoder = new BCryptPasswordEncoder();
-        this.jwtService = jwtService;
-        this.clientRepository = clientRepository;
-        this.addressRepository = addressRepository;
-        this.accountRepository = accountRepository;
-    }
-
-    @Transactional
-=======
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final int MAX_FAILED_ATTEMPTS = 3;
 
@@ -67,17 +40,30 @@ public class AuthService {
     private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
     private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
     private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
+    private final ClientRepository clientRepository;
+    private final AddressRepository addressRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final long lockoutDurationMs;
 
     /**
-     * Constructs an AuthService with the given JwtService.
-     * Initializes the password encoder and user store.
+    * Constructs an AuthService with its authentication and persistence dependencies.
      *
      * @param jwtService the JWT service for token generation and validation
+     * @param clientRepository repository for client records
+     * @param addressRepository repository for client addresses
+     * @param accountRepository repository for trading accounts
      */
-    public AuthService(JwtService jwtService, @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
+    public AuthService(
+            JwtService jwtService,
+            ClientRepository clientRepository,
+            AddressRepository addressRepository,
+            AccountRepository accountRepository,
+            @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
+        this.clientRepository = clientRepository;
+        this.addressRepository = addressRepository;
+        this.accountRepository = accountRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
         this.lockoutDurationMs = lockoutDurationMs;
@@ -91,22 +77,17 @@ public class AuthService {
      * @return an AuthResponse with the registered username and success message
      * @throws IllegalArgumentException if validation fails or username is already taken
      */
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
     public AuthResponse register(RegisterRequest request) {
         validateRegisterRequest(request);
 
         String username = request.getUsername();
-<<<<<<< HEAD
-        String email = request.getEmail();
-=======
         String password = request.getPassword();
         String email = request.getEmail().toLowerCase();
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
 
         if (clientRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
-<<<<<<< HEAD
+
         if (clientRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email is already registered");
         }
@@ -145,14 +126,8 @@ public class AuthService {
         account.setOpenedDate(LocalDate.now());
         accountRepository.save(account);
 
-=======
-        if (!registeredEmails.add(email)) {
-            throw new IllegalArgumentException("Email is already registered");
-        }
-
-        userStore.put(username, encodePassword(password));
         log.info("Registration succeeded for username={}", username);
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
+
         return new AuthResponse(username, "User registered successfully");
     }
 
@@ -169,11 +144,6 @@ public class AuthService {
 
         String username = request.getUsername();
         String password = request.getPassword();
-<<<<<<< HEAD
-
-        ClientEntity client = clientRepository.findByUsername(username).orElse(null);
-        if (client == null || !matchesPassword(password, client.getPassword())) {
-=======
 
         Instant lockExpiry = lockedUntil.get(username);
         if (lockExpiry != null) {
@@ -190,7 +160,6 @@ public class AuthService {
         if (storedPassword == null || !matchesPassword(password, storedPassword)) {
             registerFailedAttempt(username);
             log.warn("Login failed for username={}", username);
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
             throw new IllegalArgumentException("Invalid username or password");
         }
 
@@ -291,22 +260,12 @@ public class AuthService {
         validateRequired(request.getPassword(), "Password is required");
     }
 
-<<<<<<< HEAD
     private void requireField(Map<String, String> errors, String field, String value, String message) {
         if (value == null || value.isBlank()) {
             errors.put(field, message);
         }
     }
 
-=======
-    /**
-     * Validates that a string value is not null or blank.
-     *
-     * @param value the string value to validate
-     * @param message the error message to throw if validation fails
-     * @throws IllegalArgumentException if the value is null or blank
-     */
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
     private void validateRequired(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
