@@ -25,7 +25,10 @@ jobs:
           cache: maven
       
       - name: Generate Javadocs
-        run: cd apps/backend && mvn clean javadoc:javadoc
+        run: cd apps/backend && mvn clean javadoc:javadoc -e
+      
+      - name: Check if Javadocs generated
+        run: ls -la apps/backend/target/ | grep apidocs || echo "apidocs directory not found"
       
       - name: Deploy Javadocs to /docs folder
         run: |
