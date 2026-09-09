@@ -2,7 +2,7 @@ name: Generate and Deploy Javadocs
 
 on:
   push:
-    branches: [ main ]
+    branches: [ maintenance/docs ]
   workflow_dispatch:
 
 jobs:
