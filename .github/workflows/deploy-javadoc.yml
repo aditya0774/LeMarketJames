@@ -30,8 +30,10 @@ jobs:
           mvn clean javadoc:javadoc
       
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./apps/backend/target/reports/apidocs
-          destination_dir: apidocs
+          path: ./apps/backend/target/reports/apidocs
+      
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
