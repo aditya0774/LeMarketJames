@@ -1,0 +1,39 @@
+name: Generate and Deploy Javadocs
+
+on:
+  push:
+    branches: [ maintenance/docs ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Generate Javadocs
+        run: cd apps/backend && mvn javadoc:javadoc
+      
+      - name: Deploy Javadocs to /docs folder
+        run: |
+          mkdir -p docs
+          rm -rf docs/*
+          cp -r ./apps/backend/target/apidocs/* docs/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git commit -m "Update Javadocs" || true
+          git push
