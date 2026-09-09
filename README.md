@@ -55,8 +55,8 @@ LeMarketJames is a **3-tier distributed architecture** with three independent se
 ```
 ┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
 │  Angular        │            │  Spring Boot    │            │  PostgreSQL     │
-│  Frontend       │ --REST-->  │  Backend        │   JDBC     │  Database       │
-│  (port 4200)    │<-Cookies-- │  (port 8081)    │<---------> │  (port 5432)    │
+│  Frontend       │  --REST->  │  Backend        │            │  Database       │
+│  (port 4200)    │ <-Cookies- │  (port 8081)    │<---JDBC--->│  (port 5432)    │
 │                 │            │                 │            │                 │
 └─────────────────┘            └─────────────────┘            └─────────────────┘
 ```
@@ -433,4 +433,4 @@ C:\Users\Administrator\LeMarketJames\apps\backend\target\reports\apidocs\index.h
 
 ## ER Diagram
 
-Will be added later to GitHub later but is completed, see Amara for access
+![ER Diagram](lebron_erd.png)
