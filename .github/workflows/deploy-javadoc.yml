@@ -1,44 +1,22 @@
-name: Deploy Javadoc to GitHub Pages
+name: Deploy Javadoc
 
 on:
   push:
     branches:
-      - main
       - maintenance-docs
+      - main
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-    
+      contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Java 21
-        uses: actions/setup-java@v5
+      - name: Deploy JavaDoc 🚀
+        uses: MathieuSoysal/Javadoc-publisher.yml@v3.0.2
         with:
-          java-version: '21'
-          distribution: 'temurin'
-      
-      - name: Generate Javadoc
-        run: |
-          cd apps/backend
-          mvn clean javadoc:javadoc
-      
-      - name: Deploy to GitHub Pages
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git checkout --orphan gh-pages
-          git rm -rf .
-          cp -r apps/backend/target/reports/apidocs/* .
-          git add .
-          git commit -m "Deploy Javadoc from ${{ github.sha }}"
-          git push -f origin gh-pages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          javadoc-branch: javadoc
+          java-version: 21
+          target-folder: javadoc
+          project: maven
