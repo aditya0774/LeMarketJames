@@ -20,3 +20,4 @@ jobs:
           java-version: 21
           target-folder: javadoc
           project: maven
+          working-directory: apps/backend
