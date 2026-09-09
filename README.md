@@ -427,9 +427,9 @@ To set up the pipeline, create a **Pipeline job** in Jenkins and point it to thi
 
 ## Javadocs
 
-Local path to Javadocs, see Amara for access
+Viewable at the following link:
 
-C:\Users\Administrator\LeMarketJames\apps\backend\target\reports\apidocs\index.html
+https://aditya0774.github.io/LeMarketJames/
 
 ## ER Diagram
 
