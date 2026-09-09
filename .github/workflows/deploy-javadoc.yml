@@ -33,10 +33,12 @@ jobs:
           mvn clean javadoc:javadoc
       
       - name: Deploy to GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./apps/backend/target/reports/apidocs
-      
-      - name: Publish to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout --orphan gh-pages
+          git rm -rf .
+          cp -r apps/backend/target/reports/apidocs/* .
+          git add .
+          git commit -m "Deploy Javadoc from ${{ github.sha }}"
+          git push -f origin gh-pages
