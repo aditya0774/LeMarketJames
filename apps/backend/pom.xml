@@ -82,14 +82,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <configuration>
+                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+                    <destDir>apidocs</destDir>
+                </configuration>
             </plugin>
         </plugins>
     </build>
