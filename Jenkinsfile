@@ -48,7 +48,7 @@ pipeline {
         stage('Verify PostgreSQL connection') {
             steps {
                 sh '''
-                    echo "PostgreSQL connection: host=db port=5432 database=paysprint user=paysprint"
+                    echo "PostgreSQL connection: host=db port=5432 database=lemarket user=lemarket"
                     if docker compose version >/dev/null 2>&1; then
                         compose() { docker compose "$@"; }
                     else
@@ -56,7 +56,7 @@ pipeline {
                     fi
 
                     for attempt in $(seq 1 30); do
-                        if compose exec -T db pg_isready -U paysprint -d paysprint >/dev/null 2>&1; then
+                        if compose exec -T db pg_isready -U lemarket -d lemarket >/dev/null 2>&1; then
                             echo "PostgreSQL is accepting connections"
                             exit 0
                         fi

@@ -13,16 +13,16 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/paysprint
-      SPRING_DATASOURCE_USERNAME: paysprint
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: paysprint
-      POSTGRES_USER: paysprint
+      POSTGRES_DB: lemarket
+      POSTGRES_USER: lemarket
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
@@ -37,4 +37,3 @@ volumes:
     # Named volume: persists Postgres data across `docker compose down` and
     # `docker compose up`. Use `docker compose down -v` to also remove this
     # volume, which wipes the database and starts fresh on the next `up`.
-
