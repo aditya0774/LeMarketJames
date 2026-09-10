@@ -100,6 +100,15 @@
                     <reportFormat>plain</reportFormat>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+                    <destDir>apidocs</destDir>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
