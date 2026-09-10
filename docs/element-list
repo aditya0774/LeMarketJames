@@ -5,3 +5,5 @@ com.lemarketjames.auth.dto
 com.lemarketjames.auth.security
 com.lemarketjames.common
 com.lemarketjames.config
+com.lemarketjames.quotes
+com.lemarketjames.quotes.dto
