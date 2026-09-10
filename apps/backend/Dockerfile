@@ -1,4 +1,5 @@
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+docker-compose down
+docker-compose up -d --buildFROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 COPY pom.xml .
