@@ -9,6 +9,7 @@ import com.lemarketjames.auth.domain.ClientRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
+import com.lemarketjames.common.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +73,7 @@ class AuthServiceTest {
         RegisterRequest request = validRegisterRequest("bob");
         request.setEmail(null);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        assertThrows(ValidationException.class, () -> authService.register(request));
     }
 
     // The initial deposit amount is mandatory, so a null value should be rejected.
@@ -81,7 +82,7 @@ class AuthServiceTest {
         RegisterRequest request = validRegisterRequest("bob");
         request.setInitialDeposit(null);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        assertThrows(ValidationException.class, () -> authService.register(request));
     }
 
     // Registration must be refused unless the client explicitly accepts the terms and conditions.
@@ -181,6 +182,7 @@ class AuthServiceTest {
         request.setSsn("123-45-6789");
         request.setInitialDeposit(BigDecimal.valueOf(500));
         request.setInvestmentExperience("beginner");
+        request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));
         request.setPhoneNumber("(555) 123-4567");
         request.setTermsAccepted(true);

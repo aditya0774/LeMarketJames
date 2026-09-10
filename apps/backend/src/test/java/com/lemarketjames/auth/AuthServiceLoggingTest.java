@@ -104,6 +104,7 @@ class AuthServiceLoggingTest {
         request.setSsn("123-45-6789");
         request.setInitialDeposit(BigDecimal.valueOf(500));
         request.setInvestmentExperience("beginner");
+        request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));
         request.setPhoneNumber("(555) 123-4567");
         request.setTermsAccepted(true);

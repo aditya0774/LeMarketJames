@@ -84,17 +84,18 @@ public class AuthService {
         String password = request.getPassword();
         String email = request.getEmail().toLowerCase();
 
-        if (clientRepository.existsByUsername(username)) {
+        if (clientRepository.existsByUsername(username) || userStore.containsKey(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
 
-        if (clientRepository.existsByEmail(email)) {
+        if (clientRepository.existsByEmail(email) || registeredEmails.contains(email)) {
             throw new IllegalArgumentException("Email is already registered");
         }
 
         ClientEntity client = new ClientEntity();
         client.setUsername(username);
-        client.setPassword(encodePassword(request.getPassword()));
+        String encodedPassword = encodePassword(request.getPassword());
+        client.setPassword(encodedPassword);
         client.setEmail(email);
         client.setFullName(request.getFullName());
         client.setDateOfBirth(request.getDateOfBirth());
@@ -125,6 +126,10 @@ public class AuthService {
         account.setTradingEnabled(true);
         account.setOpenedDate(LocalDate.now());
         accountRepository.save(account);
+
+        // Store password and email in memory for fast lookup
+        userStore.put(username, encodedPassword);
+        registeredEmails.add(email);
 
         log.info("Registration succeeded for username={}", username);
 
