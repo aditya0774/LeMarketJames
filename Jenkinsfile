@@ -73,21 +73,41 @@ pipeline {
         stage('Run smoke test') {
             steps {
                 sh '''
-                    echo "Container user and group:"
+                    set -eu
+
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose exec -T backend id
+                        compose() { docker compose "$@"; }
                     else
-                        docker-compose exec -T backend id
+                        compose() { docker-compose "$@"; }
                     fi
-                    response=$(curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 1 http://localhost:8081/)
+
+                    echo "Container user and group:"
+                    compose exec -T backend id
+
+                    echo "Waiting for backend health endpoint"
+                    healthy=0
+                    for attempt in $(seq 1 60); do
+                        status=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:8081/actuator/health || true)
+                        if [ "$status" = "200" ]; then
+                            healthy=1
+                            break
+                        fi
+                        sleep 1
+                    done
+
+                    if [ "$healthy" -ne 1 ]; then
+                        echo "Backend did not become healthy in time"
+                        compose ps
+                        compose logs backend
+                        exit 1
+                    fi
+
+                    response=$(curl --fail --silent --show-error http://localhost:8081/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
+
                     echo "Spring Boot container logs:"
-                    if docker compose version >/dev/null 2>&1; then
-                        docker compose logs backend
-                    else
-                        docker-compose logs backend
-                    fi
+                    compose logs backend
                 '''
             }
         }
