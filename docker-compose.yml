@@ -37,4 +37,3 @@ volumes:
     # Named volume: persists Postgres data across `docker compose down` and
     # `docker compose up`. Use `docker compose down -v` to also remove this
     # volume, which wipes the database and starts fresh on the next `up`.
-

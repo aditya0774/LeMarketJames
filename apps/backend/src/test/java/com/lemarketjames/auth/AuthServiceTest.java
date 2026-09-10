@@ -1,5 +1,11 @@
 package com.lemarketjames.auth;
 
+import com.lemarketjames.auth.domain.AccountEntity;
+import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.auth.domain.AddressEntity;
+import com.lemarketjames.auth.domain.AddressRepository;
+import com.lemarketjames.auth.domain.ClientEntity;
+import com.lemarketjames.auth.domain.ClientRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
@@ -13,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
 
@@ -20,7 +30,23 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(new JwtService("unit-test-signing-key-please-32bytes-minimum", 3600000), 200);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        AddressRepository addressRepository = mock(AddressRepository.class);
+        AccountRepository accountRepository = mock(AccountRepository.class);
+
+        when(clientRepository.existsByUsername(anyString())).thenReturn(false);
+        when(clientRepository.existsByEmail(anyString())).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(addressRepository.save(any(AddressEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(accountRepository.save(any(AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        authService = new AuthService(
+                new JwtService("unit-test-signing-key-please-32bytes-minimum", 3600000),
+                clientRepository,
+                addressRepository,
+                accountRepository,
+                200
+        );
     }
 
     // A fully filled-out registration should succeed and return the new username.

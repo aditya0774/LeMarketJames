@@ -281,7 +281,6 @@ public class RegisterRequest {
         this.investmentExperience = investmentExperience;
     }
 
-<<<<<<< HEAD
     public String getEmploymentStatus() {
         return employmentStatus;
     }
@@ -290,13 +289,6 @@ public class RegisterRequest {
         this.employmentStatus = employmentStatus;
     }
 
-=======
-    /**
-     * Gets the date of birth.
-     *
-     * @return the date of birth
-     */
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
