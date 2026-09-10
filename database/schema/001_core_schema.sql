@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS market_quotes;
 DROP TABLE IF EXISTS holdings;
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS instruments;
+DROP TABLE IF EXISTS addresses;
 DROP TABLE IF EXISTS clients;
 DROP TABLE IF EXISTS addresses;
 
@@ -17,13 +18,13 @@ CREATE TABLE clients (
     client_id       SERIAL PRIMARY KEY,
     username        VARCHAR(100) UNIQUE NOT NULL,
     password        VARCHAR(255) NOT NULL, -- hashed password
-    email           VARCHAR(100) NOT NULL,
+    email           VARCHAR(100) UNIQUE NOT NULL,
     full_name       TEXT NOT NULL,
     date_of_birth   DATE NOT NULL,
     phone           VARCHAR(20) NOT NULL,
     registered_date TIMESTAMP NOT NULL DEFAULT NOW(),
     last_login      TIMESTAMP,
-    ssn            VARCHAR(11) UNIQUE, -- format: XXX-XX-XXXX
+    ssn            VARCHAR(11), -- format: XXX-XX-XXXX
     employment_status VARCHAR(20) NOT NULL DEFAULT 'EMPLOYED'
                     CHECK (employment_status IN ('EMPLOYED', 'SELF_EMPLOYED', 'RETIRED', 'STUDENT', 'UNEMPLOYED', 'OTHER')),
     employer_name   VARCHAR(200),
@@ -141,6 +142,12 @@ INSERT INTO market_quotes (instrument_id, bid_price, ask_price, last_updated) VA
     (2, 429.80, 429.90, NOW()),
     (3, 175.25, 175.35, NOW());
 
+-- Placeholder BCrypt hash of "ChangeMe123!" — seed data only, never used to log in.
+INSERT INTO clients (username, password, email, full_name, date_of_birth, phone, registered_date, ssn, employment_status, employer_name, occupation) VALUES
+    ('joanna_trader',  '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5F8YoTKZ5nCwZ3bJ.i9v0lYyF7X5u', 'joanna@example.com',  'Joanna Smith',   '1990-03-15', '555-0101', NOW() - INTERVAL '6 months', '123-45-6789', 'EMPLOYED', 'TechCorp Inc', 'Software Engineer'),
+    ('david_investor', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5F8YoTKZ5nCwZ3bJ.i9v0lYyF7X5u', 'david@example.com',   'David Chen',     '1985-07-22', '555-0102', NOW() - INTERVAL '3 months', '234-56-7890', 'SELF_EMPLOYED', 'Chen Consulting LLC', 'Business Consultant'),
+    ('priya_analyst',  '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5F8YoTKZ5nCwZ3bJ.i9v0lYyF7X5u', 'priya@example.com',   'Priya Patel',    '1995-11-08', '555-0103', NOW() - INTERVAL '1 month', '345-67-8901', 'EMPLOYED', 'FinanceFlow Analytics', 'Data Analyst');
+
 INSERT INTO addresses (client_id, address_type, street_address, city, state, postal_code, country) VALUES
     (1, 'RESIDENTIAL', '123 Oak Street', 'San Francisco', 'CA', '94102', 'US'),
     (1, 'MAILING', '123 Oak Street', 'San Francisco', 'CA', '94102', 'US'),
@@ -148,11 +155,6 @@ INSERT INTO addresses (client_id, address_type, street_address, city, state, pos
     (2, 'MAILING', '456 Pine Avenue', 'New York', 'NY', '10001', 'US'),
     (3, 'RESIDENTIAL', '789 Elm Boulevard', 'Austin', 'TX', '78701', 'US'),
     (3, 'MAILING', '789 Elm Boulevard', 'Austin', 'TX', '78701', 'US');
-
-INSERT INTO clients (username, email, full_name, date_of_birth, phone, registered_date, ssn, employment_status, employer_name, occupation) VALUES
-    ('joanna_trader',  'joanna@example.com',  'Joanna Smith',   '1990-03-15', '555-0101', NOW() - INTERVAL '6 months', '123-45-6789', 'EMPLOYED', 'TechCorp Inc', 'Software Engineer'),
-    ('david_investor', 'david@example.com',   'David Chen',     '1985-07-22', '555-0102', NOW() - INTERVAL '3 months', '234-56-7890', 'SELF_EMPLOYED', 'Chen Consulting LLC', 'Business Consultant'),
-    ('priya_analyst',  'priya@example.com',   'Priya Patel',    '1995-11-08', '555-0103', NOW() - INTERVAL '1 month', '345-67-8901', 'EMPLOYED', 'FinanceFlow Analytics', 'Data Analyst');
 
 INSERT INTO accounts (client_id, cash_balance, currency, opened_date) VALUES
     (1, 50000.00, 'USD', CURRENT_DATE - INTERVAL '6 months'),

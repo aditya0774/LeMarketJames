@@ -21,6 +21,7 @@ public class RegisterRequest {
     private String ssn;
     private BigDecimal initialDeposit;
     private String investmentExperience;
+    private String employmentStatus;
     private LocalDate dateOfBirth;
     private String phoneNumber;
     private Boolean termsAccepted;
@@ -280,11 +281,14 @@ public class RegisterRequest {
         this.investmentExperience = investmentExperience;
     }
 
-    /**
-     * Gets the date of birth.
-     *
-     * @return the date of birth
-     */
+    public String getEmploymentStatus() {
+        return employmentStatus;
+    }
+
+    public void setEmploymentStatus(String employmentStatus) {
+        this.employmentStatus = employmentStatus;
+    }
+
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }

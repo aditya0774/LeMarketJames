@@ -1,17 +1,28 @@
 package com.lemarketjames.auth;
 
+import com.lemarketjames.auth.domain.AccountEntity;
+import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.auth.domain.AddressEntity;
+import com.lemarketjames.auth.domain.AddressRepository;
+import com.lemarketjames.auth.domain.ClientEntity;
+import com.lemarketjames.auth.domain.ClientRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
+import com.lemarketjames.common.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,17 +40,30 @@ public class AuthService {
     private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
     private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
     private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
+    private final ClientRepository clientRepository;
+    private final AddressRepository addressRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final long lockoutDurationMs;
 
     /**
-     * Constructs an AuthService with the given JwtService.
-     * Initializes the password encoder and user store.
+    * Constructs an AuthService with its authentication and persistence dependencies.
      *
      * @param jwtService the JWT service for token generation and validation
+     * @param clientRepository repository for client records
+     * @param addressRepository repository for client addresses
+     * @param accountRepository repository for trading accounts
      */
-    public AuthService(JwtService jwtService, @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
+    public AuthService(
+            JwtService jwtService,
+            ClientRepository clientRepository,
+            AddressRepository addressRepository,
+            AccountRepository accountRepository,
+            @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
+        this.clientRepository = clientRepository;
+        this.addressRepository = addressRepository;
+        this.accountRepository = accountRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
         this.lockoutDurationMs = lockoutDurationMs;
@@ -60,15 +84,55 @@ public class AuthService {
         String password = request.getPassword();
         String email = request.getEmail().toLowerCase();
 
-        if (userStore.containsKey(username)) {
+        if (clientRepository.existsByUsername(username) || userStore.containsKey(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
-        if (!registeredEmails.add(email)) {
+
+        if (clientRepository.existsByEmail(email) || registeredEmails.contains(email)) {
             throw new IllegalArgumentException("Email is already registered");
         }
 
-        userStore.put(username, encodePassword(password));
+        ClientEntity client = new ClientEntity();
+        client.setUsername(username);
+        String encodedPassword = encodePassword(request.getPassword());
+        client.setPassword(encodedPassword);
+        client.setEmail(email);
+        client.setFullName(request.getFullName());
+        client.setDateOfBirth(request.getDateOfBirth());
+        client.setPhone(request.getPhoneNumber());
+        client.setRegisteredDate(LocalDateTime.now());
+        // SSN is hashed like a password: it's never used for lookups or validation.
+        client.setSsn(encodePassword(request.getSsn()));
+        client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());
+        client.setInvestmentExperience(request.getInvestmentExperience().trim().toUpperCase());
+        client.setAccountStatus("ACTIVE");
+        client = clientRepository.save(client);
+
+        AddressEntity address = new AddressEntity();
+        address.setClientId(client.getClientId());
+        address.setAddressType("RESIDENTIAL");
+        address.setStreetAddress(request.getStreetAddress());
+        address.setCity(request.getCity());
+        address.setState(request.getState());
+        address.setPostalCode(request.getZipCode());
+        String country = request.getCountry();
+        address.setCountry(country == null || country.isBlank() ? "US" : country);
+        addressRepository.save(address);
+
+        AccountEntity account = new AccountEntity();
+        account.setClientId(client.getClientId());
+        account.setCashBalance(request.getInitialDeposit());
+        account.setCurrency("USD");
+        account.setTradingEnabled(true);
+        account.setOpenedDate(LocalDate.now());
+        accountRepository.save(account);
+
+        // Store password and email in memory for fast lookup
+        userStore.put(username, encodedPassword);
+        registeredEmails.add(email);
+
         log.info("Registration succeeded for username={}", username);
+
         return new AuthResponse(username, "User registered successfully");
     }
 
@@ -158,23 +222,29 @@ public class AuthService {
         if (request == null) {
             throw new IllegalArgumentException("Request is required");
         }
-        validateRequired(request.getUsername(), "Username is required");
-        validateRequired(request.getPassword(), "Password is required");
-        validateRequired(request.getEmail(), "Email is required");
-        validateRequired(request.getFullName(), "Full name is required");
-        validateRequired(request.getStreetAddress(), "Street address is required");
-        validateRequired(request.getCity(), "City is required");
-        validateRequired(request.getState(), "State is required");
-        validateRequired(request.getZipCode(), "ZIP code is required");
-        validateRequired(request.getCountry(), "Country is required");
-        validateRequired(request.getSsn(), "SSN is required");
-        validateRequired(request.getPhoneNumber(), "Phone number is required");
-        validateRequired(request.getInvestmentExperience(), "Investment experience is required");
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        requireField(errors, "username", request.getUsername(), "Username is required");
+        requireField(errors, "password", request.getPassword(), "Password is required");
+        requireField(errors, "email", request.getEmail(), "Email is required");
+        requireField(errors, "fullName", request.getFullName(), "Full name is required");
+        requireField(errors, "streetAddress", request.getStreetAddress(), "Street address is required");
+        requireField(errors, "city", request.getCity(), "City is required");
+        requireField(errors, "state", request.getState(), "State is required");
+        requireField(errors, "zipCode", request.getZipCode(), "ZIP code is required");
+        requireField(errors, "ssn", request.getSsn(), "SSN is required");
+        requireField(errors, "phoneNumber", request.getPhoneNumber(), "Phone number is required");
+        requireField(errors, "investmentExperience", request.getInvestmentExperience(), "Investment experience is required");
+        requireField(errors, "employmentStatus", request.getEmploymentStatus(), "Employment status is required");
         if (request.getInitialDeposit() == null) {
-            throw new IllegalArgumentException("Initial deposit amount is required");
+            errors.put("initialDeposit", "Initial deposit amount is required");
         }
         if (request.getDateOfBirth() == null) {
-            throw new IllegalArgumentException("Date of birth is required");
+            errors.put("dateOfBirth", "Date of birth is required");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
         }
         if (!Boolean.TRUE.equals(request.getTermsAccepted())) {
             throw new IllegalArgumentException("Terms and conditions must be accepted");
@@ -195,13 +265,12 @@ public class AuthService {
         validateRequired(request.getPassword(), "Password is required");
     }
 
-    /**
-     * Validates that a string value is not null or blank.
-     *
-     * @param value the string value to validate
-     * @param message the error message to throw if validation fails
-     * @throws IllegalArgumentException if the value is null or blank
-     */
+    private void requireField(Map<String, String> errors, String field, String value, String message) {
+        if (value == null || value.isBlank()) {
+            errors.put(field, message);
+        }
+    }
+
     private void validateRequired(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
@@ -258,3 +327,4 @@ public class AuthService {
         }
     }
 }
+
