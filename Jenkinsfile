@@ -102,7 +102,7 @@ pipeline {
                     email="$user@example.com"
 
                     register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"USA","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"USA","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
 JSON
 )
 

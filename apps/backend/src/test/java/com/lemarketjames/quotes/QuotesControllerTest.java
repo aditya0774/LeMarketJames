@@ -75,6 +75,7 @@ class QuotesControllerTest {
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
+                                                                        "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
                   "phoneNumber": "(555) 123-4567",
                   "termsAccepted": true
