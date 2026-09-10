@@ -77,6 +77,7 @@ pipeline {
             steps {
                 sh '''
                     cd $WORKSPACE
+                    sleep 10
                     echo "Verifying database schema was initialized..."
                     if docker compose version >/dev/null 2>&1; then
                         compose() { docker compose "$@"; }
@@ -84,8 +85,12 @@ pipeline {
                         compose() { docker-compose "$@"; }
                     fi
 
+                    echo "Database logs:"
+                    compose logs db | tail -30
+                    
+                    echo ""
                     echo "Tables in lemarket database:"
-                    compose exec -T db psql -U lemarket -d lemarket -c "\\dt"
+                    compose exec -T db psql -U lemarket -d lemarket -c "\\dt" || true
                 '''
             }
         }
