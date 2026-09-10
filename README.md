@@ -260,7 +260,7 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
    ```
 
 **Database Credentials:**
-- Username: `paysprint`
+- Username: `lemarket`
 - Password: `changeme` (default; override with environment variable)
 
 To use a custom database password, set the `DB_PASSWORD` environment variable:
