@@ -98,9 +98,6 @@ export class Register {
   // Tracks whether the password field currently shows plain text or is masked.
   showPassword = false;
 
-  // Auth sends the mapped registration payload to the backend.
-  constructor(private readonly auth: Auth) {}
-
   /**
    * Checks if the user's investment experience level can be set to 'experienced'.
    * 
@@ -430,7 +427,7 @@ export class Register {
         email: data.email,
         fullName: [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' '),
         streetAddress: data.streetAddress,
-        apartment: data.apartment || undefined,
+        apartment: data.apartment || '',
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
