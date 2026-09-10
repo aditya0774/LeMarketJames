@@ -73,21 +73,105 @@ pipeline {
         stage('Run smoke test') {
             steps {
                 sh '''
-                    echo "Container user and group:"
+                    set -eu
+
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose exec -T backend id
+                        compose() { docker compose "$@"; }
                     else
-                        docker-compose exec -T backend id
+                        compose() { docker-compose "$@"; }
                     fi
-                    response=$(curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 1 http://localhost:8081/)
+
+                    echo "Container user and group:"
+                    compose exec -T backend id
+
+                    echo "Waiting for backend health endpoint"
+                    healthy=0
+                    for attempt in $(seq 1 60); do
+                        status=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:8081/actuator/health || true)
+                        if [ "$status" = "200" ]; then
+                            healthy=1
+                            break
+                        fi
+                        sleep 1
+                    done
+
+                    if [ "$healthy" -ne 1 ]; then
+                        echo "Backend did not become healthy in time"
+                        compose ps
+                        compose logs backend
+                        exit 1
+                    fi
+
+                    response=$(curl --fail --silent --show-error http://localhost:8081/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
+
                     echo "Spring Boot container logs:"
-                    if docker compose version >/dev/null 2>&1; then
-                        docker compose logs backend
-                    else
-                        docker-compose logs backend
-                    fi
+                    compose logs backend
+                '''
+            }
+        }
+
+        stage('Run quote API contract smoke test') {
+            steps {
+                sh '''
+                    set -eu
+
+                    base="http://localhost:8081"
+                    user="ciuser$(date +%s)"
+                    email="$user@example.com"
+
+                    register_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"USA","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+JSON
+)
+
+                    login_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!"}
+JSON
+)
+
+                    cookie_file=$(mktemp)
+                    quote_ok_file=$(mktemp)
+                    quote_not_found_file=$(mktemp)
+                    trap 'rm -f "$cookie_file" "$quote_ok_file" "$quote_not_found_file"' EXIT
+
+                    echo "Verifying unauthenticated quote request is denied"
+                    unauth_status=$(curl --silent --output /dev/null --write-out "%{http_code}" "$base/api/quotes/AAPL")
+                    test "$unauth_status" = "401"
+
+                    echo "Registering CI user"
+                    curl --silent --show-error --fail \
+                        --request POST "$base/api/auth/register" \
+                        --header "Content-Type: application/json" \
+                        --data "$register_payload" \
+                        >/dev/null
+
+                    echo "Logging in and capturing auth cookie"
+                    curl --silent --show-error --fail \
+                        --cookie-jar "$cookie_file" \
+                        --request POST "$base/api/auth/login" \
+                        --header "Content-Type: application/json" \
+                        --data "$login_payload" \
+                        >/dev/null
+
+                    echo "Verifying authenticated quote response contract"
+                    quote_status=$(curl --silent --output "$quote_ok_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        "$base/api/quotes/AAPL")
+                    test "$quote_status" = "200"
+                    grep -q '"success":true' "$quote_ok_file"
+                    grep -q '"symbol":"AAPL"' "$quote_ok_file"
+                    grep -q '"price":' "$quote_ok_file"
+                    grep -q '"lastUpdate":' "$quote_ok_file"
+
+                    echo "Verifying unknown symbol contract"
+                    quote_404_status=$(curl --silent --output "$quote_not_found_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        "$base/api/quotes/INVALID")
+                    test "$quote_404_status" = "404"
+                    grep -q '"success":false' "$quote_not_found_file"
+                    grep -q '"error":"Symbol not found"' "$quote_not_found_file"
                 '''
             }
         }
