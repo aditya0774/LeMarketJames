@@ -70,6 +70,22 @@ pipeline {
             }
         }
 
+        stage('Verify Database Schema') {
+            steps {
+                sh '''
+                    echo "Verifying database schema was initialized..."
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+
+                    echo "Tables in lemarket database:"
+                    compose exec -T db psql -U lemarket -d lemarket -c "\\dt"
+                '''
+            }
+        }
+
         stage('Run smoke test') {
             steps {
                 sh '''
