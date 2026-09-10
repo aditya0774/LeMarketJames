@@ -106,6 +106,11 @@ pipeline {
 JSON
 )
 
+                    login_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!"}
+JSON
+)
+
                     cookie_file=$(mktemp)
                     quote_ok_file=$(mktemp)
                     quote_not_found_file=$(mktemp)
@@ -127,7 +132,7 @@ JSON
                         --cookie-jar "$cookie_file" \
                         --request POST "$base/api/auth/login" \
                         --header "Content-Type: application/json" \
-                        --data "{\"username\":\"$user\",\"password\":\"Pass123!\"}" \
+                        --data "$login_payload" \
                         >/dev/null
 
                     echo "Verifying authenticated quote response contract"
