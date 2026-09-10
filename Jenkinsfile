@@ -36,6 +36,7 @@ pipeline {
         stage('Start application with Docker Compose') {
             steps {
                 sh '''
+                    cd $WORKSPACE
                     if docker compose version >/dev/null 2>&1; then
                         docker compose up -d --build
                     else
@@ -48,6 +49,7 @@ pipeline {
         stage('Verify PostgreSQL connection') {
             steps {
                 sh '''
+                    cd $WORKSPACE
                     echo "PostgreSQL connection: host=db port=5432 database=lemarket user=lemarket"
                     if docker compose version >/dev/null 2>&1; then
                         compose() { docker compose "$@"; }
@@ -73,6 +75,7 @@ pipeline {
         stage('Verify Database Schema') {
             steps {
                 sh '''
+                    cd $WORKSPACE
                     echo "Verifying database schema was initialized..."
                     if docker compose version >/dev/null 2>&1; then
                         compose() { docker compose "$@"; }
@@ -89,6 +92,7 @@ pipeline {
         stage('Run smoke test') {
             steps {
                 sh '''
+                    cd $WORKSPACE
                     echo "Container user and group:"
                     if docker compose version >/dev/null 2>&1; then
                         docker compose exec -T backend id
@@ -112,6 +116,7 @@ pipeline {
     post {
         always {
             sh '''
+                cd $WORKSPACE
                 if docker compose version >/dev/null 2>&1; then
                     docker compose down --rmi local --remove-orphans || true
                 elif command -v docker-compose >/dev/null 2>&1; then
