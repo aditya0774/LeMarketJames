@@ -2,6 +2,17 @@
 
 A full-stack web application built with **Spring Boot 3** (Java 21) backend, **Angular 22** frontend, and **PostgreSQL 16** database. Includes Docker and Docker Compose support for containerized deployment.
 
+## 🔗 Important Documents for Developers
+
+**Before writing any code, read these:**
+
+- **[API-CONTRACTS.md](API-CONTRACTS.md)** — The single source of truth for all API endpoints, request/response formats, and team agreements. Ensures all 6 developers can work in parallel without blocking.
+- **[AGENTS.md](AGENTS.md)** — Project conventions, package structure, and **API Contract implementation guidelines** for backend (Spring Boot) and frontend (Angular).
+
+**TL;DR:** Check [AGENTS.md](AGENTS.md) for how to implement against `/API-CONTRACTS.md` and you can build features independently without waiting on anyone else.
+
+---
+
 ## Project Structure
 
 See [AGENTS.md](AGENTS.md) for the full conventions doc (package/folder rules, build & test commands). Summary:
