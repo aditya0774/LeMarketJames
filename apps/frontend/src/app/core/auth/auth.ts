@@ -10,7 +10,7 @@ export interface RegisterRequest {
   email: string;
   fullName: string;
   streetAddress: string;
-  apartment: string;
+  apartment?: string;
   city: string;
   state: string;
   zipCode: string;
@@ -18,6 +18,7 @@ export interface RegisterRequest {
   ssn: string;
   initialDeposit: number;
   investmentExperience: 'beginner' | 'experienced';
+  employmentStatus: string;
   dateOfBirth: string;
   phoneNumber: string;
 }
