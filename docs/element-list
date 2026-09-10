@@ -1,5 +1,6 @@
 com.lemarketjames
 com.lemarketjames.auth
+com.lemarketjames.auth.domain
 com.lemarketjames.auth.dto
 com.lemarketjames.auth.security
 com.lemarketjames.common
