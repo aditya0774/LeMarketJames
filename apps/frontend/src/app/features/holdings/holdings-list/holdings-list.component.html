@@ -1,0 +1,40 @@
+<div class="holdings-container">
+  <h2>My Holdings</h2>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+
+  <div *ngIf="isLoading" class="loading">Loading holdings...</div>
+
+  <table *ngIf="!isLoading && holdings.length > 0" class="holdings-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Quantity</th>
+        <th>Avg Cost</th>
+        <th>Current Price</th>
+        <th>Total Value</th>
+        <th>Gain/Loss</th>
+        <th>Gain/Loss %</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let holding of holdings">
+        <td>{{ holding.symbol }}</td>
+        <td>{{ holding.quantity | number: '1.4-4' }}</td>
+        <td>${{ holding.averageCost | number: '1.2-2' }}</td>
+        <td>${{ holding.currentPrice | number: '1.2-2' }}</td>
+        <td>${{ holding.currentValue | number: '1.2-2' }}</td>
+        <td [class.negative]="holding.gainLoss < 0" [class.positive]="holding.gainLoss > 0">
+          ${{ holding.gainLoss | number: '1.2-2' }}
+        </td>
+        <td [class.negative]="holding.gainLossPercent < 0" [class.positive]="holding.gainLossPercent > 0">
+          {{ holding.gainLossPercent | number: '1.2-2' }}%
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!isLoading && holdings.length === 0" class="no-holdings">
+    No holdings yet
+  </div>
+</div>

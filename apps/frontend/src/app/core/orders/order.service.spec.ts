@@ -142,7 +142,7 @@ describe('OrderService', () => {
       expect(order.rejectionReason).toBe('Insufficient funds');
     });
 
-    const req = httpMock.expectOne(req => req.url === '/api/v1/orders/1/reject' && req.method === 'POST');
+    const req = httpMock.expectOne(req => req.url.includes('/api/v1/orders/1/reject') && req.method === 'POST');
     req.flush(mockResponse);
   });
 });

@@ -5,15 +5,17 @@ import { provideRouter } from '@angular/router';
 import { App } from './app';
 
 describe('App', () => {
+  let fixture: any;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
+    fixture = TestBed.createComponent(App);
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
