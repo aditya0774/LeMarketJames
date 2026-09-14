@@ -70,6 +70,20 @@ pipeline {
             }
         }
 
+        stage('Apply registration schema update') {
+            steps {
+                // Init scripts only run for an empty Postgres volume; CI keeps its volume.
+                sh '''
+                    set -eu
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                    else
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                    fi
+                '''
+            }
+        }
+
         stage('Run smoke test') {
             steps {
                 sh '''
@@ -122,7 +136,7 @@ pipeline {
                     email="$user@example.com"
 
                     register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"USA","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
 JSON
 )
 
@@ -178,7 +192,17 @@ JSON
     }
 
     post {
-        always {
+        failure {
+            // Capture errors from failed smoke requests before containers are removed.
+            sh '''
+                if docker compose version >/dev/null 2>&1; then
+                    docker compose logs --tail=100 backend db || true
+                elif command -v docker-compose >/dev/null 2>&1; then
+                    docker-compose logs --tail=100 backend db || true
+                fi
+            '''
+        }
+        cleanup {
             sh '''
                 if docker compose version >/dev/null 2>&1; then
                     docker compose down --rmi local --remove-orphans || true

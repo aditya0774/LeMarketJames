@@ -7,9 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,6 +31,9 @@ class AuthControllerTest {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * Tests that passwords are properly encoded with bcrypt hashing.
@@ -60,7 +65,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
@@ -77,6 +82,15 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.message").value("User registered successfully"));
+
+        // Match the hand-authored PostgreSQL check constraint and bcrypt column size.
+        assertEquals("beginner", jdbcTemplate.queryForObject(
+                "select investment_experience from clients where username = ?", String.class, "testuser"));
+        String storedSsn = jdbcTemplate.queryForObject(
+                "select ssn from clients where username = ?", String.class, "testuser");
+        assertNotNull(storedSsn);
+        assertEquals(60, storedSsn.length());
+        assertTrue(authService.matchesPassword("123-45-6789", storedSsn));
 
         String loginJson = """
                 {
@@ -135,7 +149,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
@@ -170,7 +184,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6780",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
@@ -190,7 +204,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6781",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
@@ -225,7 +239,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
@@ -271,7 +285,7 @@ class AuthControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6799",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
