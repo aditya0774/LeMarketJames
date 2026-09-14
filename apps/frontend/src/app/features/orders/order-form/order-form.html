@@ -1,0 +1,117 @@
+<mat-card class="order-form-container">
+  <mat-card-header>
+    <mat-card-title>Place Order</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading-message">
+      Loading balance information...
+    </div>
+
+    <!-- Balance display -->
+    <div *ngIf="!loading() && balance()" class="balance-display">
+      <p><strong>Available Cash:</strong> ${{ balance()?.cash.toFixed(2) }}</p>
+    </div>
+
+    <!-- Error message -->
+    <div *ngIf="errorMessage()" class="error-message">
+      {{ errorMessage() }}
+    </div>
+
+    <!-- Success message -->
+    <div *ngIf="successMessage()" class="success-message">
+      {{ successMessage() }}
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="order-form">
+      <!-- Symbol field -->
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Stock Symbol</mat-label>
+        <input matInput formControlName="symbol" placeholder="e.g., AAPL" />
+        <mat-error *ngIf="form.get('symbol')?.hasError('required')">
+          Symbol is required
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Quantity field -->
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Quantity</mat-label>
+        <input
+          matInput
+          formControlName="quantity"
+          type="number"
+          min="1"
+          placeholder="e.g., 10"
+        />
+        <mat-error *ngIf="form.get('quantity')?.hasError('required')">
+          Quantity is required
+        </mat-error>
+        <mat-error *ngIf="form.get('quantity')?.hasError('min')">
+          Quantity must be at least 1
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Order Type (BUY/SELL) -->
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="type">
+          <mat-option *ngFor="let type of orderTypeOptions" [value]="type">
+            {{ type }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Order Type Value (MARKET/LIMIT) -->
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Order Type</mat-label>
+        <mat-select formControlName="orderType">
+          <mat-option *ngFor="let type of orderTypeValueOptions" [value]="type">
+            {{ type }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Price field -->
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Price</mat-label>
+        <input
+          matInput
+          formControlName="price"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="e.g., 150.25"
+        />
+        <mat-error *ngIf="form.get('price')?.hasError('required')">
+          Price is required
+        </mat-error>
+        <mat-error *ngIf="form.get('price')?.hasError('min')">
+          Price must be greater than 0
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Balance validation error -->
+      <div *ngIf="getBalanceErrorMessage()" class="balance-error">
+        {{ getBalanceErrorMessage() }}
+      </div>
+
+      <!-- Required cash display -->
+      <div *ngIf="getRequiredCash() > 0" class="required-cash">
+        <p>Required Cash: ${{ getRequiredCash().toFixed(2) }}</p>
+      </div>
+
+      <!-- Submit button -->
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="isSubmitDisabled() || submitting()"
+        class="submit-button"
+      >
+        {{ submitting() ? 'Placing Order...' : 'Place Order' }}
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>
