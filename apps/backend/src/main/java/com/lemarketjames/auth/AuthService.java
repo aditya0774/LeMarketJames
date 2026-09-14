@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -104,7 +105,8 @@ public class AuthService {
         // SSN is hashed like a password: it's never used for lookups or validation.
         client.setSsn(encodePassword(request.getSsn()));
         client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());
-        client.setInvestmentExperience(request.getInvestmentExperience().trim().toUpperCase());
+        // PostgreSQL's investment_experience constraint uses lowercase values.
+        client.setInvestmentExperience(request.getInvestmentExperience().trim().toLowerCase(Locale.ROOT));
         client.setAccountStatus("ACTIVE");
         client = clientRepository.save(client);
 

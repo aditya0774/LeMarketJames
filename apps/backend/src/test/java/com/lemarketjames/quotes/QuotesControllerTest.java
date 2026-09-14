@@ -71,7 +71,7 @@ class QuotesControllerTest {
                   "city": "Springfield",
                   "state": "IL",
                   "zipCode": "62701",
-                  "country": "USA",
+                  "country": "US",
                   "ssn": "123-45-6789",
                   "initialDeposit": 500,
                   "investmentExperience": "beginner",
