@@ -5,5 +5,10 @@ com.lemarketjames.auth.dto
 com.lemarketjames.auth.security
 com.lemarketjames.common
 com.lemarketjames.config
+com.lemarketjames.orders
+com.lemarketjames.orders.dto
+com.lemarketjames.orders.entity
+com.lemarketjames.orders.repository
+com.lemarketjames.orders.service
 com.lemarketjames.quotes
 com.lemarketjames.quotes.dto
