@@ -11,6 +11,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
 import { Auth } from '../../../core/auth/auth';
@@ -29,6 +30,7 @@ import { Auth } from '../../../core/auth/auth';
     MatNativeDateModule,
     MatCardModule,
     MatIconModule,
+    MatCheckboxModule,
   ],
   selector: 'app-register',
   standalone: true,
@@ -89,7 +91,8 @@ export class Register {
     email: '',
     phoneNumber: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    agreeToTerms: false
   };
 
   // This object keeps a separate error message for each form field.
