@@ -6,7 +6,6 @@ COPY src ./src
 RUN mvn -q package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
-
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
