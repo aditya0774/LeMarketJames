@@ -1,73 +1,63 @@
 package com.lemarketjames.sessions.service;
 
 import com.lemarketjames.sessions.dto.SessionDto;
-import com.lemarketjames.sessions.entity.SessionEntity;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
-import com.lemarketjames.sessions.repository.SessionRepository;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.time.ZoneId;
+import java.util.Date;
 
+/**
+ * Session validation using JWT token claims (no database storage)
+ */
 @Service
 public class SessionService {
-  private final SessionRepository sessionRepository;
 
-  @Value("${session.timeout.minutes:30}")
-  private Integer sessionTimeoutMinutes;
+  private final SecretKey signingKey;
 
-  public SessionService(SessionRepository sessionRepository) {
-    this.sessionRepository = sessionRepository;
+  public SessionService(@Value("${jwt.secret}") String secret) {
+    this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
-   * AC1: Validate session is active and not expired
+   * AC1: Validate session (JWT token) is not expired
    */
-  public SessionDto validateSession(Integer accountId, Integer sessionId) {
-    Optional<SessionEntity> session = sessionRepository.findBySessionId(sessionId);
+  public SessionDto validateSession(Integer accountId, String token) {
+    try {
+      // Parse and validate JWT token
+      var claims = Jwts.parser()
+          .verifyWith(signingKey)
+          .build()
+          .parseSignedClaims(token)
+          .getPayload();
 
-    if (session.isEmpty()) {
-      throw new SessionExpiredException("Session not found");
+      // Check expiration
+      Date expiresAt = claims.getExpiration();
+      if (expiresAt != null && expiresAt.before(new Date())) {
+        throw new SessionExpiredException("Session token has expired");
+      }
+
+      LocalDateTime expiresAtLocal = expiresAt != null 
+          ? expiresAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+          : null;
+
+      return new SessionDto(
+          accountId,
+          accountId,
+          expiresAtLocal,
+          true
+      );
+    } catch (SessionExpiredException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new SessionExpiredException("Invalid or expired session token: " + e.getMessage());
     }
-
-    SessionEntity sessionEntity = session.get();
-
-    // Verify session belongs to the account
-    if (!sessionEntity.getAccountId().equals(accountId)) {
-      throw new SessionExpiredException("Session does not belong to this account");
-    }
-
-    // Check if expired
-    if (sessionEntity.isExpired()) {
-      throw new SessionExpiredException("Session has expired");
-    }
-
-    // Update last activity
-    sessionEntity.setLastActivityAt(LocalDateTime.now());
-    sessionRepository.save(sessionEntity);
-
-    return new SessionDto(
-        sessionEntity.getSessionId(),
-        sessionEntity.getAccountId(),
-        sessionEntity.getExpiresAt(),
-        true
-    );
-  }
-
-  /**
-   * Create a new session for authenticated user
-   */
-  public SessionDto createSession(Integer accountId) {
-    LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(sessionTimeoutMinutes);
-    SessionEntity session = new SessionEntity(accountId, expiresAt);
-    SessionEntity saved = sessionRepository.save(session);
-
-    return new SessionDto(
-        saved.getSessionId(),
-        saved.getAccountId(),
-        saved.getExpiresAt(),
-        true
-    );
   }
 }
+
