@@ -1,0 +1,338 @@
+/* LeMarket design system — see LeUI/lemarket-ui-mockup.html for the source design.
+   Everything here is either a new class name or scoped under .auth-wrap, so the
+   Material-based Login page is unaffected. */
+
+:root {
+  --ink: #0f0a1a;
+  --ink-2: #170e28;
+  --purple-deep: #2b1145;
+  --purple: #4a1e73;
+  --purple-mid: #5c2a8c;
+  --purple-line: #432466;
+  --gold: #fdb927;
+  --gold-soft: #ffdd73;
+  --gold-dim: #8a6a1e;
+  --up: #3bd98a;
+  --down: #ff5c5c;
+  --text: #efe9f7;
+  --text-dim: #b7a8d1;
+  --text-faint: #7c6d98;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+/* ---------- Auth shell ---------- */
+
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 70px;
+  position: relative;
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(800px 500px at 50% 0%, rgba(253, 185, 39, 0.08), transparent 60%),
+    radial-gradient(700px 500px at 85% 100%, rgba(92, 42, 140, 0.35), transparent 60%);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  /* Keeps the native date picker and select popups dark. */
+  color-scheme: dark;
+}
+
+.auth-wrap,
+.auth-wrap * {
+  box-sizing: border-box;
+}
+
+.back-link {
+  position: absolute;
+  top: 26px;
+  left: 34px;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.back-link:hover {
+  color: var(--gold);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+
+.auth-brand img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.auth-brand .wordmark {
+  font-family: 'Big Shoulders Display', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.3px;
+}
+
+.wordmark .le-accent {
+  color: var(--gold);
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 460px;
+  background: var(--ink-2);
+  border: 1px solid var(--purple-line);
+  border-radius: var(--radius-lg);
+  padding: 36px 38px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.auth-panel.wide {
+  max-width: 560px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.auth-card.wide {
+  max-width: 480px;
+}
+
+.auth-card h2 {
+  font-family: 'Big Shoulders Display', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-size: 28px;
+  margin: 0 0 6px;
+}
+
+.auth-card .sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+
+.form-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  margin: 26px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--purple-line);
+}
+
+.form-section-title.first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.switch-line {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 22px;
+}
+
+.switch-line a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.06);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: #241705;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--purple-line);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  border-color: var(--gold-dim);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+/* ---------- Fields ---------- */
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* The :not() guard keeps the terms checkbox from being stretched full width. */
+.field input:not([type='checkbox']):not([type='radio']),
+.field select {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--purple-line);
+  background: var(--purple-deep);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input::placeholder {
+  color: var(--text-faint);
+}
+
+.field input:not([type='checkbox']):not([type='radio']):focus,
+.field select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(253, 185, 39, 0.15);
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .field {
+  flex: 1;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 5px;
+}
+
+.opt-tag {
+  color: var(--text-faint);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.field-error {
+  font-size: 11px;
+  color: #ffc5c5;
+  margin-top: 5px;
+}
+
+.link-gold {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Native control fixes ---------- */
+
+.auth-wrap option {
+  background: var(--purple-deep);
+  color: var(--text);
+}
+
+.auth-wrap input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.auth-wrap input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.auth-wrap input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.auth-wrap input[type='number']::-webkit-outer-spin-button,
+.auth-wrap input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---------- Alerts ---------- */
+
+.alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 18px;
+  border: 1px solid;
+}
+
+.alert b {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.alert.err {
+  background: rgba(255, 92, 92, 0.08);
+  border-color: rgba(255, 92, 92, 0.35);
+  color: #ffc5c5;
+}
+
+@media (max-width: 980px) {
+  .auth-panel {
+    padding: 26px 22px;
+  }
+}
