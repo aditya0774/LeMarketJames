@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
                 .requestMatchers("/api/holdings/**").authenticated()
+                .requestMatchers("/api/sessions/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
