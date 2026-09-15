@@ -4,6 +4,8 @@ import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.repository.OrderRepository;
+import com.lemarketjames.common.security.UserIdExtractorUtil;
+import com.lemarketjames.common.security.AccountOwnershipValidator;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,15 +14,27 @@ import java.util.stream.Collectors;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final AccountOwnershipValidator accountOwnershipValidator;
     
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, AccountOwnershipValidator accountOwnershipValidator) {
         this.orderRepository = orderRepository;
+        this.accountOwnershipValidator = accountOwnershipValidator;
     }
     
     /**
      * Create a new order
+     * 
+     * SECURITY: Validates that the authenticated user owns the account.
+     * If they don't own it, throws UnauthorizedAccessException (caught by GlobalExceptionHandler → 403 Forbidden)
      */
     public OrderResponse createOrder(CreateOrderRequest request) {
+        // Step 1: Extract the authenticated username from the JWT token
+        String authenticatedUsername = UserIdExtractorUtil.extractAuthenticatedUsername();
+        
+        // Step 2: Validate that this user owns the requested account
+        accountOwnershipValidator.validateAccountOwnership(authenticatedUsername, request.getAccountId());
+        
+        // Step 3: If validation passed, create the order
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -47,8 +61,18 @@ public class OrderService {
     
     /**
      * Get all orders for an account
+     * 
+     * SECURITY: Validates that the authenticated user owns the account.
+     * If they don't own it, throws UnauthorizedAccessException (caught by GlobalExceptionHandler → 403 Forbidden)
      */
     public List<OrderResponse> getOrdersByAccountId(Integer accountId) {
+        // Step 1: Extract the authenticated username from the JWT token
+        String authenticatedUsername = UserIdExtractorUtil.extractAuthenticatedUsername();
+        
+        // Step 2: Validate that this user owns the requested account
+        accountOwnershipValidator.validateAccountOwnership(authenticatedUsername, accountId);
+        
+        // Step 3: If validation passed, fetch and return their orders
         return orderRepository.findByAccountId(accountId)
             .stream()
             .map(OrderResponse::new)
@@ -57,8 +81,18 @@ public class OrderService {
     
     /**
      * Get orders for an account with a specific status
+     * 
+     * SECURITY: Validates that the authenticated user owns the account.
+     * If they don't own it, throws UnauthorizedAccessException (caught by GlobalExceptionHandler → 403 Forbidden)
      */
     public List<OrderResponse> getOrdersByAccountAndStatus(Integer accountId, Order.OrderStatus status) {
+        // Step 1: Extract the authenticated username from the JWT token
+        String authenticatedUsername = UserIdExtractorUtil.extractAuthenticatedUsername();
+        
+        // Step 2: Validate that this user owns the requested account
+        accountOwnershipValidator.validateAccountOwnership(authenticatedUsername, accountId);
+        
+        // Step 3: If validation passed, fetch and return their orders
         return orderRepository.findByAccountIdAndOrderStatus(accountId, status)
             .stream()
             .map(OrderResponse::new)

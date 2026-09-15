@@ -33,4 +33,20 @@ public class GlobalExceptionHandler {
                     "code", "INSUFFICIENT_HOLDINGS"
                 ));
     }
+
+    /**
+     * Handles UnauthorizedAccessException when a user tries to access data they don't own.
+     * 
+     * Returns 403 Forbidden with a generic error message (no details leaked to client).
+     * The actual details of who tried to access what are logged internally for security auditing.
+     */
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                    "success", false,
+                    "error", "You do not have permission to access this resource",
+                    "code", "UNAUTHORIZED_ACCESS"
+                ));
+    }
 }

@@ -1,0 +1,16 @@
+  fearure-aditya-database-schema[m
+  feature-aditya-jenkins[m
+  feature/PB-01-registration-ui[m
+  feature/PB-09-persist-submitted-orders[m
+  feature/fix-cors-smoke-test[m
+  feature/fix-schema[m
+  feature/view-only-own-data[m
+* [32mfeature/view-own-data[m
+  featyre/fix-schema[m
+  fix-aditya-schema[m
+  fix-jenkins-aditya[m
+  main[m
+  persist-submitted-orders-aditya[m
+  test-aditya-connect-frontend-to-backend[m
+  test/backend[m
+  test/frontend[m

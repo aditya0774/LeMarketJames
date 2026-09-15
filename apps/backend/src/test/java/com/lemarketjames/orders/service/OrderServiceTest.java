@@ -4,12 +4,14 @@ import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.repository.OrderRepository;
+import com.lemarketjames.common.security.AccountOwnershipValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.test.context.support.WithMockUser;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Order Service Unit Tests")
@@ -26,21 +29,28 @@ class OrderServiceTest {
     @Mock
     private OrderRepository orderRepository;
     
+    @Mock
+    private AccountOwnershipValidator accountOwnershipValidator;
+    
     private OrderService orderService;
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository);
+        orderService = new OrderService(orderRepository, accountOwnershipValidator);
     }
     
     @Test
     @DisplayName("Create order successfully")
+    @WithMockUser(username = "testuser")
     void testCreateOrder() {
         // Arrange
         CreateOrderRequest request = new CreateOrderRequest(
             1, 1, Order.OrderType.BUY, new BigDecimal("10")
         );
         request.setPricePerUnit(new BigDecimal("227.55"));
+        
+        // Mock the validator to allow access (no exception)
+        doNothing().when(accountOwnershipValidator).validateAccountOwnership("testuser", 1);
         
         Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         savedOrder.setOrderId(1);
@@ -91,6 +101,7 @@ class OrderServiceTest {
     
     @Test
     @DisplayName("Get orders by account ID")
+    @WithMockUser(username = "testuser")
     void testGetOrdersByAccountId() {
         // Arrange
         Order order1 = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
@@ -101,6 +112,9 @@ class OrderServiceTest {
         List<Order> orders = new ArrayList<>();
         orders.add(order1);
         orders.add(order2);
+        
+        // Mock the validator to allow access (no exception)
+        doNothing().when(accountOwnershipValidator).validateAccountOwnership("testuser", 1);
         
         when(orderRepository.findByAccountId(1)).thenReturn(orders);
         
@@ -160,6 +174,7 @@ class OrderServiceTest {
     
     @Test
     @DisplayName("Get orders by account and status")
+    @WithMockUser(username = "testuser")
     void testGetOrdersByAccountAndStatus() {
         // Arrange
         Order submittedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
@@ -168,6 +183,9 @@ class OrderServiceTest {
         
         List<Order> orders = new ArrayList<>();
         orders.add(submittedOrder);
+        
+        // Mock the validator to allow access (no exception)
+        doNothing().when(accountOwnershipValidator).validateAccountOwnership("testuser", 1);
         
         when(orderRepository.findByAccountIdAndOrderStatus(1, Order.OrderStatus.SUBMITTED))
             .thenReturn(orders);
