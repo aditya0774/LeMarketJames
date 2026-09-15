@@ -1,6 +1,7 @@
 package com.lemarketjames.common;
 
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,6 +32,16 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", ex.getMessage(),
                     "code", "INSUFFICIENT_HOLDINGS"
+                ));
+    }
+
+    @ExceptionHandler(SessionExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleSessionExpired(SessionExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "SESSION_EXPIRED"
                 ));
     }
 }
