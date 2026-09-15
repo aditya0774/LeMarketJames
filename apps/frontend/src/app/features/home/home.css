@@ -1,0 +1,154 @@
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 100vh;
+  /* Image is wider than tall, so plain "cover" leaves no vertical room to reposition it;
+     sizing to 130% height creates overflow so center-Y can still be adjusted. */
+  background:
+    linear-gradient(135deg, rgba(15, 3, 33, 0.88) 0%, rgba(26, 10, 62, 0.82) 50%, rgba(13, 2, 27, 0.92) 100%),
+    url('/LeChalk_centered_wide.jpg') center 70% / auto 130% no-repeat;
+  padding: 40px 20px;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+/* Logo Section */
+.logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.logo-icon {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  transform: translateY(45px);
+  filter: drop-shadow(0 6px 20px rgba(255, 193, 7, 0.35));
+}
+
+.logo-text {
+  font-family: 'Big Shoulders Display', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.logo-amber {
+  color: #ffc107;
+  text-shadow: 0 2px 10px rgba(255, 193, 7, 0.3);
+}
+
+.logo-white {
+  color: #ffffff;
+}
+
+/* Tagline */
+.tagline {
+  font-family: 'Big Shoulders Display', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 42px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 20px 0;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+
+.tagline-amber {
+  color: #ffc107;
+}
+
+/* Description */
+.description {
+  font-size: 16px;
+  color: #b8a8d8;
+  max-width: 600px;
+  margin: 20px 0 40px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-transform: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-width: 160px;
+  font-family: inherit;
+}
+
+.btn-login {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  border: 1.5px solid #6a4fb0;
+}
+
+.btn-login:hover {
+  background-color: rgba(106, 79, 176, 0.15);
+  border-color: #8a6fd0;
+}
+
+.btn-create {
+  background-color: #ffc107;
+  color: #0f0321;
+  border: none;
+}
+
+.btn-create:hover {
+  background-color: #ffed4e;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Footer */
+.landing-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+}
+
+.footer-badge {
+  border: 1px solid rgba(255, 193, 7, 0.6);
+  border-radius: 4px;
+  padding: 3px 10px;
+  color: #ffc107;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.footer-text {
+  color: #8a7ba8;
+  font-size: 12px;
+}
