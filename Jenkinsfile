@@ -1,215 +1,258 @@
+// Jenkins declarative pipeline for deploying mission-service directly
+// to the Linux server on which Jenkins is running.
+//
+// Assumptions:
+//   - Jenkins is running on this Linux host on port 8080.
+//   - Docker is installed and the Jenkins user can run Docker commands.
+//   - The application container listens on port 8080 internally.
+//   - The application is exposed on host port 8081 to avoid conflicting
+//     with Jenkins on host port 8080.
+//   - mission-ui exists in the repository if the Acceptance Tests stage
+//     is required.
+
 pipeline {
     agent any
-    tools {
-        jdk 'JDK21'
+
+    environment {
+        DEPLOY_ENV = 'test'
+        SPRING_PROFILES_ACTIVE = 'test'
+
+        // Example service configuration
+        DB_HOST = 'localhost'
+        DB_PORT = '5432'
+        DB_NAME = 'helloworld_wealth'
+        DB_USER = 'postgres'
+        DB_PASSWORD = 'admin'
+
+        //TWELVE Data API key
+        TWELVE_DATA_API_KEY = credentials('twelve-data-api-key')
+        
+        // Docker image tag
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
+        DEPLOYED_HW_URL='http://localhost:4200'
+        DEPLOYED_HWR_URL='http://localhost:5200'
+        DEPLOYED_HWA_URL='http://localhost:3000'
     }
 
+    tools {
+        nodejs 'NodeJS'
+    }
+    
     stages {
-        stage('Test with Maven') {
+        stage('Checkout') {
             steps {
-                dir('apps/backend') {
-                    sh 'mvn -B clean test'
-                }
-            }
-            post {
-                always {
-                    junit 'apps/backend/target/surefire-reports/*.xml'
-                }
-            }
-        }
+                checkout scm
 
-        stage('Verify Docker Compose') {
-            steps {
                 sh '''
-                    if docker compose version >/dev/null 2>&1; then
-                        echo "Using Docker Compose v2"
-                    elif command -v docker-compose >/dev/null 2>&1; then
-                        echo "Using legacy docker-compose"
-                    else
-                        echo "Docker Compose is not installed on this Jenkins agent"
-                        exit 1
-                    fi
+                    echo "Current directory:"
+                    pwd
+
+                    echo "Workspace contents:"
+                    ls -la
+
+                    echo "==========DB CONNECTION =========="
+                    echo "$DB_NAME"
+                    echo "$DB_USER"
+                    
                 '''
             }
         }
 
-        stage('Start application with Docker Compose') {
+        stage('Config Pipeline') {
             steps {
-                sh '''
-                    if docker compose version >/dev/null 2>&1; then
-                        docker compose up -d --build
-                    else
-                        docker-compose up -d --build
-                    fi
-                '''
+                
+               script {
+                    env.IMAGE_TAG = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Building hello-world:${env.IMAGE_TAG}"
+               }
             }
         }
 
-        stage('Verify PostgreSQL connection') {
+        stage('Start Database and Initialize') {
             steps {
                 sh '''
-                    echo "PostgreSQL connection: host=db port=5432 database=lemarket user=lemarket"
-                    if docker compose version >/dev/null 2>&1; then
-                        compose() { docker compose "$@"; }
-                    else
-                        compose() { docker-compose "$@"; }
-                    fi
+                    docker compose up -d postgres
 
-                    for attempt in $(seq 1 30); do
-                        if compose exec -T db pg_isready -U lemarket -d lemarket >/dev/null 2>&1; then
-                            echo "PostgreSQL is accepting connections"
-                            exit 0
-                        fi
-                        sleep 1
+                    echo "Waiting for PostgreSQL..."
+                    until docker compose exec -T postgres \
+                        pg_isready -U "$DB_USER" -d "$DB_NAME"
+                    do
+                        sleep 2
                     done
+                    docker compose exec -T postgres \
+                        psql -U "$DB_USER" -d "$DB_NAME" \
+                        -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-                    echo "PostgreSQL did not become ready"
-                    compose logs db
-                    exit 1
+                    docker compose exec -T postgres \
+                        psql -U "$DB_USER" -d "$DB_NAME" \
+                        < ./test-data/enterprise-schema.sql
                 '''
             }
         }
 
-        stage('Apply registration schema update') {
+        stage('Validate tables and data') {
             steps {
-                // Init scripts only run for an empty Postgres volume; CI keeps its volume.
                 sh '''
-                    set -eu
-                    if docker compose version >/dev/null 2>&1; then
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
-                    else
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
-                    fi
+                    docker compose exec -T postgres \
+                      psql -U "$DB_USER" -d "$DB_NAME" \
+                      -c "\\dt"
+
+                    docker compose exec -T postgres \
+                      psql -U "$DB_USER" -d "$DB_NAME" \
+                      -c "SELECT COUNT(*) FROM clients;"
+                '''
+            }
+        }
+        
+        stage('Build Docker Images') {
+            steps {
+                sh '''
+                    docker compose build hello-world
+                    docker compose build hello-world-rpt
+                    docker compose build hello-world-auth
+                    docker compose build market-service
+                    
+                    echo "$IMAGE_TAG" > image-tag.txt
                 '''
             }
         }
 
-        stage('Run smoke test') {
+        stage('Deploy') {
             steps {
                 sh '''
-                    set -eu
+                   set -eu
 
-                    if docker compose version >/dev/null 2>&1; then
-                        compose() { docker compose "$@"; }
-                    else
-                        compose() { docker-compose "$@"; }
-                    fi
+                   IMAGE_TAG=$(cat image-tag.txt)
+                   export IMAGE_TAG
 
-                    echo "Container user and group:"
-                    compose exec -T backend id
+                   echo "Deploying hello-world:$IMAGE_TAG"
+                   docker compose up -d --no-build hello-world
 
-                    echo "Waiting for backend health endpoint"
-                    healthy=0
-                    for attempt in $(seq 1 60); do
-                        status=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:8081/actuator/health || true)
-                        if [ "$status" = "200" ]; then
-                            healthy=1
-                            break
-                        fi
-                        sleep 1
-                    done
+                   echo "Deploying hello-world-rpt:$IMAGE_TAG"
+                   docker compose up -d --no-build hello-world-rpt
 
-                    if [ "$healthy" -ne 1 ]; then
-                        echo "Backend did not become healthy in time"
-                        compose ps
-                        compose logs backend
-                        exit 1
-                    fi
+                   echo "Deploying hello-world-auth:$IMAGE_TAG"
+                   docker compose up -d --no-build hello-world-auth
 
-                    response=$(curl --fail --silent --show-error http://localhost:8081/)
-                    echo "Spring Boot response: $response"
-                    echo "$response" | grep -F "Hello from LeMarketJames!"
+                   echo "Deploying market-service:$IMAGE_TAG"
+                   docker compose up -d --no-build market-service
 
-                    echo "Spring Boot container logs:"
-                    compose logs backend
+                   echo "Application container started:"
+
+                   docker compose ps 
+
+                   echo "Show any containers that may have started but exited"
+                   docker compose ps -a
+                   
                 '''
             }
         }
 
-        stage('Run quote API contract smoke test') {
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                   set -eu
+
+                   IMAGE_TAG=$(cat image-tag.txt)
+                   export IMAGE_TAG
+
+                   echo "Waiting for applications to start..."
+                   sleep 10
+
+                   echo "Checking container status..."
+                   docker compose ps
+
+                   echo "Checking Hello World..."
+                   curl --fail http://localhost:4200
+
+                   echo "Checking Hello World Reporting..."
+                   curl --fail http://localhost:5200
+
+                   echo "Checking Hello World Authorization..."
+                   curl --fail http://localhost:3000/api
+
+                   echo "Checking Market Service..."
+                   curl --fail http://localhost:8000/health
+
+
+                   echo "All applications are responding."
+                 '''
+            }
+        }
+
+        // Reuses the existing Playwright acceptance tests against the
+        // application deployed on this Linux server.
+        stage('Acceptance Tests') {
             steps {
                 sh '''
                     set -eu
 
-                    base="http://localhost:8081"
-                    user="ciuser$(date +%s)"
-                    email="$user@example.com"
+                    echo "========== TESTING STOCK QUOTE SVC =========="
+                    curl --fail "http://localhost:8000/api/market/quotes?symbols=AAPL"
+              
+                    echo "========== TESTING HELLO WORLD AUTH =========="
+                    docker exec hello-world-auth npm test -- --runInBand
+                    
+                    echo "========== TESTING HELLO WORLD =========="
+                    cd hello-world
+                    npm ci
+                    
+                    npx playwright install chromium
+                    PLAYWRIGHT_TEST_BASE_URL="$DEPLOYED_HW_URL" npx playwright test
 
-                    register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
-JSON
-)
-
-                    login_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!"}
-JSON
-)
-
-                    cookie_file=$(mktemp)
-                    quote_ok_file=$(mktemp)
-                    quote_not_found_file=$(mktemp)
-                    trap 'rm -f "$cookie_file" "$quote_ok_file" "$quote_not_found_file"' EXIT
-
-                    echo "Verifying unauthenticated quote request is denied"
-                    unauth_status=$(curl --silent --output /dev/null --write-out "%{http_code}" "$base/api/quotes/AAPL")
-                    test "$unauth_status" = "401"
-
-                    echo "Registering CI user"
-                    curl --silent --show-error --fail \
-                        --request POST "$base/api/auth/register" \
-                        --header "Content-Type: application/json" \
-                        --data "$register_payload" \
-                        >/dev/null
-
-                    echo "Logging in and capturing auth cookie"
-                    curl --silent --show-error --fail \
-                        --cookie-jar "$cookie_file" \
-                        --request POST "$base/api/auth/login" \
-                        --header "Content-Type: application/json" \
-                        --data "$login_payload" \
-                        >/dev/null
-
-                    echo "Verifying authenticated quote response contract"
-                    quote_status=$(curl --silent --output "$quote_ok_file" --write-out "%{http_code}" \
-                        --cookie "$cookie_file" \
-                        "$base/api/quotes/AAPL")
-                    test "$quote_status" = "200"
-                    grep -q '"success":true' "$quote_ok_file"
-                    grep -q '"symbol":"AAPL"' "$quote_ok_file"
-                    grep -q '"price":' "$quote_ok_file"
-                    grep -q '"lastUpdate":' "$quote_ok_file"
-
-                    echo "Verifying unknown symbol contract"
-                    quote_404_status=$(curl --silent --output "$quote_not_found_file" --write-out "%{http_code}" \
-                        --cookie "$cookie_file" \
-                        "$base/api/quotes/INVALID")
-                    test "$quote_404_status" = "404"
-                    grep -q '"success":false' "$quote_not_found_file"
-                    grep -q '"error":"Symbol not found"' "$quote_not_found_file"
+                    echo "========== TESTING HELLO WORLD REPORTING =========="
+                    cd ../hello-world-rpt
+                    npm ci
+                    
+                    npx playwright install chromium
+                    PLAYWRIGHT_TEST_BASE_URL="$DEPLOYED_HWR_URL" npx playwright test
                 '''
             }
         }
     }
 
     post {
-        failure {
-            // Capture errors from failed smoke requests before containers are removed.
+        always {
             sh '''
-                if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 backend db || true
-                elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 backend db || true
-                fi
+                echo "Stopping Docker containers..."
+                docker compose down
             '''
         }
-        cleanup {
-            sh '''
-                if docker compose version >/dev/null 2>&1; then
-                    docker compose down --rmi local --remove-orphans || true
-                elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose down --rmi local --remove-orphans || true
-                fi
-            '''
+
+        success {
+            echo 'HELLO WORLD Pipeline succeeded.'
+        }
+        
+        failure {
+               sh '''
+                  echo "HELLO WORLD Pipeline failed."
+
+                  IMAGE_TAG=$(cat image-tag.txt 2>/dev/null || true)
+                  export IMAGE_TAG
+
+                  echo "========== CONTAINER STATUS =========="
+                  docker compose ps -a || true
+
+                  echo "========== HELLO WORLD LOGS =========="
+                  docker compose logs --tail=100 hello-world || true
+
+                  echo "========== HELLO WORLD REPORTING LOGS =========="
+                  docker compose logs --tail=100 hello-world-rpt || true
+
+                  echo "========== HELLO WORLD AUTH LOGS =========="
+                  docker compose logs --tail=100 hello-world-auth || true
+
+                  echo "========== HELLO WORLD MARKET SERVICE =========="
+                  docker compose logs --tail=100 market-service || true
+
+                  echo "========== TEARDOWN =========="
+                  docker compose down || true
+               '''
         }
     }
 }
