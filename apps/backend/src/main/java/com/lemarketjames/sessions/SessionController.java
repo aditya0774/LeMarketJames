@@ -30,7 +30,7 @@ public class SessionController {
    * AC1: Validate session - check if JWT token is active and not expired.
    * 
    * @param accountId the account ID to validate
-   * @param authHeader the Authorization header containing the JWT token ("Bearer <token>")
+   * @param authHeader the Authorization header containing the JWT token (format: Bearer [token])
    * @return SessionResponse with success flag and session details if valid
    * @throws SessionExpiredException if token is expired or invalid, returns 401
    */
