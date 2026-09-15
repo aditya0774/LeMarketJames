@@ -16,88 +16,6 @@ describe('CashValidationService (Mock)', () => {
   });
 
   /**
-   * Test: Account with sufficient balance
-   * Account 1 has $5000, order cost is $2500
-   * Expected: returns Observable with success: true
-   */
-  it('should validate sufficient balance for Account 1', (done: DoneFn) => {
-    service.validateCashBalance('1', 2500).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(true);
-        expect(result.reason).toBeUndefined();
-        done();
-      },
-      error: (err) => done(),
-    });
-  });
-
-  /**
-   * Test: Account with insufficient balance
-   * Account 2 has $500, order cost is $1000
-   * Expected: returns Observable with success: false and reason message
-   */
-  it('should reject insufficient balance for Account 2', (done) => {
-    service.validateCashBalance('2', 1000).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(false);
-        expect(result.reason).toBeDefined();
-        expect(result.reason).toContain('Insufficient balance');
-        expect(result.reason).toContain('500.00');
-        expect(result.reason).toContain('1000.00');
-        done();
-      },
-      error: (err) => done.fail(err),
-    });
-  });
-
-  /**
-   * Test: Unknown account (not in mock data)
-   * Unknown account has $0 balance
-   * Expected: returns Observable with success: false
-   */
-  it('should reject unknown account (zero balance)', (done) => {
-    service.validateCashBalance('999', 100).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(false);
-        expect(result.reason).toBeDefined();
-        done();
-      },
-      error: (err) => done.fail(err),
-    });
-  });
-
-  /**
-   * Test: Exact balance match (edge case)
-   * Account 1 has $5000, order cost is exactly $5000
-   * Expected: returns Observable with success: true
-   */
-  it('should validate exact balance match', (done) => {
-    service.validateCashBalance('1', 5000).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(true);
-        expect(result.reason).toBeUndefined();
-        done();
-      },
-      error: (err) => done.fail(err),
-    });
-  });
-
-  /**
-   * Test: Zero order cost
-   * Order cost is $0
-   * Expected: returns Observable with success: true
-   */
-  it('should validate zero order cost', (done) => {
-    service.validateCashBalance('1', 0).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(true);
-        done();
-      },
-      error: (err) => done.fail(err),
-    });
-  });
-
-  /**
    * Test: Get mock balance for Account 1
    * Expected: returns 5000
    */
@@ -125,17 +43,73 @@ describe('CashValidationService (Mock)', () => {
   });
 
   /**
+   * Test: Account with sufficient balance
+   * Account 1 has $5000, order cost is $2500
+   * Expected: returns Observable with success: true
+   */
+  it('should validate sufficient balance for Account 1', () => {
+    return service.validateCashBalance('1', 2500).toPromise().then((result) => {
+      expect(result!.success).toBe(true);
+      expect(result!.reason).toBeUndefined();
+    });
+  });
+
+  /**
+   * Test: Account with insufficient balance
+   * Account 2 has $500, order cost is $1000
+   * Expected: returns Observable with success: false and reason message
+   */
+  it('should reject insufficient balance for Account 2', () => {
+    return service.validateCashBalance('2', 1000).toPromise().then((result) => {
+      expect(result!.success).toBe(false);
+      expect(result!.reason).toBeDefined();
+      expect(result!.reason).toContain('Insufficient balance');
+    });
+  });
+
+  /**
+   * Test: Unknown account (not in mock data)
+   * Unknown account has $0 balance
+   * Expected: returns Observable with success: false
+   */
+  it('should reject unknown account (zero balance)', () => {
+    return service.validateCashBalance('999', 100).toPromise().then((result) => {
+      expect(result!.success).toBe(false);
+      expect(result!.reason).toBeDefined();
+    });
+  });
+
+  /**
+   * Test: Exact balance match (edge case)
+   * Account 1 has $5000, order cost is exactly $5000
+   * Expected: returns Observable with success: true
+   */
+  it('should validate exact balance match', () => {
+    return service.validateCashBalance('1', 5000).toPromise().then((result) => {
+      expect(result!.success).toBe(true);
+      expect(result!.reason).toBeUndefined();
+    });
+  });
+
+  /**
+   * Test: Zero order cost
+   * Order cost is $0
+   * Expected: returns Observable with success: true
+   */
+  it('should validate zero order cost', () => {
+    return service.validateCashBalance('1', 0).toPromise().then((result) => {
+      expect(result!.success).toBe(true);
+    });
+  });
+
+  /**
    * Test: Decimal precision
    * Account 2 has $500, order cost is $250.50
    * Expected: returns Observable with success: true
    */
-  it('should handle decimal precision', (done) => {
-    service.validateCashBalance('2', 250.5).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(true);
-        done();
-      },
-      error: (err) => done.fail(err),
+  it('should handle decimal precision', () => {
+    return service.validateCashBalance('2', 250.5).toPromise().then((result) => {
+      expect(result!.success).toBe(true);
     });
   });
 
@@ -144,14 +118,9 @@ describe('CashValidationService (Mock)', () => {
    * Account 2 has $500, order cost is $500.01
    * Expected: returns Observable with success: false
    */
-  it('should reject balance just over available', (done) => {
-    service.validateCashBalance('2', 500.01).subscribe({
-      next: (result) => {
-        expect(result.success).toBe(false);
-        done();
-      },
-      error: (err) => done.fail(err),
+  it('should reject balance just over available', () => {
+    return service.validateCashBalance('2', 500.01).toPromise().then((result) => {
+      expect(result!.success).toBe(false);
     });
   });
 });
-

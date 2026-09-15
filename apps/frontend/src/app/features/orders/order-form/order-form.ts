@@ -162,7 +162,7 @@ export class OrderFormComponent implements OnInit {
         if (error.error?.code === 'INSUFFICIENT_CASH') {
           this.errorMessage.set('Insufficient balance to place this order');
         } else {
-          this.errorMessage.set(error.error?.error || 'Error placing order');
+          this.errorMessage.set(error.error?.reason || error.error?.error || 'Error placing order');
         }
       } else {
         this.errorMessage.set('Error placing order. Please try again.');

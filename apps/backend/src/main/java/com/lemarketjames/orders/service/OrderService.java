@@ -5,6 +5,7 @@ import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.repository.OrderRepository;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,15 +13,37 @@ import java.util.stream.Collectors;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final CashValidationService cashValidationService;
     
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, CashValidationService cashValidationService) {
         this.orderRepository = orderRepository;
+        this.cashValidationService = cashValidationService;
     }
     
     /**
-     * Create a new order
+     * Create a new order with cash validation.
+     * For BUY orders, validates that the account has sufficient cash.
+     * Cost is calculated as: quantity * pricePerUnit
      */
     public OrderResponse createOrder(CreateOrderRequest request) {
+        // For BUY orders, validate sufficient cash
+        if (request.getOrderType() == Order.OrderType.BUY) {
+            BigDecimal orderCost = calculateOrderCost(request);
+            
+            boolean hasSufficientCash = cashValidationService.validateSufficientCash(
+                request.getAccountId(),
+                orderCost
+            );
+            
+            if (!hasSufficientCash) {
+                BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
+                return new OrderResponse(false, 
+                    String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", 
+                        orderCost, availableCash));
+            }
+        }
+        
+        // Cash validation passed or SELL order; proceed with order creation
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -34,6 +57,17 @@ public class OrderService {
         
         Order savedOrder = orderRepository.save(order);
         return new OrderResponse(savedOrder);
+    }
+    
+    /**
+     * Calculates the total cost of an order.
+     * Cost = quantity * pricePerUnit
+     */
+    private BigDecimal calculateOrderCost(CreateOrderRequest request) {
+        if (request.getQuantity() == null || request.getPricePerUnit() == null) {
+            return BigDecimal.ZERO;
+        }
+        return request.getQuantity().multiply(request.getPricePerUnit());
     }
     
     /**
