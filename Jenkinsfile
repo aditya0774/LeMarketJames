@@ -78,8 +78,10 @@ pipeline {
                     set -eu
                     if docker compose version >/dev/null 2>&1; then
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                     else
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                     fi
                 '''
             }
@@ -187,6 +189,57 @@ JSON
                     test "$quote_404_status" = "404"
                     grep -q '"success":false' "$quote_not_found_file"
                     grep -q '"error":"Symbol not found"' "$quote_not_found_file"
+                '''
+            }
+        }
+
+        stage('Run tradability API smoke test') {
+            steps {
+                sh '''
+                    set -eu
+
+                    base="http://localhost:8081"
+                    user="ciusertrad$(date +%s)"
+                    email="$user@example.com"
+
+                    register_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+JSON
+)
+
+                    login_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!"}
+JSON
+)
+
+                    order_payload='{"accountId":1,"instrumentId":3,"orderType":"BUY","quantity":1}'
+
+                    cookie_file=$(mktemp)
+                    order_error_file=$(mktemp)
+                    trap 'rm -f "$cookie_file" "$order_error_file"' EXIT
+
+                    curl --silent --show-error --fail \
+                        --request POST "$base/api/auth/register" \
+                        --header "Content-Type: application/json" \
+                        --data "$register_payload" \
+                        >/dev/null
+
+                    curl --silent --show-error --fail \
+                        --cookie-jar "$cookie_file" \
+                        --request POST "$base/api/auth/login" \
+                        --header "Content-Type: application/json" \
+                        --data "$login_payload" \
+                        >/dev/null
+
+                    order_status=$(curl --silent --output "$order_error_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        --request POST "$base/api/v1/orders" \
+                        --header "Content-Type: application/json" \
+                        --data "$order_payload")
+
+                    test "$order_status" = "400"
+                    grep -q '"success":false' "$order_error_file"
+                    grep -q '"code":"NOT_TRADABLE"' "$order_error_file"
                 '''
             }
         }

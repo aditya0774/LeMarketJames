@@ -50,7 +50,7 @@ Authenticates a user and returns authentication tokens.
 
 ## Orders Endpoints
 
-### POST /api/orders
+### POST /api/v1/orders
 
 Creates a new order.
 
@@ -88,9 +88,15 @@ Creates a new order.
 ```json
 {
   "success": false,
-  "error": "Insufficient balance"
+  "error": "Instrument is currently not tradable",
+  "code": "NOT_TRADABLE"
 }
 ```
+
+#### Notes
+
+- Tradability is enforced inline during order creation.
+- Requests for instruments with `tradable=false` are rejected with the stable error code `NOT_TRADABLE`.
 
 ---
 

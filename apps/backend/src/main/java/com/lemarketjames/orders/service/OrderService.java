@@ -2,7 +2,10 @@ package com.lemarketjames.orders.service;
 
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.exception.NotTradableException;
+import com.lemarketjames.orders.repository.InstrumentRepository;
 import com.lemarketjames.orders.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -12,15 +15,19 @@ import java.util.stream.Collectors;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final InstrumentRepository instrumentRepository;
     
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, InstrumentRepository instrumentRepository) {
         this.orderRepository = orderRepository;
+        this.instrumentRepository = instrumentRepository;
     }
     
     /**
      * Create a new order
      */
     public OrderResponse createOrder(CreateOrderRequest request) {
+        validateInstrumentTradability(request.getInstrumentId());
+
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -34,6 +41,15 @@ public class OrderService {
         
         Order savedOrder = orderRepository.save(order);
         return new OrderResponse(savedOrder);
+    }
+
+    private void validateInstrumentTradability(Integer instrumentId) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+            .orElseThrow(() -> new IllegalArgumentException("Instrument not found with ID: " + instrumentId));
+
+        if (!instrument.isTradable()) {
+            throw new NotTradableException("Instrument is currently not tradable");
+        }
     }
     
     /**
