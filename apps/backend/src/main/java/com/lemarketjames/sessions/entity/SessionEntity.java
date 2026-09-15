@@ -1,25 +1,20 @@
 package com.lemarketjames.sessions.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "sessions")
+/**
+ * Session data object for JWT-based stateless sessions.
+ * Not persisted to database - sessions are validated through JWT token claims only.
+ */
 public class SessionEntity {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer sessionId;
 
-  @Column(nullable = false)
   private Integer accountId;
 
-  @Column(nullable = false)
   private LocalDateTime lastActivityAt;
 
-  @Column(nullable = false)
   private LocalDateTime expiresAt;
 
-  @Column(nullable = false)
   private LocalDateTime createdAt;
 
   public SessionEntity() {}
