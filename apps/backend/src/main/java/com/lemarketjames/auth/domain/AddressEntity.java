@@ -30,7 +30,7 @@ public class AddressEntity {
     @Column(name = "postal_code", nullable = false)
     private String postalCode;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2)
     private String country;
 
     public Integer getAddressId() {

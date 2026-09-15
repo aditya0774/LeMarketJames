@@ -2,6 +2,7 @@ package com.lemarketjames.config;
 
 import com.lemarketjames.auth.security.JwtAuthenticationFilter;
 import com.lemarketjames.auth.security.JwtService;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,7 +47,10 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                     (request, response, authException) -> response.sendError(401)))
             .authorizeHttpRequests(auth -> auth
+                // Preserve the original failure status during the container's error dispatch.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
+                .requestMatchers("/api/holdings/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
@@ -55,14 +59,15 @@ public class SecurityConfig {
 
     /**
      * Configures CORS (Cross-Origin Resource Sharing) settings for the application.
-     * Allows requests from the configured origin with specified HTTP methods and credentials.
+     * Allows requests from the configured origin and localhost:8081 (for smoke tests and local development).
      *
      * @return a CorsConfigurationSource with the configured CORS settings
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
+        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8081"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

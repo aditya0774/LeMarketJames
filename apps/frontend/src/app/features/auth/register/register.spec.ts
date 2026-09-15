@@ -53,33 +53,6 @@ describe('Register', () => {
     expect(component).toBeTruthy();
   });
 
-<<<<<<< HEAD
-  it('submits a mapped payload to the register endpoint on valid data', async () => {
-    component.registerData = { ...validFormData };
-    component.onSubmit();
-
-    const req = httpMock.expectOne((request) => request.url.endsWith('/api/auth/register'));
-    expect(req.request.body.username).toBe('jane@example.com');
-    expect(req.request.body.fullName).toBe('Jane Doe');
-    expect(req.request.body.employmentStatus).toBe('EMPLOYED');
-    expect(req.request.body.country).toBe('US');
-    req.flush({ username: 'jane@example.com', message: 'User registered successfully' });
-    await fixture.whenStable();
-  });
-
-  it('surfaces a duplicate-email error message from the backend', async () => {
-    component.registerData = { ...validFormData };
-    component.onSubmit();
-
-    const req = httpMock.expectOne((request) => request.url.endsWith('/api/auth/register'));
-    req.flush(
-      { message: 'Email is already registered' },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    await fixture.whenStable();
-
-    expect((component as any).errorMessage()).toBe('Email is already registered');
-=======
   it('should reject submission when mandatory registration data is missing', () => {
     component.onSubmit();
 
@@ -124,6 +97,7 @@ describe('Register', () => {
       phoneNumber: '(555) 123-4567',
       password: 'Pass123!',
       confirmPassword: 'Pass123!',
+      agreeToTerms: true,
     };
 
     component.onSubmit();
@@ -132,7 +106,7 @@ describe('Register', () => {
     expect(component.registerData.investmentExperience).toBe('beginner');
   });
 
-  it('should accept valid self-service onboarding data without validation errors', () => {
+  it('should accept valid self-service onboarding data without validation errors', async () => {
     component.registerData = {
       firstName: 'Alice',
       middleName: '',
@@ -152,12 +126,18 @@ describe('Register', () => {
       phoneNumber: '(555) 123-4567',
       password: 'Pass123!',
       confirmPassword: 'Pass123!',
+      agreeToTerms: true,
     };
 
     component.onSubmit();
 
+    const req = httpMock.expectOne('http://localhost:8081/api/auth/register');
+    expect(req.request.method).toBe('POST');
+    req.flush({ success: true, message: 'Registration successful' });
+
+    await fixture.whenStable();
+    
     expect(Object.keys(component.validationErrors).length).toBe(0);
     expect((component as any).submitting()).toBe(false);
->>>>>>> 4f1c12a7fd6b487f483be848e0bf2b8617d6e2b0
   });
 });

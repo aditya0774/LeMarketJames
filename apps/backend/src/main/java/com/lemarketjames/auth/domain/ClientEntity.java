@@ -40,7 +40,7 @@ public class ClientEntity {
     private LocalDateTime lastLogin;
 
     /** Bcrypt hash; SSN is never used for lookups or validation. */
-    @Column(nullable = false)
+    @Column(nullable = false, length = 60)
     private String ssn;
 
     @Column(name = "employment_status", nullable = false)

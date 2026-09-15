@@ -100,7 +100,7 @@ class AuthServiceLoggingTest {
         request.setCity("Springfield");
         request.setState("IL");
         request.setZipCode("62701");
-        request.setCountry("USA");
+        request.setCountry("US");
         request.setSsn("123-45-6789");
         request.setInitialDeposit(BigDecimal.valueOf(500));
         request.setInvestmentExperience("beginner");
