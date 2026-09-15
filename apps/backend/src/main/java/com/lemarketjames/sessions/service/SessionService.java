@@ -14,7 +14,7 @@ import java.time.ZoneId;
 import java.util.Date;
 
 /**
- * Session validation using JWT token claims (no database storage)
+ * Session validation using JWT token claims.
  */
 @Service
 public class SessionService {
@@ -26,7 +26,13 @@ public class SessionService {
   }
 
   /**
-   * AC1: Validate session (JWT token) is not expired
+   * AC1: Validate session (JWT token) is not expired.
+   * Parses JWT claims and verifies token signature and expiration time.
+   * 
+   * @param accountId the account ID associated with the token
+   * @param token the JWT token string to validate
+   * @return SessionDto containing session details if valid
+   * @throws SessionExpiredException if token is expired, invalid, or signature verification fails
    */
   public SessionDto validateSession(Integer accountId, String token) {
     try {

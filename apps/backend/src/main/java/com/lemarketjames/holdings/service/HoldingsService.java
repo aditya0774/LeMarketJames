@@ -11,6 +11,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service layer for holdings management.
+ * Manages user stock holdings and validates sell orders to prevent overselling.
+ * 
+ * AC1: Retrieve all holdings for an authenticated user
+ * AC2: Validate user has sufficient holdings to sell a given quantity
+ */
 @Service
 public class HoldingsService {
 
@@ -22,6 +29,9 @@ public class HoldingsService {
 
     /**
      * AC1: Retrieve all holdings for an authenticated user.
+     * 
+     * @param accountId the account ID to retrieve holdings for
+     * @return HoldingsResponse containing success flag and list of holdings DTOs
      */
     public HoldingsResponse getHoldingsForAccount(Integer accountId) {
         List<HoldingsEntity> holdings = holdingsRepository.findByAccountId(accountId);
@@ -45,6 +55,11 @@ public class HoldingsService {
     /**
      * AC2: Validate that user has sufficient holdings to sell a given quantity.
      * Throws InsufficientHoldingsException if validation fails.
+     * 
+     * @param accountId the account ID
+     * @param instrumentId the instrument ID to validate holdings for
+     * @param sellQuantity the quantity attempting to be sold
+     * @throws InsufficientHoldingsException if holding does not exist or quantity insufficient
      */
     public void validateSufficientHoldings(Integer accountId, Integer instrumentId, 
                                           BigDecimal sellQuantity) {

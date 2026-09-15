@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/sessions")
+/**
+ * REST controller for session management endpoints.
+ * Handles session validation using JWT tokens. Sessions are stateless and validated
+ * by checking JWT token expiration.
+ * 
+ * AC1: POST /api/sessions/validate - validate JWT token and check if session is active
+ */
 public class SessionController {
   private final SessionService sessionService;
 
@@ -20,7 +27,12 @@ public class SessionController {
   }
 
   /**
-   * AC1: Validate session - check if JWT token is active and not expired
+   * AC1: Validate session - check if JWT token is active and not expired.
+   * 
+   * @param accountId the account ID to validate
+   * @param authHeader the Authorization header containing the JWT token ("Bearer <token>")
+   * @return SessionResponse with success flag and session details if valid
+   * @throws SessionExpiredException if token is expired or invalid, returns 401
    */
   @PostMapping("/validate")
   @PreAuthorize("isAuthenticated()")
