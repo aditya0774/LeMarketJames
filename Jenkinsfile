@@ -9,7 +9,20 @@ pipeline {
         stage('Test with Maven') {
             steps {
                 dir('apps/backend') {
-                    sh 'mvn -B clean test'
+                    sh '''
+                        set -eu
+                        mvn -B clean test
+
+                        echo "=== BACKEND TESTS COMPLETED: PASS ==="
+                        echo "=== BACKEND SUREFIRE SUMMARY ==="
+
+                        if ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' target/surefire-reports/TEST-*.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "No surefire XML reports found"
+                        fi
+                    '''
                 }
             }
             post {
