@@ -4,23 +4,47 @@ Conventions for anyone (human or AI agent) working on this repo. Keep changes co
 
 ## Backend (`apps/backend/src/main/java/com/lemarketjames`) — Spring Boot / Maven
 
-- **Feature-based packages.** Each business capability gets its own package containing everything it needs: `AuthController`, `AuthService`, `dto/`, and `security/` all live under `auth/`. Do not split a feature across top-level `controller/`, `service/`, `dto/` folders.
+### Feature-Based Packages
+
+- **Core principle:** Each business capability gets its own package containing everything it needs: `AuthController`, `AuthService`, `dto/`, and `security/` all live under `auth/`. Do not split a feature across top-level `controller/`, `service/`, `dto/` folders.
 - Adding a new feature (e.g. orders, accounts): create `com.lemarketjames.<feature>` with its own controller/service/dto/repository, mirroring the `auth/` package.
 - `config/` holds cross-cutting, app-wide configuration only (e.g. `SecurityConfig`) — not feature logic.
 - `common/` holds code shared by multiple features (global exception handling, shared response DTOs). Nothing feature-specific goes here.
-- Tests under `apps/backend/src/test/java/com/lemarketjames` mirror the main package structure 1:1.
-- Spring Boot component scanning is rooted at `Main.java`'s package (`com.lem------arketjames`), so new subpackages are picked up automatically — no `pom.xml`/config changes needed when adding a feature package.
+
+### Entity Organization
+
+- **Pattern A (Simple):** Use `entity/` folder for single-entity features (e.g., Orders). Place Controller, Service, Repository, entity/, dto/ all in feature package.
+- **Pattern B (Complex):** Use `domain/` folder for aggregate roots with value objects (e.g., Auth with Account, Client, Address). Same package structure, but entities go in domain/.
+
+### Repository vs. Service Pattern
+
+- **Repository:** Data access only. `<feature>/repository/<Feature>Repository.java` queries and persists. **Never put business logic here.**
+- **Service:** Business logic and orchestration. `<feature>/<Feature>Service.java` validates, calls repositories, calls other services. **Never query DB directly here.**
+- **Controller:** HTTP handling only. `<feature>/<Feature>Controller.java` routes requests, calls services, returns responses. **Never put business logic here.**
+
+### Exception Handling
+
+- **Feature-Specific Exceptions:** Create `<feature>/exception/` (e.g., `InsufficientHoldingsException`). Register `@ExceptionHandler` in `common/GlobalExceptionHandler.java`.
+- **Shared Exceptions:** `ValidationException`, `NotFoundException` live in `common/`. Register handlers in GlobalExceptionHandler.
+
+### Component Scanning
+
+Spring scans `com.lemarketjames.*` automatically (rooted at `Main.java`). New feature packages are picked up without config changes: just ensure the package is under `com.lemarketjames.<feature>`.
+
+### Testing
+
+Tests mirror main structure: `apps/backend/src/test/java/com/lemarketjames/<feature>/` mirrors `apps/backend/src/main/java/com/lemarketjames/<feature>/`. Naming: `<Feature>ControllerTest.java`, `<Feature>ServiceTest.java`, `<Feature>RepositoryTest.java`. Run: `cd apps/backend && mvn -B clean test`
 
 ## Frontend (`apps/frontend/src/app`) — Angular
 
-- `core/` — app-wide singletons: auth state, HTTP interceptors, guards. Imported once, never per-feature.
-- `shared/` — reusable, presentational components/pipes/directives/models used by multiple features. Must not depend on a specific feature or hold app-wide state.
-- `features/<feature-name>/<component-name>/` — routed, feature-specific UI (e.g. `features/auth/login`, `features/auth/register`). Add new features as sibling folders here.
+- **`core/`** — app-wide singletons: auth state, HTTP interceptors, guards, injectable data-access services. Imported once, never per-feature.
+- **`shared/`** — reusable components/pipes/directives/models. Must not depend on a specific feature or hold app-wide state.
+- **`features/<feature-name>/<component-name>/`** — routed, feature-specific UI (e.g., `features/auth/login`, `features/auth/register`).
+- Services return Observables (RxJS); components subscribe. Inject services via constructor. Unsubscribe using async pipe or takeUntil.
 
 ## Database (`database/`)
 
-- Raw SQL, no migration tool by design.
-- `schema/` holds numbered, ordered SQL files (`001_core_schema.sql`, `002_...`). Add new numbered files for schema changes; don't edit old ones in place.
+Raw SQL, no migration tool by design. `schema/` holds numbered SQL files. **Never edit old files (001, 002, etc.); create new numbered files** for schema changes: `005_add_orders_table.sql`. Docker applies all files in order on startup.
 
 ## Commands
 
@@ -36,93 +60,41 @@ Conventions for anyone (human or AI agent) working on this repo. Keep changes co
 
 Three separate processes/containers, each on its own port: `frontend` (4200) → `backend` (8081) → `db` (5432). The browser only ever talks to `frontend` and `backend`; only `backend` talks to `db`. Don't add direct frontend→db calls.
 
+## API Versioning
+
+All endpoints use `/api/v1/` prefix. Example: `/api/v1/orders`, `/api/v1/auth/login`. When implementing: use `/api/v1/` in controller route mapping and frontend service calls. Document in API-CONTRACTS.md with the `/api/v1/` prefix.
+
 ## API Contracts
 
 **🔗 Reference:** `/API-CONTRACTS.md` is the single source of truth for all API endpoints, request/response formats, and team agreements.
 
-All 6 developers work in parallel by following this contract strictly. Breaking changes require team approval.
+- Backend: Implement endpoints to match the contract exactly. Every field must be present; field names case-sensitive.
+- Frontend: Build UI against contract; mock services first, swap real service when backend is ready.
+- Change Management: Don't change the contract unilaterally. Propose to team, update API-CONTRACTS.md and code synchronously.
 
-### Backend: Implementing Against the Contract
+## Feature Dependencies
 
-When implementing a new endpoint (e.g., `POST /api/orders`):
+Features can depend on other features. Keep dependencies acyclic.
 
-1. **Consult `/API-CONTRACTS.md`** — Find your endpoint section
-2. **Note the request structure** — Exact JSON fields and types
-3. **Note the response structure** — All fields must be present
-4. **Note the status codes** — Use the documented codes (201 for POST, 200 for GET, 404 for not found, etc.)
-5. **Create the feature package:**
-   ```
-   com.lemarketjames.<feature>/
-   ├── <Feature>Controller.java    (@RestController matching endpoint path)
-   ├── <Feature>Service.java       (@Service with business logic)
-   ├── dto/
-   │   ├── <Feature>Request.java   (matches request JSON structure)
-   │   └── <Feature>Response.java  (matches response JSON structure)
-   └── <Feature>Repository.java    (if needed, queries the database)
-   ```
+- **Auth:** Self-contained. No dependencies on other features.
+- **Orders:** May depend on Auth (user context), Holdings (inventory), Quotes (pricing).
+- **Holdings:** May depend on Auth (user context). Called by Orders.
+- **Quotes:** External data source. Minimal dependencies; called by Orders for pricing.
+- **Sessions:** Depends on Auth (session management).
 
-6. **Return response JSON matching the contract exactly:**
-   - Every field in the contract must be present
-   - Field names must match exactly (case-sensitive)
-   - Data types must match
-   - Include all documented error cases (400, 401, 404, etc.)
+How: Services call other services via constructor injection. Document dependencies in comments.
 
-**Important:** Don't add extra fields or change field names without team approval. The frontend is mocking against this contract and will break if you deviate.
+## Common Pitfalls (and How to Avoid Them)
 
-### Frontend: Mocking & Building Against the Contract
-
-When building UI for a feature (e.g., Orders Dashboard):
-
-1. **Consult `/API-CONTRACTS.md`** — Find your endpoint section
-2. **Create the service:**
-   ```typescript
-   // src/app/core/<feature>/<feature>.service.ts
-   @Injectable({ providedIn: 'root' })
-   export class OrdersService {
-     constructor(private http: HttpClient) {}
-     getOrders() { return this.http.get<OrdersResponse>('/api/orders'); }
-     getOrder(id: string) { return this.http.get<OrderResponse>(`/api/orders/${id}`); }
-     createOrder(req: CreateOrderRequest) { return this.http.post<OrderResponse>('/api/orders', req); }
-   }
-   ```
-
-3. **Create TypeScript interfaces** matching the contract exactly:
-   ```typescript
-   // src/app/shared/models/<feature>.model.ts
-   export interface Order {
-     orderId: string;        // Match contract exactly
-     symbol: string;
-     quantity: number;
-     type: 'BUY' | 'SELL';
-     // ... all fields from the contract
-   }
-   ```
-
-4. **Mock the service** using contract examples (don't wait for backend):
-   ```typescript
-   // During development, provide the mock
-   { provide: OrdersService, useClass: OrdersServiceMock }
-   // Build UI against this mock data
-   ```
-
-5. **When backend is ready,** swap the mock for the real service (same interface → seamless):
-   ```typescript
-   // Remove mock provider, use real OrdersService
-   // Integration should work without UI changes
-   ```
-
-**Development Workflow:**
-- Phase 1 (Parallel): Frontend builds UI with mocks, Backend implements endpoints
-- Phase 2 (Integration): Swap mock for real service, test together
-
-### Change Management
-
-If you need to change the contract (endpoint path, request fields, response fields):
-1. **Don't make the change unilaterally** — it breaks the parallel workflow
-2. **Propose to the team** — discuss in standup or PR
-3. **Update `/API-CONTRACTS.md` together** — it's the source of truth
-4. **Update both backend and frontend** — keep them in sync
-5. **Version the change** — document in the contract's version history
+❌ **Don't split a feature across top-level folders** — Right: Everything under `com.lemarketjames.orders/`
+❌ **Don't put business logic in Repository classes** — Repositories = data access only
+❌ **Don't add feature-specific code to config/ or common/** — Put it in the feature package
+❌ **Don't query the database directly in Services** — Use repositories
+❌ **Don't make frontend components import from core/ unless accessing global state**
+❌ **Don't deviate from API contracts without team approval**
+❌ **Don't forget to register feature-specific exceptions in GlobalExceptionHandler**
+❌ **Don't edit old database/schema/ files; create new numbered files** for schema changes
+❌ **Don't assume component scanning works with wrong package structure** — Use `com.lemarketjames.*`
 
 ## General
 
