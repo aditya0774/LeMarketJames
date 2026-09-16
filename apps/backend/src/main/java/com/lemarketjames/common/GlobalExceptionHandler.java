@@ -69,6 +69,9 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", "Access denied",
                     "code", "ACCOUNT_ACCESS_DENIED"
+                ));
+    }
+
     @ExceptionHandler(SessionExpiredException.class)
     public ResponseEntity<Map<String, Object>> handleSessionExpired(SessionExpiredException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
