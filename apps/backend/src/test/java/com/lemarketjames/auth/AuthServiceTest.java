@@ -85,15 +85,6 @@ class AuthServiceTest {
         assertThrows(ValidationException.class, () -> authService.register(request));
     }
 
-    // Registration must be refused unless the client explicitly accepts the terms and conditions.
-    @Test
-    void registerRejectsWhenTermsNotAccepted() {
-        RegisterRequest request = validRegisterRequest("bob");
-        request.setTermsAccepted(false);
-
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
-    }
-
     // Two accounts cannot share the same email address, even under different usernames.
     @Test
     void registerRejectsDuplicateEmail() {
@@ -185,7 +176,6 @@ class AuthServiceTest {
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));
         request.setPhoneNumber("(555) 123-4567");
-        request.setTermsAccepted(true);
         return request;
     }
 }

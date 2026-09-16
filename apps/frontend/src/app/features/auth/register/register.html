@@ -398,23 +398,7 @@
           }
         </div>
 
-        <div class="terms-row">
-          <input
-            type="checkbox"
-            id="agreeToTerms"
-            name="agreeToTerms"
-            [(ngModel)]="registerData.agreeToTerms"
-            (blur)="validateField('agreeToTerms')"
-            (change)="clearFieldError('agreeToTerms')"
-          />
-          <label for="agreeToTerms">
-            I agree to the
-            <a class="link-gold" href="/terms" target="_blank" rel="noopener">terms and conditions</a>
-          </label>
-        </div>
-        @if (validationErrors['agreeToTerms']) {
-          <div class="field-error">{{ validationErrors['agreeToTerms'] }}</div>
-        }
+
 
         <button type="submit" class="btn btn-gold" style="margin-top: 6px" [disabled]="submitting()">
           {{ submitting() ? 'Registering…' : 'Create account' }}

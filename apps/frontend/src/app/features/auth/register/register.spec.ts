@@ -97,7 +97,6 @@ describe('Register', () => {
       phoneNumber: '(555) 123-4567',
       password: 'Pass123!',
       confirmPassword: 'Pass123!',
-      agreeToTerms: true,
     };
 
     component.onSubmit();
@@ -126,7 +125,6 @@ describe('Register', () => {
       phoneNumber: '(555) 123-4567',
       password: 'Pass123!',
       confirmPassword: 'Pass123!',
-      agreeToTerms: true,
     };
 
     component.onSubmit();

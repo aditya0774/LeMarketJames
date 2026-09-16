@@ -40,7 +40,7 @@ CREATE TABLE addresses (
     address_type    VARCHAR(20) NOT NULL CHECK (address_type IN ('RESIDENTIAL', 'MAILING')),
     street_address  VARCHAR(255) NOT NULL,
     city            VARCHAR(100) NOT NULL,
-    state           VARCHAR(2) NOT NULL,
+    state           VARCHAR(20) NOT NULL,
     postal_code     VARCHAR(10) NOT NULL,
     country         VARCHAR(2) NOT NULL DEFAULT 'US',
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()

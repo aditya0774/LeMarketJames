@@ -67,8 +67,7 @@ export class Register {
     email: '',
     phoneNumber: '',
     password: '',
-    confirmPassword: '',
-    agreeToTerms: false
+    confirmPassword: ''
   };
 
   // This object keeps a separate error message for each form field.

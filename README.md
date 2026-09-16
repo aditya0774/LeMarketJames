@@ -172,8 +172,10 @@ This is the recommended approach for active development, as it provides hot-relo
 
 2. Apply the schema files **in numeric order** (only needed once, or after `docker compose down -v`):
    ```bash
-   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
-   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
    ```
    Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
 
@@ -193,7 +195,7 @@ This is the recommended approach for active development, as it provides hot-relo
    ```bash
    mvn spring-boot:run
    ```
-   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/paysprint` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
+   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/lemarket` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
 
 4. Confirm the backend can reach the database:
    ```bash
@@ -276,8 +278,10 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
 
 2. Apply the schema (schema application is manual, not automated — see `database/README.md`):
    ```bash
-   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
-   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
    ```
 
 3. Confirm the backend is up and connected to the database:
