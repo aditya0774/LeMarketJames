@@ -1,71 +1,72 @@
-<div class="login-container">
-  <mat-card class="login-card">
-    <mat-card-header>
-      <mat-card-title>Welcome back</mat-card-title>
-      <mat-card-subtitle>Log in to your LeMarket James account</mat-card-subtitle>
-    </mat-card-header>
+<div class="auth-wrap">
+  <a class="back-link" routerLink="/">&larr; Back</a>
 
-    <mat-card-content>
-      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
-        <mat-form-field class="full-width">
-          <mat-label>Username</mat-label>
-          <input matInput id="username" formControlName="username" type="text" />
-          @if (form.get('username')?.hasError('required')) {
-            <mat-error>Username is required.</mat-error>
+  <div class="auth-brand">
+    <img src="/lemarket-logo.png" alt="LeMarket logo" />
+    <span class="wordmark"><span class="le-accent">Le</span>Market</span>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-card">
+      <h2>Log in</h2>
+      <div class="sub">Enter your credentials to access your account.</div>
+
+      @if (errorMessage()) {
+        <div class="alert err">
+          <span aria-hidden="true">&#9888;</span>
+          <div><b>Login failed</b>{{ errorMessage() }}</div>
+        </div>
+      }
+
+      <!-- Registration stores the email as the username, so users log in with their email. -->
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="field">
+          <label for="username">Email address</label>
+          <input
+            id="username"
+            type="email"
+            formControlName="username"
+            placeholder="you@lemarket.com"
+            autocomplete="username"
+          />
+          @if (form.get('username')?.touched && form.get('username')?.hasError('required')) {
+            <div class="field-error">Email is required.</div>
           }
-        </mat-form-field>
-
-        <div class="password-field-wrapper">
-          <mat-form-field class="full-width">
-            <mat-label>Password</mat-label>
-            <input
-              matInput
-              [type]="showPassword ? 'text' : 'password'"
-              id="password"
-              formControlName="password"
-            />
-            @if (form.get('password')?.hasError('required')) {
-              <mat-error>Password is required.</mat-error>
-            }
-          </mat-form-field>
-          <button
-            type="button"
-            class="password-toggle"
-            (click)="togglePasswordVisibility()"
-            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-          >
-            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
         </div>
 
-        <div class="form-actions">
-          @if (errorMessage()) {
-            <div class="error-message">
-              <mat-icon>error</mat-icon>
-              <span>{{ errorMessage() }}</span>
-            </div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="password">Password</label>
+            <button
+              type="button"
+              class="pw-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Your password"
+            autocomplete="current-password"
+          />
+          @if (form.get('password')?.touched && form.get('password')?.hasError('required')) {
+            <div class="field-error">Password is required.</div>
           }
-
-          <button mat-raised-button color="primary" type="submit" [disabled]="submitting()" class="submit-button">
-            @if (submitting()) {
-              <ng-container>
-                <mat-icon>hourglass_empty</mat-icon>
-                <span>Logging in...</span>
-              </ng-container>
-            } @else {
-              <ng-container>
-                <mat-icon>login</mat-icon>
-                <span>Log in</span>
-              </ng-container>
-            }
-          </button>
+          <div class="hint" style="text-align: right">
+            <a class="link-gold">Forgot password?</a>
+          </div>
         </div>
+
+        <button type="submit" class="btn btn-gold" style="margin-top: 6px" [disabled]="submitting()">
+          {{ submitting() ? 'Logging in…' : 'Log in' }}
+        </button>
       </form>
-    </mat-card-content>
 
-    <mat-card-footer class="footer">
-      <p>Need an account? <a routerLink="/register" class="login-link">Register</a></p>
-    </mat-card-footer>
-  </mat-card>
+      <div class="switch-line">New to LeMarket? <a routerLink="/register">Create an account</a></div>
+    </div>
+  </div>
 </div>
-
