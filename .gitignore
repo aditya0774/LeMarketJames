@@ -12,6 +12,7 @@ apps/frontend/.angular/
 apps/frontend/dist/
 apps/frontend/coverage/
 apps/frontend/.sass-cache/
+apps/frontend/src/environments/
 
 # IDE / editor metadata
 .idea/
@@ -26,5 +27,3 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
-.environment.ts
-.environment.*.ts
