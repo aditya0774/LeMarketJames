@@ -93,7 +93,7 @@ class AuthControllerTest {
 
         String loginJson = """
                 {
-                  "username": "testuser",
+                  "username": "test@example.com",
                   "password": "Pass123!"
                 }
                 """;
@@ -227,7 +227,7 @@ class AuthControllerTest {
     void loginRejectsInvalidCredentials() throws Exception {
         String loginJson = """
                 {
-                  "username": "nobody",
+                  "username": "nobody@example.com",
                   "password": "WrongPass!"
                 }
                 """;
@@ -236,7 +236,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Invalid username or password"));
+                .andExpect(jsonPath("$.message").value("Invalid email or password"));
     }
 
     @Test
@@ -267,7 +267,7 @@ class AuthControllerTest {
 
         String loginJson = """
                 {
-                  "username": "cookieuser",
+                  "username": "cookieuser@example.com",
                   "password": "Pass123!"
                 }
                 """;

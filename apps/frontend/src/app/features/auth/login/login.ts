@@ -45,7 +45,7 @@ export class Login {
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
-      await this.router.navigate(['/']);
+      await this.router.navigate(['/dashboard']);
     } catch (error) {
       const serverMessage =
         error instanceof HttpErrorResponse &&
@@ -53,7 +53,7 @@ export class Login {
         typeof error.error?.message === 'string'
           ? error.error.message
           : null;
-      this.errorMessage.set(serverMessage ?? 'Invalid username or password.');
+      this.errorMessage.set(serverMessage ?? 'Invalid email or password.');
     } finally {
       this.submitting.set(false);
     }

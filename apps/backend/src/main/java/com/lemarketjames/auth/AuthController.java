@@ -3,6 +3,7 @@ package com.lemarketjames.auth;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -21,14 +22,18 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final boolean secureCookie;
 
     /**
      * Constructs an AuthController with the given AuthService.
      *
      * @param authService the authentication service to use
+     * @param secureCookie whether the auth cookie is marked Secure (HTTPS-only); disable only for plain-HTTP environments
      */
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService,
+                          @Value("${auth.cookie.secure:true}") boolean secureCookie) {
         this.authService = authService;
+        this.secureCookie = secureCookie;
     }
 
     /**
@@ -94,7 +99,7 @@ public class AuthController {
     private ResponseCookie buildAuthCookie(String token, long maxAgeSeconds) {
         return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(secureCookie)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(maxAgeSeconds)
