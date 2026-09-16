@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "set LINUX_IP=10.14.129.6 && ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "load-env": "node ../../scripts/load-env.js",
+    "start": "npm run load-env && ng serve",
+    "build": "npm run load-env && ng build",
+    "watch": "npm run load-env && ng build --watch --configuration development",
     "test": "ng test"
   },
   "private": true,
