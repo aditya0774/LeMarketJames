@@ -2,23 +2,10 @@ import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { Auth } from '../../../core/auth/auth';
 
 @Component({
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-  ],
+  imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
@@ -27,8 +14,8 @@ import { Auth } from '../../../core/auth/auth';
  * Login Component
  *
  * Renders the login form and delegates authentication to the Auth service.
- * Styling mirrors the register page (mat-card, gradient background, password
- * show/hide toggle) for visual consistency between the two auth screens.
+ * Uses the shared LeMarket auth styles (see styles.css and the LeUI mockup),
+ * matching the register page, including its password show/hide toggle.
  */
 export class Login {
   protected readonly errorMessage = signal<string | null>(null);

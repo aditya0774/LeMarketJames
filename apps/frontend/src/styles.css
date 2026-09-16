@@ -1,6 +1,5 @@
 /* LeMarket design system — see LeUI/lemarket-ui-mockup.html for the source design.
-   Everything here is either a new class name or scoped under .auth-wrap, so the
-   Material-based Login page is unaffected. */
+   Everything here is either a new class name or scoped under .auth-wrap. */
 
 :root {
   --ink: #0f0a1a;
