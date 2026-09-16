@@ -14,16 +14,47 @@ apps/frontend/coverage/
 apps/frontend/.sass-cache/
 apps/frontend/src/environments/
 
-# IDE / editor metadata
+# Compiled output (Angular)
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
 .idea/
-.vscode/
-*.iml
-*.log
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# OS files
-.DS_Store
-Thumbs.db
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/*
 
+# Miscellaneous
+/.angular/cache
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# Environment files
 .env
 .env.local
 .env.*.local
+
+# System files
+.DS_Store
+Thumbs.db
