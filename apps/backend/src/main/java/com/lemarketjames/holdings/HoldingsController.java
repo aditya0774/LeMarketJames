@@ -6,6 +6,7 @@ import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.service.HoldingsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,19 +28,23 @@ public class HoldingsController {
 
     /**
      * AC1: Retrieve all holdings for the authenticated user.
+     * AC2: Requests scoped to authenticated user
+     * 
      * @param accountId the account ID
      * @return holdings response with success flag and holdings list
      */
     @GetMapping
     public ResponseEntity<HoldingsResponse> getHoldings(
             @RequestParam Integer accountId) {
-        HoldingsResponse response = holdingsService.getHoldingsForAccount(accountId);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        HoldingsResponse response = holdingsService.getHoldingsForAccount(accountId, username);
         return ResponseEntity.ok(response);
     }
 
     /**
+     * AC1: Unauthorized data access prevented
      * AC2: Validate that user has sufficient holdings to sell a given quantity.
-     * Returns 200 if validation passes, 400 if insufficient holdings.
+     * Returns 200 if validation passes, 403 if unauthorized, 400 if insufficient holdings.
      * @param request the validation request
      * @return success/error response
      */
@@ -47,8 +52,10 @@ public class HoldingsController {
     public ResponseEntity<?> validateHoldings(
             @RequestBody ValidateHoldingRequest request) {
         try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
             holdingsService.validateSufficientHoldings(
                 request.getAccountId(),
+                username,
                 request.getInstrumentId(),
                 request.getSellQuantity()
             );
