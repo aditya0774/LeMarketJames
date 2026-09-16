@@ -71,8 +71,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -155,8 +154,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -190,8 +188,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
         String secondRegisterJson = """
@@ -210,8 +207,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -225,36 +221,6 @@ class AuthControllerTest {
                         .content(secondRegisterJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Email is already registered"));
-    }
-
-    @Test
-    void registerRejectsWhenTermsNotAccepted() throws Exception {
-        String registerJson = """
-                {
-                  "username": "notermsuser",
-                  "password": "Pass123!",
-                  "email": "noterms@example.com",
-                  "fullName": "No Terms User",
-                  "streetAddress": "123 Main St",
-                  "city": "Springfield",
-                  "state": "IL",
-                  "zipCode": "62701",
-                  "country": "US",
-                  "ssn": "123-45-6789",
-                  "initialDeposit": 500,
-                  "investmentExperience": "beginner",
-                  "employmentStatus": "employed",
-                  "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": false
-                }
-                """;
-
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerJson))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Terms and conditions must be accepted"));
     }
 
     @Test
@@ -291,8 +257,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
         mockMvc.perform(post("/api/auth/register")

@@ -444,23 +444,7 @@
           <div class="error-display">{{ validationErrors['confirmPassword'] }}</div>
         }
 
-        <!-- TERMS AND CONDITIONS SECTION -->
-        <div class="form-section terms-section">
-          <mat-checkbox
-            id="agreeToTerms"
-            name="agreeToTerms"
-            [(ngModel)]="registerData.agreeToTerms"
-            (blur)="validateField('agreeToTerms')"
-            (change)="clearFieldError('agreeToTerms')"
-            class="terms-checkbox"
-          >
-            I agree to the <a href="/terms" target="_blank" class="terms-link">terms and conditions</a>
-            <span class="required">*</span>
-          </mat-checkbox>
-          @if (validationErrors['agreeToTerms']) {
-            <div class="error-display">{{ validationErrors['agreeToTerms'] }}</div>
-          }
-        </div>
+
 
         <!-- SUBMIT SECTION -->
         <div class="form-actions">

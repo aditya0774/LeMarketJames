@@ -248,9 +248,6 @@ public class AuthService {
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
-        if (!Boolean.TRUE.equals(request.getTermsAccepted())) {
-            throw new IllegalArgumentException("Terms and conditions must be accepted");
-        }
     }
 
     /**

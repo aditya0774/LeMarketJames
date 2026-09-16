@@ -77,8 +77,7 @@ class QuotesControllerTest {
                   "investmentExperience": "beginner",
                                                                         "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """.formatted(username, email);
 
