@@ -24,6 +24,9 @@ apps/frontend/src/environments/
 npm-debug.log
 yarn-error.log
 
+# Logs
+*.log
+
 # IDEs and editors
 .idea/
 .project
