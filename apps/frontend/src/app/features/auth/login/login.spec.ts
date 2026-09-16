@@ -60,13 +60,13 @@ describe('Login', () => {
     expect((component as any).form.get('password')?.touched).toBeTruthy();
   });
 
-  it('should authenticate registered user and navigate to home', async () => {
-    (component as any).form.setValue({ username: 'alice', password: 'Pass123!' });
+  it('should authenticate registered user and navigate to dashboard', async () => {
+    (component as any).form.setValue({ username: 'alice@example.com', password: 'Pass123!' });
     await component.submit();
 
-    expect(loginCalls).toEqual([{ username: 'alice', password: 'Pass123!' }]);
+    expect(loginCalls).toEqual([{ username: 'alice@example.com', password: 'Pass123!' }]);
     expect(navigateCalls).toBe(1);
-    expect(navigateArgs).toEqual([['/']]);
+    expect(navigateArgs).toEqual([['/dashboard']]);
     expect((component as any).errorMessage()).toBeNull();
   });
 
@@ -74,14 +74,14 @@ describe('Login', () => {
     authMock.login = async () => {
       throw new HttpErrorResponse({
         status: 400,
-        error: { message: 'Invalid username or password' },
+        error: { message: 'Invalid email or password' },
       });
     };
 
-    (component as any).form.setValue({ username: 'alice', password: 'WrongPass!' });
+    (component as any).form.setValue({ username: 'alice@example.com', password: 'WrongPass!' });
     await component.submit();
 
-    expect((component as any).errorMessage()).toBe('Invalid username or password');
+    expect((component as any).errorMessage()).toBe('Invalid email or password');
   });
 
   it('should show lockout delay message after repeated failed attempts', async () => {
@@ -94,7 +94,7 @@ describe('Login', () => {
       });
     };
 
-    (component as any).form.setValue({ username: 'alice', password: 'Pass123!' });
+    (component as any).form.setValue({ username: 'alice@example.com', password: 'Pass123!' });
     await component.submit();
 
     expect((component as any).errorMessage()).toContain('temporarily locked');
