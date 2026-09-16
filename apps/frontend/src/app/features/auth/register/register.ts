@@ -2,36 +2,12 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatRadioModule } from '@angular/material/radio';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
 import { Auth } from '../../../core/auth/auth';
 
 @Component({
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatRadioModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatCardModule,
-    MatIconModule,
-    MatCheckboxModule,
-  ],
+  imports: [CommonModule, FormsModule, RouterLink],
   selector: 'app-register',
   standalone: true,
   templateUrl: './register.html',
@@ -132,21 +108,28 @@ export class Register {
   }
 
   /**
-   * Handles date of birth selection from Material datepicker.
-   * 
-   * Converts the Date object returned by the datepicker into an ISO string (YYYY-MM-DD)
-   * so it matches the format expected by the validation schema.
-   * 
-   * @param {Date} date - The date selected from the datepicker
+   * Normalizes a date of birth value to the YYYY-MM-DD string the schema requires.
+   *
+   * A native <input type="date"> already supplies that format, so the string is passed
+   * through; a Date is still accepted so the method stays usable from a datepicker.
+   *
+   * @param {Date | string | null | undefined} value - The selected date of birth
    */
-  onDateOfBirthChange(date: Date) {
-    if (date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      this.registerData.dateOfBirth = `${year}-${month}-${day}`;
-      this.clearFieldError('dateOfBirth');
+  onDateOfBirthChange(value: Date | string | null | undefined) {
+    if (!value) {
+      return;
     }
+
+    if (typeof value === 'string') {
+      this.registerData.dateOfBirth = value;
+    } else {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, '0');
+      const day = String(value.getDate()).padStart(2, '0');
+      this.registerData.dateOfBirth = `${year}-${month}-${day}`;
+    }
+
+    this.clearFieldError('dateOfBirth');
   }
 
   /**

@@ -1,11 +1,17 @@
 package com.lemarketjames.common;
 
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.orders.exception.NotTradableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /** Translates feature-thrown exceptions into structured, consistent error responses. */
@@ -16,6 +22,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidation(ValidationException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("errors", ex.getFieldErrors()));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("errors", errors));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -31,6 +49,36 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", ex.getMessage(),
                     "code", "INSUFFICIENT_HOLDINGS"
+                ));
+    }
+
+    @ExceptionHandler(NotTradableException.class)
+    public ResponseEntity<Map<String, Object>> handleNotTradable(NotTradableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "NOT_TRADABLE"
+                ));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                    "success", false,
+                    "error", "Access denied",
+                    "code", "ACCOUNT_ACCESS_DENIED"
+                ));
+    }
+
+    @ExceptionHandler(SessionExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleSessionExpired(SessionExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "SESSION_EXPIRED"
                 ));
     }
 }

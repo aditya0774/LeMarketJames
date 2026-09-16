@@ -14,7 +14,13 @@ com.lemarketjames.holdings.service
 com.lemarketjames.orders
 com.lemarketjames.orders.dto
 com.lemarketjames.orders.entity
+com.lemarketjames.orders.exception
 com.lemarketjames.orders.repository
 com.lemarketjames.orders.service
 com.lemarketjames.quotes
 com.lemarketjames.quotes.dto
+com.lemarketjames.sessions
+com.lemarketjames.sessions.dto
+com.lemarketjames.sessions.entity
+com.lemarketjames.sessions.exception
+com.lemarketjames.sessions.service

@@ -1,5 +1,6 @@
 services:
   frontend:
+    image: lemarketjames/frontend:${IMAGE_TAG:-dev}
     build: ./apps/frontend
     ports:
       - "4200:80"
@@ -7,6 +8,7 @@ services:
       - backend
 
   backend:
+    image: lemarketjames/backend:${IMAGE_TAG:-dev}
     build: ./apps/backend
     ports:
       - "8081:8081"
