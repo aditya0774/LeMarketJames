@@ -93,10 +93,22 @@ Creates a new order.
 }
 ```
 
+#### Response (403 Forbidden)
+
+```json
+{
+  "success": false,
+  "error": "Access denied",
+  "code": "ACCOUNT_ACCESS_DENIED"
+}
+```
+
 #### Notes
 
 - Tradability is enforced inline during order creation.
 - Requests for instruments with `tradable=false` are rejected with the stable error code `NOT_TRADABLE`.
+- Order creation is allowed only for the authenticated user's own account.
+- Cross-account order attempts are rejected with HTTP 403 and error code `ACCOUNT_ACCESS_DENIED`.
 
 ---
 

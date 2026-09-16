@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -94,5 +95,22 @@ class OrderControllerTest {
             .andExpect(jsonPath("$.errors.instrumentId").exists())
             .andExpect(jsonPath("$.errors.orderType").exists())
             .andExpect(jsonPath("$.errors.quantity").exists());
+    }
+
+    @Test
+    @WithMockUser(username = "testuser")
+    void createOrderReturnsForbiddenForAccountAccessDenied() throws Exception {
+        CreateOrderRequest request = new CreateOrderRequest(99, 1, Order.OrderType.BUY, new BigDecimal("10"));
+
+        when(orderService.createOrder(any(CreateOrderRequest.class)))
+            .thenThrow(new AccessDeniedException("Account access is not allowed"));
+
+        mockMvc.perform(post("/api/v1/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error").value("Access denied"))
+            .andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
     }
 }

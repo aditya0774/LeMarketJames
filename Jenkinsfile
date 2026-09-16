@@ -47,13 +47,36 @@ pipeline {
             }
         }
 
+        stage('Build versioned Docker images') {
+            steps {
+                sh '''
+                    set -eu
+
+                    short_sha=$(git rev-parse --short=8 HEAD)
+                    image_tag="${BUILD_NUMBER:-local}-${short_sha}"
+                    echo "$image_tag" > .image_tag
+
+                    docker build -t "lemarketjames/backend:$image_tag" ./apps/backend
+                    docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
+
+                    docker image inspect "lemarketjames/backend:$image_tag" >/dev/null
+                    docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
+
+                    echo "Built versioned images with tag: $image_tag"
+                '''
+            }
+        }
+
         stage('Start application with Docker Compose') {
             steps {
                 sh '''
+                    set -eu
+                    image_tag=$(cat .image_tag)
+
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose up -d --build
+                        IMAGE_TAG="$image_tag" docker compose up -d --build
                     else
-                        docker-compose up -d --build
+                        IMAGE_TAG="$image_tag" docker-compose up -d --build
                     fi
                 '''
             }
@@ -225,8 +248,6 @@ JSON
 JSON
 )
 
-                    order_payload='{"accountId":1,"instrumentId":3,"orderType":"BUY","quantity":1}'
-
                     cookie_file=$(mktemp)
                     order_error_file=$(mktemp)
                     trap 'rm -f "$cookie_file" "$order_error_file"' EXIT
@@ -243,6 +264,22 @@ JSON
                         --header "Content-Type: application/json" \
                         --data "$login_payload" \
                         >/dev/null
+
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+
+                    account_id=$(compose exec -T db psql -At -U lemarket -d lemarket \
+                        -c "SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id = a.client_id WHERE c.username = '$user' LIMIT 1;")
+
+                    test -n "$account_id"
+
+                    order_payload=$(cat <<JSON
+{"accountId":$account_id,"instrumentId":3,"orderType":"BUY","quantity":1}
+JSON
+)
 
                     order_status=$(curl --silent --output "$order_error_file" --write-out "%{http_code}" \
                         --cookie "$cookie_file" \

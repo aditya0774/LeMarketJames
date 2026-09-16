@@ -1,5 +1,6 @@
 package com.lemarketjames.orders.service;
 
+import com.lemarketjames.auth.domain.AccountRepository;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Instrument;
@@ -9,10 +10,14 @@ import com.lemarketjames.orders.repository.InstrumentRepository;
 import com.lemarketjames.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +36,22 @@ class OrderServiceTest {
 
     @Mock
     private InstrumentRepository instrumentRepository;
+
+    @Mock
+    private AccountRepository accountRepository;
     
     private OrderService orderService;
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository);
+        SecurityContextHolder.getContext()
+            .setAuthentication(new TestingAuthenticationToken("testuser", "n/a", "ROLE_USER"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
     
     @Test
@@ -56,6 +71,7 @@ class OrderServiceTest {
         instrument.setInstrumentId(1);
         instrument.setTradable(true);
         
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
         
@@ -82,6 +98,7 @@ class OrderServiceTest {
         instrument.setInstrumentId(1);
         instrument.setTradable(false);
 
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
 
         // Act & Assert
@@ -96,10 +113,23 @@ class OrderServiceTest {
             1, 999, Order.OrderType.BUY, new BigDecimal("10")
         );
 
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         when(instrumentRepository.findById(999)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    }
+
+    @Test
+    @DisplayName("Create order throws access denied when account does not belong to authenticated user")
+    void testCreateOrderAccountAccessDenied() {
+        CreateOrderRequest request = new CreateOrderRequest(
+            99, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> orderService.createOrder(request));
     }
     
     @Test

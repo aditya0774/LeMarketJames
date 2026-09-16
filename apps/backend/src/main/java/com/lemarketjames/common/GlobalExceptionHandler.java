@@ -2,6 +2,7 @@ package com.lemarketjames.common;
 
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,6 +58,16 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", ex.getMessage(),
                     "code", "NOT_TRADABLE"
+                ));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                    "success", false,
+                    "error", "Access denied",
+                    "code", "ACCOUNT_ACCESS_DENIED"
                 ));
     }
 }
