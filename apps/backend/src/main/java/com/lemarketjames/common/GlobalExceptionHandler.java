@@ -4,6 +4,7 @@ import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -68,6 +69,13 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", "Access denied",
                     "code", "ACCOUNT_ACCESS_DENIED"
+    @ExceptionHandler(SessionExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleSessionExpired(SessionExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "SESSION_EXPIRED"
                 ));
     }
 }

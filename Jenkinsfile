@@ -6,6 +6,20 @@ pipeline {
     }
 
     stages {
+        stage('Clean up stale volumes') {
+            steps {
+                sh '''
+                    set +e
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose down -v --remove-orphans
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        docker-compose down -v --remove-orphans
+                    fi
+                    set -e
+                '''
+            }
+        }
+
         stage('Test with Maven') {
             steps {
                 dir('apps/backend') {
@@ -309,9 +323,9 @@ JSON
         cleanup {
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose down --rmi local --remove-orphans || true
+                    docker compose down -v --rmi local --remove-orphans || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose down --rmi local --remove-orphans || true
+                    docker-compose down -v --rmi local --remove-orphans || true
                 fi
             '''
         }

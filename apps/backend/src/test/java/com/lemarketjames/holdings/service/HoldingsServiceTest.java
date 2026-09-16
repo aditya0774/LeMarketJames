@@ -6,8 +6,10 @@ import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.repository.HoldingsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,9 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class HoldingsServiceTest {
 
-    @MockBean
+    @Mock
     private HoldingsRepository holdingsRepository;
 
     private HoldingsService holdingsService;
