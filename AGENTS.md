@@ -43,3 +43,4 @@
 - **Layered responsibility:** Repository (data), Service (logic), Controller/Component (HTTP/UI)
 - **API contracts first:** Backend and frontend stay in sync via `/API-CONTRACTS.md`
 - **Secrets in env files:** Never commit credentials or API keys
+- **Readability:** Include comments of why code exists to improve readability.
