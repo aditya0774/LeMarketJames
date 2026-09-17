@@ -129,7 +129,7 @@ describe('Register', () => {
 
     component.onSubmit();
 
-    const req = httpMock.expectOne('http://localhost:8081/api/auth/register');
+    const req = httpMock.expectOne('http://10.14.129.6:8081/api/auth/register');
     expect(req.request.method).toBe('POST');
     req.flush({ success: true, message: 'Registration successful' });
 

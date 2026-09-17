@@ -175,11 +175,10 @@ public class OrderControllerTest {
             .content("{\"accountId\":1,\"instrumentId\":1,\"orderType\":\"BUY\",\"quantity\":50.0000,\"pricePerUnit\":100.00}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.success").value(true));
+    }
+
     @Autowired
     private ObjectMapper objectMapper;
-
-    @MockBean
-    private OrderService orderService;
 
     @Test
     @WithMockUser(username = "testuser")

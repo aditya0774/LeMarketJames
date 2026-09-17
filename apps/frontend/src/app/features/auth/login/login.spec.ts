@@ -25,6 +25,8 @@ describe('Login', () => {
       },
     };
 
+    TestBed.resetTestingModule();
+
     await TestBed.configureTestingModule({
       imports: [Login],
       providers: [
