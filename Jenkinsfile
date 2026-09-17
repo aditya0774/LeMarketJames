@@ -5,7 +5,21 @@ pipeline {
         nodejs 'NodeJS'
     }
 
+    environment {
+        DB_PASSWORD = credentials('lemarket-db-password')
+        JWT_SECRET = credentials('lemarket-jwt-secret')
+    }
+
     stages {
+        stage('Test and build Angular') {
+            steps {
+                dir('apps/frontend') {
+                    sh 'npm ci && npm test -- --watch=false && npm run build'
+                }
+            }
+        }
+
+        // Disposable testing database: remove -v here and in post cleanup before keeping real data.
         stage('Clean up stale volumes') {
             steps {
                 sh '''
@@ -134,6 +148,17 @@ pipeline {
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                     fi
                 '''
+            }
+        }
+
+        stage('Verify own-data isolation on PostgreSQL') {
+            steps {
+                dir('apps/backend') {
+                    sh 'mvn -B -Dspring.profiles.active=postgres-test -Dtest=OwnDataIntegrationTest test'
+                }
+            }
+            post {
+                always { junit 'apps/backend/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml' }
             }
         }
 

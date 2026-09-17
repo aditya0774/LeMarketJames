@@ -40,7 +40,11 @@ class AuthServiceLoggingTest {
 
         when(clientRepository.existsByUsername(anyString())).thenReturn(false);
         when(clientRepository.existsByEmail(anyString())).thenReturn(false);
-        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> {
+            ClientEntity client = invocation.getArgument(0);
+            when(clientRepository.findByUsername(client.getUsername())).thenReturn(java.util.Optional.of(client));
+            return client;
+        });
         when(addressRepository.save(any(AddressEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(accountRepository.save(any(AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

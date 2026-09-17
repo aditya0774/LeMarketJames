@@ -57,7 +57,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("username", result.getUsername(), "message", result.getMessage()));
+                .body(Map.of("username", result.getUsername(), "message", result.getMessage(), "accountId", authService.getAccountId(result.getUsername())));
     }
 
     /**
@@ -81,7 +81,7 @@ public class AuthController {
      */
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
-        return ResponseEntity.ok(Map.of("username", authentication.getName()));
+        return ResponseEntity.ok(Map.of("username", authentication.getName(), "accountId", authService.getAccountId(authentication.getName())));
     }
 
     /**

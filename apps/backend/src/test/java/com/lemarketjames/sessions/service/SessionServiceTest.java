@@ -24,8 +24,17 @@ class SessionServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new SessionService(testSecret);
+    var accounts = org.mockito.Mockito.mock(com.lemarketjames.auth.domain.AccountRepository.class);
+    org.mockito.Mockito.when(accounts.existsByAccountIdAndUsername(1, "user1")).thenReturn(true);
+    service = new SessionService(testSecret, accounts);
+    org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+        new org.springframework.security.authentication.TestingAuthenticationToken("user1", "n/a", "ROLE_USER"));
     signingKey = Keys.hmacShaKeyFor(testSecret.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @org.junit.jupiter.api.AfterEach
+  void clearAuthentication() {
+    org.springframework.security.core.context.SecurityContextHolder.clearContext();
   }
 
   /**

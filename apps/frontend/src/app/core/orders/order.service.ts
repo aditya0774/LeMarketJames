@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, defer, switchMap, throwError } from 'rxjs';
+import { HoldingsService } from '../holdings/holdings.service';
+import { Auth } from '../auth/auth';
 
 export interface OrderRequest {
   accountId: number;
@@ -32,13 +34,39 @@ export interface OrderResponse {
 export class OrderService {
   private apiUrl = '/api/v1/orders';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private holdingsService: HoldingsService,
+    private auth: Auth
+  ) {}
 
   /**
    * Create a new order
    */
   createOrder(request: OrderRequest): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(this.apiUrl, request);
+    // Snapshot the form values so validation and submission use the same order.
+    const order = { ...request };
+    if (order.orderType !== 'SELL') {
+      return this.http.post<OrderResponse>(this.apiUrl, order);
+    }
+
+    return defer(() => {
+      // Holdings validation uses the signed-in account, which must match the order.
+      if (!this.auth.currentAccountId() || order.accountId !== this.auth.currentAccountId()) {
+        return throwError(() => new Error('Please select your authenticated account before selling.'));
+      }
+      return this.holdingsService.validateOwnHoldings(order.instrumentId, order.quantity);
+    }).pipe(
+      switchMap(validation => {
+        if (order.accountId !== this.auth.currentAccountId()) {
+          return throwError(() => new Error('Your account changed. Please submit the order again.'));
+        }
+        if (!validation.success) {
+          return throwError(() => new Error(validation.error || 'Unable to validate holdings.'));
+        }
+        return this.http.post<OrderResponse>(this.apiUrl, order);
+      })
+    );
   }
 
   /**

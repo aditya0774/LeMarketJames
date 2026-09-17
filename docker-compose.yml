@@ -13,19 +13,28 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   db:
     image: postgres:16-alpine
+    healthcheck:
+      # TCP readiness waits until initial schema scripts have completed.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U lemarket -d lemarket"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     environment:
       POSTGRES_DB: lemarket
       POSTGRES_USER: lemarket
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (frontend/backend never call db directly

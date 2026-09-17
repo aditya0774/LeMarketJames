@@ -17,7 +17,7 @@ import java.util.Map;
  * AC2: POST /api/holdings/validate - validate sufficient holdings for sell order
  */
 @RestController
-@RequestMapping("/api/holdings")
+@RequestMapping({"/api/v1/holdings", "/api/holdings"})
 public class HoldingsController {
 
     private final HoldingsService holdingsService;

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +38,7 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final int MAX_FAILED_ATTEMPTS = 3;
 
-    private final Map<String, String> userStore = new ConcurrentHashMap<>();
+    private final Set<String> registeredUsernames = ConcurrentHashMap.newKeySet();
     private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
     private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
     private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
@@ -47,6 +48,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final long lockoutDurationMs;
+
+    /** Resolve the trading account from the server-authenticated identity. */
+    public Integer getAccountId(String username) {
+        return accountRepository.findAccountIdByUsername(username)
+            .orElseThrow(() -> new AccessDeniedException("Account access is not allowed"));
+    }
 
     /**
     * Constructs an AuthService with its authentication and persistence dependencies.
@@ -85,7 +92,7 @@ public class AuthService {
         String password = request.getPassword();
         String email = request.getEmail().toLowerCase();
 
-        if (clientRepository.existsByUsername(username) || userStore.containsKey(username)) {
+        if (clientRepository.existsByUsername(username) || registeredUsernames.contains(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
 
@@ -129,8 +136,8 @@ public class AuthService {
         account.setOpenedDate(LocalDate.now());
         accountRepository.save(account);
 
-        // Store password and email in memory for fast lookup
-        userStore.put(username, encodedPassword);
+        // Track registrations within the process; credentials are always read from PostgreSQL.
+        registeredUsernames.add(username);
         registeredEmails.add(email);
 
         log.info("Registration succeeded for username={}", username);
@@ -162,7 +169,8 @@ public class AuthService {
             failedLoginAttempts.remove(username);
         }
 
-        String storedPassword = userStore.get(username);
+        String storedPassword = clientRepository.findByUsername(username)
+            .map(ClientEntity::getPassword).orElse(null);
 
         if (storedPassword == null || !matchesPassword(password, storedPassword)) {
             registerFailedAttempt(username);

@@ -8,6 +8,8 @@ import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.exception.UnauthorizedException;
 import com.lemarketjames.holdings.repository.HoldingsRepository;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class HoldingsService {
+
+    private static final Logger log = LoggerFactory.getLogger(HoldingsService.class);
 
     private final HoldingsRepository holdingsRepository;
     private final AccountRepository accountRepository;
@@ -49,6 +53,7 @@ public class HoldingsService {
         boolean ownsAccount = accountRepository.existsByAccountIdAndUsername(accountId, username);
         
         if (!ownsAccount) {
+            log.warn("Holdings access denied for username={} accountId={}", username, accountId);
             throw new UnauthorizedException(
                 "User is not authorized to access this account");
         }

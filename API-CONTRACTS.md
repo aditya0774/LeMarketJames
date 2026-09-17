@@ -454,3 +454,16 @@ This API contract represents an agreement between frontend and backend developme
 ---
 
 *This document is subject to change only through formal team review and approval.*
+
+
+## IA-08: Own-data access
+
+- `POST /api/auth/login` returns `{ username, message, accountId }` and the HTTP-only JWT cookie.
+- `GET /api/auth/me` returns `{ username, accountId }` resolved from the authenticated identity and persisted account.
+- `GET /api/v1/holdings?accountId=...` and `POST /api/v1/holdings/validate` validate account ownership before repository access. `/api/holdings` remains a compatibility alias.
+- Order detail, account lists, status-filtered lists, updates, and rejection validate ownership. Instrument order searches return only the caller's orders.
+- Missing or foreign order IDs return the same HTTP 403 body: `{ "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`.
+- Session validation requires the JWT subject to match the authenticated caller and the requested account to belong to that caller.
+- Angular restores identity before initial navigation, clears cached holdings when accounts change, and does not submit SELL orders until holdings validation succeeds.
+
+Existing clients/accounts/holdings tables already persist the ownership relationship; IA-08 needs no new columns or migration. See `docs/IA-08-TESTING.md` for local checks and EC2/Jenkins verification.
