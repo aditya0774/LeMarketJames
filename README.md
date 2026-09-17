@@ -26,6 +26,7 @@ LeMarketJames/
 │   │   │   ├── Greeter.java        # Sample service
 │   │   │   ├── auth/               # Auth feature: controller, service, dto/, security/
 │   │   │   ├── common/             # Shared code used by multiple features
+│   │   │   ├── market/             # Simulated stock market (GBM price engine, persistence)
 │   │   │   └── config/             # Cross-cutting configuration (SecurityConfig, etc.)
 │   │   ├── src/main/resources/
 │   │   │   └── application.properties  # Spring Boot configuration
@@ -125,6 +126,22 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 - `POST /api/auth/logout` — Clear authentication cookie
 - `GET /api/auth/me` — Retrieve current authenticated user (requires valid JWT)
 
+**Market Simulation Module** (`com.lemarketjames.market`):
+- Simulates a live stock market so orders and holdings can be priced against current quotes (BR-08, BR-12, BR-13)
+- Prices follow **Geometric Brownian Motion (GBM)**: each tick applies `S × exp((μ − σ²/2)·Δt + σ·√Δt·Z)` using per-instrument drift (μ) and volatility (σ) from `instrument_market_params`
+- A shared market-wide shock makes stocks move partly together; bid/ask, day open/high/low, previous close, volume, market cap, P/E and dividend yield are derived from the price
+- Prices tick on a timer (default every second) and only during exchange hours (US equities 09:30–16:00 New York, weekdays); reading a quote never changes a price
+- Live prices are held in memory; the latest price per instrument is saved to `market_quotes` every 5 seconds (so a restart resumes where it left off) and 1-minute candles to `price_candles`
+- Other features read prices through `MarketDataService`
+- Configured with `sim.*` properties (see [Market simulation settings](#market-simulation-settings))
+
+**Quotes Module** (`com.lemarketjames.quotes`):
+- `GET /api/quotes/{symbol}` — Current simulated quote (requires valid JWT)
+
+**Holdings Module** (`com.lemarketjames.holdings`):
+- `GET /api/holdings?accountId={id}` — Holdings with current market price and value
+- `POST /api/holdings/validate` — Check a sell quantity against holdings
+
 **Data Models:**
 - User registration captures: username, password, email, full name, address, SSN, date of birth, initial deposit, investment experience, phone number
 - Passwords stored as BCrypt hashes with salt
@@ -176,6 +193,8 @@ This is the recommended approach for active development, as it provides hot-relo
    psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
    psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
    psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
    ```
    Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
 
@@ -282,6 +301,8 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
    psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
    psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
    psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
    ```
 
 3. Confirm the backend is up and connected to the database:
@@ -309,6 +330,23 @@ DB_PASSWORD=your_secure_password docker compose up -d --build
 ```
 
 **Database Port:** PostgreSQL is exposed on `localhost:5432` for use with database tools (e.g., pgAdmin, DBeaver).
+
+### Market simulation settings
+
+The simulated market is configured in `apps/backend/src/main/resources/application.properties`.
+Each setting can be overridden with an environment variable:
+
+| Property | Env variable | Default | Purpose |
+|---|---|---|---|
+| `sim.enabled` | `SIM_ENABLED` | `true` | Whether prices tick automatically |
+| `sim.tick-ms` | `SIM_TICK_MS` | `1000` | Milliseconds between price ticks |
+| `sim.seed` | `SIM_SEED` | *(empty)* | Fixed random seed to replay the same market |
+| `sim.speed-multiplier` | `SIM_SPEED_MULTIPLIER` | `1` | Simulated seconds per real second; raise for faster-moving demos |
+| `sim.snapshot-interval-ms` | `SIM_SNAPSHOT_INTERVAL_MS` | `5000` | How often latest prices and candles are saved |
+| `sim.respect-market-hours` | `SIM_RESPECT_MARKET_HOURS` | `true` | Only move prices while each exchange is open |
+
+Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
+table — see [database/README.md](database/README.md#tuning-the-market).
 
 ---
 
@@ -453,6 +491,12 @@ java -version
   docker compose down -v
   docker compose up -d --build
   ```
+
+### Quote Prices Are Not Changing
+
+- US equities only move during market hours: 09:30–16:00 New York time, Monday–Friday. Outside those hours quotes show the last price. To see prices move anyway during development, start the backend with `SIM_RESPECT_MARKET_HOURS=false`.
+- Check that `sim.enabled` is not set to `false`.
+- If every quote returns 404 and the backend log says `No instruments have market simulation parameters`, apply `database/schema/006_market_simulation.sql` (see [database/README.md](database/README.md#006--market-simulation)).
 
 ### Container Exits Immediately (Docker)
 

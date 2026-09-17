@@ -24,9 +24,10 @@
 ## Feature Dependencies (Keep Acyclic)
 
 - **Auth** → Self-contained, required by everything
+- **Market** → Self-contained simulated price source; other features read prices only via `MarketDataService`
 - **Orders** → Auth, Holdings, Quotes
-- **Holdings** → Auth
-- **Quotes** → External data source
+- **Holdings** → Auth, Market
+- **Quotes** → Market
 - **Sessions** → Auth
 
 ## Layer-Specific Conventions

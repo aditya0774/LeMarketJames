@@ -5,10 +5,14 @@ import com.lemarketjames.holdings.dto.HoldingsResponse;
 import com.lemarketjames.holdings.entity.HoldingsEntity;
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -22,34 +26,50 @@ import java.util.stream.Collectors;
 public class HoldingsService {
 
     private final HoldingsRepository holdingsRepository;
+    private final MarketDataService marketData;
 
-    public HoldingsService(HoldingsRepository holdingsRepository) {
+    public HoldingsService(HoldingsRepository holdingsRepository, MarketDataService marketData) {
         this.holdingsRepository = holdingsRepository;
+        this.marketData = marketData;
     }
 
     /**
      * AC1: Retrieve all holdings for an authenticated user.
-     * 
+     *
+     * <p>Symbol, current price and current value come from the simulated market. A holding whose
+     * instrument is not simulated keeps a null symbol and zero price/value rather than failing
+     * the whole response.
+     *
      * @param accountId the account ID to retrieve holdings for
      * @return HoldingsResponse containing success flag and list of holdings DTOs
      */
     public HoldingsResponse getHoldingsForAccount(Integer accountId) {
         List<HoldingsEntity> holdings = holdingsRepository.findByAccountId(accountId);
-        
+
         List<HoldingDto> holdingDtos = holdings.stream()
-            .map(h -> new HoldingDto(
-                null,  // symbol will be enriched by controller
-                h.getQuantity(),
-                BigDecimal.ZERO,  // averageCost not yet tracked in DB
-                BigDecimal.ZERO,  // currentPrice fetched from quotes
-                BigDecimal.ZERO,  // totalCost
-                BigDecimal.ZERO,  // currentValue
-                BigDecimal.ZERO,  // gainLoss
-                BigDecimal.ZERO   // gainLossPercent
-            ))
+            .map(this::toDto)
             .collect(Collectors.toList());
-        
+
         return new HoldingsResponse(true, holdingDtos);
+    }
+
+    private HoldingDto toDto(HoldingsEntity holding) {
+        Optional<QuoteSnapshot> quote = marketData.findByInstrumentId(holding.getInstrumentId());
+        BigDecimal currentPrice = quote
+            .map(q -> BigDecimal.valueOf(q.lastPrice()).setScale(2, RoundingMode.HALF_UP))
+            .orElse(BigDecimal.ZERO);
+        BigDecimal currentValue = holding.getQuantity().multiply(currentPrice).setScale(2, RoundingMode.HALF_UP);
+
+        return new HoldingDto(
+            quote.map(q -> q.instrument().ticker()).orElse(null),
+            holding.getQuantity(),
+            BigDecimal.ZERO,  // averageCost: needs cost basis from fills, not yet tracked in DB
+            currentPrice,
+            BigDecimal.ZERO,  // totalCost: depends on averageCost
+            currentValue,
+            BigDecimal.ZERO,  // gainLoss: depends on averageCost
+            BigDecimal.ZERO   // gainLossPercent: depends on averageCost
+        );
     }
 
     /**

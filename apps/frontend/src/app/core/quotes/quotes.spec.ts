@@ -51,6 +51,35 @@ describe('Quotes', () => {
     expect(response.quote.symbol).toBe('AAPL');
   });
 
+  describe('watchQuote', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should fetch immediately and then on every refresh interval', () => {
+      const prices: number[] = [];
+      const subscription = quotes.watchQuote('AAPL', 1000).subscribe((response) => {
+        prices.push(response.quote.price);
+      });
+
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.55 } });
+
+      vi.advanceTimersByTime(1000);
+      httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.61 } });
+
+      expect(prices).toEqual([227.55, 227.61]);
+
+      subscription.unsubscribe();
+      vi.advanceTimersByTime(5000);
+      httpMock.expectNone(`${baseUrl}/AAPL`);
+    });
+  });
+
   it('should surface 404 not found for unknown symbol', async () => {
     const fetchPromise = quotes.getQuote('INVALID');
 
