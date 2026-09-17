@@ -134,6 +134,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 - Live prices are held in memory; the latest price per instrument is saved to `market_quotes` every 5 seconds (so a restart resumes where it left off) and 1-minute candles to `price_candles`
 - Other features read prices through `MarketDataService`
 - Configured with `sim.*` properties (see [Market simulation settings](#market-simulation-settings))
+- Full design notes, tuning and limitations: **[docs/MARKET.md](docs/MARKET.md)**
 
 **Quotes Module** (`com.lemarketjames.quotes`):
 - `GET /api/quotes/{symbol}` — Current simulated quote (requires valid JWT)

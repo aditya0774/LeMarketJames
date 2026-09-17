@@ -28,6 +28,16 @@ public class QuoteService {
         this.marketData = marketData;
     }
 
+    /**
+     * Returns the current quote for a symbol, with prices and percentages rounded to 2 decimals
+     * for the API contract. Values such as market cap, P/E and dividend yield are derived from the
+     * live price and the instrument's stored fundamentals.
+     *
+     * @param rawSymbol ticker symbol; surrounding whitespace and case are ignored
+     * @return the contract-shaped quote payload
+     * @throws IllegalArgumentException if the symbol is null or blank
+     * @throws SymbolNotFoundException  if no simulated instrument has that ticker
+     */
     public QuoteDto getQuote(String rawSymbol) {
         String symbol = normalize(rawSymbol);
         QuoteSnapshot snapshot = marketData.findByTicker(symbol)
@@ -60,6 +70,7 @@ public class QuoteService {
         return BigDecimal.valueOf(value).setScale(DISPLAY_SCALE, RoundingMode.HALF_UP);
     }
 
+    /** Raised for an unknown ticker; mapped to the contract's 404 response by the controller. */
     public static class SymbolNotFoundException extends RuntimeException {
         public SymbolNotFoundException(String message) {
             super(message);

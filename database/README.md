@@ -21,7 +21,7 @@ apply it automatically with the other initialization scripts.
 ## 006 — Market simulation
 
 `006_market_simulation.sql` adds the tables used by the backend's simulated stock market
-(`com.lemarketjames.market`):
+(`com.lemarketjames.market`, design notes in [docs/MARKET.md](../docs/MARKET.md)):
 
 | Table | Change | Purpose |
 |---|---|---|
