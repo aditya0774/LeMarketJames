@@ -121,17 +121,20 @@ pipeline {
             }
         }
 
-        stage('Apply registration schema update') {
+        stage('Apply schema updates') {
             steps {
                 // Init scripts only run for an empty Postgres volume; CI keeps its volume.
+                // Every script applied here must be idempotent (safe to run twice).
                 sh '''
                     set -eu
                     if docker compose version >/dev/null 2>&1; then
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                     else
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                     fi
                 '''
             }

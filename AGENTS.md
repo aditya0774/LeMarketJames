@@ -24,15 +24,17 @@
 ## Feature Dependencies (Keep Acyclic)
 
 - **Auth** → Self-contained, required by everything
+- **Market** → Self-contained simulated price source; other features read prices only via `MarketDataService`
 - **Orders** → Auth, Holdings, Quotes
-- **Holdings** → Auth
-- **Quotes** → External data source
+- **Holdings** → Auth, Market
+- **Quotes** → Market
 - **Sessions** → Auth
 
 ## Layer-Specific Conventions
 
 - **[Backend Architecture](docs/BACKEND.md)** — Feature packages, Repository/Service pattern, exceptions, testing
 - **[Frontend Architecture](docs/FRONTEND.md)** — Directory structure, RxJS observables, dependency injection
+- **[Market Simulation](docs/MARKET.md)** — GBM price engine: model, state, configuration, how other features read prices
 - **[Database Migrations](docs/DATABASE.md)** — Schema versioning workflow
 - **[API Design](docs/API-DESIGN.md)** — Versioning, contracts, change management
 - **[Guidelines & Pitfalls](docs/GUIDELINES.md)** — Common mistakes, best practices

@@ -11,6 +11,12 @@ com.lemarketjames.holdings.entity
 com.lemarketjames.holdings.exception
 com.lemarketjames.holdings.repository
 com.lemarketjames.holdings.service
+com.lemarketjames.market
+com.lemarketjames.market.config
+com.lemarketjames.market.entity
+com.lemarketjames.market.model
+com.lemarketjames.market.repository
+com.lemarketjames.market.service
 com.lemarketjames.orders
 com.lemarketjames.orders.dto
 com.lemarketjames.orders.entity
