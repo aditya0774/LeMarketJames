@@ -6,8 +6,7 @@ import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.service.HoldingsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -18,11 +17,11 @@ import java.util.ArrayList;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(HoldingsController.class)
 public class HoldingsControllerTest {
 
     @Autowired
@@ -31,9 +30,6 @@ public class HoldingsControllerTest {
     @MockBean
     private HoldingsService holdingsService;
 
-    /**
-     * AC1: Holdings retrieved - verify GET /api/holdings returns 200 with holdings
-     */
     @Test
     @WithMockUser(username = "testuser")
     public void testGetHoldings_Success() throws Exception {
@@ -43,15 +39,13 @@ public class HoldingsControllerTest {
         when(holdingsService.getHoldingsForAccount(accountId))
             .thenReturn(response);
 
-        mockMvc.perform(get("/api/holdings?accountId=" + accountId))
+        mockMvc.perform(get("/api/holdings?accountId=" + accountId)
+            .with(csrf()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.holdings").isArray());
     }
 
-    /**
-     * AC2: Overselling rejected - verify POST /api/holdings/validate returns 400 on insufficient
-     */
     @Test
     @WithMockUser(username = "testuser")
     public void testValidateHoldings_InsufficientHoldings() throws Exception {
@@ -62,15 +56,13 @@ public class HoldingsControllerTest {
 
         mockMvc.perform(post("/api/holdings/validate")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"accountId\":1,\"instrumentId\":1,\"sellQuantity\":50.0000}"))
+            .content("{\"accountId\":1,\"instrumentId\":1,\"sellQuantity\":50.0000}")
+            .with(csrf()))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error").exists());
     }
 
-    /**
-     * AC2: Overselling rejected - verify POST /api/holdings/validate returns 200 on sufficient
-     */
     @Test
     @WithMockUser(username = "testuser")
     public void testValidateHoldings_SufficientHoldings() throws Exception {
@@ -79,7 +71,8 @@ public class HoldingsControllerTest {
 
         mockMvc.perform(post("/api/holdings/validate")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"accountId\":1,\"instrumentId\":1,\"sellQuantity\":5.0000}"))
+            .content("{\"accountId\":1,\"instrumentId\":1,\"sellQuantity\":5.0000}")
+            .with(csrf()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
     }

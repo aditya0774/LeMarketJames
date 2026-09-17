@@ -2,13 +2,41 @@ pipeline {
     agent any
     tools {
         jdk 'JDK21'
+        nodejs 'NodeJS'
     }
 
     stages {
+        stage('Clean up stale volumes') {
+            steps {
+                sh '''
+                    set +e
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose down -v --remove-orphans
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        docker-compose down -v --remove-orphans
+                    fi
+                    set -e
+                '''
+            }
+        }
+
         stage('Test with Maven') {
             steps {
                 dir('apps/backend') {
-                    sh 'mvn -B clean test'
+                    sh '''
+                        set -eu
+                        mvn -B clean test
+
+                        echo "=== BACKEND TESTS COMPLETED: PASS ==="
+                        echo "=== BACKEND SUREFIRE SUMMARY ==="
+
+                        if ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' target/surefire-reports/TEST-*.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "No surefire XML reports found"
+                        fi
+                    '''
                 }
             }
             post {
@@ -33,13 +61,36 @@ pipeline {
             }
         }
 
+        stage('Build versioned Docker images') {
+            steps {
+                sh '''
+                    set -eu
+
+                    short_sha=$(git rev-parse --short=8 HEAD)
+                    image_tag="${BUILD_NUMBER:-local}-${short_sha}"
+                    echo "$image_tag" > .image_tag
+
+                    docker build -t "lemarketjames/backend:$image_tag" ./apps/backend
+                    docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
+
+                    docker image inspect "lemarketjames/backend:$image_tag" >/dev/null
+                    docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
+
+                    echo "Built versioned images with tag: $image_tag"
+                '''
+            }
+        }
+
         stage('Start application with Docker Compose') {
             steps {
                 sh '''
+                    set -eu
+                    image_tag=$(cat .image_tag)
+
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose up -d --build
+                        IMAGE_TAG="$image_tag" docker compose up -d --build
                     else
-                        docker-compose up -d --build
+                        IMAGE_TAG="$image_tag" docker-compose up -d --build
                     fi
                 '''
             }
@@ -70,15 +121,20 @@ pipeline {
             }
         }
 
-        stage('Apply registration schema update') {
+        stage('Apply schema updates') {
             steps {
                 // Init scripts only run for an empty Postgres volume; CI keeps its volume.
+                // Every script applied here must be idempotent (safe to run twice).
                 sh '''
                     set -eu
                     if docker compose version >/dev/null 2>&1; then
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                     else
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                     fi
                 '''
             }
@@ -136,12 +192,12 @@ pipeline {
                     email="$user@example.com"
 
                     register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567"}
 JSON
 )
 
                     login_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!"}
+{"username":"$email","password":"Pass123!"}
 JSON
 )
 
@@ -189,6 +245,71 @@ JSON
                 '''
             }
         }
+
+        stage('Run tradability API smoke test') {
+            steps {
+                sh '''
+                    set -eu
+
+                    base="http://localhost:8081"
+                    user="ciusertrad$(date +%s)"
+                    email="$user@example.com"
+
+                    register_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+JSON
+)
+
+                    login_payload=$(cat <<JSON
+{"username":"$email","password":"Pass123!"}
+JSON
+)
+
+                    cookie_file=$(mktemp)
+                    order_error_file=$(mktemp)
+                    trap 'rm -f "$cookie_file" "$order_error_file"' EXIT
+
+                    curl --silent --show-error --fail \
+                        --request POST "$base/api/auth/register" \
+                        --header "Content-Type: application/json" \
+                        --data "$register_payload" \
+                        >/dev/null
+
+                    curl --silent --show-error --fail \
+                        --cookie-jar "$cookie_file" \
+                        --request POST "$base/api/auth/login" \
+                        --header "Content-Type: application/json" \
+                        --data "$login_payload" \
+                        >/dev/null
+
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+
+                    account_id=$(compose exec -T db psql -At -U lemarket -d lemarket \
+                        -c "SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id = a.client_id WHERE c.username = '$user' LIMIT 1;")
+
+                    test -n "$account_id"
+
+                    order_payload=$(cat <<JSON
+{"accountId":$account_id,"instrumentId":3,"orderType":"BUY","quantity":1}
+JSON
+)
+
+                    order_status=$(curl --silent --output "$order_error_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        --request POST "$base/api/v1/orders" \
+                        --header "Content-Type: application/json" \
+                        --data "$order_payload")
+
+                    test "$order_status" = "400"
+                    grep -q '"success":false' "$order_error_file"
+                    grep -q '"code":"NOT_TRADABLE"' "$order_error_file"
+                '''
+            }
+        }
     }
 
     post {
@@ -205,9 +326,9 @@ JSON
         cleanup {
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose down --rmi local --remove-orphans || true
+                    docker compose down -v --rmi local --remove-orphans || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose down --rmi local --remove-orphans || true
+                    docker-compose down -v --rmi local --remove-orphans || true
                 fi
             '''
         }

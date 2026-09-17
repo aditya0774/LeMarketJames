@@ -1,15 +1,23 @@
 package com.lemarketjames.holdings.service;
 
+import com.lemarketjames.holdings.dto.HoldingDto;
 import com.lemarketjames.holdings.dto.HoldingsResponse;
 import com.lemarketjames.holdings.entity.HoldingsEntity;
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.market.model.MarketInstrument;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -18,16 +26,60 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class HoldingsServiceTest {
 
-    @MockBean
+    @Mock
     private HoldingsRepository holdingsRepository;
+
+    @Mock
+    private MarketDataService marketData;
 
     private HoldingsService holdingsService;
 
     @BeforeEach
     public void setUp() {
-        holdingsService = new HoldingsService(holdingsRepository);
+        holdingsService = new HoldingsService(holdingsRepository, marketData);
+    }
+
+    /**
+     * AC1: Holdings are valued at the current simulated market price.
+     */
+    @Test
+    public void testGetHoldingsForAccount_ValuedAtMarketPrice() {
+        Integer accountId = 1;
+        HoldingsEntity holding = new HoldingsEntity(accountId, 1, new BigDecimal("10.5000"));
+        MarketInstrument aapl = new MarketInstrument(1, "AAPL", "Apple Inc", "EQUITY", "USD", "US",
+            227.55, 0.08, 0.25, 0.65, 1.5, 15_200_000_000L, 55_000_000L, 6.75, 1.00);
+        QuoteSnapshot quote = new QuoteSnapshot(aapl, 230.0, 229.98, 230.02, 227.55, 231.0, 227.0,
+            227.55, 1_000L, Instant.parse("2026-09-16T15:00:00Z"), LocalDate.of(2026, 9, 16));
+
+        when(holdingsRepository.findByAccountId(accountId)).thenReturn(List.of(holding));
+        when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(quote));
+
+        HoldingDto dto = holdingsService.getHoldingsForAccount(accountId).getHoldings().get(0);
+
+        assertEquals("AAPL", dto.getSymbol());
+        assertEquals(new BigDecimal("230.00"), dto.getCurrentPrice());
+        assertEquals(new BigDecimal("2415.00"), dto.getCurrentValue());
+    }
+
+    /**
+     * AC1: A holding in an instrument with no market price still appears, with zero value.
+     */
+    @Test
+    public void testGetHoldingsForAccount_NoMarketPrice() {
+        Integer accountId = 1;
+        HoldingsEntity holding = new HoldingsEntity(accountId, 99, new BigDecimal("3.0000"));
+
+        when(holdingsRepository.findByAccountId(accountId)).thenReturn(List.of(holding));
+        when(marketData.findByInstrumentId(99)).thenReturn(Optional.empty());
+
+        HoldingDto dto = holdingsService.getHoldingsForAccount(accountId).getHoldings().get(0);
+
+        assertNull(dto.getSymbol());
+        assertEquals(0, BigDecimal.ZERO.compareTo(dto.getCurrentPrice()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(dto.getCurrentValue()));
     }
 
     /**

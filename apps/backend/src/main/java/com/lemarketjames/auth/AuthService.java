@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Locale;
 import java.time.Instant;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -37,8 +36,6 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final int MAX_FAILED_ATTEMPTS = 3;
 
-    private final Map<String, String> userStore = new ConcurrentHashMap<>();
-    private final Set<String> registeredEmails = ConcurrentHashMap.newKeySet();
     private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
     private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
     private final ClientRepository clientRepository;
@@ -82,14 +79,13 @@ public class AuthService {
         validateRegisterRequest(request);
 
         String username = request.getUsername();
-        String password = request.getPassword();
         String email = request.getEmail().toLowerCase();
 
-        if (clientRepository.existsByUsername(username) || userStore.containsKey(username)) {
+        if (clientRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username is already taken");
         }
 
-        if (clientRepository.existsByEmail(email) || registeredEmails.contains(email)) {
+        if (clientRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email is already registered");
         }
 
@@ -129,58 +125,63 @@ public class AuthService {
         account.setOpenedDate(LocalDate.now());
         accountRepository.save(account);
 
-        // Store password and email in memory for fast lookup
-        userStore.put(username, encodedPassword);
-        registeredEmails.add(email);
-
         log.info("Registration succeeded for username={}", username);
 
         return new AuthResponse(username, "User registered successfully");
     }
 
     /**
-     * Authenticates a user with the provided login credentials.
-     * Validates the request and verifies the password against the stored hash.
+     * Authenticates a user by email and password against the clients table.
+     * The request's username field carries the email; it is matched case-insensitively
+     * because registration stores emails lowercased. The password is verified against
+     * the stored BCrypt hash.
      *
-     * @param request the login request containing username and password
-     * @return a LoginResult with the username, success message, and JWT token
-     * @throws IllegalArgumentException if validation fails or credentials are invalid
+     * @param request the login request containing the email (as username) and password
+     * @return a LoginResult with the client's username, success message, and JWT token
+     * @throws IllegalArgumentException if validation fails, the account is locked, or credentials are invalid
      */
     public LoginResult login(LoginRequest request) {
         validateLoginRequest(request);
 
-        String username = request.getUsername();
+        String email = request.getUsername().trim().toLowerCase(Locale.ROOT);
         String password = request.getPassword();
 
-        Instant lockExpiry = lockedUntil.get(username);
+        Instant lockExpiry = lockedUntil.get(email);
         if (lockExpiry != null) {
             if (Instant.now().isBefore(lockExpiry)) {
-                log.warn("Login blocked for username={} due to active lockout", username);
+                log.warn("Login blocked for email={} due to active lockout", email);
                 throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
             }
-            lockedUntil.remove(username);
-            failedLoginAttempts.remove(username);
+            lockedUntil.remove(email);
+            failedLoginAttempts.remove(email);
         }
 
-        String storedPassword = userStore.get(username);
+        ClientEntity client = clientRepository.findByEmail(email)
+                .filter(found -> matchesPassword(password, found.getPassword()))
+                .orElse(null);
 
-        if (storedPassword == null || !matchesPassword(password, storedPassword)) {
-            registerFailedAttempt(username);
-            log.warn("Login failed for username={}", username);
-            throw new IllegalArgumentException("Invalid username or password");
+        if (client == null) {
+            registerFailedAttempt(email);
+            log.warn("Login failed for email={}", email);
+            throw new IllegalArgumentException("Invalid email or password");
         }
 
-        failedLoginAttempts.remove(username);
+        failedLoginAttempts.remove(email);
+        client.setLastLogin(LocalDateTime.now());
+        clientRepository.save(client);
+
+        // The token subject stays the username: /me, orders and account ownership checks look users up by it.
+        String username = client.getUsername();
         String token = jwtService.generateToken(username);
         log.info("Login succeeded for username={}", username);
         return new LoginResult(username, "Login successful", token);
     }
 
     // Tracks a failed login and locks the account once MAX_FAILED_ATTEMPTS is reached
-    private void registerFailedAttempt(String username) {
-        int attempts = failedLoginAttempts.merge(username, 1, Integer::sum);
+    private void registerFailedAttempt(String email) {
+        int attempts = failedLoginAttempts.merge(email, 1, Integer::sum);
         if (attempts >= MAX_FAILED_ATTEMPTS) {
-            lockedUntil.put(username, Instant.now().plusMillis(lockoutDurationMs));
+            lockedUntil.put(email, Instant.now().plusMillis(lockoutDurationMs));
         }
     }
 
@@ -248,9 +249,6 @@ public class AuthService {
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
-        if (!Boolean.TRUE.equals(request.getTermsAccepted())) {
-            throw new IllegalArgumentException("Terms and conditions must be accepted");
-        }
     }
 
     /**
@@ -263,7 +261,7 @@ public class AuthService {
         if (request == null) {
             throw new IllegalArgumentException("Request is required");
         }
-        validateRequired(request.getUsername(), "Username is required");
+        validateRequired(request.getUsername(), "Email is required");
         validateRequired(request.getPassword(), "Password is required");
     }
 

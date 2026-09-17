@@ -71,8 +71,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -94,7 +93,7 @@ class AuthControllerTest {
 
         String loginJson = """
                 {
-                  "username": "testuser",
+                  "username": "test@example.com",
                   "password": "Pass123!"
                 }
                 """;
@@ -155,8 +154,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -190,8 +188,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
         String secondRegisterJson = """
@@ -210,8 +207,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
 
@@ -228,40 +224,10 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerRejectsWhenTermsNotAccepted() throws Exception {
-        String registerJson = """
-                {
-                  "username": "notermsuser",
-                  "password": "Pass123!",
-                  "email": "noterms@example.com",
-                  "fullName": "No Terms User",
-                  "streetAddress": "123 Main St",
-                  "city": "Springfield",
-                  "state": "IL",
-                  "zipCode": "62701",
-                  "country": "US",
-                  "ssn": "123-45-6789",
-                  "initialDeposit": 500,
-                  "investmentExperience": "beginner",
-                  "employmentStatus": "employed",
-                  "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": false
-                }
-                """;
-
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerJson))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Terms and conditions must be accepted"));
-    }
-
-    @Test
     void loginRejectsInvalidCredentials() throws Exception {
         String loginJson = """
                 {
-                  "username": "nobody",
+                  "username": "nobody@example.com",
                   "password": "WrongPass!"
                 }
                 """;
@@ -270,7 +236,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Invalid username or password"));
+                .andExpect(jsonPath("$.message").value("Invalid email or password"));
     }
 
     @Test
@@ -291,8 +257,7 @@ class AuthControllerTest {
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """;
         mockMvc.perform(post("/api/auth/register")
@@ -302,7 +267,7 @@ class AuthControllerTest {
 
         String loginJson = """
                 {
-                  "username": "cookieuser",
+                  "username": "cookieuser@example.com",
                   "password": "Pass123!"
                 }
                 """;

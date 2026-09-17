@@ -1,13 +1,27 @@
 package com.lemarketjames.orders.dto;
 
 import com.lemarketjames.orders.entity.Order;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public class CreateOrderRequest {
+    @NotNull(message = "accountId is required")
+    @Positive(message = "accountId must be positive")
     private Integer accountId;
+
+    @NotNull(message = "instrumentId is required")
+    @Positive(message = "instrumentId must be positive")
     private Integer instrumentId;
+
+    @NotNull(message = "orderType is required")
     private Order.OrderType orderType;
+
+    @NotNull(message = "quantity is required")
+    @Positive(message = "quantity must be positive")
     private BigDecimal quantity;
+
+    @Positive(message = "pricePerUnit must be positive")
     private BigDecimal pricePerUnit;
     
     // Constructors

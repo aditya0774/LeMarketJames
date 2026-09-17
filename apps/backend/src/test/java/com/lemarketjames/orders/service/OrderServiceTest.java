@@ -1,15 +1,23 @@
 package com.lemarketjames.orders.service;
 
+import com.lemarketjames.auth.domain.AccountRepository;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.exception.NotTradableException;
+import com.lemarketjames.orders.repository.InstrumentRepository;
 import com.lemarketjames.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +34,12 @@ class OrderServiceTest {
     
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private InstrumentRepository instrumentRepository;
+
+    @Mock
+    private AccountRepository accountRepository;
     
     @Mock
     private CashValidationService cashValidationService;
@@ -34,10 +48,17 @@ class OrderServiceTest {
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, cashValidationService);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
+        SecurityContextHolder.getContext()
+            .setAuthentication(new TestingAuthenticationToken("testuser", "n/a", "ROLE_USER"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
     
     @Test
@@ -52,7 +73,13 @@ class OrderServiceTest {
         Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         savedOrder.setOrderId(1);
         savedOrder.setPricePerUnit(new BigDecimal("227.55"));
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
         
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
         
         // Act
@@ -64,6 +91,52 @@ class OrderServiceTest {
         assertEquals(Order.OrderType.BUY, response.getOrderType());
         assertEquals(new BigDecimal("10"), response.getQuantity());
         assertEquals(new BigDecimal("227.55"), response.getPricePerUnit());
+    }
+
+    @Test
+    @DisplayName("Create order throws exception when instrument is non-tradable")
+    void testCreateOrderNonTradableInstrument() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(false);
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+
+        // Act & Assert
+        assertThrows(NotTradableException.class, () -> orderService.createOrder(request));
+    }
+
+    @Test
+    @DisplayName("Create order throws exception when instrument is missing")
+    void testCreateOrderMissingInstrument() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 999, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(999)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    }
+
+    @Test
+    @DisplayName("Create order throws access denied when account does not belong to authenticated user")
+    void testCreateOrderAccountAccessDenied() {
+        CreateOrderRequest request = new CreateOrderRequest(
+            99, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> orderService.createOrder(request));
     }
     
     @Test

@@ -203,12 +203,6 @@ export const registerSchema = z
       ),
 
     confirmPassword: z.string().min(1, 'Confirm password is required.'),
-
-    agreeToTerms: z
-      .boolean()
-      .refine((value) => value === true, {
-        message: 'You must agree to the terms and conditions.',
-      }),
   })
   // Cross-field validation rules that depend on multiple properties
   // These rules must go in .superRefine() since individual field rules can't access other fields

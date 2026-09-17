@@ -24,7 +24,6 @@ public class RegisterRequest {
     private String employmentStatus;
     private LocalDate dateOfBirth;
     private String phoneNumber;
-    private Boolean termsAccepted;
 
     /**
      * Default constructor for deserialization.
@@ -320,12 +319,5 @@ public class RegisterRequest {
         this.phoneNumber = phoneNumber;
     }
 
-    public Boolean getTermsAccepted() {
-        return termsAccepted;
-    }
-
-    public void setTermsAccepted(Boolean termsAccepted) {
-        this.termsAccepted = termsAccepted;
-    }
 }
 

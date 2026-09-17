@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,9 +41,16 @@ class AuthServiceLoggingTest {
         AddressRepository addressRepository = mock(AddressRepository.class);
         AccountRepository accountRepository = mock(AccountRepository.class);
 
+        Map<String, ClientEntity> clientsByEmail = new ConcurrentHashMap<>();
         when(clientRepository.existsByUsername(anyString())).thenReturn(false);
         when(clientRepository.existsByEmail(anyString())).thenReturn(false);
-        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(clientRepository.findByEmail(anyString())).thenAnswer(invocation ->
+                Optional.ofNullable(clientsByEmail.get(invocation.<String>getArgument(0))));
+        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> {
+            ClientEntity client = invocation.getArgument(0);
+            clientsByEmail.put(client.getEmail(), client);
+            return client;
+        });
         when(addressRepository.save(any(AddressEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(accountRepository.save(any(AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -69,7 +79,7 @@ class AuthServiceLoggingTest {
         authService.register(validRegisterRequest("alice"));
         logAppender.list.clear();
 
-        authService.login(new LoginRequest("alice", "Pass123!"));
+        authService.login(new LoginRequest("alice@example.com", "Pass123!"));
 
         assertTrue(logContains("Login succeeded"), "expected a login-succeeded log entry");
     }
@@ -81,7 +91,7 @@ class AuthServiceLoggingTest {
         logAppender.list.clear();
 
         try {
-            authService.login(new LoginRequest("alice", "WrongPass!"));
+            authService.login(new LoginRequest("alice@example.com", "WrongPass!"));
         } catch (IllegalArgumentException expected) {
             // handled by the assertion below; the login itself is expected to fail
         }
@@ -107,7 +117,6 @@ class AuthServiceLoggingTest {
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));
         request.setPhoneNumber("(555) 123-4567");
-        request.setTermsAccepted(true);
         return request;
     }
 }

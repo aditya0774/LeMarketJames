@@ -77,8 +77,7 @@ class QuotesControllerTest {
                   "investmentExperience": "beginner",
                                                                         "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
-                  "phoneNumber": "(555) 123-4567",
-                  "termsAccepted": true
+                  "phoneNumber": "(555) 123-4567"
                 }
                 """.formatted(username, email);
 
@@ -92,7 +91,7 @@ class QuotesControllerTest {
                   "username": "%s",
                   "password": "Pass123!"
                 }
-                """.formatted(username);
+                """.formatted(email);
 
         Cookie jwtCookie = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

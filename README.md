@@ -13,6 +13,44 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
 
 ---
 
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Architecture](#architecture)
+   - [System Topology](#system-topology)
+   - [Authentication Flow](#authentication-flow)
+   - [Technology Stack](#technology-stack)
+   - [Current Features & Endpoints](#current-features--endpoints)
+   - [Design Principles](#design-principles)
+3. [Prerequisites](#prerequisites)
+4. [Running the Application](#running-the-application)
+   - [Method 1: Local Development (Maven + npm)](#method-1-local-development-maven--npm)
+   - [Method 2: Docker Build & Run](#method-2-docker-build--run)
+   - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
+   - [Market simulation settings](#market-simulation-settings)
+5. [Testing](#testing)
+   - [Backend Tests (Java/JUnit)](#backend-tests-javajunit)
+   - [Frontend Tests (TypeScript/Vitest)](#frontend-tests-typescriptvitest)
+6. [API & Frontend Access](#api--frontend-access)
+7. [Troubleshooting](#troubleshooting)
+   - [Port Already in Use](#port-already-in-use)
+   - [Java Version Mismatch](#java-version-mismatch)
+   - [Maven Build Fails](#maven-build-fails)
+   - [npm Install Fails](#npm-install-fails)
+   - [Database Connection Refused](#database-connection-refused-docker-compose-or-local-dev)
+   - [Quote Prices Are Not Changing](#quote-prices-are-not-changing)
+   - [Container Exits Immediately](#container-exits-immediately-docker)
+8. [CI/CD Pipeline](#cicd-pipeline)
+9. [Javadocs](#javadocs)
+10. [ER Diagram](#er-diagram)
+11. [UML Diagrams](#uml-diagrams)
+    - [Class Diagram: Backend Data Model](#class-diagram-backend-data-model)
+    - [Sequence Diagram: Backend Login Flow](#sequence-diagram-backend-login-flow)
+    - [Sequence Diagram: Backend Order Creation Flow](#sequence-diagram-backend-order-creation-flow)
+12. [Code Coverage](#code-coverage)
+
+---
+
 ## Project Structure
 
 See [AGENTS.md](AGENTS.md) for the full conventions doc (package/folder rules, build & test commands). Summary:
@@ -22,38 +60,27 @@ LeMarketJames/
 ├── apps/
 │   ├── backend/                   # Java/Spring Boot backend (feature-based packages)
 │   │   ├── src/main/java/com/lemarketjames/
-│   │   │   ├── Main.java           # Spring Boot application entry point
-│   │   │   ├── Greeter.java        # Sample service
-│   │   │   ├── auth/               # Auth feature: controller, service, dto/, security/
-│   │   │   ├── common/             # Shared code used by multiple features
-│   │   │   └── config/             # Cross-cutting configuration (SecurityConfig, etc.)
-│   │   ├── src/main/resources/
-│   │   │   └── application.properties  # Spring Boot configuration
-│   │   ├── src/test/java/         # JUnit test suite, mirrors main package layout
-│   │   ├── pom.xml                # Maven configuration
-│   │   └── Dockerfile             # Backend container image definition
-│   └── frontend/                  # Angular 22 frontend (formerly lemarket-ui/)
-│       ├── src/
-│       │   ├── index.html         # HTML entry point
-│       │   ├── main.ts            # Angular bootstrap
-│       │   ├── app/
-│       │   │   ├── app.ts         # Root component
-│       │   │   ├── app.routes.ts  # Route definitions
-│       │   │   ├── core/          # App-wide singletons: auth state, interceptors
-│       │   │   ├── shared/        # Reusable presentational components/pipes/models
-│       │   │   └── features/auth/ # Routed, feature-specific UI
-│       │   └── styles.css         # Global styles
-│       ├── package.json           # npm dependencies and scripts
-│       ├── angular.json           # Angular CLI config
-│       ├── nginx.conf             # SPA routing config for the container
-│       └── Dockerfile             # Frontend container image definition
-├── database/                      # Database schemas (raw SQL, no migration tool)
-│   └── schema/                    # Numbered, ordered SQL files applied in order
-│       ├── 001_core_schema.sql
-├── docker-compose.yml             # 3 services: frontend (4200), backend (8081), db (5432)
-├── Jenkinsfile                    # CI/CD pipeline
-├── AGENTS.md                      # Conventions for contributors and AI agents
-└── README.md                      # This file
+│   │   │   ├── auth/              # Authentication & security feature
+│   │   │   ├── common/            # Shared code (exceptions, utilities)
+│   │   │   ├── config/            # Cross-cutting config (Security, etc.)
+│   │   │   └── [other features]/  # Feature packages: market, orders, holdings, quotes, etc.
+│   │   ├── src/test/java/        # JUnit tests (mirrors main layout)
+│   │   ├── pom.xml               # Maven configuration
+│   │   └── Dockerfile            # Backend container image
+│   └── frontend/                  # Angular 22 frontend
+│       ├── src/app/
+│       │   ├── core/             # App-wide singletons: auth, interceptors
+│       │   ├── shared/           # Reusable components and models
+│       │   ├── features/         # Feature modules: auth, dashboard, etc.
+│       │   └── [other files]/    # Routing, styles, environment configs
+│       ├── package.json          # npm dependencies
+│       └── Dockerfile            # Frontend container image
+├── database/schema/              # Numbered SQL files (001_, 002_, etc.)
+├── docker-compose.yml            # Full-stack orchestration
+├── Jenkinsfile                   # CI/CD pipeline
+├── AGENTS.md                     # Conventions for developers
+├── API-CONTRACTS.md              # Endpoint & data contracts
+└── README.md                     # This file
 ```
 
 ## Architecture
@@ -64,13 +91,19 @@ This section describes the current system architecture. As new features are adde
 
 LeMarketJames is a **3-tier distributed architecture** with three independent services communicating over HTTP:
 
-```
-┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
-│  Angular        │            │  Spring Boot    │            │  PostgreSQL     │
-│  Frontend       │  --REST->  │  Backend        │            │  Database       │
-│  (port 4200)    │ <-Cookies- │  (port 8081)    │<---JDBC--->│  (port 5432)    │
-│                 │            │                 │            │                 │
-└─────────────────┘            └─────────────────┘            └─────────────────┘
+```mermaid
+graph LR
+    A["🌐 Angular Frontend<br/>(port 4200)"] -->|"REST + JSON"| B["🔧 Spring Boot Backend<br/>(port 8081)"]
+    B -->|"Cookies<br/>(JWT)"| A
+    B -->|"JDBC<br/>PostgreSQL Driver"| C["🗄️ PostgreSQL Database<br/>(port 5432)"]
+    
+    classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
+    classDef database fill:#FF6B6B,stroke:#A91D3A,color:#fff
+    
+    class A frontend
+    class B backend
+    class C database
 ```
 
 **Key Characteristics:**
@@ -119,16 +152,19 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 
 ### Current Features & Endpoints
 
-**Authentication Module** (`com.lemarketjames.auth`):
-- `POST /api/auth/register` — Register new user with profile information
-- `POST /api/auth/login` — Authenticate user and receive JWT token
-- `POST /api/auth/logout` — Clear authentication cookie
-- `GET /api/auth/me` — Retrieve current authenticated user (requires valid JWT)
+**See [API-CONTRACTS.md](API-CONTRACTS.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
-**Data Models:**
-- User registration captures: username, password, email, full name, address, SSN, date of birth, initial deposit, investment experience, phone number
-- Passwords stored as BCrypt hashes with salt
-- User data stored in PostgreSQL (schema: `database/schema/001_core_schema.sql`)
+**Key Features:**
+- **Authentication:** User registration, login, JWT-based stateless sessions with HTTP-only cookies
+- **Market Simulation:** Live price ticks using Geometric Brownian Motion (GBM); configurable per-instrument drift and volatility; designed for testing orders and holdings at realistic prices
+- **Holdings & Orders:** Track stock positions and execute buy/sell orders with tradability and holdings validation
+- **Quotes:** Real-time stock quotes from the simulated market
+
+**Architecture Notes:**
+- Feature-based organization: `auth/`, `market/`, `holdings/`, `orders/`, `quotes/`, `sessions/` packages
+- Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
+- Data persisted in PostgreSQL; market prices and session state in-memory
+- Full design and tuning details: **[docs/MARKET.md](docs/MARKET.md)**, **[docs/BACKEND.md](docs/BACKEND.md)**
 
 ### Design Principles
 
@@ -172,8 +208,12 @@ This is the recommended approach for active development, as it provides hot-relo
 
 2. Apply the schema files **in numeric order** (only needed once, or after `docker compose down -v`):
    ```bash
-   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
-   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
    ```
    Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
 
@@ -193,7 +233,7 @@ This is the recommended approach for active development, as it provides hot-relo
    ```bash
    mvn spring-boot:run
    ```
-   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/paysprint` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
+   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/lemarket` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
 
 4. Confirm the backend can reach the database:
    ```bash
@@ -276,8 +316,12 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
 
 2. Apply the schema (schema application is manual, not automated — see `database/README.md`):
    ```bash
-   psql -h localhost -U paysprint -d paysprint -f database/schema/001_core_schema.sql
-   psql -h localhost -U paysprint -d paysprint -f database/schema/002_registration_fixes.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
+   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
    ```
 
 3. Confirm the backend is up and connected to the database:
@@ -305,6 +349,23 @@ DB_PASSWORD=your_secure_password docker compose up -d --build
 ```
 
 **Database Port:** PostgreSQL is exposed on `localhost:5432` for use with database tools (e.g., pgAdmin, DBeaver).
+
+### Market simulation settings
+
+The simulated market is configured in `apps/backend/src/main/resources/application.properties`.
+Each setting can be overridden with an environment variable:
+
+| Property | Env variable | Default | Purpose |
+|---|---|---|---|
+| `sim.enabled` | `SIM_ENABLED` | `true` | Whether prices tick automatically |
+| `sim.tick-ms` | `SIM_TICK_MS` | `1000` | Milliseconds between price ticks |
+| `sim.seed` | `SIM_SEED` | *(empty)* | Fixed random seed to replay the same market |
+| `sim.speed-multiplier` | `SIM_SPEED_MULTIPLIER` | `1` | Simulated seconds per real second; raise for faster-moving demos |
+| `sim.snapshot-interval-ms` | `SIM_SNAPSHOT_INTERVAL_MS` | `5000` | How often latest prices and candles are saved |
+| `sim.respect-market-hours` | `SIM_RESPECT_MARKET_HOURS` | `true` | Only move prices while each exchange is open |
+
+Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
+table — see [database/README.md](database/README.md#tuning-the-market).
 
 ---
 
@@ -450,6 +511,12 @@ java -version
   docker compose up -d --build
   ```
 
+### Quote Prices Are Not Changing
+
+- US equities only move during market hours: 09:30–16:00 New York time, Monday–Friday. Outside those hours quotes show the last price. To see prices move anyway during development, start the backend with `SIM_RESPECT_MARKET_HOURS=false`.
+- Check that `sim.enabled` is not set to `false`.
+- If every quote returns 404 and the backend log says `No instruments have market simulation parameters`, apply `database/schema/006_market_simulation.sql` (see [database/README.md](database/README.md#006--market-simulation)).
+
 ### Container Exits Immediately (Docker)
 
 Check the logs:
@@ -491,3 +558,210 @@ https://aditya0774.github.io/LeMarketJames/
 ## ER Diagram
 
 ![ER Diagram](lebron_erd.png)
+
+---
+
+## UML Diagrams
+
+### Class Diagram: Backend Data Model
+
+This diagram shows the core data model and relationships between entities in the backend:
+
+```mermaid
+classDiagram
+    class Client {
+        -Integer clientId
+        -String username
+        -String email
+        -String passwordHash
+        -String fullName
+        -String streetAddress
+        -String city
+        -String state
+        -String zipCode
+        -String country
+        -String ssn
+        -String phoneNumber
+        -LocalDateTime createdAt
+        -LocalDateTime lastLogin
+        +register(RegistrationRequest): void
+        +validatePassword(String): boolean
+    }
+
+    class Account {
+        -Integer accountId
+        -Integer clientId
+        -BigDecimal initialDeposit
+        -String investmentExperience
+        -String employmentStatus
+        -LocalDate dateOfBirth
+        -LocalDateTime createdAt
+        +getBalance(): BigDecimal
+    }
+
+    class Holdings {
+        -Integer holdingId
+        -Integer accountId
+        -Integer instrumentId
+        -BigDecimal quantity
+        -BigDecimal averageCost
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +validateSufficientHoldings(): boolean
+        +addQuantity(BigDecimal): void
+        +removeQuantity(BigDecimal): void
+    }
+
+    class Order {
+        -Integer orderId
+        -Integer accountId
+        -Integer instrumentId
+        -String orderType
+        -BigDecimal quantity
+        -BigDecimal executionPrice
+        -String status
+        -LocalDateTime createdAt
+        -LocalDateTime executedAt
+        +validateTradability(): boolean
+        +execute(): void
+    }
+
+    class Quote {
+        -String symbol
+        -BigDecimal price
+        -LocalDateTime lastUpdate
+        -Boolean tradable
+        +getLatestPrice(): BigDecimal
+    }
+
+    class SessionData {
+        -String sessionId
+        -Integer accountId
+        -LocalDateTime createdAt
+        -LocalDateTime expiresAt
+        -LocalDateTime lastActivityAt
+        +validateExpiration(): boolean
+        +isValid(): boolean
+    }
+
+    Client "1" --> "1..* " Account: owns
+    Account "1" --> "0..*" Holdings: contains
+    Account "1" --> "0..*" Order: places
+    Order "1" --> "1" Quote: references
+    SessionData "1" --> "1" Account: represents
+```
+
+---
+
+### Sequence Diagram: Backend Login Flow
+
+This diagram shows the authentication sequence when a user logs in:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant AuthController
+    participant AuthService
+    participant ClientRepository
+    participant PasswordEncoder
+    participant JwtService
+    participant Database
+
+    User->>AuthController: POST /api/auth/login<br/>{username/email, password}
+    AuthController->>AuthService: login(LoginRequest)
+    
+    AuthService->>AuthService: validateLoginRequest()
+    AuthService->>ClientRepository: findByEmail(email)
+    ClientRepository->>Database: SELECT * FROM clients WHERE email = ?
+    Database-->>ClientRepository: Client record
+    ClientRepository-->>AuthService: Optional<Client>
+    
+    AuthService->>PasswordEncoder: matches(rawPassword, hashedPassword)
+    PasswordEncoder-->>AuthService: boolean (true/false)
+    
+    alt Password Valid
+        AuthService->>AuthService: Remove failed login attempts
+        AuthService->>Database: UPDATE clients SET last_login = NOW()
+        AuthService->>JwtService: generateToken(username)
+        JwtService->>JwtService: Create JWT with subject, issued-at, expiration
+        JwtService-->>AuthService: Signed JWT token
+        AuthService-->>AuthController: LoginResult (username, token, success)
+        AuthController-->>User: 200 OK<br/>Set-Cookie: JWT in HTTP-only cookie<br/>{username, token, message}
+    else Password Invalid
+        AuthService->>AuthService: Register failed login attempt
+        AuthService->>AuthService: Check if max attempts exceeded
+        alt Max Attempts Exceeded
+            AuthService->>AuthService: Lock account temporarily
+            AuthService-->>AuthController: IllegalArgumentException (locked)
+        else
+            AuthService-->>AuthController: IllegalArgumentException (invalid credentials)
+        end
+        AuthController-->>User: 400 Bad Request<br/>{error: "Invalid email or password"}
+    end
+```
+
+---
+
+### Sequence Diagram: Backend Order Creation Flow
+
+This diagram shows the sequence of interactions within the Spring Boot backend when a user creates a trading order:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant OrderController
+    participant OrderService
+    participant HoldingsService
+    participant TradabilityService
+    participant OrderRepository
+    participant Database
+
+    User->>OrderController: POST /api/v1/orders<br/>{accountId, instrumentId, quantity}
+    OrderController->>OrderController: Validate JWT token
+    OrderController->>OrderService: createOrder(request)
+    
+    OrderService->>HoldingsService: validateSufficientHoldings(accountId, instrumentId, quantity)
+    HoldingsService->>Database: Query holdings for account
+    Database-->>HoldingsService: Holdings record
+    HoldingsService->>HoldingsService: Check quantity >= requested
+    HoldingsService-->>OrderService: Valid or InsufficientHoldingsException
+    
+    OrderService->>TradabilityService: validateTradability(instrumentId)
+    TradabilityService->>Database: Query instrument tradability
+    Database-->>TradabilityService: Tradability flag
+    TradabilityService-->>OrderService: Valid or NotTradableException
+    
+    OrderService->>OrderRepository: save(Order)
+    OrderRepository->>Database: INSERT INTO orders (...)
+    Database-->>OrderRepository: Order saved with ID
+    OrderRepository-->>OrderService: Saved Order entity
+    
+    OrderService-->>OrderController: OrderResponse (success)
+    OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
+```
+
+## Java Code Coverage Using Jacoco
+
+To generate a code coverage report, run the following commands in your terminal:
+
+```bash
+cd apps/backend
+mvn clean test jacoco:report
+```
+
+Then, open the report in your browser using one of the following commands in your terminal, depending on your OS:
+
+Windows:
+```bash
+start target/site/jacoco/index.html
+```
+
+macOS:
+```bash
+open target/site/jacoco/index.html
+```
+
+Linux:
+```bash
+xdg-open target/site/jacoco/index.html
+```

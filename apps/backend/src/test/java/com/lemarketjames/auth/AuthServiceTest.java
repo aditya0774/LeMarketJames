@@ -15,6 +15,9 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,22 +30,42 @@ import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
 
+    private static final String JWT_KEY = "unit-test-signing-key-please-32bytes-minimum";
+
     private AuthService authService;
+    private ClientRepository clientRepository;
+    private AddressRepository addressRepository;
+    private AccountRepository accountRepository;
+    // Stands in for the clients table: keyed by email, as login looks clients up by email.
+    private Map<String, ClientEntity> clientsByEmail;
 
     @BeforeEach
     void setUp() {
-        ClientRepository clientRepository = mock(ClientRepository.class);
-        AddressRepository addressRepository = mock(AddressRepository.class);
-        AccountRepository accountRepository = mock(AccountRepository.class);
+        clientRepository = mock(ClientRepository.class);
+        addressRepository = mock(AddressRepository.class);
+        accountRepository = mock(AccountRepository.class);
+        clientsByEmail = new ConcurrentHashMap<>();
 
-        when(clientRepository.existsByUsername(anyString())).thenReturn(false);
-        when(clientRepository.existsByEmail(anyString())).thenReturn(false);
-        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(clientRepository.existsByUsername(anyString())).thenAnswer(invocation ->
+                clientsByEmail.values().stream().anyMatch(c -> c.getUsername().equals(invocation.getArgument(0))));
+        when(clientRepository.existsByEmail(anyString())).thenAnswer(invocation ->
+                clientsByEmail.containsKey(invocation.<String>getArgument(0)));
+        when(clientRepository.findByEmail(anyString())).thenAnswer(invocation ->
+                Optional.ofNullable(clientsByEmail.get(invocation.<String>getArgument(0))));
+        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> {
+            ClientEntity client = invocation.getArgument(0);
+            clientsByEmail.put(client.getEmail(), client);
+            return client;
+        });
         when(addressRepository.save(any(AddressEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(accountRepository.save(any(AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        authService = new AuthService(
-                new JwtService("unit-test-signing-key-please-32bytes-minimum", 3600000),
+        authService = newAuthService();
+    }
+
+    private AuthService newAuthService() {
+        return new AuthService(
+                new JwtService(JWT_KEY, 3600000),
                 clientRepository,
                 addressRepository,
                 accountRepository,
@@ -85,15 +108,6 @@ class AuthServiceTest {
         assertThrows(ValidationException.class, () -> authService.register(request));
     }
 
-    // Registration must be refused unless the client explicitly accepts the terms and conditions.
-    @Test
-    void registerRejectsWhenTermsNotAccepted() {
-        RegisterRequest request = validRegisterRequest("bob");
-        request.setTermsAccepted(false);
-
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
-    }
-
     // Two accounts cannot share the same email address, even under different usernames.
     @Test
     void registerRejectsDuplicateEmail() {
@@ -105,32 +119,55 @@ class AuthServiceTest {
         assertThrows(IllegalArgumentException.class, () -> authService.register(request));
     }
 
-    // After registering, logging in with the same username/password should succeed and return a token.
+    // After registering, logging in with the email and password should succeed and return the username and a token.
     @Test
     void loginSucceedsWithCorrectCredentials() {
         authService.register(validRegisterRequest("alice"));
 
-        AuthService.LoginResult result = authService.login(new LoginRequest("alice", "Pass123!"));
+        AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
 
         assertEquals("alice", result.getUsername());
         assertEquals("Login successful", result.getMessage());
         assertNotNull(result.getToken());
+        assertNotNull(clientsByEmail.get("alice@example.com").getLastLogin());
     }
 
-    // Logging in as a username that was never registered should fail.
+    // Login must read from the database, so a client saved earlier (e.g. before a restart) can still log in.
     @Test
-    void loginRejectsUnknownUsername() {
-        assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("nobody", "Pass123!")));
+    void loginSucceedsForClientStoredBeforeRestart() {
+        authService.register(validRegisterRequest("alice"));
+        AuthService restartedService = newAuthService();
+
+        AuthService.LoginResult result = restartedService.login(new LoginRequest("alice@example.com", "Pass123!"));
+
+        assertEquals("alice", result.getUsername());
     }
 
-    // Logging in with the wrong password for a real username should fail.
+    // Emails are stored lowercased, so login should match regardless of letter case or surrounding spaces.
+    @Test
+    void loginIgnoresEmailCase() {
+        authService.register(validRegisterRequest("alice"));
+
+        AuthService.LoginResult result = authService.login(new LoginRequest("  Alice@Example.COM ", "Pass123!"));
+
+        assertEquals("alice", result.getUsername());
+    }
+
+    // Logging in with an email that was never registered should fail.
+    @Test
+    void loginRejectsUnknownEmail() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("nobody@example.com", "Pass123!")));
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    // Logging in with the wrong password for a real email should fail.
     @Test
     void loginRejectsIncorrectPassword() {
         authService.register(validRegisterRequest("alice"));
 
         assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("alice", "WrongPass!")));
+                () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
     }
 
     // Encoding a password should hash it, and the hash should still verify against the original password.
@@ -148,11 +185,11 @@ class AuthServiceTest {
 
         for (int i = 0; i < 3; i++) {
             assertThrows(IllegalArgumentException.class,
-                    () -> authService.login(new LoginRequest("alice", "WrongPass!")));
+                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
         IllegalArgumentException lockedException = assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("alice", "Pass123!")));
+                () -> authService.login(new LoginRequest("alice@example.com", "Pass123!")));
         assertTrue(lockedException.getMessage().contains("locked"));
     }
 
@@ -163,12 +200,12 @@ class AuthServiceTest {
 
         for (int i = 0; i < 3; i++) {
             assertThrows(IllegalArgumentException.class,
-                    () -> authService.login(new LoginRequest("alice", "WrongPass!")));
+                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
         Thread.sleep(250);
 
-        AuthService.LoginResult result = authService.login(new LoginRequest("alice", "Pass123!"));
+        AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
         assertEquals("alice", result.getUsername());
     }
 
@@ -185,7 +222,6 @@ class AuthServiceTest {
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));
         request.setPhoneNumber("(555) 123-4567");
-        request.setTermsAccepted(true);
         return request;
     }
 }
