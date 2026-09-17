@@ -5,11 +5,6 @@ pipeline {
         nodejs 'NodeJS'
     }
 
-    environment {
-        DB_PASSWORD = credentials('lemarket-db-password')
-        JWT_SECRET = credentials('lemarket-jwt-secret')
-    }
-
     stages {
         stage('Test and build Angular') {
             steps {

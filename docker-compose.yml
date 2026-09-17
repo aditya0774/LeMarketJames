@@ -16,10 +16,11 @@ services:
       db:
         condition: service_healthy
     environment:
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      # Development defaults for the disposable testing stack; environment overrides remain supported.
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   db:
@@ -34,7 +35,7 @@ services:
     environment:
       POSTGRES_DB: lemarket
       POSTGRES_USER: lemarket
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (frontend/backend never call db directly

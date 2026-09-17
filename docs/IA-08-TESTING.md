@@ -18,16 +18,15 @@ Frontend tests cover account state, private-data cache clearing, loading/empty/e
 
 Commit and push the reviewed changes, including new files, then SSH into EC2 and pull the same branch in the repository directory. Docker/Compose run on EC2, not Windows. No database migration is needed for IA-08; existing foreign keys and username uniqueness support the ownership queries.
 
-Create a gitignored `.env` in the EC2 repository root containing `DB_PASSWORD` and `JWT_SECRET`. Use a long random database password and at least 32 random bytes for the JWT secret. For a fresh testing checkout with no `.env`, this creates both without printing them:
+No Jenkins credentials or `.env` setup is required for the disposable testing stack. Docker Compose and the PostgreSQL test profile use matching development defaults. `DB_PASSWORD` and `JWT_SECRET` can still override them when needed.
+
+If you previously exported temporary secrets in this SSH session, clear them to use the defaults:
 
 ```bash
-umask 077
-if [ ! -e .env ]; then
-  printf 'DB_PASSWORD=%s\nJWT_SECRET=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
-fi
+unset DB_PASSWORD JWT_SECRET
 ```
 
-If `.env` already exists, ensure both variables are set. Then run on EC2:
+Then run on EC2:
 
 ```bash
 docker compose down -v --remove-orphans
@@ -50,10 +49,7 @@ Register two users. Verify each can sign in and reach `/holdings`; new accounts 
 
 ## Jenkins
 
-Run Jenkins after pushing the changes and configuring these **Secret text** credentials:
-
-- `lemarket-db-password`: PostgreSQL testing password.
-- `lemarket-jwt-secret`: JWT signing secret, at least 32 bytes.
+Run Jenkins after pushing the changes and selecting `feature/view-own-data2`. No secret-text credentials are required for this testing configuration.
 
 The agent needs configured `JDK21` and `NodeJS` tools, Maven, Docker Compose, Docker access, and available ports 4200, 8081, and 5432. Use the same EC2 repository/Compose project for a manual run and Jenkins, or stop the manual stack before Jenkins uses those ports. Do not run both against conflicting ports.
 
