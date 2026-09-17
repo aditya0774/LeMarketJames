@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,11 +41,17 @@ class OrderServiceTest {
     @Mock
     private AccountRepository accountRepository;
     
+    @Mock
+    private CashValidationService cashValidationService;
+    
     private OrderService orderService;
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService);
+        // Mock cash validation to pass by default (sufficient balance)
+        // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
+        lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
         SecurityContextHolder.getContext()
             .setAuthentication(new TestingAuthenticationToken("testuser", "n/a", "ROLE_USER"));
     }

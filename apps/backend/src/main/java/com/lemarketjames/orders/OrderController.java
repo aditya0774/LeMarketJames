@@ -21,12 +21,20 @@ public class OrderController {
     }
     
     /**
-     * Create a new order
+     * Create a new order with cash validation
      * POST /api/v1/orders
+     * Returns 201 on success, 400 if insufficient balance
      */
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         OrderResponse response = orderService.createOrder(request);
+        
+        // If validation failed, return 400 Bad Request
+        if (!response.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Order created successfully
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     

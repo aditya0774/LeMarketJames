@@ -1,0 +1,95 @@
+.order-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.balance-display {
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #f0f8ff;
+  border-left: 4px solid #1976d2;
+  border-radius: 4px;
+}
+
+.balance-display p {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.error-message {
+  padding: 12px;
+  margin-bottom: 16px;
+  background-color: #ffebee;
+  border-left: 4px solid #d32f2f;
+  border-radius: 4px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.success-message {
+  padding: 12px;
+  margin-bottom: 16px;
+  background-color: #e8f5e9;
+  border-left: 4px solid #388e3c;
+  border-radius: 4px;
+  color: #2e7d32;
+  font-size: 14px;
+}
+
+.balance-error {
+  padding: 8px 12px;
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+  color: #856404;
+  font-size: 13px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.required-cash {
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.required-cash p {
+  margin: 0;
+}
+
+.submit-button {
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading-message {
+  padding: 12px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 16px;
+}

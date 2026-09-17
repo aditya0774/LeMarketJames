@@ -18,7 +18,7 @@ CREATE TABLE clients (
     client_id       SERIAL PRIMARY KEY,
     username        VARCHAR(100) UNIQUE NOT NULL,
     password        VARCHAR(255) NOT NULL, -- hashed password
-    email           VARCHAR(100) UNIQUE NOT NULL,
+    email           VARCHAR(100) NOT NULL,
     full_name       TEXT NOT NULL,
     date_of_birth   DATE NOT NULL,
     phone           VARCHAR(20) NOT NULL,

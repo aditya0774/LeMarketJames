@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class OrderResponse {
+    private boolean success;
+    private String reason;
     private Integer orderId;
     private Integer accountId;
     private Integer instrumentId;
@@ -19,8 +21,9 @@ public class OrderResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
-    // Constructor from Order entity
+    // Constructor from Order entity (success case)
     public OrderResponse(Order order) {
+        this.success = true;
         this.orderId = order.getOrderId();
         this.accountId = order.getAccountId();
         this.instrumentId = order.getInstrumentId();
@@ -36,10 +39,26 @@ public class OrderResponse {
         this.updatedAt = order.getUpdatedAt();
     }
     
+    // Constructor for failed validation cases
+    public OrderResponse(boolean success, String reason) {
+        this.success = success;
+        this.reason = reason;
+    }
+    
     // Empty constructor
-    public OrderResponse() {}
+    public OrderResponse() {
+        this.success = true;
+    }
     
     // Getters
+    public boolean isSuccess() {
+        return success;
+    }
+    
+    public String getReason() {
+        return reason;
+    }
+    
     public Integer getOrderId() {
         return orderId;
     }
@@ -90,5 +109,14 @@ public class OrderResponse {
     
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    
+    // Setters
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+    
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 }

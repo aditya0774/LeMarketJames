@@ -14,7 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,21 +24,44 @@ public class OrderService {
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
     
     private final OrderRepository orderRepository;
+    private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
     
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
-                        AccountRepository accountRepository) {
+                        AccountRepository accountRepository,
+                        CashValidationService cashValidationService) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
+        this.cashValidationService = cashValidationService;
     }
     
     /**
-     * Create a new order
+     * Create a new order with cash validation.
+     * For BUY orders, validates that the account has sufficient cash.
+     * Cost is calculated as: quantity * pricePerUnit
      */
     public OrderResponse createOrder(CreateOrderRequest request) {
+        // For BUY orders, validate sufficient cash
+        if (request.getOrderType() == Order.OrderType.BUY) {
+            BigDecimal orderCost = calculateOrderCost(request);
+            
+            boolean hasSufficientCash = cashValidationService.validateSufficientCash(
+                request.getAccountId(),
+                orderCost
+            );
+            
+            if (!hasSufficientCash) {
+                BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
+                return new OrderResponse(false, 
+                    String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", 
+                        orderCost, availableCash));
+            }
+        }
+        
+        // Cash validation passed or SELL order; proceed with order creation
         validateAccountAccess(request.getAccountId());
         validateInstrumentTradability(request.getInstrumentId());
 
@@ -80,6 +103,17 @@ public class OrderService {
             log.warn("Tradability check failed for instrumentId={}", instrumentId);
             throw new NotTradableException("Instrument is currently not tradable");
         }
+    }
+    
+    /**
+     * Calculates the total cost of an order.
+     * Cost = quantity * pricePerUnit
+     */
+    private BigDecimal calculateOrderCost(CreateOrderRequest request) {
+        if (request.getQuantity() == null || request.getPricePerUnit() == null) {
+            return BigDecimal.ZERO;
+        }
+        return request.getQuantity().multiply(request.getPricePerUnit());
     }
     
     /**
