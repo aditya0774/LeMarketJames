@@ -744,16 +744,24 @@ sequenceDiagram
 
 To generate a code coverage report, run the following commands in your terminal:
 
+```bash
 cd apps/backend
 mvn clean test jacoco:report
+```
 
 Then, open the report in your browser using one of the following commands in your terminal, depending on your OS:
 
 Windows:
+```bash
 start target/site/jacoco/index.html
+```
 
 macOS:
+```bash
 open target/site/jacoco/index.html
+```
 
 Linux:
+```bash
 xdg-open target/site/jacoco/index.html
+```
