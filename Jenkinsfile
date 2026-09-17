@@ -194,7 +194,7 @@ JSON
 )
 
                     login_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!"}
+{"username":"$email","password":"Pass123!"}
 JSON
 )
 
@@ -258,7 +258,7 @@ JSON
 )
 
                     login_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!"}
+{"username":"$email","password":"Pass123!"}
 JSON
 )
 
