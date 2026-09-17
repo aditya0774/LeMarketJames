@@ -13,6 +13,44 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
 
 ---
 
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Architecture](#architecture)
+   - [System Topology](#system-topology)
+   - [Authentication Flow](#authentication-flow)
+   - [Technology Stack](#technology-stack)
+   - [Current Features & Endpoints](#current-features--endpoints)
+   - [Design Principles](#design-principles)
+3. [Prerequisites](#prerequisites)
+4. [Running the Application](#running-the-application)
+   - [Method 1: Local Development (Maven + npm)](#method-1-local-development-maven--npm)
+   - [Method 2: Docker Build & Run](#method-2-docker-build--run)
+   - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
+   - [Market simulation settings](#market-simulation-settings)
+5. [Testing](#testing)
+   - [Backend Tests (Java/JUnit)](#backend-tests-javajunit)
+   - [Frontend Tests (TypeScript/Vitest)](#frontend-tests-typescriptvitest)
+6. [API & Frontend Access](#api--frontend-access)
+7. [Troubleshooting](#troubleshooting)
+   - [Port Already in Use](#port-already-in-use)
+   - [Java Version Mismatch](#java-version-mismatch)
+   - [Maven Build Fails](#maven-build-fails)
+   - [npm Install Fails](#npm-install-fails)
+   - [Database Connection Refused](#database-connection-refused-docker-compose-or-local-dev)
+   - [Quote Prices Are Not Changing](#quote-prices-are-not-changing)
+   - [Container Exits Immediately](#container-exits-immediately-docker)
+8. [CI/CD Pipeline](#cicd-pipeline)
+9. [Javadocs](#javadocs)
+10. [ER Diagram](#er-diagram)
+11. [UML Diagrams](#uml-diagrams)
+    - [Class Diagram: Backend Data Model](#class-diagram-backend-data-model)
+    - [Sequence Diagram: Backend Login Flow](#sequence-diagram-backend-login-flow)
+    - [Sequence Diagram: Backend Order Creation Flow](#sequence-diagram-backend-order-creation-flow)
+12. [Code Coverage](#code-coverage)
+
+---
+
 ## Project Structure
 
 See [AGENTS.md](AGENTS.md) for the full conventions doc (package/folder rules, build & test commands). Summary:
@@ -22,39 +60,27 @@ LeMarketJames/
 ├── apps/
 │   ├── backend/                   # Java/Spring Boot backend (feature-based packages)
 │   │   ├── src/main/java/com/lemarketjames/
-│   │   │   ├── Main.java           # Spring Boot application entry point
-│   │   │   ├── Greeter.java        # Sample service
-│   │   │   ├── auth/               # Auth feature: controller, service, dto/, security/
-│   │   │   ├── common/             # Shared code used by multiple features
-│   │   │   ├── market/             # Simulated stock market (GBM price engine, persistence)
-│   │   │   └── config/             # Cross-cutting configuration (SecurityConfig, etc.)
-│   │   ├── src/main/resources/
-│   │   │   └── application.properties  # Spring Boot configuration
-│   │   ├── src/test/java/         # JUnit test suite, mirrors main package layout
-│   │   ├── pom.xml                # Maven configuration
-│   │   └── Dockerfile             # Backend container image definition
-│   └── frontend/                  # Angular 22 frontend (formerly lemarket-ui/)
-│       ├── src/
-│       │   ├── index.html         # HTML entry point
-│       │   ├── main.ts            # Angular bootstrap
-│       │   ├── app/
-│       │   │   ├── app.ts         # Root component
-│       │   │   ├── app.routes.ts  # Route definitions
-│       │   │   ├── core/          # App-wide singletons: auth state, interceptors
-│       │   │   ├── shared/        # Reusable presentational components/pipes/models
-│       │   │   └── features/auth/ # Routed, feature-specific UI
-│       │   └── styles.css         # Global styles
-│       ├── package.json           # npm dependencies and scripts
-│       ├── angular.json           # Angular CLI config
-│       ├── nginx.conf             # SPA routing config for the container
-│       └── Dockerfile             # Frontend container image definition
-├── database/                      # Database schemas (raw SQL, no migration tool)
-│   └── schema/                    # Numbered, ordered SQL files applied in order
-│       ├── 001_core_schema.sql
-├── docker-compose.yml             # 3 services: frontend (4200), backend (8081), db (5432)
-├── Jenkinsfile                    # CI/CD pipeline
-├── AGENTS.md                      # Conventions for contributors and AI agents
-└── README.md                      # This file
+│   │   │   ├── auth/              # Authentication & security feature
+│   │   │   ├── common/            # Shared code (exceptions, utilities)
+│   │   │   ├── config/            # Cross-cutting config (Security, etc.)
+│   │   │   └── [other features]/  # Feature packages: market, orders, holdings, quotes, etc.
+│   │   ├── src/test/java/        # JUnit tests (mirrors main layout)
+│   │   ├── pom.xml               # Maven configuration
+│   │   └── Dockerfile            # Backend container image
+│   └── frontend/                  # Angular 22 frontend
+│       ├── src/app/
+│       │   ├── core/             # App-wide singletons: auth, interceptors
+│       │   ├── shared/           # Reusable components and models
+│       │   ├── features/         # Feature modules: auth, dashboard, etc.
+│       │   └── [other files]/    # Routing, styles, environment configs
+│       ├── package.json          # npm dependencies
+│       └── Dockerfile            # Frontend container image
+├── database/schema/              # Numbered SQL files (001_, 002_, etc.)
+├── docker-compose.yml            # Full-stack orchestration
+├── Jenkinsfile                   # CI/CD pipeline
+├── AGENTS.md                     # Conventions for developers
+├── API-CONTRACTS.md              # Endpoint & data contracts
+└── README.md                     # This file
 ```
 
 ## Architecture
@@ -65,13 +91,19 @@ This section describes the current system architecture. As new features are adde
 
 LeMarketJames is a **3-tier distributed architecture** with three independent services communicating over HTTP:
 
-```
-┌─────────────────┐            ┌─────────────────┐            ┌─────────────────┐
-│  Angular        │            │  Spring Boot    │            │  PostgreSQL     │
-│  Frontend       │  --REST->  │  Backend        │            │  Database       │
-│  (port 4200)    │ <-Cookies- │  (port 8081)    │<---JDBC--->│  (port 5432)    │
-│                 │            │                 │            │                 │
-└─────────────────┘            └─────────────────┘            └─────────────────┘
+```mermaid
+graph LR
+    A["🌐 Angular Frontend<br/>(port 4200)"] -->|"REST + JSON"| B["🔧 Spring Boot Backend<br/>(port 8081)"]
+    B -->|"Cookies<br/>(JWT)"| A
+    B -->|"JDBC<br/>PostgreSQL Driver"| C["🗄️ PostgreSQL Database<br/>(port 5432)"]
+    
+    classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
+    classDef database fill:#FF6B6B,stroke:#A91D3A,color:#fff
+    
+    class A frontend
+    class B backend
+    class C database
 ```
 
 **Key Characteristics:**
@@ -120,33 +152,19 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 
 ### Current Features & Endpoints
 
-**Authentication Module** (`com.lemarketjames.auth`):
-- `POST /api/auth/register` — Register new user with profile information
-- `POST /api/auth/login` — Authenticate user and receive JWT token
-- `POST /api/auth/logout` — Clear authentication cookie
-- `GET /api/auth/me` — Retrieve current authenticated user (requires valid JWT)
+**See [API-CONTRACTS.md](API-CONTRACTS.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
-**Market Simulation Module** (`com.lemarketjames.market`):
-- Simulates a live stock market so orders and holdings can be priced against current quotes (BR-08, BR-12, BR-13)
-- Prices follow **Geometric Brownian Motion (GBM)**: each tick applies `S × exp((μ − σ²/2)·Δt + σ·√Δt·Z)` using per-instrument drift (μ) and volatility (σ) from `instrument_market_params`
-- A shared market-wide shock makes stocks move partly together; bid/ask, day open/high/low, previous close, volume, market cap, P/E and dividend yield are derived from the price
-- Prices tick on a timer (default every second) and only during exchange hours (US equities 09:30–16:00 New York, weekdays); reading a quote never changes a price
-- Live prices are held in memory; the latest price per instrument is saved to `market_quotes` every 5 seconds (so a restart resumes where it left off) and 1-minute candles to `price_candles`
-- Other features read prices through `MarketDataService`
-- Configured with `sim.*` properties (see [Market simulation settings](#market-simulation-settings))
-- Full design notes, tuning and limitations: **[docs/MARKET.md](docs/MARKET.md)**
+**Key Features:**
+- **Authentication:** User registration, login, JWT-based stateless sessions with HTTP-only cookies
+- **Market Simulation:** Live price ticks using Geometric Brownian Motion (GBM); configurable per-instrument drift and volatility; designed for testing orders and holdings at realistic prices
+- **Holdings & Orders:** Track stock positions and execute buy/sell orders with tradability and holdings validation
+- **Quotes:** Real-time stock quotes from the simulated market
 
-**Quotes Module** (`com.lemarketjames.quotes`):
-- `GET /api/quotes/{symbol}` — Current simulated quote (requires valid JWT)
-
-**Holdings Module** (`com.lemarketjames.holdings`):
-- `GET /api/holdings?accountId={id}` — Holdings with current market price and value
-- `POST /api/holdings/validate` — Check a sell quantity against holdings
-
-**Data Models:**
-- User registration captures: username, password, email, full name, address, SSN, date of birth, initial deposit, investment experience, phone number
-- Passwords stored as BCrypt hashes with salt
-- User data stored in PostgreSQL (schema: `database/schema/001_core_schema.sql`)
+**Architecture Notes:**
+- Feature-based organization: `auth/`, `market/`, `holdings/`, `orders/`, `quotes/`, `sessions/` packages
+- Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
+- Data persisted in PostgreSQL; market prices and session state in-memory
+- Full design and tuning details: **[docs/MARKET.md](docs/MARKET.md)**, **[docs/BACKEND.md](docs/BACKEND.md)**
 
 ### Design Principles
 
@@ -721,3 +739,21 @@ sequenceDiagram
     OrderService-->>OrderController: OrderResponse (success)
     OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
 ```
+
+## Code Coverage
+
+To generate a code coverage report, run the following commands in your terminal:
+
+cd apps/backend
+mvn clean test jacoco:report
+
+Then, open the report in your browser using one of the following commands in your terminal, depending on your OS:
+
+Windows:
+start target/site/jacoco/index.html
+
+macOS:
+open target/site/jacoco/index.html
+
+Linux:
+xdg-open target/site/jacoco/index.html
