@@ -740,7 +740,7 @@ sequenceDiagram
     OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
 ```
 
-## Code Coverage
+## Java Code Coverage Using Jacoco
 
 To generate a code coverage report, run the following commands in your terminal:
 
