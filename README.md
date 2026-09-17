@@ -495,3 +495,184 @@ https://aditya0774.github.io/LeMarketJames/
 ## ER Diagram
 
 ![ER Diagram](lebron_erd.png)
+
+---
+
+## UML Diagrams
+
+### Class Diagram: Backend Data Model
+
+This diagram shows the core data model and relationships between entities in the backend:
+
+```mermaid
+classDiagram
+    class Client {
+        -Integer clientId
+        -String username
+        -String email
+        -String passwordHash
+        -String fullName
+        -String streetAddress
+        -String city
+        -String state
+        -String zipCode
+        -String country
+        -String ssn
+        -String phoneNumber
+        -LocalDateTime createdAt
+        -LocalDateTime lastLogin
+        +register(RegistrationRequest): void
+        +validatePassword(String): boolean
+    }
+
+    class Account {
+        -Integer accountId
+        -Integer clientId
+        -BigDecimal initialDeposit
+        -String investmentExperience
+        -String employmentStatus
+        -LocalDate dateOfBirth
+        -LocalDateTime createdAt
+        +getBalance(): BigDecimal
+    }
+
+    class Holdings {
+        -Integer holdingId
+        -Integer accountId
+        -Integer instrumentId
+        -BigDecimal quantity
+        -BigDecimal averageCost
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +validateSufficientHoldings(): boolean
+        +addQuantity(BigDecimal): void
+        +removeQuantity(BigDecimal): void
+    }
+
+    class Order {
+        -Integer orderId
+        -Integer accountId
+        -Integer instrumentId
+        -String orderType
+        -BigDecimal quantity
+        -BigDecimal executionPrice
+        -String status
+        -LocalDateTime createdAt
+        -LocalDateTime executedAt
+        +validateTradability(): boolean
+        +execute(): void
+    }
+
+    class Quote {
+        -String symbol
+        -BigDecimal price
+        -LocalDateTime lastUpdate
+        -Boolean tradable
+        +getLatestPrice(): BigDecimal
+    }
+
+    class SessionData {
+        -String sessionId
+        -Integer accountId
+        -LocalDateTime createdAt
+        -LocalDateTime expiresAt
+        -LocalDateTime lastActivityAt
+        +validateExpiration(): boolean
+        +isValid(): boolean
+    }
+
+    Client "1" --> "1..* " Account: owns
+    Account "1" --> "0..*" Holdings: contains
+    Account "1" --> "0..*" Order: places
+    Order "1" --> "1" Quote: references
+    SessionData "1" --> "1" Account: represents
+```
+
+---
+
+### Sequence Diagram: Backend Login Flow
+
+This diagram shows the authentication sequence when a user logs in:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant AuthController
+    participant AuthService
+    participant ClientRepository
+    participant PasswordEncoder
+    participant JwtService
+    participant Database
+
+    User->>AuthController: POST /api/auth/login<br/>{username/email, password}
+    AuthController->>AuthService: login(LoginRequest)
+    
+    AuthService->>AuthService: validateLoginRequest()
+    AuthService->>ClientRepository: findByEmail(email)
+    ClientRepository->>Database: SELECT * FROM clients WHERE email = ?
+    Database-->>ClientRepository: Client record
+    ClientRepository-->>AuthService: Optional<Client>
+    
+    AuthService->>PasswordEncoder: matches(rawPassword, hashedPassword)
+    PasswordEncoder-->>AuthService: boolean (true/false)
+    
+    alt Password Valid
+        AuthService->>AuthService: Remove failed login attempts
+        AuthService->>Database: UPDATE clients SET last_login = NOW()
+        AuthService->>JwtService: generateToken(username)
+        JwtService->>JwtService: Create JWT with subject, issued-at, expiration
+        JwtService-->>AuthService: Signed JWT token
+        AuthService-->>AuthController: LoginResult (username, token, success)
+        AuthController-->>User: 200 OK<br/>Set-Cookie: JWT in HTTP-only cookie<br/>{username, token, message}
+    else Password Invalid
+        AuthService->>AuthService: Register failed login attempt
+        AuthService->>AuthService: Check if max attempts exceeded
+        alt Max Attempts Exceeded
+            AuthService->>AuthService: Lock account temporarily
+            AuthService-->>AuthController: IllegalArgumentException (locked)
+        else
+            AuthService-->>AuthController: IllegalArgumentException (invalid credentials)
+        end
+        AuthController-->>User: 400 Bad Request<br/>{error: "Invalid email or password"}
+    end
+```
+
+---
+
+### Sequence Diagram: Backend Order Creation Flow
+
+This diagram shows the sequence of interactions within the Spring Boot backend when a user creates a trading order:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant OrderController
+    participant OrderService
+    participant HoldingsService
+    participant TradabilityService
+    participant OrderRepository
+    participant Database
+
+    User->>OrderController: POST /api/v1/orders<br/>{accountId, instrumentId, quantity}
+    OrderController->>OrderController: Validate JWT token
+    OrderController->>OrderService: createOrder(request)
+    
+    OrderService->>HoldingsService: validateSufficientHoldings(accountId, instrumentId, quantity)
+    HoldingsService->>Database: Query holdings for account
+    Database-->>HoldingsService: Holdings record
+    HoldingsService->>HoldingsService: Check quantity >= requested
+    HoldingsService-->>OrderService: Valid or InsufficientHoldingsException
+    
+    OrderService->>TradabilityService: validateTradability(instrumentId)
+    TradabilityService->>Database: Query instrument tradability
+    Database-->>TradabilityService: Tradability flag
+    TradabilityService-->>OrderService: Valid or NotTradableException
+    
+    OrderService->>OrderRepository: save(Order)
+    OrderRepository->>Database: INSERT INTO orders (...)
+    Database-->>OrderRepository: Order saved with ID
+    OrderRepository-->>OrderService: Saved Order entity
+    
+    OrderService-->>OrderController: OrderResponse (success)
+    OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
+```
