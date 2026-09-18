@@ -46,3 +46,15 @@
 - **API contracts first:** Backend and frontend stay in sync via `/API-CONTRACTS.md`
 - **Secrets in env files:** Never commit credentials or API keys
 - **Readability:** Include comments of why code exists to improve readability.
+
+## SOLID Principles
+
+Prioritize SOLID design in all code contributions:
+
+- **SRP:** One responsibility per class/module.
+- **OCP:** Extend base code via subclasses, don't modify base unless necessary.
+- **LSP:** Subtypes must be fully substitutable.
+- **ISP:** Prefer small, focused interfaces.
+- **DIP:** Depend on abstractions; use dependency injection.
+
+Favor composition over inheritance, low coupling, high cohesion, and testable designs. Reject god classes, fat interfaces, and hard-coded dependencies. Briefly note SOLID decisions when relevant.
