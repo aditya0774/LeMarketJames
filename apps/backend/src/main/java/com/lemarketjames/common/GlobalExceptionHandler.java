@@ -1,6 +1,7 @@
 package com.lemarketjames.common;
 
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.holdings.exception.UnauthorizedException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -49,6 +50,16 @@ public class GlobalExceptionHandler {
                     "success", false,
                     "error", ex.getMessage(),
                     "code", "INSUFFICIENT_HOLDINGS"
+                ));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                    "success", false,
+                    "error", "Access denied",
+                    "code", "ACCOUNT_ACCESS_DENIED"
                 ));
     }
 
