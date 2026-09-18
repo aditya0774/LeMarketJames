@@ -1,6 +1,9 @@
 package com.lemarketjames.sessions.service;
 
 import com.lemarketjames.sessions.dto.SessionDto;
+import com.lemarketjames.auth.domain.AccountRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -20,8 +23,10 @@ import java.util.Date;
 public class SessionService {
 
   private final SecretKey signingKey;
+  private final AccountRepository accounts;
 
-  public SessionService(@Value("${jwt.secret}") String secret) {
+  public SessionService(@Value("${jwt.secret}") String secret, AccountRepository accounts) {
+    this.accounts = accounts;
     this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -43,6 +48,13 @@ public class SessionService {
           .parseSignedClaims(token)
           .getPayload();
 
+      var authentication = SecurityContextHolder.getContext().getAuthentication();
+      if (authentication == null || !authentication.isAuthenticated()
+          || !authentication.getName().equals(claims.getSubject())
+          || !accounts.existsByAccountIdAndUsername(accountId, authentication.getName())) {
+        throw new AccessDeniedException("Account access is not allowed");
+      }
+
       // Check expiration
       Date expiresAt = claims.getExpiration();
       if (expiresAt != null && expiresAt.before(new Date())) {
@@ -59,10 +71,12 @@ public class SessionService {
           expiresAtLocal,
           true
       );
+    } catch (AccessDeniedException e) {
+      throw e;
     } catch (SessionExpiredException e) {
       throw e;
     } catch (Exception e) {
-      throw new SessionExpiredException("Invalid or expired session token: " + e.getMessage());
+      throw new SessionExpiredException("Invalid or expired session token");
     }
   }
 }

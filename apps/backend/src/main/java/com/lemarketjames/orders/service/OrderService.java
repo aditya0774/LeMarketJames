@@ -80,14 +80,26 @@ public class OrderService {
         return new OrderResponse(savedOrder);
     }
 
-    private void validateAccountAccess(Integer accountId) {
+    private Order findOwnOrder(Integer orderId) {
+        authenticatedUsername();
+        // Use the same denial for missing and foreign IDs to avoid exposing their existence.
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new AccessDeniedException("Account access is not allowed"));
+        validateAccountAccess(order.getAccountId());
+        return order;
+    }
+
+    private String authenticatedUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
             throw new AccessDeniedException("Authentication required");
         }
+        return authentication.getName();
+    }
 
-        String username = authentication.getName();
+    private void validateAccountAccess(Integer accountId) {
+        String username = authenticatedUsername();
         boolean ownsAccount = accountRepository.existsByAccountIdAndUsername(accountId, username);
         if (!ownsAccount) {
             log.warn("Order access denied for username={} accountId={}", username, accountId);
@@ -120,15 +132,14 @@ public class OrderService {
      * Get order by ID
      */
     public OrderResponse getOrderById(Integer orderId) {
-        return orderRepository.findById(orderId)
-            .map(OrderResponse::new)
-            .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+        return new OrderResponse(findOwnOrder(orderId));
     }
     
     /**
      * Get all orders for an account
      */
     public List<OrderResponse> getOrdersByAccountId(Integer accountId) {
+        validateAccountAccess(accountId);
         return orderRepository.findByAccountId(accountId)
             .stream()
             .map(OrderResponse::new)
@@ -139,6 +150,7 @@ public class OrderService {
      * Get orders for an account with a specific status
      */
     public List<OrderResponse> getOrdersByAccountAndStatus(Integer accountId, Order.OrderStatus status) {
+        validateAccountAccess(accountId);
         return orderRepository.findByAccountIdAndOrderStatus(accountId, status)
             .stream()
             .map(OrderResponse::new)
@@ -149,7 +161,7 @@ public class OrderService {
      * Get all orders for an instrument
      */
     public List<OrderResponse> getOrdersByInstrumentId(Integer instrumentId) {
-        return orderRepository.findByInstrumentId(instrumentId)
+        return orderRepository.findOwnByInstrumentId(instrumentId, authenticatedUsername())
             .stream()
             .map(OrderResponse::new)
             .collect(Collectors.toList());
@@ -159,8 +171,7 @@ public class OrderService {
      * Update order status
      */
     public OrderResponse updateOrderStatus(Integer orderId, Order.OrderStatus newStatus) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+        Order order = findOwnOrder(orderId);
         
         order.setOrderStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
@@ -171,8 +182,7 @@ public class OrderService {
      * Reject an order with a reason
      */
     public OrderResponse rejectOrder(Integer orderId, String reason) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+        Order order = findOwnOrder(orderId);
         
         order.setOrderStatus(Order.OrderStatus.REJECTED);
         order.setRejectionReason(reason);

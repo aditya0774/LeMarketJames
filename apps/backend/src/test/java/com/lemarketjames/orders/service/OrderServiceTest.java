@@ -142,6 +142,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Get order by ID")
     void testGetOrderById() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         order.setOrderId(1);
@@ -164,7 +165,7 @@ class OrderServiceTest {
         when(orderRepository.findById(999)).thenReturn(Optional.empty());
         
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(AccessDeniedException.class, () -> {
             orderService.getOrderById(999);
         });
     }
@@ -172,6 +173,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Get orders by account ID")
     void testGetOrdersByAccountId() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order order1 = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         order1.setOrderId(1);
@@ -196,6 +198,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Update order status")
     void testUpdateOrderStatus() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         order.setOrderId(1);
@@ -218,6 +221,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Reject order with reason")
     void testRejectOrder() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         order.setOrderId(1);
@@ -241,6 +245,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("Get orders by account and status")
     void testGetOrdersByAccountAndStatus() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order submittedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         submittedOrder.setOrderId(1);

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { Register } from './register';
 
 describe('Register', () => {
@@ -129,7 +130,7 @@ describe('Register', () => {
 
     component.onSubmit();
 
-    const req = httpMock.expectOne('http://10.14.129.6:8081/api/auth/register');
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/auth/register`);
     expect(req.request.method).toBe('POST');
     req.flush({ success: true, message: 'Registration successful' });
 
