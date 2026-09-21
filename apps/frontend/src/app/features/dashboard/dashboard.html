@@ -17,9 +17,9 @@
   </div>
 }
 
-<app-stock-search />
-
 <app-stat-strip [totals]="totals()" [openOrders]="openOrders()" />
+
+<app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
 
 <app-portfolio-panel
   [holdings]="holdings()"
@@ -29,3 +29,12 @@
 />
 
 <app-orders-panel [orders]="orders()" [loading]="ordersLoading()" [error]="ordersError()" />
+
+@if (tradeSymbol(); as symbol) {
+  <app-trade-dialog
+    [symbol]="symbol"
+    [initialHistory]="marketHistory()[symbol] ?? []"
+    (closed)="closeTrade()"
+    (orderPlaced)="onOrderPlaced()"
+  />
+}

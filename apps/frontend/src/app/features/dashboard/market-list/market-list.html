@@ -1,0 +1,49 @@
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <h3>Market</h3>
+      <div class="sub-s">Live prices for every stock. Click one to buy or sell.</div>
+    </div>
+    <div class="search-box market-filter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="search" placeholder="Filter stocks" aria-label="Filter stocks" autocomplete="off"
+             [value]="filter()" (input)="filter.set($any($event.target).value)" />
+    </div>
+  </div>
+
+  <div class="panel-scroll">
+    <table>
+      <thead>
+        <tr><th>Stock</th><th>Price</th><th>Change</th><th>Today</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (row of visibleRows(); track row.instrument.symbol) {
+          @let q = row.quote;
+          <tr class="clickable" tabindex="0" [attr.aria-label]="'Trade ' + row.instrument.symbol"
+              (click)="selectSymbol.emit(row.instrument.symbol)" (keydown.enter)="selectSymbol.emit(row.instrument.symbol)">
+            <td>
+              <span class="sym">{{ row.instrument.symbol }}</span>
+              <span class="sym-sub">{{ row.instrument.name }}{{ row.instrument.tradable ? '' : ' · Not tradable' }}</span>
+            </td>
+            <td class="tabular">{{ q ? (q.price | currency: 'USD') : '—' }}</td>
+            <td class="tabular" [class.up]="q && q.priceChange >= 0" [class.down]="q && q.priceChange < 0">
+              @if (q) {
+                {{ q.priceChange >= 0 ? '▲' : '▼' }}
+                {{ (q.priceChangePercent < 0 ? -q.priceChangePercent : q.priceChangePercent) | number: '1.2-2' }}%
+              } @else {
+                —
+              }
+            </td>
+            <td><app-sparkline size="row" [values]="row.history" [label]="row.instrument.symbol + ' price today'" /></td>
+            <td class="row-action"><span class="trade-link">Trade &rsaquo;</span></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty-row">No stocks found for “{{ filter() }}”</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

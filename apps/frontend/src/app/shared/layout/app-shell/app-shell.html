@@ -1,21 +1,9 @@
 <div class="app-shell">
-  <nav class="sidebar" aria-label="Main">
-    <div class="side-top">
-      <div class="brand">
-        <img src="/lemarket-logo.png" alt="" />
-        <span class="wordmark"><span class="le-accent">Le</span>Market</span>
-      </div>
-      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
-        <span class="dot"></span> Dashboard
-      </a>
-      <a class="nav-item" routerLink="/trade" routerLinkActive="active">
-        <span class="dot"></span> Trade
-      </a>
-    </div>
-    <div class="side-bottom">{{ auth.currentUser() }}</div>
-  </nav>
-
   <main class="app-main">
+    <div class="brand">
+      <img src="/lemarket-logo.png" alt="" />
+      <span class="wordmark"><span class="le-accent">Le</span>Market</span>
+    </div>
     <router-outlet />
   </main>
 </div>

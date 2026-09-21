@@ -1,9 +1,21 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { EMPTY, map, retry, switchMap, tap } from 'rxjs';
+import { EMPTY, retry, switchMap, tap } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { InstrumentCatalog } from '../../core/market/instrument-catalog';
@@ -15,29 +27,38 @@ import { CompactNumberPipe } from '../../shared/pipes/compact-number.pipe';
 
 export type Side = 'BUY' | 'SELL';
 
-/** How many polled prices the sparkline keeps (~2.5 minutes at the default refresh). */
-const HISTORY_LENGTH = 30;
+/** How many prices the chart keeps. */
+const HISTORY_LENGTH = 40;
 
 /**
- * Trade page (mockup "Stock / Trade"): a buy/sell market order form next to a live price
- * panel for one stock, addressed by /trade/:symbol.
+ * Buy/sell popup (mockup "Stock / Trade" screen) opened from the dashboard's market list
+ * or portfolio. Market orders only: a side toggle and quantity next to a live price panel.
+ * Emits `closed` on Esc, backdrop click, × or Cancel, and `orderPlaced` after an accepted
+ * order so the dashboard can refresh holdings and orders.
  */
 @Component({
-  selector: 'app-trade',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink, Sparkline, CompactNumberPipe],
-  templateUrl: './trade.html',
+  selector: 'app-trade-dialog',
+  imports: [CurrencyPipe, DecimalPipe, Sparkline, CompactNumberPipe],
+  templateUrl: './trade-dialog.html',
 })
-export class Trade {
+export class TradeDialog implements OnDestroy {
   private readonly auth = inject(Auth);
   private readonly catalog = inject(InstrumentCatalog);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
 
-  protected readonly symbol = toSignal(
-    inject(ActivatedRoute).paramMap.pipe(map((params) => (params.get('symbol') ?? '').toUpperCase())),
-    { initialValue: '' },
-  );
-  protected readonly instrument = computed(() => this.catalog.bySymbol(this.symbol()));
+  readonly symbol = input.required<string>();
+  /** Prices the dashboard has already collected, so the chart isn't empty on open. */
+  readonly initialHistory = input<readonly number[]>([]);
+  readonly closed = output<void>();
+  readonly orderPlaced = output<void>();
+
+  private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
+  // Returned to on close so keyboard users land back on the row they opened.
+  private readonly returnFocusTo = inject(DOCUMENT).activeElement as HTMLElement | null;
+
+  protected readonly sym = computed(() => this.symbol().toUpperCase());
+  protected readonly instrument = computed(() => this.catalog.bySymbol(this.sym()));
 
   protected readonly quote = signal<Quote | null>(null);
   protected readonly quoteError = signal(false);
@@ -51,7 +72,7 @@ export class Trade {
 
   /** Shares held per symbol; null until holdings load (or if they fail to). */
   private readonly heldBySymbol = signal<Record<string, number> | null>(null);
-  protected readonly held = computed(() => this.heldBySymbol()?.[this.symbol()] ?? 0);
+  protected readonly held = computed(() => this.heldBySymbol()?.[this.sym()] ?? 0);
   protected readonly holdingsKnown = computed(() => this.heldBySymbol() !== null);
 
   protected readonly quantityValid = computed(() => Number.isInteger(this.quantity()) && this.quantity() >= 1);
@@ -65,18 +86,13 @@ export class Trade {
   });
 
   protected readonly canSubmit = computed(
-    () =>
-      !!this.instrument()?.tradable &&
-      this.quantityValid() &&
-      !this.exceedsHoldings() &&
-      !this.submitting(),
+    () => !!this.instrument()?.tradable && this.quantityValid() && !this.exceedsHoldings() && !this.submitting(),
   );
 
   constructor() {
     const quotes = inject(Quotes);
-    inject(ActivatedRoute)
-      .paramMap.pipe(
-        map((params) => (params.get('symbol') ?? '').toUpperCase()),
+    toObservable(this.sym)
+      .pipe(
         tap(() => this.resetForSymbol()),
         switchMap((symbol) =>
           this.catalog.bySymbol(symbol)
@@ -95,7 +111,23 @@ export class Trade {
         this.priceHistory.update((h) => [...h, response.quote.price].slice(-HISTORY_LENGTH));
       });
 
+    afterNextRender(() => this.panel()?.nativeElement.focus());
     this.loadHoldings();
+  }
+
+  ngOnDestroy(): void {
+    this.returnFocusTo?.focus?.();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected close(): void {
+    this.closed.emit();
+  }
+
+  protected onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.close();
+    }
   }
 
   protected setSide(side: Side): void {
@@ -140,6 +172,7 @@ export class Trade {
             `is ${order.orderStatus.toLowerCase()}.`,
         );
         this.loadHoldings();
+        this.orderPlaced.emit();
       },
       error: (err) => {
         this.submitting.set(false);
@@ -151,7 +184,7 @@ export class Trade {
   private resetForSymbol(): void {
     this.quote.set(null);
     this.quoteError.set(false);
-    this.priceHistory.set([]);
+    this.priceHistory.set([...this.initialHistory()].slice(-HISTORY_LENGTH));
     this.quantity.set(1);
     this.clearMessages();
   }

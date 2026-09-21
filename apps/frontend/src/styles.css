@@ -344,7 +344,6 @@
 /* ================= APP SHELL (dashboard / trade) ================= */
 
 .app-shell {
-  display: flex;
   min-height: 100vh;
   background-color: var(--ink);
   background-image:
@@ -381,22 +380,11 @@
   color: var(--down);
 }
 
-.sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: var(--ink-2);
-  border-right: 1px solid var(--purple-line);
-  padding: 22px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 6px 26px;
+  margin-bottom: 22px;
 }
 
 .brand img {
@@ -412,47 +400,10 @@
   letter-spacing: 0.3px;
 }
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  color: var(--text);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(253, 185, 39, 0.16), transparent);
-  color: var(--gold);
-}
-
-.nav-item .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.7;
-}
-
-.side-bottom {
-  font-size: 11px;
-  color: var(--text-faint);
-  padding: 10px 6px;
-}
-
 .app-main {
-  flex: 1;
-  min-width: 0;
   padding: 28px 34px 60px;
   max-width: 1180px;
+  margin: 0 auto;
 }
 
 .app-header {
@@ -867,7 +818,123 @@
   color: var(--text-faint);
 }
 
-/* ---------- Trade page ---------- */
+/* ---------- Market list ---------- */
+
+.market-filter {
+  width: 220px;
+  max-width: 100%;
+}
+
+.market-filter input {
+  padding: 8px 12px 8px 36px;
+  font-size: 13px;
+}
+
+.row-chart {
+  display: block;
+  width: 120px;
+  height: 32px;
+}
+
+.row-chart path {
+  fill: none;
+  stroke-width: 2;
+  stroke: var(--gold);
+  vector-effect: non-scaling-stroke;
+}
+
+.row-chart.up path {
+  stroke: var(--up);
+}
+
+.row-chart.down path {
+  stroke: var(--down);
+}
+
+.panel tbody td.row-action {
+  text-align: right;
+}
+
+.trade-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.panel tbody tr.clickable:hover .trade-link,
+.panel tbody tr.clickable:focus-visible .trade-link {
+  color: var(--gold);
+}
+
+.panel tbody tr.clickable:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+
+/* ---------- Trade popup ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+  background: rgba(8, 5, 15, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 980px;
+  background: var(--ink);
+  border: 1px solid var(--purple-line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  padding: 24px 26px 26px;
+  outline: none;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.modal-head h2 {
+  font-size: 26px;
+}
+
+.modal-head .sub {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  margin-top: 4px;
+}
+
+.modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--purple-line);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text);
+  border-color: var(--gold-dim);
+}
+
+/* ---------- Trade form ---------- */
 
 .order-grid {
   display: grid;
@@ -1109,35 +1176,6 @@
     padding: 26px 22px;
   }
 
-  .app-shell {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    border-right: none;
-    border-bottom: 1px solid var(--purple-line);
-  }
-
-  .side-top {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .sidebar .brand {
-    padding: 0 12px 0 0;
-  }
-
-  .nav-item {
-    margin-bottom: 0;
-  }
-
   .app-main {
     padding: 22px 16px 48px;
   }
@@ -1148,6 +1186,14 @@
 
   .order-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal {
+    padding: 18px 16px 20px;
   }
 
   .stats-grid {

@@ -27,11 +27,15 @@ export function sparklinePath(values: readonly number[], width = WIDTH, height =
     .join(' ');
 }
 
-/** Minimal line chart for a price series, coloured by overall direction (mockup `.mini-chart`). */
+/**
+ * Minimal line chart for a price series, coloured by overall direction. `size="panel"` is
+ * the full-width trade chart (mockup `.mini-chart`); `size="row"` fits a table cell.
+ */
 @Component({
   selector: 'app-sparkline',
   template: `
-    <svg class="mini-chart" [class.up]="direction() === 'up'" [class.down]="direction() === 'down'"
+    <svg [class.mini-chart]="size() === 'panel'" [class.row-chart]="size() === 'row'"
+         [class.up]="direction() === 'up'" [class.down]="direction() === 'down'"
          viewBox="0 0 300 56" preserveAspectRatio="none" role="img" [attr.aria-label]="label()">
       <path [attr.d]="path()" />
     </svg>
@@ -40,6 +44,7 @@ export function sparklinePath(values: readonly number[], width = WIDTH, height =
 export class Sparkline {
   readonly values = input<readonly number[]>([]);
   readonly label = input('Price trend');
+  readonly size = input<'panel' | 'row'>('panel');
 
   protected readonly path = computed(() => sparklinePath(this.values()));
 

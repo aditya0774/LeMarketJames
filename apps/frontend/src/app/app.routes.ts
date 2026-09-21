@@ -4,7 +4,6 @@ import { Login } from './features/auth/login/login';
 import { OrderFormComponent } from './features/orders/order-form/order-form';
 import { Home } from './features/home/home';
 import { Dashboard } from './features/dashboard/dashboard';
-import { Trade } from './features/trade/trade';
 import { HoldingsListComponent } from './features/holdings/holdings-list/holdings-list.component';
 import { AppShell } from './shared/layout/app-shell/app-shell';
 import { authGuard } from './core/auth/auth.guard';
@@ -20,10 +19,6 @@ export const routes: Routes = [
     path: '',
     component: AppShell,
     canActivate: [authGuard],
-    children: [
-      { path: 'dashboard', component: Dashboard },
-      { path: 'trade', redirectTo: 'trade/AAPL', pathMatch: 'full' },
-      { path: 'trade/:symbol', component: Trade },
-    ],
+    children: [{ path: 'dashboard', component: Dashboard }],
   },
 ];

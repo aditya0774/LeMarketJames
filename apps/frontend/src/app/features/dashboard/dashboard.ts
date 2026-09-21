@@ -4,30 +4,40 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
+import { InstrumentCatalog } from '../../core/market/instrument-catalog';
 import { OrderResponse, OrderService } from '../../core/orders/order.service';
+import { Quotes } from '../../core/quotes/quotes';
 import { HoldingDto } from '../../shared/models/holdings.model';
-import { StockSearch } from './stock-search/stock-search';
+import { Quote } from '../../shared/models/quote.model';
 import { StatStrip } from './stat-strip/stat-strip';
+import { MarketList, MarketRow } from './market-list/market-list';
+import { appendQuotes } from './market-list/market-history';
 import { PortfolioPanel, portfolioTotals } from './portfolio-panel/portfolio-panel';
 import { OrdersPanel } from './orders-panel/orders-panel';
 import { isOpenStatus } from './orders-panel/order-status';
+import { TradeDialog } from '../trade/trade-dialog';
+
+/** The simulator ticks every second; 2s keeps the market graphs moving without flooding the API. */
+export const MARKET_REFRESH_MS = 2000;
 
 /**
  * Dashboard Component
  *
- * Signed-in home from the LeUI mockup. Container only: it loads the account's holdings
- * and orders, derives the headline numbers, and hands everything to presentational
- * children (search, stat strip, portfolio and orders panels).
+ * Signed-in home. Container only: it loads the account's holdings and orders, polls live
+ * quotes for every stock, and hands the data to presentational children. Clicking a stock
+ * (market list or portfolio) opens the buy/sell popup.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, StockSearch, StatStrip, PortfolioPanel, OrdersPanel],
+  imports: [RouterLink, StatStrip, MarketList, PortfolioPanel, OrdersPanel, TradeDialog],
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit {
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
+  private readonly catalog = inject(InstrumentCatalog);
+  private readonly quotes = inject(Quotes);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -39,6 +49,19 @@ export class Dashboard implements OnInit {
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
 
+  private readonly marketQuotes = signal<Record<string, Quote | null>>({});
+  protected readonly marketHistory = signal<Record<string, number[]>>({});
+  protected readonly marketRows = computed<MarketRow[]>(() =>
+    this.catalog.all().map((instrument) => ({
+      instrument,
+      quote: this.marketQuotes()[instrument.symbol] ?? null,
+      history: this.marketHistory()[instrument.symbol] ?? [],
+    })),
+  );
+
+  /** Symbol shown in the buy/sell popup; null when it's closed. */
+  protected readonly tradeSymbol = signal<string | null>(null);
+
   /** Set when either request comes back 401, which means the JWT cookie has expired. */
   protected readonly sessionExpired = signal(false);
 
@@ -46,12 +69,23 @@ export class Dashboard implements OnInit {
   protected readonly openOrders = computed(() => this.orders().filter((o) => isOpenStatus(o.orderStatus)).length);
 
   ngOnInit(): void {
+    this.watchMarket();
     this.loadHoldings();
     this.loadOrders();
   }
 
   protected openTrade(symbol: string): void {
-    this.router.navigate(['/trade', symbol]);
+    this.tradeSymbol.set(symbol);
+  }
+
+  protected closeTrade(): void {
+    this.tradeSymbol.set(null);
+  }
+
+  /** A placed order changes holdings and the order list, so reload both behind the popup. */
+  protected onOrderPlaced(): void {
+    this.loadHoldings();
+    this.loadOrders();
   }
 
   protected async logout(): Promise<void> {
@@ -62,6 +96,17 @@ export class Dashboard implements OnInit {
     }
   }
 
+  private watchMarket(): void {
+    const symbols = this.catalog.all().map((i) => i.symbol);
+    this.quotes
+      .watchQuotes(symbols, MARKET_REFRESH_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((quotes) => {
+        this.marketQuotes.set(quotes);
+        this.marketHistory.update((history) => appendQuotes(history, quotes));
+      });
+  }
+
   private loadHoldings(): void {
     try {
       this.holdingsService
@@ -70,6 +115,7 @@ export class Dashboard implements OnInit {
         .subscribe({
           next: (response) => {
             this.holdings.set(response.holdings ?? []);
+            this.holdingsError.set(null);
             this.holdingsLoading.set(false);
           },
           error: (err) => {
@@ -99,6 +145,7 @@ export class Dashboard implements OnInit {
       .subscribe({
         next: (orders) => {
           this.orders.set(orders ?? []);
+          this.ordersError.set(null);
           this.ordersLoading.set(false);
         },
         error: (err) => {

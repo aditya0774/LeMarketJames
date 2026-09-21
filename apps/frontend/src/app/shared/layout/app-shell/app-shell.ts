@@ -1,16 +1,13 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Auth } from '../../../core/auth/auth';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 /**
- * Signed-in layout from the LeUI mockup: sidebar navigation plus a content area that
- * hosts the dashboard and trade pages. Only pages that actually exist get nav items.
+ * Signed-in layout: LeMarket branding above a centred content area. Everything happens
+ * on the dashboard (the buy/sell menu is a popup), so there is no side navigation.
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet],
   templateUrl: './app-shell.html',
 })
-export class AppShell {
-  protected readonly auth = inject(Auth);
-}
+export class AppShell {}
