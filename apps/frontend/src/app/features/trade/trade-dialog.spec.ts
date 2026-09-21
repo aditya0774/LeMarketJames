@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
-import { OrderRequest, OrderService } from '../../core/orders/order.service';
+import { BuyOrderRequest, OrderRequest, OrderService } from '../../core/orders/order.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { TradeDialog } from './trade-dialog';
 
@@ -15,12 +15,14 @@ const quote = {
 
 describe('TradeDialog', () => {
   let fixture: ComponentFixture<TradeDialog>;
-  let placed: OrderRequest[];
+  let placedSell: OrderRequest[];
+  let placedBuy: BuyOrderRequest[];
   let closedCount: number;
   let placedEvents: number;
 
   beforeEach(async () => {
-    placed = [];
+    placedSell = [];
+    placedBuy = [];
     closedCount = 0;
     placedEvents = 0;
     await TestBed.configureTestingModule({
@@ -36,7 +38,11 @@ describe('TradeDialog', () => {
           provide: OrderService,
           useValue: {
             createOrder: (req: OrderRequest) => {
-              placed.push(req);
+              placedSell.push(req);
+              return of({ orderId: 42, orderStatus: 'FILLED' });
+            },
+            submitBuyOrder: (req: BuyOrderRequest) => {
+              placedBuy.push(req);
               return of({ orderId: 42, orderStatus: 'FILLED' });
             },
           },
@@ -76,7 +82,8 @@ describe('TradeDialog', () => {
     submitButton().click();
     await render();
 
-    expect(placed).toEqual([{ accountId: 7, instrumentId: 5, orderType: 'BUY', quantity: 1 }]);
+    expect(placedSell).toEqual([]);
+    expect(placedBuy).toEqual([{ accountId: 7, instrumentId: 5, quantity: 1, pricePerUnit: 250 }]);
     expect(el().querySelector('.alert.ok')?.textContent).toContain('#42');
     expect(placedEvents).toBe(1);
   });
