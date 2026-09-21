@@ -1,6 +1,7 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Instrument;
@@ -14,7 +15,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,26 +30,43 @@ public class OrderService {
     private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
+    private final MarketDataService marketDataService;
     
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
                         AccountRepository accountRepository,
-                        CashValidationService cashValidationService) {
+                        CashValidationService cashValidationService,
+                        MarketDataService marketDataService) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
         this.cashValidationService = cashValidationService;
+        this.marketDataService = marketDataService;
     }
     
     /**
      * Create a new order with cash validation.
      * For BUY orders, validates that the account has sufficient cash.
-     * Cost is calculated as: quantity * pricePerUnit
+     * BUY prices are captured from the market, never trusted from the browser.
      */
+    @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
+        // Authorize before accessing financial information, even for rejected orders.
+        validateAccountAccess(request.getAccountId());
+        validateInstrumentTradability(request.getInstrumentId());
+        BigDecimal price = request.getPricePerUnit();
         // For BUY orders, validate sufficient cash
         if (request.getOrderType() == Order.OrderType.BUY) {
-            BigDecimal orderCost = calculateOrderCost(request);
+            var quote = marketDataService.findByInstrumentId(request.getInstrumentId());
+            if (quote.isEmpty() || !Double.isFinite(quote.get().askPrice()) || quote.get().askPrice() <= 0) {
+                return new OrderResponse(false, "Market price is unavailable. Please try again.", "PRICE_UNAVAILABLE");
+            }
+            // Match the database scale so validation and the persisted snapshot agree.
+            price = BigDecimal.valueOf(quote.get().askPrice()).setScale(4, RoundingMode.HALF_UP);
+            if (price.signum() <= 0) {
+                return new OrderResponse(false, "Market price is unavailable. Please try again.", "PRICE_UNAVAILABLE");
+            }
+            BigDecimal orderCost = request.getQuantity().multiply(price);
             
             boolean hasSufficientCash = cashValidationService.validateSufficientCash(
                 request.getAccountId(),
@@ -57,14 +77,10 @@ public class OrderService {
                 BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
                 return new OrderResponse(false, 
                     String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", 
-                        orderCost, availableCash));
+                        orderCost, availableCash), "INSUFFICIENT_CASH");
             }
         }
         
-        // Cash validation passed or SELL order; proceed with order creation
-        validateAccountAccess(request.getAccountId());
-        validateInstrumentTradability(request.getInstrumentId());
-
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -72,11 +88,13 @@ public class OrderService {
             request.getQuantity()
         );
         
-        if (request.getPricePerUnit() != null) {
-            order.setPricePerUnit(request.getPricePerUnit());
+        if (price != null) {
+            order.setPricePerUnit(price);
         }
         
         Order savedOrder = orderRepository.save(order);
+        log.info("Order submitted orderId={} accountId={} instrumentId={} side={}",
+            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(), savedOrder.getOrderType());
         return new OrderResponse(savedOrder);
     }
 
@@ -115,17 +133,6 @@ public class OrderService {
             log.warn("Tradability check failed for instrumentId={}", instrumentId);
             throw new NotTradableException("Instrument is currently not tradable");
         }
-    }
-    
-    /**
-     * Calculates the total cost of an order.
-     * Cost = quantity * pricePerUnit
-     */
-    private BigDecimal calculateOrderCost(CreateOrderRequest request) {
-        if (request.getQuantity() == null || request.getPricePerUnit() == null) {
-            return BigDecimal.ZERO;
-        }
-        return request.getQuantity().multiply(request.getPricePerUnit());
     }
     
     /**

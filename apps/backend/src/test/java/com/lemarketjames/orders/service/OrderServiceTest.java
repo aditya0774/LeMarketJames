@@ -1,6 +1,8 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Instrument;
@@ -25,8 +27,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Order Service Unit Tests")
@@ -43,12 +44,15 @@ class OrderServiceTest {
     
     @Mock
     private CashValidationService cashValidationService;
+
+    @Mock
+    private MarketDataService marketDataService;
     
     private OrderService orderService;
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService, marketDataService);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -81,6 +85,7 @@ class OrderServiceTest {
         when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(227.55)));
         
         // Act
         OrderResponse response = orderService.createOrder(request);
@@ -137,6 +142,65 @@ class OrderServiceTest {
         when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
 
         assertThrows(AccessDeniedException.class, () -> orderService.createOrder(request));
+        verifyNoInteractions(cashValidationService, marketDataService, orderRepository);
+    }
+
+    private QuoteSnapshot quote(double ask) {
+        return new QuoteSnapshot(null, ask, ask, ask, ask, ask, ask, ask, 0, null, null);
+    }
+
+    private CreateOrderRequest validBuy() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        Instrument instrument = new Instrument();
+        instrument.setTradable(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        return new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("2"));
+    }
+
+    @Test
+    void buyUsesMarketPriceEvenWhenClientSuppliesCheaperPrice() {
+        var request = validBuy();
+        request.setPricePerUnit(new BigDecimal("0.01"));
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250.12345)));
+        when(orderRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = orderService.createOrder(request);
+
+        assertTrue(response.isSuccess());
+        assertEquals(new BigDecimal("250.1235"), response.getPricePerUnit());
+        verify(cashValidationService).validateSufficientCash(1, new BigDecimal("500.2470"));
+    }
+
+    @Test
+    void buyWithoutClientPriceStillChecksCashAndDoesNotSaveWhenInsufficient() {
+        var request = validBuy();
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
+        when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
+        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+
+        var response = orderService.createOrder(request);
+
+        assertFalse(response.isSuccess());
+        assertEquals("INSUFFICIENT_CASH", response.getCode());
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    void unavailableMarketPriceDoesNotSaveOrCheckCash() {
+        var request = validBuy();
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.empty());
+        assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request).getCode());
+        verifyNoInteractions(orderRepository, cashValidationService);
+    }
+
+    @Test
+    void invalidMarketPricesDoNotSave() {
+        var request = validBuy();
+        for (double price : new double[]{0, -1, Double.NaN, Double.POSITIVE_INFINITY, 0.000001}) {
+            when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(price)));
+            assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request).getCode());
+        }
+        verifyNoInteractions(orderRepository, cashValidationService);
     }
     
     @Test

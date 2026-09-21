@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, defer, switchMap, throwError } from 'rxjs';
 import { HoldingsService } from '../holdings/holdings.service';
 import { Auth } from '../auth/auth';
+import { environment } from '../../../environments/environment';
 
 export interface OrderRequest {
   accountId: number;
@@ -13,17 +14,20 @@ export interface OrderRequest {
 }
 
 export interface OrderResponse {
+  success: boolean;
+  reason?: string | null;
+  code?: string | null;
   orderId: number;
   accountId: number;
   instrumentId: number;
   orderType: 'BUY' | 'SELL';
   quantity: number;
-  pricePerUnit?: number;
+  pricePerUnit?: number | null;
   orderStatus: 'SUBMITTED' | 'ACCEPTED' | 'PENDING' | 'FILLED' | 'REJECTED' | 'DELAYED';
-  rejectionReason?: string;
+  rejectionReason?: string | null;
   submittedAt: string;
-  acceptedAt?: string;
-  filledAt?: string;
+  acceptedAt?: string | null;
+  filledAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,7 +36,7 @@ export interface OrderResponse {
   providedIn: 'root'
 })
 export class OrderService {
-  private apiUrl = '/api/v1/orders';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/v1/orders`;
 
   constructor(
     private http: HttpClient,

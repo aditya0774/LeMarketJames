@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderRequest, OrderService } from '../../core/orders/order.service';
@@ -18,11 +19,13 @@ describe('TradeDialog', () => {
   let placed: OrderRequest[];
   let closedCount: number;
   let placedEvents: number;
+  let pending: Subject<any> | null;
 
   beforeEach(async () => {
     placed = [];
     closedCount = 0;
     placedEvents = 0;
+    pending = null;
     await TestBed.configureTestingModule({
       imports: [TradeDialog],
       providers: [
@@ -37,7 +40,7 @@ describe('TradeDialog', () => {
           useValue: {
             createOrder: (req: OrderRequest) => {
               placed.push(req);
-              return of({ orderId: 42, orderStatus: 'FILLED' });
+              return pending ?? of({ success: true, orderId: 42, orderStatus: 'SUBMITTED' });
             },
           },
         },
@@ -78,8 +81,42 @@ describe('TradeDialog', () => {
 
     expect(placed).toEqual([{ accountId: 7, instrumentId: 5, orderType: 'BUY', quantity: 1 }]);
     expect(el().querySelector('.alert.ok')?.textContent).toContain('#42');
+    expect(el().querySelector('.alert.ok')?.textContent).toContain('submitted');
     expect(placedEvents).toBe(1);
   });
+
+  it('blocks duplicate submissions while waiting for the backend', async () => {
+    pending = new Subject();
+    fixture.componentInstance.submit();
+    fixture.componentInstance.submit();
+    await render();
+    expect(placed.length).toBe(1);
+    expect(submitButton().disabled).toBe(true);
+    expect(submitButton().textContent).toContain('Placing order');
+    pending.next({ success: true, orderId: 99, orderStatus: 'SUBMITTED' });
+    pending.complete();
+    await render();
+    expect(submitButton().disabled).toBe(false);
+    expect(el().querySelector('[role=status]')?.textContent).toContain('#99');
+  });
+
+  for (const failure of [
+    { status: 400, error: { reason: 'Insufficient balance', code: 'INSUFFICIENT_CASH' }, message: 'Insufficient balance' },
+    { status: 400, error: { reason: 'Market price is unavailable', code: 'PRICE_UNAVAILABLE' }, message: 'Market price is unavailable' },
+    { status: 401, error: {}, message: 'Your session has expired' },
+    { status: 0, error: {}, message: 'Unable to place the order' },
+  ]) {
+    it(`recovers after a ${failure.message} error without confirming an order`, async () => {
+      pending = new Subject();
+      fixture.componentInstance.submit();
+      pending.error(new HttpErrorResponse(failure));
+      await render();
+      expect(el().querySelector('[role=alert]')?.textContent).toContain(failure.message);
+      expect(el().querySelector('.alert.ok')).toBeNull();
+      expect(placedEvents).toBe(0);
+      expect(submitButton().disabled).toBe(false);
+    });
+  }
 
   it('blocks selling more shares than held', async () => {
     (el().querySelectorAll('.type-toggle .opt')[1] as HTMLButtonElement).click();

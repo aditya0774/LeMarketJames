@@ -163,8 +163,8 @@ export class TradeDialog implements OnDestroy {
     this.orderService.createOrder({ accountId, instrumentId: instrument.instrumentId, orderType: side, quantity }).subscribe({
       next: (order) => {
         this.submitting.set(false);
-        if (order.orderStatus === 'REJECTED') {
-          this.errorMessage.set(order.rejectionReason || 'The order was rejected.');
+        if (!order.success || order.orderStatus === 'REJECTED') {
+          this.errorMessage.set(order.reason || order.rejectionReason || 'The order was rejected.');
           return;
         }
         this.successMessage.set(

@@ -70,6 +70,37 @@ pipeline {
             }
         }
 
+        stage('Start PostgreSQL for integration tests') {
+            steps {
+                sh '''
+                    set -eu
+                    if docker compose version >/dev/null 2>&1; then
+                        docker compose up -d --wait db
+                    else
+                        docker-compose up -d db
+                        for attempt in $(seq 1 60); do
+                            if docker-compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                                exit 0
+                            fi
+                            sleep 1
+                        done
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        stage('Verify orders and isolation on PostgreSQL') {
+            steps {
+                dir('apps/backend') {
+                    sh 'mvn -B -Dspring.profiles.active=postgres-test -Dtest=OwnDataIntegrationTest,BuyOrderIntegrationTest test'
+                }
+            }
+            post {
+                always { junit 'apps/backend/target/surefire-reports/TEST-*IntegrationTest.xml' }
+            }
+        }
+
         stage('Build versioned Docker images') {
             steps {
                 sh '''
@@ -149,17 +180,6 @@ pipeline {
             }
         }
 
-        stage('Verify own-data isolation on PostgreSQL') {
-            steps {
-                dir('apps/backend') {
-                    sh 'mvn -B -Dspring.profiles.active=postgres-test -Dtest=OwnDataIntegrationTest test'
-                }
-            }
-            post {
-                always { junit 'apps/backend/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml' }
-            }
-        }
-
         stage('Run smoke test') {
             steps {
                 sh '''
@@ -199,6 +219,12 @@ pipeline {
                     echo "Spring Boot container logs:"
                     compose logs backend
                 '''
+            }
+        }
+
+        stage('Verify buy order survives restart') {
+            steps {
+                sh 'bash scripts/verify-buy-order.sh'
             }
         }
 
