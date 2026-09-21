@@ -1,0 +1,37 @@
+<div class="search-wrap">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+    <input
+      type="search"
+      placeholder="Search stocks to view or trade"
+      autocomplete="off"
+      aria-label="Search stocks"
+      [value]="query()"
+      (input)="onInput($any($event.target).value)"
+      (focus)="open.set(true)"
+      (keydown.enter)="results().length && select(results()[0].symbol)"
+    />
+  </div>
+
+  @if (open()) {
+    <div class="search-dropdown" role="listbox">
+      @for (stock of results(); track stock.symbol) {
+        <button type="button" class="search-item" role="option" (click)="select(stock.symbol)">
+          <span class="si-left">
+            <span class="si-sym">{{ stock.symbol }}</span>
+            <span class="si-name">{{ stock.name }}{{ stock.tradable ? '' : ' · Not tradable' }}</span>
+          </span>
+          @let quote = prices()[stock.symbol];
+          <span class="si-price tabular" [class.up]="quote && quote.priceChange >= 0" [class.down]="quote && quote.priceChange < 0">
+            {{ quote ? (quote.price | currency: 'USD') : '—' }}
+          </span>
+        </button>
+      } @empty {
+        <div class="search-empty">No stocks found for “{{ query() }}”</div>
+      }
+    </div>
+  }
+</div>

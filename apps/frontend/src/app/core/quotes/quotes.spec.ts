@@ -78,6 +78,20 @@ describe('Quotes', () => {
       vi.advanceTimersByTime(5000);
       httpMock.expectNone(`${baseUrl}/AAPL`);
     });
+
+    it('watchQuotes should keep good symbols when another one fails', () => {
+      const emissions: Record<string, unknown>[] = [];
+      const subscription = quotes.watchQuotes(['AAPL', 'NOPE'], 1000).subscribe((m) => emissions.push(m));
+
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.55 } });
+      httpMock
+        .expectOne(`${baseUrl}/NOPE`)
+        .flush({ success: false, error: 'Symbol not found' }, { status: 404, statusText: 'Not Found' });
+
+      expect(emissions).toEqual([{ AAPL: { symbol: 'AAPL', price: 227.55 }, NOPE: null }]);
+      subscription.unsubscribe();
+    });
   });
 
   it('should surface 404 not found for unknown symbol', async () => {

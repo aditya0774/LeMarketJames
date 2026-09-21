@@ -1,0 +1,125 @@
+<header class="app-header">
+  <div>
+    <h1>Trade {{ symbol() }}</h1>
+    <div class="sub">Place a market order to buy or sell this stock.</div>
+  </div>
+  <div class="header-actions">
+    <a class="btn btn-ghost" routerLink="/dashboard">&larr; Back to dashboard</a>
+  </div>
+</header>
+
+@if (!instrument()) {
+  <div class="alert err" role="alert">
+    <div>
+      <b>Stock not found</b>
+      We couldn't find “{{ symbol() }}”. <a routerLink="/dashboard">Search from the dashboard</a> instead.
+    </div>
+  </div>
+} @else {
+  @let stock = instrument()!;
+  <div class="order-grid">
+    <form class="order-form-card" (submit)="$event.preventDefault(); submit()">
+      <div class="type-toggle" role="group" aria-label="Order side">
+        <button type="button" class="opt" [class.buy-active]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">Buy</button>
+        <button type="button" class="opt" [class.sell-active]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">Sell</button>
+      </div>
+
+      <div class="field">
+        <label for="trade-symbol">Symbol</label>
+        <input id="trade-symbol" [value]="stock.symbol" readonly />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="trade-qty">Quantity</label>
+          <div class="qty-stepper">
+            <button type="button" aria-label="Decrease quantity" (click)="step(-1)">&minus;</button>
+            <input id="trade-qty" class="tabular" type="number" min="1" step="1" inputmode="numeric"
+                   [value]="quantity()" (input)="setQuantity($any($event.target).value)" />
+            <button type="button" aria-label="Increase quantity" (click)="step(1)">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="trade-type">Order type</label>
+          <select id="trade-type">
+            <option selected>Market</option>
+            <option disabled>Limit (coming soon)</option>
+          </select>
+        </div>
+      </div>
+
+      @if (!quantityValid()) {
+        <div class="field-error">Enter a whole number of shares (at least 1).</div>
+      }
+      <div class="holding-note">
+        @if (holdingsKnown()) {
+          You currently hold {{ held() | number: '1.0-4' }} share{{ held() === 1 ? '' : 's' }} of {{ stock.symbol }}.
+        } @else {
+          Your current {{ stock.symbol }} position couldn't be loaded.
+        }
+      </div>
+      @if (exceedsHoldings()) {
+        <div class="field-error">You can't sell more shares than you hold.</div>
+      }
+      @if (!stock.tradable) {
+        <div class="field-error">{{ stock.symbol }} is not currently tradable.</div>
+      }
+      <div class="hint" style="margin: 6px 0 20px">Market orders execute at the best available price at time of fill.</div>
+
+      @if (successMessage()) {
+        <div class="alert ok" role="status"><div>{{ successMessage() }}</div></div>
+      }
+      @if (errorMessage()) {
+        <div class="alert err" role="alert"><div>{{ errorMessage() }}</div></div>
+      }
+
+      <button type="submit" class="btn" [class.btn-buy]="side() === 'BUY'" [class.btn-sell]="side() === 'SELL'" [disabled]="!canSubmit()">
+        {{ submitting() ? 'Placing order…' : side() === 'BUY' ? 'Place buy order' : 'Place sell order' }}
+      </button>
+      <a class="btn btn-ghost" style="margin-top: 8px" routerLink="/dashboard">Cancel</a>
+    </form>
+
+    <section class="price-panel" aria-live="polite">
+      <div class="top-row">
+        <div>
+          <div class="sym-big">{{ stock.symbol }}</div>
+          <div class="sym-name">{{ stock.name }}</div>
+        </div>
+        <span class="badge-crown">&#9812; Live price</span>
+      </div>
+
+      @let q = quote();
+      <div class="price-now tabular">
+        @if (q) {
+          {{ q.price | currency: 'USD' }}<small [class.up]="q.priceChange >= 0" [class.down]="q.priceChange < 0">
+            {{ q.priceChange >= 0 ? '▲' : '▼' }} {{ (q.priceChangePercent < 0 ? -q.priceChangePercent : q.priceChangePercent) | number: '1.2-2' }}%
+          </small>
+        } @else {
+          {{ quoteError() ? 'Price unavailable' : 'Loading…' }}
+        }
+      </div>
+
+      <app-sparkline [values]="priceHistory()" [label]="stock.symbol + ' price since this page opened'" />
+      <div class="chart-note">Live trace since you opened this page.</div>
+
+      <div class="stats-grid">
+        <div><span>Open</span><b class="tabular">{{ q ? (q.openPrice | currency: 'USD') : '—' }}</b></div>
+        <div><span>Day high</span><b class="tabular">{{ q ? (q.highPrice | currency: 'USD') : '—' }}</b></div>
+        <div><span>Day low</span><b class="tabular">{{ q ? (q.lowPrice | currency: 'USD') : '—' }}</b></div>
+        <div><span>Prev. close</span><b class="tabular">{{ previousClose() != null ? (previousClose() | currency: 'USD') : '—' }}</b></div>
+        <div><span>Volume</span><b class="tabular">{{ q?.volume | compactNumber }}</b></div>
+        <div><span>Market cap</span><b class="tabular">{{ q ? '$' + (q.marketCap | compactNumber) : '—' }}</b></div>
+      </div>
+
+      <div class="breakdown">
+        <div class="breakdown-row"><span>Quantity</span><span class="tabular">{{ quantityValid() ? quantity() : 0 }} share{{ quantity() === 1 ? '' : 's' }}</span></div>
+        <div class="breakdown-row"><span>Est. price / share</span><span class="tabular">{{ q ? (q.price | currency: 'USD') : '—' }}</span></div>
+        <div class="breakdown-row"><span>Est. fees</span><span class="tabular">$0.00</span></div>
+        <div class="breakdown-row total">
+          <span>{{ side() === 'BUY' ? 'Est. total' : 'Est. proceeds' }}</span>
+          <span class="tabular">{{ q && quantityValid() ? (estimatedTotal() | currency: 'USD') : '—' }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+}
