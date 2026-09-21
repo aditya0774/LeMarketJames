@@ -19,7 +19,6 @@
     "@angular/material": "^22.1.5",
     "@angular/platform-browser": "^22.0.0",
     "@angular/router": "^22.0.0",
-    "angular": "^1.8.3",
     "dotenv": "^17.4.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
