@@ -1,0 +1,68 @@
+<section class="panel">
+  <div class="panel-head">
+    <h3>Orders</h3>
+    <div class="filters" role="group" aria-label="Filter orders by status">
+      @for (f of filters; track f.value) {
+        <button type="button" class="chip" [class.active]="filter() === f.value"
+                [attr.aria-pressed]="filter() === f.value" (click)="setFilter(f.value)">
+          {{ f.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="panel-scroll">
+    <table>
+      <thead>
+        <tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          <tr><td colspan="6" class="empty-row">Loading orders…</td></tr>
+        } @else if (error()) {
+          <tr><td colspan="6" class="empty-row">{{ error() }}</td></tr>
+        } @else {
+          @for (order of pageRows(); track order.orderId) {
+            <tr>
+              <td><span class="sym">{{ symbolFor(order) }}</span><span class="sym-sub">{{ nameFor(order) }}</span></td>
+              <td>
+                <span class="pill" [class.pill-buy]="order.orderType === 'BUY'" [class.pill-sell]="order.orderType === 'SELL'">
+                  {{ order.orderType }}
+                </span>
+              </td>
+              <td class="tabular">{{ order.quantity | number: '1.0-4' }}</td>
+              <td class="tabular">
+                {{ order.pricePerUnit != null ? (order.pricePerUnit | currency: 'USD') : 'Market' }}
+              </td>
+              <td>
+                <span class="pill {{ statusPillClass(order.orderStatus) }}" [attr.title]="order.rejectionReason || null">
+                  {{ statusLabel(order.orderStatus) }}
+                </span>
+              </td>
+              <td class="tabular">{{ order.submittedAt | date: 'MMM d, y' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">
+                {{ orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (!loading() && !error() && filtered().length) {
+    <div class="panel-foot">
+      <div class="pg-info">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ filtered().length }} orders</div>
+      <div class="pg-row">
+        <button type="button" class="pg-btn" aria-label="Previous page" [disabled]="page() === 1" (click)="goToPage(page() - 1)">&lsaquo;</button>
+        @for (p of pages(); track p) {
+          <button type="button" class="pg-btn" [class.active]="p === page()" [attr.aria-current]="p === page() ? 'page' : null" (click)="goToPage(p)">{{ p }}</button>
+        }
+        <button type="button" class="pg-btn" aria-label="Next page" [disabled]="page() === pageCount()" (click)="goToPage(page() + 1)">&rsaquo;</button>
+      </div>
+    </div>
+  }
+</section>
