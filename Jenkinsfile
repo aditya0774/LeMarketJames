@@ -9,7 +9,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci && npm test -- --watch=false && npm run build'
+                    sh 'npm ci --legacy-peer-deps && npm test -- --watch=false && npm run build'
                 }
             }
         }
