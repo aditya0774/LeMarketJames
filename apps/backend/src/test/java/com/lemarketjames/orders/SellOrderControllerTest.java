@@ -14,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 
@@ -98,5 +99,25 @@ class SellOrderControllerTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS"));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser")
+    void submitSellOrderReturnsForbiddenForAccountAccessDenied() throws Exception {
+        SubmitSellOrderRequest request = new SubmitSellOrderRequest(
+            99,
+            2,
+            new BigDecimal("1.0000")
+        );
+
+        when(orderService.submitSellOrder(any(SubmitSellOrderRequest.class)))
+            .thenThrow(new AccessDeniedException("Account access is not allowed"));
+
+        mockMvc.perform(post("/api/v1/sell-orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
     }
 }

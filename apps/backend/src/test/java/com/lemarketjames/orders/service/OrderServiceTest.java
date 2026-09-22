@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -98,6 +99,10 @@ class OrderServiceTest {
 
         OrderResponse response = orderService.submitSellOrder(request);
 
+        ArgumentCaptor<Order> savedOrderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(savedOrderCaptor.capture());
+        assertEquals(Order.OrderType.SELL, savedOrderCaptor.getValue().getOrderType());
+
         verify(holdingsService).validateSufficientHoldings(
             eq(1),
             eq("testuser"),
@@ -123,6 +128,20 @@ class OrderServiceTest {
             .validateSufficientHoldings(eq(1), eq("testuser"), eq(1), eq(new BigDecimal("40.0000")));
 
         assertThrows(InsufficientHoldingsException.class, () -> orderService.submitSellOrder(request));
+    }
+
+    @Test
+    @DisplayName("Submit sell order throws access denied when account ownership validation fails")
+    void testSubmitSellOrderAccountAccessDenied() {
+        SubmitSellOrderRequest request = new SubmitSellOrderRequest(
+            99,
+            1,
+            new BigDecimal("1.0000")
+        );
+
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> orderService.submitSellOrder(request));
     }
 
     @Test
