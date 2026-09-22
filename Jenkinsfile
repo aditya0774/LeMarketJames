@@ -55,6 +55,30 @@ pipeline {
             }
         }
 
+        stage('Run buy-order microservice tests') {
+            steps {
+                dir('apps/backend') {
+                    sh '''
+                        set -eu
+                        mvn -B "-Dtest=BuyOrderControllerTest,OrderServiceTest" test
+
+                        echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
+                        if ls target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "BuyOrderControllerTest report not found"
+                        fi
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit 'apps/backend/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                }
+            }
+        }
+
         stage('Verify Docker Compose') {
             steps {
                 sh '''
