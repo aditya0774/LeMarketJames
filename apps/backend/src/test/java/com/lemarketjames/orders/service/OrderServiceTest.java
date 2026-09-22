@@ -1,8 +1,11 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.holdings.service.HoldingsService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.dto.SubmitSellOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -25,7 +28,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,12 +49,21 @@ class OrderServiceTest {
     
     @Mock
     private CashValidationService cashValidationService;
+
+    @Mock
+    private HoldingsService holdingsService;
     
     private OrderService orderService;
     
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService);
+        orderService = new OrderService(
+            orderRepository,
+            instrumentRepository,
+            accountRepository,
+            cashValidationService,
+            holdingsService
+        );
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -61,6 +76,55 @@ class OrderServiceTest {
         SecurityContextHolder.clearContext();
     }
     
+    @Test
+    @DisplayName("Submit sell order validates holdings and persists SELL order")
+    void testSubmitSellOrderSuccess() {
+        SubmitSellOrderRequest request = new SubmitSellOrderRequest(
+            1,
+            1,
+            new BigDecimal("4.0000")
+        );
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+
+        Order savedOrder = new Order(1, 1, Order.OrderType.SELL, new BigDecimal("4.0000"));
+        savedOrder.setOrderId(41);
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+
+        OrderResponse response = orderService.submitSellOrder(request);
+
+        verify(holdingsService).validateSufficientHoldings(
+            eq(1),
+            eq("testuser"),
+            eq(1),
+            eq(new BigDecimal("4.0000"))
+        );
+        assertNotNull(response);
+        assertEquals(41, response.getOrderId());
+        assertEquals(Order.OrderType.SELL, response.getOrderType());
+    }
+
+    @Test
+    @DisplayName("Submit sell order throws when holdings are insufficient")
+    void testSubmitSellOrderInsufficientHoldings() {
+        SubmitSellOrderRequest request = new SubmitSellOrderRequest(
+            1,
+            1,
+            new BigDecimal("40.0000")
+        );
+
+        doThrow(new InsufficientHoldingsException("Insufficient holdings"))
+            .when(holdingsService)
+            .validateSufficientHoldings(eq(1), eq("testuser"), eq(1), eq(new BigDecimal("40.0000")));
+
+        assertThrows(InsufficientHoldingsException.class, () -> orderService.submitSellOrder(request));
+    }
+
     @Test
     @DisplayName("Create order successfully")
     void testCreateOrder() {

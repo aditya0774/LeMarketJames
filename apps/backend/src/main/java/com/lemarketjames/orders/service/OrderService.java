@@ -1,8 +1,10 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.auth.domain.AccountRepository;
+import com.lemarketjames.holdings.service.HoldingsService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.dto.SubmitSellOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -27,15 +29,18 @@ public class OrderService {
     private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
+    private final HoldingsService holdingsService;
     
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
                         AccountRepository accountRepository,
-                        CashValidationService cashValidationService) {
+                        CashValidationService cashValidationService,
+                        HoldingsService holdingsService) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
         this.cashValidationService = cashValidationService;
+        this.holdingsService = holdingsService;
     }
     
     /**
@@ -78,6 +83,27 @@ public class OrderService {
         
         Order savedOrder = orderRepository.save(order);
         return new OrderResponse(savedOrder);
+    }
+
+    /**
+     * Submit a SELL order via the dedicated sell-order entrypoint.
+     */
+    public OrderResponse submitSellOrder(SubmitSellOrderRequest request) {
+        String username = authenticatedUsername();
+        holdingsService.validateSufficientHoldings(
+            request.getAccountId(),
+            username,
+            request.getInstrumentId(),
+            request.getQuantity()
+        );
+
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
+            request.getAccountId(),
+            request.getInstrumentId(),
+            Order.OrderType.SELL,
+            request.getQuantity()
+        );
+        return createOrder(createOrderRequest);
     }
 
     private Order findOwnOrder(Integer orderId) {

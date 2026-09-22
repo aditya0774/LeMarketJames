@@ -32,9 +32,9 @@ describe('Order creation holdings validation', () => {
     const validation = http.expectOne('/api/v1/holdings/validate');
     expect(validation.request.body).toEqual({ accountId: 1, instrumentId: 42, sellQuantity: 2.5 });
     validation.flush({ success: true });
-    const order = http.expectOne('/api/v1/orders');
+    const order = http.expectOne('/api/v1/sell-orders');
     expect(order.request.method).toBe('POST');
-    expect(order.request.body).toEqual(sell);
+    expect(order.request.body).toEqual({ accountId: 1, instrumentId: 42, quantity: 2.5 });
     order.flush({ orderId: 7 });
     expect(result).toEqual({ orderId: 7 });
   });
@@ -56,7 +56,7 @@ describe('Order creation holdings validation', () => {
         validation.flush({ error: 'Validation failed' }, { status, statusText: 'Error' });
       }
       expect(error).toBeTruthy();
-      http.expectNone('/api/v1/orders');
+      http.expectNone('/api/v1/sell-orders');
     });
   }
 
@@ -65,7 +65,7 @@ describe('Order creation holdings validation', () => {
     service.createOrder(sell).subscribe({ error: failure => error = failure });
     http.expectOne('/api/v1/holdings/validate').flush({ success: false, error: 'Insufficient holdings' });
     expect(error?.message).toBe('Insufficient holdings');
-    http.expectNone('/api/v1/orders');
+    http.expectNone('/api/v1/sell-orders');
   });
 
   it('rejects an account different from the one being validated', () => {
@@ -73,7 +73,7 @@ describe('Order creation holdings validation', () => {
     service.createOrder({ ...sell, accountId: 2 }).subscribe({ error: failure => error = failure });
     expect(error).toBeTruthy();
     http.expectNone('/api/v1/holdings/validate');
-    http.expectNone('/api/v1/orders');
+    http.expectNone('/api/v1/sell-orders');
   });
 
   it('submits the validated values if the form changes while validation is pending', () => {
@@ -81,7 +81,7 @@ describe('Order creation holdings validation', () => {
     service.createOrder(request).subscribe();
     request.quantity = 100;
     http.expectOne('/api/v1/holdings/validate').flush({ success: true });
-    const order = http.expectOne('/api/v1/orders');
+    const order = http.expectOne('/api/v1/sell-orders');
     expect(order.request.body.quantity).toBe(2.5);
     order.flush({ orderId: 9 });
   });
@@ -92,7 +92,15 @@ describe('Order creation holdings validation', () => {
     accountId.set(null);
     validation.flush({ success: true });
     expect(error).toBeTruthy();
-    http.expectNone('/api/v1/orders');
+    http.expectNone('/api/v1/sell-orders');
+  });
+
+  it('submits sell order directly via dedicated sell-order endpoint', () => {
+    service.submitSellOrder({ accountId: 1, instrumentId: 42, quantity: 2.5 }).subscribe();
+    const order = http.expectOne('/api/v1/sell-orders');
+    expect(order.request.method).toBe('POST');
+    expect(order.request.body).toEqual({ accountId: 1, instrumentId: 42, quantity: 2.5 });
+    order.flush({ orderId: 10 });
   });
 
 });
