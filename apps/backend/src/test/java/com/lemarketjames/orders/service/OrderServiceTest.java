@@ -25,7 +25,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -263,5 +265,315 @@ class OrderServiceTest {
         // Assert
         assertEquals(1, responses.size());
         assertEquals(Order.OrderStatus.SUBMITTED, responses.get(0).getOrderStatus());
+    }
+
+    // ========== CASH VALIDATION BRANCH COVERAGE ==========
+
+    @Test
+    @DisplayName("Create BUY order with insufficient cash returns error response")
+    void testCreateBuyOrderInsufficientCash() {
+        // Arrange
+        // Reset the mock to clear lenient stubbing from setUp
+        reset(cashValidationService);
+        
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("100")
+        );
+        request.setPricePerUnit(new BigDecimal("500.00")); // Order cost: 50,000
+        
+        // Configure cash validation to return false
+        when(cashValidationService.validateSufficientCash(anyInt(), any(BigDecimal.class)))
+            .thenReturn(false);
+        when(cashValidationService.getCashBalance(anyInt()))
+            .thenReturn(new BigDecimal("10000.00"));
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertFalse(response.isSuccess());
+        assertTrue(response.getReason().contains("Insufficient balance"));
+        assertTrue(response.getReason().contains("50000.00"));
+        assertTrue(response.getReason().contains("10000.00"));
+    }
+
+    @Test
+    @DisplayName("Create BUY order with exactly sufficient cash succeeds")
+    void testCreateBuyOrderExactlySufficientCash() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+        request.setPricePerUnit(new BigDecimal("100.00")); // Order cost: 1000
+        
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        savedOrder.setOrderId(1);
+        savedOrder.setPricePerUnit(new BigDecimal("100.00"));
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+        
+        when(cashValidationService.validateSufficientCash(1, new BigDecimal("1000.00")))
+            .thenReturn(true);
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertTrue(response.isSuccess());
+        assertEquals(1, response.getOrderId());
+    }
+
+    @Test
+    @DisplayName("Create SELL order bypasses cash validation")
+    void testCreateSellOrderBypassesCashValidation() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.SELL, new BigDecimal("50")
+        );
+        request.setPricePerUnit(new BigDecimal("200.00"));
+        
+        Order savedOrder = new Order(1, 1, Order.OrderType.SELL, new BigDecimal("50"));
+        savedOrder.setOrderId(1);
+        savedOrder.setPricePerUnit(new BigDecimal("200.00"));
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+        
+        // Note: validateSufficientCash should NOT be called for SELL orders
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertTrue(response.isSuccess());
+        assertEquals(Order.OrderType.SELL, response.getOrderType());
+    }
+
+    // ========== COST CALCULATION EDGE CASES ==========
+
+    @Test
+    @DisplayName("Create BUY order with null quantity and non-null price returns zero cost")
+    void testCreateBuyOrderNullQuantity() {
+        // Arrange - request with null quantity
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, null
+        );
+        request.setPricePerUnit(new BigDecimal("100.00"));
+        
+        // When cost is zero, validation should pass
+        when(cashValidationService.validateSufficientCash(1, BigDecimal.ZERO))
+            .thenReturn(true);
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, null);
+        savedOrder.setOrderId(1);
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertTrue(response.isSuccess());
+    }
+
+    @Test
+    @DisplayName("Create BUY order with non-null quantity and null price returns zero cost")
+    void testCreateBuyOrderNullPrice() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("50")
+        );
+        request.setPricePerUnit(null);
+        
+        when(cashValidationService.validateSufficientCash(1, BigDecimal.ZERO))
+            .thenReturn(true);
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("50"));
+        savedOrder.setOrderId(1);
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertTrue(response.isSuccess());
+    }
+
+    @Test
+    @DisplayName("Create BUY order with large quantity and price calculates correctly")
+    void testCreateBuyOrderLargeValues() {
+        // Arrange - very large order
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("999999")
+        );
+        request.setPricePerUnit(new BigDecimal("9999.99")); // Order cost: 9,999,890,000.01
+        
+        BigDecimal expectedCost = new BigDecimal("9999890000.01");
+        
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("999999"));
+        savedOrder.setOrderId(1);
+        savedOrder.setPricePerUnit(new BigDecimal("9999.99"));
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+        
+        // Use lenient to avoid UnnecessaryStubbingException
+        lenient().when(cashValidationService.validateSufficientCash(1, expectedCost))
+            .thenReturn(true);
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
+        
+        // Act
+        OrderResponse response = orderService.createOrder(request);
+        
+        // Assert
+        assertTrue(response.isSuccess());
+    }
+
+    // ========== ACCOUNT ACCESS VALIDATION ==========
+
+    @Test
+    @DisplayName("Create order throws exception when accessing another user's account")
+    void testCreateOrderAccessDeniedDifferentUser() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(cashValidationService.validateSufficientCash(any(), any())).thenReturn(true);
+        // User testuser does NOT own account 1
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(false);
+
+        // Act & Assert
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+            () -> orderService.createOrder(request));
+        assertEquals("Account access is not allowed", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Get orders for account throws exception when user doesn't own account")
+    void testGetOrdersByAccountIdAccessDenied() {
+        // Arrange
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+            () -> orderService.getOrdersByAccountId(99));
+    }
+
+    @Test
+    @DisplayName("Get order by ID throws exception when user doesn't own the order")
+    void testGetOrderByIdDifferentUserAccount() {
+        // Arrange
+        Order order = new Order(99, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        order.setOrderId(1);
+
+        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+        // User testuser does NOT own account 99
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+            () -> orderService.getOrderById(1));
+    }
+
+    // ========== UNAUTHENTICATED REQUEST HANDLING ==========
+
+    @Test
+    @DisplayName("Create order throws exception when not authenticated")
+    void testCreateOrderNotAuthenticated() {
+        // Arrange
+        SecurityContextHolder.clearContext(); // No authentication
+        
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(cashValidationService.validateSufficientCash(any(), any())).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+            () -> orderService.createOrder(request));
+    }
+
+    @Test
+    @DisplayName("Create order throws exception when authentication is anonymous")
+    void testCreateOrderAnonymousUser() {
+        // Arrange
+        SecurityContextHolder.getContext()
+            .setAuthentication(new TestingAuthenticationToken("anonymousUser", "n/a", "ROLE_ANONYMOUS"));
+        
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(cashValidationService.validateSufficientCash(any(), any())).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+            () -> orderService.createOrder(request));
+    }
+
+    // ========== INSTRUMENT TRADABILITY VALIDATION ==========
+
+    @Test
+    @DisplayName("Create order throws exception when instrument not found")
+    void testCreateOrderInstrumentNotFound() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 999, Order.OrderType.BUY, new BigDecimal("10")
+        );
+
+        when(cashValidationService.validateSufficientCash(any(), any())).thenReturn(true);
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(999)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> orderService.createOrder(request));
+        assertTrue(exception.getMessage().contains("Instrument not found"));
+    }
+
+    @Test
+    @DisplayName("SELL order also validates instrument tradability")
+    void testSellOrderValidatesInstrumentTradability() {
+        // Arrange
+        CreateOrderRequest request = new CreateOrderRequest(
+            1, 1, Order.OrderType.SELL, new BigDecimal("50")
+        );
+        request.setPricePerUnit(new BigDecimal("200.00"));
+
+        Instrument nonTradableInstrument = new Instrument();
+        nonTradableInstrument.setInstrumentId(1);
+        nonTradableInstrument.setTradable(false);
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(nonTradableInstrument));
+
+        // Act & Assert
+        assertThrows(NotTradableException.class,
+            () -> orderService.createOrder(request));
     }
 }
