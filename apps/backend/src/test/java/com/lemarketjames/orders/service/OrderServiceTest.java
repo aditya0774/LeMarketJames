@@ -6,6 +6,7 @@ import com.lemarketjames.holdings.service.HoldingsService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitSellOrderRequest;
+import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -142,6 +144,40 @@ class OrderServiceTest {
         when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
 
         assertThrows(AccessDeniedException.class, () -> orderService.submitSellOrder(request));
+    }
+
+    @Test
+    @DisplayName("Submit buy order always persists BUY type")
+    void testSubmitBuyOrderAlwaysUsesBuyType() {
+        SubmitBuyOrderRequest request = new SubmitBuyOrderRequest(
+            1,
+            1,
+            new BigDecimal("3.0000"),
+            new BigDecimal("100.50")
+        );
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("3.0000"));
+        savedOrder.setOrderId(77);
+        savedOrder.setPricePerUnit(new BigDecimal("100.50"));
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(argThat(order ->
+            order.getOrderType() == Order.OrderType.BUY
+                && order.getAccountId().equals(1)
+                && order.getInstrumentId().equals(1)
+        ))).thenReturn(savedOrder);
+
+        OrderResponse response = orderService.submitBuyOrder(request);
+
+        assertNotNull(response);
+        assertEquals(77, response.getOrderId());
+        assertEquals(Order.OrderType.BUY, response.getOrderType());
+        assertEquals(new BigDecimal("100.50"), response.getPricePerUnit());
     }
 
     @Test

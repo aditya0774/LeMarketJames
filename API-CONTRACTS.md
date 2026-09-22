@@ -115,6 +115,72 @@ Submits a sell order via the dedicated sell-order service contract.
 - Holdings checks are enforced server-side through authenticated account ownership + available quantity validation.
 - Frontend integration: `OrderService.createOrder(...)` routes validated SELL requests to `POST /api/v1/sell-orders`.
 
+### POST /api/v1/buy-orders
+
+Submits a buy order via the dedicated buy-order service contract.
+
+#### Request
+
+```json
+{
+  "accountId": 1,
+  "instrumentId": 101,
+  "quantity": 10.0000,
+  "pricePerUnit": 150.25
+}
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "success": true,
+  "orderId": 123,
+  "accountId": 1,
+  "instrumentId": 101,
+  "orderType": "BUY",
+  "quantity": 10.0000,
+  "pricePerUnit": 150.25,
+  "orderStatus": "SUBMITTED"
+}
+```
+
+#### Response (400 Bad Request)
+
+```json
+{
+  "success": false,
+  "reason": "Insufficient balance. Required: $1502.50, Available: $500.00"
+}
+```
+
+#### Response (400 Validation Error)
+
+```json
+{
+  "errors": {
+    "accountId": "accountId must be positive",
+    "pricePerUnit": "pricePerUnit must be positive"
+  }
+}
+```
+
+#### Response (403 Forbidden)
+
+```json
+{
+  "success": false,
+  "error": "Access denied",
+  "code": "ACCOUNT_ACCESS_DENIED"
+}
+```
+
+#### Notes
+
+- `orderType` is intentionally not accepted in this request and is always persisted as `BUY`.
+- Business validation for available cash is enforced server-side.
+- Frontend integration: BUY submissions from the trade popup use `TradeDialog -> OrderService.submitBuyOrder(...)`, which calls `POST /api/v1/buy-orders`.
+
 ---
 
 ### POST /api/v1/orders

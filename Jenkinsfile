@@ -55,14 +55,21 @@ pipeline {
             }
         }
 
-        stage('Run sell-order microservice tests') {
+        stage('Run order microservice tests') {
             steps {
                 dir('apps/backend') {
                     sh '''
                         set -eu
-                        mvn -B "-Dtest=SellOrderControllerTest,OrderServiceTest" test
+                        mvn -B "-Dtest=BuyOrderControllerTest,SellOrderControllerTest,OrderServiceTest" test
 
-                        echo "=== SELL-ORDER MICROSERVICE TEST SUMMARY ==="
+                        echo "=== ORDER MICROSERVICE TEST SUMMARY ==="
+                        if ls target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "BuyOrderControllerTest report not found"
+                        fi
+
                         if ls target/surefire-reports/TEST-*SellOrderControllerTest.xml >/dev/null 2>&1; then
                             grep -h '<testsuite ' target/surefire-reports/TEST-*SellOrderControllerTest.xml \
                                 | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
@@ -74,6 +81,7 @@ pipeline {
             }
             post {
                 always {
+                    junit 'apps/backend/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
                     junit 'apps/backend/target/surefire-reports/TEST-*SellOrderControllerTest.xml'
                 }
             }
