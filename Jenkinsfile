@@ -55,19 +55,26 @@ pipeline {
             }
         }
 
-        stage('Run buy-order microservice tests') {
+        stage('Run order microservice tests') {
             steps {
                 dir('apps/backend') {
                     sh '''
                         set -eu
-                        mvn -B "-Dtest=BuyOrderControllerTest,OrderServiceTest" test
+                        mvn -B "-Dtest=BuyOrderControllerTest,SellOrderControllerTest,OrderServiceTest" test
 
-                        echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
+                        echo "=== ORDER MICROSERVICE TEST SUMMARY ==="
                         if ls target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
                             grep -h '<testsuite ' target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
                                 | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
                         else
                             echo "BuyOrderControllerTest report not found"
+                        fi
+
+                        if ls target/surefire-reports/TEST-*SellOrderControllerTest.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' target/surefire-reports/TEST-*SellOrderControllerTest.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "SellOrderControllerTest report not found"
                         fi
                     '''
                 }
@@ -75,6 +82,7 @@ pipeline {
             post {
                 always {
                     junit 'apps/backend/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                    junit 'apps/backend/target/surefire-reports/TEST-*SellOrderControllerTest.xml'
                 }
             }
         }
@@ -351,6 +359,91 @@ JSON
                     test "$order_status" = "400"
                     grep -q '"success":false' "$order_error_file"
                     grep -q '"code":"NOT_TRADABLE"' "$order_error_file"
+                '''
+            }
+        }
+
+        stage('Run sell-order API contract smoke test') {
+            steps {
+                sh '''
+                    set -eu
+
+                    base="http://localhost:8081"
+                    user="ciusrsell$(date +%s)"
+                    email="$user@example.com"
+
+                    register_payload=$(cat <<JSON
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+JSON
+)
+
+                    login_payload=$(cat <<JSON
+{"username":"$email","password":"Pass123!"}
+JSON
+)
+
+                    cookie_file=$(mktemp)
+                    sell_ok_file=$(mktemp)
+                    sell_fail_file=$(mktemp)
+                    trap 'rm -f "$cookie_file" "$sell_ok_file" "$sell_fail_file"' EXIT
+
+                    curl --silent --show-error --fail \
+                        --request POST "$base/api/auth/register" \
+                        --header "Content-Type: application/json" \
+                        --data "$register_payload" \
+                        >/dev/null
+
+                    curl --silent --show-error --fail \
+                        --cookie-jar "$cookie_file" \
+                        --request POST "$base/api/auth/login" \
+                        --header "Content-Type: application/json" \
+                        --data "$login_payload" \
+                        >/dev/null
+
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+
+                    account_id=$(compose exec -T db psql -At -U lemarket -d lemarket \
+                        -c "SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id = a.client_id WHERE c.username = '$user' LIMIT 1;")
+
+                    test -n "$account_id"
+
+                    # Seed holdings so a sell order can pass with deterministic quantity.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket \
+                        -c "INSERT INTO holdings (account_id, instrument_id, quantity, last_updated) VALUES ($account_id, 1, 5.0000, NOW()) ON CONFLICT (account_id, instrument_id) DO UPDATE SET quantity = EXCLUDED.quantity, last_updated = NOW();"
+
+                    sell_ok_payload=$(cat <<JSON
+{"accountId":$account_id,"instrumentId":1,"quantity":2.0000}
+JSON
+)
+
+                    sell_ok_status=$(curl --silent --output "$sell_ok_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        --request POST "$base/api/v1/sell-orders" \
+                        --header "Content-Type: application/json" \
+                        --data "$sell_ok_payload")
+
+                    test "$sell_ok_status" = "201"
+                    grep -q '"orderType":"SELL"' "$sell_ok_file"
+                    grep -q '"orderStatus":' "$sell_ok_file"
+
+                    sell_fail_payload=$(cat <<JSON
+{"accountId":$account_id,"instrumentId":1,"quantity":20.0000}
+JSON
+)
+
+                    sell_fail_status=$(curl --silent --output "$sell_fail_file" --write-out "%{http_code}" \
+                        --cookie "$cookie_file" \
+                        --request POST "$base/api/v1/sell-orders" \
+                        --header "Content-Type: application/json" \
+                        --data "$sell_fail_payload")
+
+                    test "$sell_fail_status" = "400"
+                    grep -q '"success":false' "$sell_fail_file"
+                    grep -q '"code":"INSUFFICIENT_HOLDINGS"' "$sell_fail_file"
                 '''
             }
         }

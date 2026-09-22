@@ -50,6 +50,71 @@ Authenticates a user and returns authentication tokens.
 
 ## Orders Endpoints
 
+### POST /api/v1/sell-orders
+
+Submits a sell order via the dedicated sell-order service contract.
+
+#### Request
+
+```json
+{
+  "accountId": 1,
+  "instrumentId": 101,
+  "quantity": 5.0000
+}
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "success": true,
+  "orderId": 124,
+  "accountId": 1,
+  "instrumentId": 101,
+  "orderType": "SELL",
+  "quantity": 5.0000,
+  "orderStatus": "SUBMITTED"
+}
+```
+
+#### Response (400 Bad Request)
+
+```json
+{
+  "success": false,
+  "error": "Insufficient holdings. Available: 2.0000, Requested: 5.0000",
+  "code": "INSUFFICIENT_HOLDINGS"
+}
+```
+
+#### Response (400 Validation Error)
+
+```json
+{
+  "errors": {
+    "accountId": "accountId must be positive",
+    "quantity": "quantity must be positive"
+  }
+}
+```
+
+#### Response (403 Forbidden)
+
+```json
+{
+  "success": false,
+  "error": "Access denied",
+  "code": "ACCOUNT_ACCESS_DENIED"
+}
+```
+
+#### Notes
+
+- `orderType` is intentionally not accepted in this request and is always persisted as `SELL`.
+- Holdings checks are enforced server-side through authenticated account ownership + available quantity validation.
+- Frontend integration: `OrderService.createOrder(...)` routes validated SELL requests to `POST /api/v1/sell-orders`.
+
 ### POST /api/v1/buy-orders
 
 Submits a buy order via the dedicated buy-order service contract.

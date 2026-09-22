@@ -12,6 +12,12 @@ export interface OrderRequest {
   pricePerUnit?: number;
 }
 
+export interface SellOrderRequest {
+  accountId: number;
+  instrumentId: number;
+  quantity: number;
+}
+
 export interface BuyOrderRequest {
   accountId: number;
   instrumentId: number;
@@ -71,9 +77,20 @@ export class OrderService {
         if (!validation.success) {
           return throwError(() => new Error(validation.error || 'Unable to validate holdings.'));
         }
-        return this.http.post<OrderResponse>(this.apiUrl, order);
+        return this.submitSellOrder({
+          accountId: order.accountId,
+          instrumentId: order.instrumentId,
+          quantity: order.quantity,
+        });
       })
     );
+  }
+
+  /**
+   * Submit a SELL order using the dedicated sell-order endpoint.
+   */
+  submitSellOrder(request: SellOrderRequest): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>('/api/v1/sell-orders', request);
   }
 
   /**
