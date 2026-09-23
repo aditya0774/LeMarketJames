@@ -31,50 +31,47 @@ pipeline {
 
         stage('Test with Maven') {
             steps {
-                dir('apps/backend') {
-                    sh '''
-                        set -eu
-                        mvn -B clean test
+                // The root parent pom builds and tests every backend module (libs/common + services/*).
+                sh '''
+                    set -eu
+                    mvn -B clean test
 
-                        echo "=== BACKEND TESTS COMPLETED: PASS ==="
-                        echo "=== BACKEND SUREFIRE SUMMARY ==="
+                    echo "=== BACKEND TESTS COMPLETED: PASS ==="
+                    echo "=== BACKEND SUREFIRE SUMMARY ==="
 
-                        if ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                            grep -h '<testsuite ' target/surefire-reports/TEST-*.xml \
-                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                        else
-                            echo "No surefire XML reports found"
-                        fi
-                    '''
-                }
+                    if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "No surefire XML reports found"
+                    fi
+                '''
             }
             post {
                 always {
-                    junit 'apps/backend/target/surefire-reports/*.xml'
+                    junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Run buy-order microservice tests') {
             steps {
-                dir('apps/backend') {
-                    sh '''
-                        set -eu
-                        mvn -B "-Dtest=BuyOrderControllerTest,OrderServiceTest" test
+                sh '''
+                    set -eu
+                    mvn -B -pl services/core-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
 
-                        echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
-                        if ls target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
-                            grep -h '<testsuite ' target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
-                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                        else
-                            echo "BuyOrderControllerTest report not found"
-                        fi
-                    '''
-                }
+                    echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
+                    if ls services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "BuyOrderControllerTest report not found"
+                    fi
+                '''
             }
             post {
                 always {
-                    junit 'apps/backend/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
                 }
             }
         }
@@ -103,10 +100,12 @@ pipeline {
                     image_tag="${BUILD_NUMBER:-local}-${short_sha}"
                     echo "$image_tag" > .image_tag
 
-                    docker build -t "lemarketjames/backend:$image_tag" ./apps/backend
+                    # Backend images build from the repo root so Maven can see the parent pom and libs/common.
+                    for service in core-service auth-service gateway-service; do
+                        docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
+                        docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
+                    done
                     docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
-
-                    docker image inspect "lemarketjames/backend:$image_tag" >/dev/null
                     docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
 
                     echo "Built versioned images with tag: $image_tag"
@@ -177,12 +176,12 @@ pipeline {
 
         stage('Verify own-data isolation on PostgreSQL') {
             steps {
-                dir('apps/backend') {
-                    sh 'mvn -B -Dspring.profiles.active=postgres-test -Dtest=OwnDataIntegrationTest test'
-                }
+                sh 'mvn -B -pl services/core-service,services/auth-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
             }
             post {
-                always { junit 'apps/backend/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml' }
+                always {
+                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml'
+                }
             }
         }
 
@@ -198,32 +197,37 @@ pipeline {
                     fi
 
                     echo "Container user and group:"
-                    compose exec -T backend id
+                    compose exec -T core-service id
+                    compose exec -T auth-service id
 
-                    echo "Waiting for backend health endpoint"
-                    healthy=0
-                    for attempt in $(seq 1 60); do
-                        status=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:8081/actuator/health || true)
-                        if [ "$status" = "200" ]; then
-                            healthy=1
-                            break
+                    # core-service :8081, auth-service :8082, gateway-service :8080
+                    for port in 8081 8082 8080; do
+                        echo "Waiting for health endpoint on port $port"
+                        healthy=0
+                        for attempt in $(seq 1 60); do
+                            status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
+                            if [ "$status" = "200" ]; then
+                                healthy=1
+                                break
+                            fi
+                            sleep 1
+                        done
+
+                        if [ "$healthy" -ne 1 ]; then
+                            echo "Service on port $port did not become healthy in time"
+                            compose ps
+                            compose logs core-service auth-service gateway-service
+                            exit 1
                         fi
-                        sleep 1
                     done
 
-                    if [ "$healthy" -ne 1 ]; then
-                        echo "Backend did not become healthy in time"
-                        compose ps
-                        compose logs backend
-                        exit 1
-                    fi
-
-                    response=$(curl --fail --silent --show-error http://localhost:8081/)
+                    # Through the gateway, so routing to core-service is exercised too.
+                    response=$(curl --fail --silent --show-error http://localhost:8080/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs backend
+                    compose logs core-service auth-service gateway-service
                 '''
             }
         }
@@ -233,7 +237,8 @@ pipeline {
                 sh '''
                     set -eu
 
-                    base="http://localhost:8081"
+                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
+                    base="http://localhost:8080"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -297,7 +302,8 @@ JSON
                 sh '''
                     set -eu
 
-                    base="http://localhost:8081"
+                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
+                    base="http://localhost:8080"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
@@ -363,9 +369,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 backend db || true
+                    docker compose logs --tail=100 gateway-service auth-service core-service db || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 backend db || true
+                    docker-compose logs --tail=100 gateway-service auth-service core-service db || true
                 fi
             '''
         }

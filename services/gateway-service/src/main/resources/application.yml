@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+# Upstream service locations. Docker Compose overrides these with container hostnames.
+services:
+  auth-url: ${AUTH_SERVICE_URL:http://localhost:8082}
+  core-url: ${CORE_SERVICE_URL:http://localhost:8081}
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Browsers talk only to the gateway, so CORS is decided here once for every service.
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:4200}
+                allowed-methods: [GET, POST, PUT, DELETE, OPTIONS]
+                allowed-headers: "*"
+                allow-credentials: true
+          # Services also send CORS headers for direct local calls; keep a single copy.
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+          # Routes are checked in order: the specific auth route must stay before the core catch-all.
+          # Add a route here whenever a feature is extracted into its own service.
+          routes:
+            - id: auth-service
+              uri: ${services.auth-url}
+              predicates:
+                - Path=/api/auth/**
+            - id: core-service
+              uri: ${services.core-url}
+              predicates:
+                - Path=/api/**,/
+
+# Only expose health so the smoke test can check the gateway is up.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

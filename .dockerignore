@@ -1,4 +1,12 @@
+# Root build context is only used by the backend service images (services/*/Dockerfile).
 .git
 .gitignore
 Jenkinsfile
 README.md
+**/target
+apps
+docs
+database
+*.pdf
+*.xlsx
+*.png

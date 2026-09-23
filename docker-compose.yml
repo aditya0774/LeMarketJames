@@ -5,18 +5,59 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - backend
+      - gateway-service
 
-  backend:
-    image: lemarketjames/backend:${IMAGE_TAG:-dev}
-    build: ./apps/backend
+  # Single entry point for the frontend: routes /api/auth/** to auth-service and everything else
+  # to core-service (see services/gateway-service/src/main/resources/application.yml).
+  gateway-service:
+    image: lemarketjames/gateway-service:${IMAGE_TAG:-dev}
+    build:
+      # Backend images build from the repo root so Maven can see the parent pom and libs/common.
+      context: .
+      dockerfile: services/gateway-service/Dockerfile
     ports:
-      - "8081:8081"
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - core-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8082
+      CORE_SERVICE_URL: http://core-service:8081
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+
+  # auth-service and core-service share the same database and the same JWT_SECRET, so a token
+  # issued by auth-service is accepted by core-service.
+  auth-service:
+    image: lemarketjames/auth-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    ports:
+      # Published for direct debugging only; browser traffic goes through the gateway.
+      - "8082:8082"
     depends_on:
       db:
         condition: service_healthy
     environment:
       # Development defaults for the disposable testing stack; environment overrides remain supported.
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+
+  core-service:
+    image: lemarketjames/core-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/core-service/Dockerfile
+    ports:
+      # Published for direct debugging only; browser traffic goes through the gateway.
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
@@ -38,8 +79,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
-      # machine during development (frontend/backend never call db directly
-      # from the browser — only the backend container talks to db).
+      # machine during development (the frontend and gateway never call db directly;
+      # only auth-service and core-service talk to it).
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data

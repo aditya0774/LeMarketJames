@@ -57,16 +57,19 @@ See [AGENTS.md](AGENTS.md) for the full conventions doc (package/folder rules, b
 
 ```
 LeMarketJames/
+├── pom.xml                        # Parent pom: lists every backend module, shared versions/plugins
+├── libs/
+│   └── common/                    # Shared jar: JWT security, account entities, error handling
+├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
+│   ├── gateway-service/           # :8080 Spring Cloud Gateway, the only backend entry point
+│   ├── auth-service/              # :8082 register, login, logout, /api/auth/me
+│   └── core-service/              # :8081 holdings, market, orders, quotes, sessions
+│       ├── src/main/java/com/lemarketjames/
+│       │   ├── common/            # Core-specific exception handler
+│       │   ├── config/            # Cross-cutting config (Security, etc.)
+│       │   └── [features]/        # market, orders, holdings, quotes, sessions
+│       └── src/test/java/         # JUnit tests (mirrors main layout)
 ├── apps/
-│   ├── backend/                   # Java/Spring Boot backend (feature-based packages)
-│   │   ├── src/main/java/com/lemarketjames/
-│   │   │   ├── auth/              # Authentication & security feature
-│   │   │   ├── common/            # Shared code (exceptions, utilities)
-│   │   │   ├── config/            # Cross-cutting config (Security, etc.)
-│   │   │   └── [other features]/  # Feature packages: market, orders, holdings, quotes, etc.
-│   │   ├── src/test/java/        # JUnit tests (mirrors main layout)
-│   │   ├── pom.xml               # Maven configuration
-│   │   └── Dockerfile            # Backend container image
 │   └── frontend/                  # Angular 22 frontend
 │       ├── src/app/
 │       │   ├── core/             # App-wide singletons: auth, interceptors
@@ -89,26 +92,29 @@ This section describes the current system architecture. As new features are adde
 
 ### System Topology
 
-LeMarketJames is a **3-tier distributed architecture** with three independent services communicating over HTTP:
+LeMarketJames is a **hybrid monorepo**: one repository holding an Angular frontend and several Spring Boot microservices, which all share one PostgreSQL database. Auth is the first extracted service. Features not yet extracted live together in `core-service`.
 
 ```mermaid
 graph LR
-    A["🌐 Angular Frontend<br/>(port 4200)"] -->|"REST + JSON"| B["🔧 Spring Boot Backend<br/>(port 8081)"]
-    B -->|"Cookies<br/>(JWT)"| A
-    B -->|"JDBC<br/>PostgreSQL Driver"| C["🗄️ PostgreSQL Database<br/>(port 5432)"]
-    
+    A["🌐 Angular Frontend<br/>(port 4200)"] -->|"REST + JSON<br/>jwt cookie"| G["🚪 Gateway Service<br/>(port 8080)"]
+    G -->|"/api/auth/**"| AU["🔐 Auth Service<br/>(port 8082)"]
+    G -->|"/api/** (everything else)"| CO["🔧 Core Service<br/>(port 8081)"]
+    AU -->|"JDBC"| C["🗄️ PostgreSQL Database<br/>(port 5432, shared)"]
+    CO -->|"JDBC"| C
+
     classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
     classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
     classDef database fill:#FF6B6B,stroke:#A91D3A,color:#fff
-    
+
     class A frontend
-    class B backend
+    class G,AU,CO backend
     class C database
 ```
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
-- **Unidirectional data flow:** Browser → Backend → Database (only backend talks to database)
+- **Unidirectional data flow:** Browser → Gateway → Auth/Core service → Database (only services talk to the database)
+- **Shared JWT secret:** auth-service issues the `jwt` cookie; every service validates it with the same `JWT_SECRET` (`libs/common`)
 - **Containerized:** Each service can run independently or together via Docker Compose
 - **Separation of concerns:** Frontend handles UI/UX; backend handles business logic and security; database stores persistent state
 
@@ -217,29 +223,28 @@ This is the recommended approach for active development, as it provides hot-relo
    ```
    Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
 
-**Backend Setup (Spring Boot on port 8081):**
+**Backend Setup (three Spring Boot services):**
 
-1. Navigate to the backend project:
+1. From the repo root, build every module once. This installs `libs/common`, which the services depend on:
    ```bash
-   cd apps/backend
+   mvn clean install -DskipTests
    ```
 
-2. Install Java dependencies with Maven:
+2. Start each service in its own terminal (all from the repo root):
    ```bash
-   mvn clean install
+   mvn -pl services/core-service spring-boot:run      # http://localhost:8081
+   mvn -pl services/auth-service spring-boot:run      # http://localhost:8082
+   mvn -pl services/gateway-service spring-boot:run   # http://localhost:8080  (frontend talks to this one)
    ```
+   core-service and auth-service both connect to `jdbc:postgresql://localhost:5432/lemarket` by default (see each service's `src/main/resources/application.properties`). Override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed. The gateway reaches them at `AUTH_SERVICE_URL`/`CORE_SERVICE_URL`, which default to localhost.
 
-3. Start the Spring Boot application:
-   ```bash
-   mvn spring-boot:run
-   ```
-   The backend will be available at `http://localhost:8081`. It connects to `jdbc:postgresql://localhost:5432/lemarket` by default (see `apps/backend/src/main/resources/application.properties`); override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed.
-
-4. Confirm the backend can reach the database:
+3. Confirm every service is up and the gateway routes to them:
    ```bash
    curl http://localhost:8081/actuator/health
+   curl http://localhost:8082/actuator/health
+   curl http://localhost:8080/
    ```
-   Expect `{"status":"UP"}`. `{"status":"DOWN"}` usually means the `db` container isn't running or the schema hasn't been applied yet.
+   Expect `{"status":"UP"}`, then `Hello from LeMarketJames!` through the gateway. `{"status":"DOWN"}` usually means the `db` container isn't running or the schema hasn't been applied yet.
 
 **Frontend Setup (Angular on port 4200):**
 
@@ -277,24 +282,24 @@ This is the recommended approach for active development, as it provides hot-relo
 - **State-based Management:** Using Angular signals for reactive state updates
 - **Responsive Design:** Mobile, tablet, and desktop layouts
 
-**Note:** The frontend itself has no database dependency. But to exercise registration/login end-to-end, the backend must be running on `http://localhost:8081` *and* connected to a schema-initialized Postgres instance (see Database Setup above).
+**Note:** The frontend itself has no database dependency. But to exercise registration/login end-to-end, all three backend services must be running (the dev proxy sends `/api` to the gateway on `http://localhost:8080`) *and* connected to a schema-initialized Postgres instance (see Database Setup above).
 
 ---
 
 ### Method 2: Docker Build & Run
 
-This method builds a single Docker image and runs the application in a container.
+This method builds one service's Docker image and runs it in a container. Backend images build from the repo root so Maven can see the parent pom and `libs/common`.
 
-1. Build the Docker image:
+1. Build the Docker image (swap `core-service` for `auth-service` or `gateway-service`):
    ```bash
-   docker build -t le-market-james:latest apps/backend
+   docker build -t lemarketjames/core-service:latest -f services/core-service/Dockerfile .
    ```
 
 2. Run the container:
    ```bash
-   docker run -p 8081:8081 --rm le-market-james
+   docker run -p 8081:8081 --rm lemarketjames/core-service:latest
    ```
-   The application will be available at `http://localhost:8081`
+   The service will be available at `http://localhost:8081`
 
 3. To stop the container, press `Ctrl+C` in the terminal.
 
@@ -304,14 +309,16 @@ This method builds a single Docker image and runs the application in a container
 
 ### Method 3: Docker Compose (Full Stack with Database)
 
-This method spins up the complete stack: Angular frontend + Spring Boot backend + PostgreSQL database.
+This method spins up the complete stack: Angular frontend + gateway + auth and core services + PostgreSQL database.
 
 1. Start all services:
    ```bash
    docker compose up -d --build
    ```
    - Angular frontend: `http://localhost:4200`
-   - Spring Boot backend: `http://localhost:8081`
+   - Gateway (backend entry point): `http://localhost:8080`
+   - Core service: `http://localhost:8081` (direct access for debugging)
+   - Auth service: `http://localhost:8082` (direct access for debugging)
    - PostgreSQL database: `localhost:5432`
 
 2. Apply the schema (schema application is manual, not automated — see `database/README.md`):
@@ -324,14 +331,16 @@ This method spins up the complete stack: Angular frontend + Spring Boot backend 
    psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
    ```
 
-3. Confirm the backend is up and connected to the database:
+3. Confirm the services are up and connected to the database:
    ```bash
    curl http://localhost:8081/actuator/health
+   curl http://localhost:8082/actuator/health
+   curl http://localhost:8080/actuator/health
    ```
 
 4. View logs:
    ```bash
-   docker compose logs -f backend
+   docker compose logs -f gateway-service auth-service core-service
    ```
 
 5. Stop all services:
@@ -352,7 +361,7 @@ DB_PASSWORD=your_secure_password docker compose up -d --build
 
 ### Market simulation settings
 
-The simulated market is configured in `apps/backend/src/main/resources/application.properties`.
+The simulated market is configured in `services/core-service/src/main/resources/application.properties`.
 Each setting can be overridden with an environment variable:
 
 | Property | Env variable | Default | Purpose |
@@ -373,14 +382,19 @@ table — see [database/README.md](database/README.md#tuning-the-market).
 
 ### Backend Tests (Java/JUnit)
 
-Run all JUnit tests:
+Run every module's JUnit tests from the repo root:
 
 ```bash
-cd apps/backend
 mvn test
 ```
 
-Test results are generated in `apps/backend/target/surefire-reports/`. Successful tests confirm the Spring Boot application and authentication logic are functioning correctly.
+Run just one service (plus the `libs/common` it depends on):
+
+```bash
+mvn -pl services/auth-service -am test
+```
+
+Test results are generated in each module's `target/surefire-reports/` (e.g. `services/core-service/target/surefire-reports/`).
 
 ### Frontend Tests (TypeScript/Vitest)
 
@@ -401,17 +415,17 @@ Once the application is running (via any of the three methods), you can access:
 |---------|-----|---------|
 | **Angular Frontend** | `http://localhost:4200` | User interface (when using Method 1) |
 | **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
-| **Spring Boot Backend** | `http://localhost:8081` | REST API endpoints |
-| **Auth Register API** | `POST http://localhost:8081/api/auth/register` | Register new user |
-| **Auth Login API** | `POST http://localhost:8081/api/auth/login` | User login |
-| **Health Check** | `GET http://localhost:8081/actuator/health` | Backend + DB liveness (`UP`/`DOWN`) |
+| **API Gateway** | `http://localhost:8080` | Single entry point for all REST API endpoints |
+| **Auth Register API** | `POST http://localhost:8080/api/auth/register` | Register new user (routed to auth-service) |
+| **Auth Login API** | `POST http://localhost:8080/api/auth/login` | User login (routed to auth-service) |
+| **Health Checks** | `GET http://localhost:{8080,8081,8082}/actuator/health` | Gateway / core / auth liveness (`UP`/`DOWN`) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 
 **Frontend Routes:**
 - `/register` - User registration page with comprehensive form
 - `/login` - User login
 
-See [apps/backend/src/main/java/com/lemarketjames/auth/AuthController.java](apps/backend/src/main/java/com/lemarketjames/auth/AuthController.java) for complete API endpoint definitions.
+See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [API-CONTRACTS.md](API-CONTRACTS.md) for the rest.
 
 **Form Validation:**
 All form validation is performed client-side using Zod schema validation before submission to the backend. See [apps/frontend/src/app/features/auth/register/register.schema.ts](apps/frontend/src/app/features/auth/register/register.schema.ts) for validation rules.
@@ -424,11 +438,11 @@ All form validation is performed client-side using Zod schema validation before 
 
 If you see an error like "Address already in use" or "Port X is already allocated":
 
-- **Port 8081 (Spring Boot):** Check if another service is using it:
+- **Ports 8080 / 8081 / 8082 (gateway / core / auth):** Check if another process is using one:
   ```bash
   netstat -ano | findstr :8081
   ```
-  Kill the process or choose a different port in `apps/backend/src/main/resources/application.properties`.
+  Kill the process or change `server.port` in that service's `src/main/resources/application.properties` (and update the gateway's `CORE_SERVICE_URL`/`AUTH_SERVICE_URL` to match).
 
 - **Port 4200 (Angular):** Start the dev server on a different port:
   ```bash
@@ -458,13 +472,12 @@ java -version
 
 ### Maven Build Fails
 
-- Clear Maven cache and rebuild:
+- Clear Maven cache and rebuild from the repo root:
   ```bash
-  cd apps/backend
   mvn clean install
   ```
 
-- Ensure you're in `apps/backend` (where `pom.xml` is located).
+- Run Maven from the repo root (where the parent `pom.xml` is located). A single service can't resolve `libs/common` until it has been built, so use `-pl <module> -am` or run `mvn install` first.
 
 ### npm Install Fails
 
@@ -481,7 +494,7 @@ java -version
 
 ### Database Connection Refused (Docker Compose or Local Dev)
 
-- Check `GET http://localhost:8081/actuator/health` first — `{"status":"DOWN"}` means the backend can't reach Postgres.
+- Check `GET http://localhost:8081/actuator/health` (core) and `GET http://localhost:8082/actuator/health` (auth) first. `{"status":"DOWN"}` means that service can't reach Postgres.
 
 - Verify all services are running (Docker Compose):
   ```bash
@@ -745,23 +758,22 @@ sequenceDiagram
 To generate a code coverage report, run the following commands in your terminal:
 
 ```bash
-cd apps/backend
-mvn clean test jacoco:report
+mvn clean test
 ```
 
-Then, open the report in your browser using one of the following commands in your terminal, depending on your OS:
+Each module writes its own report (JaCoCo runs during `test`). Open one in your browser, e.g. core-service, using one of the following commands depending on your OS:
 
 Windows:
 ```bash
-start target/site/jacoco/index.html
+start services/core-service/target/site/jacoco/index.html
 ```
 
 macOS:
 ```bash
-open target/site/jacoco/index.html
+open services/core-service/target/site/jacoco/index.html
 ```
 
 Linux:
 ```bash
-xdg-open target/site/jacoco/index.html
+xdg-open services/core-service/target/site/jacoco/index.html
 ```

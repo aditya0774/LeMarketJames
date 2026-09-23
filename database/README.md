@@ -2,6 +2,18 @@
 
 Raw SQL, applied manually (no migration tool). `schema/` holds numbered, ordered SQL files (`001_core_schema.sql`, `002_...`) that together define the current database structure — apply them in order against the `lemarket` Postgres database. Add new numbered files here for future schema changes rather than editing old ones in place.
 
+## One database, shared by every service
+
+All backend microservices connect to this same `lemarket` database. This folder is the only place the schema is defined. Every service runs with `spring.jpa.hibernate.ddl-auto=validate`, so Hibernate only checks the tables that service maps and never creates or changes them.
+
+| Tables | Written by | Read by |
+|---|---|---|
+| `clients`, `addresses` | auth-service (registration, last login) | — |
+| `accounts` | auth-service (created at registration) | auth-service, core-service (ownership and cash-balance checks) |
+| `instruments`, `orders`, `holdings`, `market_quotes`, `instrument_market_params`, `price_candles` | core-service | core-service |
+
+The shared JPA mappings for `clients`/`addresses`/`accounts` live in `libs/common` (`com.lemarketjames.common.domain`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
+
 Existing Docker volumes do not rerun initialization scripts. For an existing database
 that already has scripts 001–003, apply the SSN hash column update without deleting data:
 
@@ -30,7 +42,7 @@ apply it automatically with the other initialization scripts.
 | `market_quotes` | Now one row per instrument; adds last/open/high/low/previous close/volume | Latest price snapshot, refreshed every few seconds so prices survive a restart. |
 | `price_candles` | New | 1-minute OHLC price history. |
 
-**The backend will not start until 006 is applied** (Hibernate schema validation fails on the
+**core-service will not start until 006 is applied** (Hibernate schema validation fails on the
 missing tables). The script is idempotent, so it is safe to run again if you are unsure.
 
 Apply to an existing Docker database without losing data:
@@ -67,7 +79,7 @@ UPDATE instrument_market_params SET volatility = 0.70
 WHERE instrument_id = (SELECT instrument_id FROM instruments WHERE ticker = 'TSLA');
 ```
 
-Restart the backend to pick up changes. `initial_price` only applies when an instrument has no
+Restart core-service to pick up changes. `initial_price` only applies when an instrument has no
 row in `market_quotes`; delete that row to restart an instrument from its initial price.
 
 To add an instrument to the market, insert it into `instruments` and add a matching
