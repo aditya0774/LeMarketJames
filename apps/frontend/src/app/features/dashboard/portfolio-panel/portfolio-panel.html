@@ -1,0 +1,55 @@
+<section class="panel portfolio-panel">
+  <div class="panel-head">
+    <div>
+      <h3>Portfolio</h3>
+      <div class="sub-s">Your current holdings and performance.</div>
+    </div>
+    <div class="portfolio-total">
+      <div>
+        <span class="pt-label">Total value</span>
+        <span class="pt-value tabular">{{ totals().value | currency: 'USD' }}</span>
+      </div>
+      <div>
+        <span class="pt-label">Total gain/loss</span>
+        <span class="pt-value tabular" [class.up]="totals().gainLoss >= 0" [class.down]="totals().gainLoss < 0">
+          {{ totals().gainLoss | signedCurrency }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th><th>Shares</th><th>Avg. cost</th><th>Current price</th><th>Market value</th><th>Total gain/loss</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          <tr><td colspan="6" class="empty-row">Loading holdings…</td></tr>
+        } @else if (error()) {
+          <tr><td colspan="6" class="empty-row">{{ error() }}</td></tr>
+        } @else {
+          @for (h of holdings(); track h.symbol) {
+            <tr class="clickable" tabindex="0" (click)="selectSymbol.emit(h.symbol)" (keydown.enter)="selectSymbol.emit(h.symbol)">
+              <td><span class="sym">{{ h.symbol }}</span><span class="sym-sub">{{ nameFor(h.symbol) }}</span></td>
+              <td class="tabular">{{ h.quantity | number: '1.0-4' }}</td>
+              <td class="tabular">{{ h.averageCost | currency: 'USD' }}</td>
+              <td class="tabular">{{ h.currentPrice | currency: 'USD' }}</td>
+              <td class="tabular">{{ h.currentValue | currency: 'USD' }}</td>
+              <td class="tabular" [class.up]="h.gainLoss >= 0" [class.down]="h.gainLoss < 0">
+                {{ h.gainLoss | signedCurrency }}
+                ({{ h.gainLossPercent >= 0 ? '+' : '' }}{{ h.gainLossPercent | number: '1.1-1' }}%)
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">You don't hold any positions yet — place your first order to get started.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

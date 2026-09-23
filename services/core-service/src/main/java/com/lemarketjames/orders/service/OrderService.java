@@ -3,6 +3,7 @@ package com.lemarketjames.orders.service;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -78,6 +79,20 @@ public class OrderService {
         
         Order savedOrder = orderRepository.save(order);
         return new OrderResponse(savedOrder);
+    }
+
+    /**
+     * Submit a BUY order via the dedicated buy-order entrypoint.
+     */
+    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request) {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
+            request.getAccountId(),
+            request.getInstrumentId(),
+            Order.OrderType.BUY,
+            request.getQuantity()
+        );
+        createOrderRequest.setPricePerUnit(request.getPricePerUnit());
+        return createOrder(createOrderRequest);
     }
 
     private Order findOwnOrder(Integer orderId) {

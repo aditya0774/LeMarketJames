@@ -1,12 +1,40 @@
-<div class="auth-wrap">
-  <div class="auth-brand">
-    <img src="/lemarket-logo.png" alt="LeMarket logo" />
-    <span class="wordmark"><span class="le-accent">Le</span>Market</span>
+<header class="app-header">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="sub">Welcome back, {{ auth.currentUser() }} — here's where things stand.</div>
   </div>
+  <div class="header-actions">
+    <button type="button" class="btn btn-outline" (click)="logout()">Log out</button>
+  </div>
+</header>
 
-  <div class="auth-panel">
-    <div class="auth-card">
-      <h2>Welcome to dashboard</h2>
+@if (sessionExpired()) {
+  <div class="alert err" role="alert">
+    <div>
+      <b>401 · Unauthorized</b>
+      Your session has expired — please <a routerLink="/login">log in again</a> to continue.
     </div>
   </div>
-</div>
+}
+
+<app-stat-strip [totals]="totals()" [openOrders]="openOrders()" />
+
+<app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
+
+<app-portfolio-panel
+  [holdings]="holdings()"
+  [loading]="holdingsLoading()"
+  [error]="holdingsError()"
+  (selectSymbol)="openTrade($event)"
+/>
+
+<app-orders-panel [orders]="orders()" [loading]="ordersLoading()" [error]="ordersError()" />
+
+@if (tradeSymbol(); as symbol) {
+  <app-trade-dialog
+    [symbol]="symbol"
+    [initialHistory]="marketHistory()[symbol] ?? []"
+    (closed)="closeTrade()"
+    (orderPlaced)="onOrderPlaced()"
+  />
+}

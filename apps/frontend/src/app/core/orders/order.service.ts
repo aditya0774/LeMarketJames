@@ -12,6 +12,13 @@ export interface OrderRequest {
   pricePerUnit?: number;
 }
 
+export interface BuyOrderRequest {
+  accountId: number;
+  instrumentId: number;
+  quantity: number;
+  pricePerUnit: number;
+}
+
 export interface OrderResponse {
   orderId: number;
   accountId: number;
@@ -67,6 +74,13 @@ export class OrderService {
         return this.http.post<OrderResponse>(this.apiUrl, order);
       })
     );
+  }
+
+  /**
+   * Submit a BUY order using the dedicated buy-order endpoint.
+   */
+  submitBuyOrder(request: BuyOrderRequest): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>('/api/v1/buy-orders', request);
   }
 
   /**

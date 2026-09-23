@@ -50,6 +50,74 @@ Authenticates a user and returns authentication tokens.
 
 ## Orders Endpoints
 
+### POST /api/v1/buy-orders
+
+Submits a buy order via the dedicated buy-order service contract.
+
+#### Request
+
+```json
+{
+  "accountId": 1,
+  "instrumentId": 101,
+  "quantity": 10.0000,
+  "pricePerUnit": 150.25
+}
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "success": true,
+  "orderId": 123,
+  "accountId": 1,
+  "instrumentId": 101,
+  "orderType": "BUY",
+  "quantity": 10.0000,
+  "pricePerUnit": 150.25,
+  "orderStatus": "SUBMITTED"
+}
+```
+
+#### Response (400 Bad Request)
+
+```json
+{
+  "success": false,
+  "reason": "Insufficient balance. Required: $1502.50, Available: $500.00"
+}
+```
+
+#### Response (400 Validation Error)
+
+```json
+{
+  "errors": {
+    "accountId": "accountId must be positive",
+    "pricePerUnit": "pricePerUnit must be positive"
+  }
+}
+```
+
+#### Response (403 Forbidden)
+
+```json
+{
+  "success": false,
+  "error": "Access denied",
+  "code": "ACCOUNT_ACCESS_DENIED"
+}
+```
+
+#### Notes
+
+- `orderType` is intentionally not accepted in this request and is always persisted as `BUY`.
+- Business validation for available cash is enforced server-side.
+- Frontend integration: BUY submissions from the trade popup use `TradeDialog -> OrderService.submitBuyOrder(...)`, which calls `POST /api/v1/buy-orders`.
+
+---
+
 ### POST /api/v1/orders
 
 Creates a new order.
@@ -450,6 +518,7 @@ This API contract represents an agreement between frontend and backend developme
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2024-01-15 | Team | Initial API contract definition |
+| 1.1.0 | 2026-09-21 | Frontend | Added "Dashboard & Trade: backend endpoints needed" (balance, instruments, order symbol, candles, watchlist) |
 
 ---
 
@@ -467,3 +536,153 @@ This API contract represents an agreement between frontend and backend developme
 - Angular restores identity before initial navigation, clears cached holdings when accounts change, and does not submit SELL orders until holdings validation succeeds.
 
 Existing clients/accounts/holdings tables already persist the ownership relationship; IA-08 needs no new columns or migration. See `docs/IA-08-TESTING.md` for local checks and EC2/Jenkins verification.
+
+---
+
+## Dashboard & Trade: backend endpoints needed
+
+The Angular dashboard (`/dashboard`) and trade page (`/trade/:symbol`) are built from the LeUI mockup against the endpoints that exist today. The gaps below are shown as "—" / "Unavailable" in the UI or covered by a temporary frontend stand-in. Each entry lists what the frontend expects and which frontend file switches over once the endpoint ships.
+
+**Rules for every endpoint in this section**
+
+- Authenticated by the existing JWT cookie. Return `401` when it is missing or expired (the dashboard shows a "session expired" banner on 401).
+- Scoped to the caller's own account, resolved from the JWT the same way as `GET /api/auth/me`. **None of them take an `accountId` parameter.**
+- Ownership failures return the IA-08 body: `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`.
+- Money is a JSON number (BigDecimal) in USD. Timestamps are ISO-8601 UTC strings (`2026-09-21T14:30:00Z`).
+- Prices come from `MarketDataService`, never straight from `market_quotes`, so the dashboard, quotes, and holdings all agree (`market/service/MarketDataService.java`).
+
+Priority order: 1 and 2 unblock the most UI, 3 is a small additive change, and 4 and 5 are nice-to-have.
+
+### 1. GET /api/balance (contracted above, not implemented yet)
+
+The contract already exists in **Balance Endpoints** above. These are the details the dashboard relies on:
+
+| Field | Source / rule |
+|---|---|
+| `cash` | `accounts.cash_balance` for the caller's account (`CashValidationService.getCashBalance` already reads it) |
+| `buyingPower` | `cash` minus the cost of the caller's open BUY orders (status `SUBMITTED`, `ACCEPTED`, `PENDING`, `DELAYED`). Equal to `cash` if the backend doesn't reserve cash. |
+| `invested` | Σ holdings `quantity × current price` |
+| `totalValue` | `cash + invested` |
+| `dayGainLoss` / `dayGainLossPercent` | Σ holdings `quantity × (price − openPrice)`, using `QuoteSnapshot.openPrice` (today's first price); percent is relative to Σ `quantity × openPrice` |
+| `totalGainLoss` / `totalGainLossPercent` | Same totals as `GET /api/v1/holdings` (`gainLoss`, relative to total cost) |
+
+- Path: keep `/api/balance`, and add `/api/v1/balance` as an alias to match the `/api/v1/` convention.
+- Errors: `401` when not authenticated; `404 { "success": false, "error": "Account not found" }` when the login has no account.
+- **Frontend switch-over:** `features/dashboard/stat-strip/stat-strip.ts` (Buying power card, currently "—"; the "Total P/L" card becomes "Day P/L" as in the mockup) and `features/trade/trade.ts` (block BUY orders above `buyingPower`). `core/orders/orders.service.ts#getBalance` already calls this path.
+
+### 2. GET /api/v1/instruments (new)
+
+Lists instruments with a live price. It powers dashboard stock search and replaces the hard-coded list in the frontend.
+
+#### Query Parameters
+
+- `query` (string, optional): case-insensitive "contains" match on `ticker` **or** `name`. Empty or missing returns everything.
+- `tradableOnly` (boolean, optional, default `false`): when `true`, only returns `instruments.tradable = TRUE`.
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "instruments": [
+    {
+      "instrumentId": 5,
+      "symbol": "TSLA",
+      "name": "Tesla Inc",
+      "assetClass": "EQUITY",
+      "currency": "USD",
+      "tradable": true,
+      "price": 248.90,
+      "priceChange": -5.80,
+      "priceChangePercent": -2.28
+    }
+  ]
+}
+```
+
+- Sort by `symbol` ascending. No pagination is needed at the current catalog size. Add `limit` later if the catalog grows.
+- `price`, `priceChange`, and `priceChangePercent` use the same definitions as `GET /api/quotes/{symbol}`. They are `null` if the simulator has no snapshot for that instrument (for example, non-tradable instruments).
+- No matches return `200` with `"instruments": []`, not 404.
+- Data: the `instruments` table joined with `MarketDataService.findAll()`. Read-only; no migration needed.
+- **Frontend switch-over:** `core/market/instrument-catalog.ts` (currently a hard-coded copy of the seed rows in `001`/`006`) and `features/dashboard/stock-search/stock-search.ts` (currently polls `GET /api/quotes/{symbol}` once per symbol).
+
+### 3. Add `symbol` and `instrumentName` to order responses (additive)
+
+Every response from `/api/v1/orders` (create, get by id, account lists, status lists) should include two extra fields in `OrderResponse`:
+
+```json
+{
+  "orderId": 42,
+  "accountId": 7,
+  "instrumentId": 5,
+  "symbol": "TSLA",
+  "instrumentName": "Tesla Inc",
+  "orderType": "BUY",
+  "quantity": 10,
+  "pricePerUnit": 248.90,
+  "orderStatus": "FILLED",
+  "rejectionReason": null,
+  "submittedAt": "2026-09-21T14:30:00Z",
+  "acceptedAt": "2026-09-21T14:30:00Z",
+  "filledAt": "2026-09-21T14:30:01Z",
+  "createdAt": "2026-09-21T14:30:00Z",
+  "updatedAt": "2026-09-21T14:30:01Z"
+}
+```
+
+- Non-breaking: existing fields stay unchanged. Fill the new fields from `instruments.ticker` / `instruments.name` via a join or `InstrumentRepository`.
+- **Frontend switch-over:** `features/dashboard/orders-panel/orders-panel.ts` (`symbolFor` / `nameFor` currently resolve `instrumentId` through the frontend catalog).
+
+### 4. GET /api/v1/instruments/{symbol}/candles (new, optional)
+
+Price history for the trade page chart. Today the sparkline only shows prices polled since the page was opened.
+
+#### Query Parameters
+
+- `limit` (integer, optional, default `60`, max `390`): the most recent N one-minute candles.
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "symbol": "TSLA",
+  "interval": "1m",
+  "candles": [
+    { "time": "2026-09-21T14:29:00Z", "open": 248.10, "high": 249.00, "low": 247.95, "close": 248.90, "volume": 120400 }
+  ]
+}
+```
+
+- Data: the `price_candles` table (migration `006`), ordered by `interval_start` ascending.
+- Errors: `404 { "success": false, "error": "Symbol not found" }`, the same shape as `GET /api/quotes/{symbol}`.
+- **Frontend switch-over:** `features/trade/trade.ts` (seed `priceHistory` with the candle closes, then keep appending live quotes).
+
+### 5. Watchlist (new, future)
+
+The mockup has a Watchlist panel and star buttons in search results. They are deferred in the frontend until these endpoints exist.
+
+**Migration** `database/schema/007_watchlist.sql`:
+
+```sql
+CREATE TABLE IF NOT EXISTS watchlist (
+    account_id     INTEGER   NOT NULL REFERENCES accounts(account_id),
+    instrument_id  INTEGER   NOT NULL REFERENCES instruments(instrument_id),
+    added_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (account_id, instrument_id)
+);
+```
+
+| Method & path | Request | Success | Errors |
+|---|---|---|---|
+| `GET /api/v1/watchlist` | — | `200 { "success": true, "items": [{ "instrumentId": 6, "symbol": "NVDA", "name": "NVIDIA Corp", "price": 189.62, "priceChange": 5.72, "priceChangePercent": 3.11, "addedAt": "…" }] }`, newest first | 401 |
+| `POST /api/v1/watchlist` | `{ "symbol": "NVDA" }` | `201` with the created item (same shape as above) | 404 unknown symbol, 409 `{ "success": false, "error": "Already on watchlist", "code": "ALREADY_WATCHED" }` |
+| `DELETE /api/v1/watchlist/{symbol}` | — | `204` | 404 if the symbol isn't on the caller's watchlist |
+
+- Put this in its own `watchlist` feature package. It depends on Auth and reads prices through `MarketDataService` (keep the feature graph in `AGENTS.md` acyclic).
+
+### Known mismatches to be aware of
+
+- `apps/frontend/src/app/core/orders/orders.service.ts` calls `GET /api/orders` and `GET /api/balance`. Neither exists on the backend yet. The dashboard uses `core/orders/order.service.ts` (`/api/v1/orders/...`) instead.
+- The **Orders Endpoints** contract above lists statuses `PENDING / EXECUTED / CANCELLED`, but the DB and backend use `SUBMITTED / ACCEPTED / PENDING / FILLED / REJECTED / DELAYED`. The dashboard follows the DB values, with filter chips All / Open (`SUBMITTED`, `ACCEPTED`, `PENDING`, `DELAYED`) / Filled / Rejected. Please update the contract text to the DB values rather than the other way round.
+- The backend has no "order type" (MARKET/LIMIT) field. The trade page only offers Market orders; Limit is shown as "coming soon".

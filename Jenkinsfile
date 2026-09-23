@@ -54,8 +54,6 @@ pipeline {
             }
         }
 
-<<<<<<< HEAD
-=======
         stage('Run buy-order microservice tests') {
             steps {
                 sh '''
@@ -78,7 +76,6 @@ pipeline {
             }
         }
 
->>>>>>> 6385b9f (refactoring auth,core, and gateway into microservices)
         stage('Verify Docker Compose') {
             steps {
                 sh '''
