@@ -21,6 +21,11 @@ public class HoldingsEntity {
     @Column(nullable = false, precision = 14, scale = 4)
     private BigDecimal quantity;
 
+    // Quantity-weighted average price paid per share, updated on every settled BUY (see
+    // HoldingsSettlementService). Zero for holdings that predate settlement (seed data).
+    @Column(name = "average_cost", nullable = false, precision = 14, scale = 4)
+    private BigDecimal averageCost;
+
     @Column(name = "last_updated", nullable = false)
     private LocalDateTime lastUpdated;
 
@@ -32,9 +37,14 @@ public class HoldingsEntity {
     public HoldingsEntity() {}
 
     public HoldingsEntity(Integer accountId, Integer instrumentId, BigDecimal quantity) {
+        this(accountId, instrumentId, quantity, BigDecimal.ZERO);
+    }
+
+    public HoldingsEntity(Integer accountId, Integer instrumentId, BigDecimal quantity, BigDecimal averageCost) {
         this.accountId = accountId;
         this.instrumentId = instrumentId;
         this.quantity = quantity;
+        this.averageCost = averageCost;
         this.lastUpdated = LocalDateTime.now();
     }
 
@@ -68,6 +78,14 @@ public class HoldingsEntity {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public BigDecimal getAverageCost() {
+        return averageCost;
+    }
+
+    public void setAverageCost(BigDecimal averageCost) {
+        this.averageCost = averageCost;
     }
 
     public LocalDateTime getLastUpdated() {

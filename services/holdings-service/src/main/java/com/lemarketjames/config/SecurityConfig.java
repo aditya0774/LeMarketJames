@@ -19,8 +19,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Spring Security configuration for the application.
- * Configures authentication, authorization, CORS, and filters for JWT token handling.
+ * Spring Security configuration for the holdings service.
+ * /internal/** is permitted here (no JWT) because core-service calls it server-to-server without
+ * a browser's cookie; it stays unreachable externally only because the gateway has no route for it.
  */
 @Configuration
 @EnableWebSecurity
@@ -29,15 +30,6 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origin}")
     private String allowedOrigin;
 
-    /**
-     * Configures the security filter chain for HTTP requests.
-     * Sets up CORS, CSRF, session management, exception handling, and authorization rules.
-     *
-     * @param http the HttpSecurity to configure
-     * @param jwtService the JWT service for token validation
-     * @return the configured SecurityFilterChain
-     * @throws Exception if an error occurs during configuration
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
         http
@@ -49,25 +41,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/", "/actuator/health").permitAll()
-                .requestMatchers("/api/sessions/**").authenticated()
+                .requestMatchers("/actuator/health", "/internal/**").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * Configures CORS (Cross-Origin Resource Sharing) settings for the application.
-     * Allows requests from the configured origin and localhost:8081 (for smoke tests and local development).
-     *
-     * @return a CorsConfigurationSource with the configured CORS settings
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
-        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8081"));
+        configuration.setAllowedOrigins(List.of(allowedOrigin));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

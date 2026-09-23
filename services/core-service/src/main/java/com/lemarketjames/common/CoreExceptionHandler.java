@@ -1,7 +1,5 @@
 package com.lemarketjames.common;
 
-import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
-import com.lemarketjames.holdings.exception.UnauthorizedException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
@@ -18,26 +16,6 @@ import java.util.Map;
  */
 @RestControllerAdvice
 public class CoreExceptionHandler {
-
-    @ExceptionHandler(InsufficientHoldingsException.class)
-    public ResponseEntity<Map<String, Object>> handleInsufficientHoldings(InsufficientHoldingsException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                    "success", false,
-                    "error", ex.getMessage(),
-                    "code", "INSUFFICIENT_HOLDINGS"
-                ));
-    }
-
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of(
-                    "success", false,
-                    "error", "Access denied",
-                    "code", "ACCOUNT_ACCESS_DENIED"
-                ));
-    }
 
     @ExceptionHandler(NotTradableException.class)
     public ResponseEntity<Map<String, Object>> handleNotTradable(NotTradableException ex) {

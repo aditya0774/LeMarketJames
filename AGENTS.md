@@ -8,12 +8,13 @@
 - **Gateway** (8080): `services/gateway-service` — Spring Cloud Gateway; the only backend entry point for the frontend
 - **Auth service** (8082): `services/auth-service` — registration, login, logout, `/api/auth/me`
 - **Market service** (8083): `services/market-service` — the GBM price simulator, exposed at `/api/market/**` for server-to-server callers (no browser ever calls it directly)
-- **Core service** (8081): `services/core-service` — every feature not yet extracted: holdings, orders, quotes, sessions
-- **Shared libraries**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account entities, `GlobalExceptionHandler`; `libs/market-client` — the `MarketDataService` interface and its quote/instrument model, shared between market-service (implements it) and core-service (implements it as an HTTP client)
+- **Holdings service** (8084): `services/holdings-service` — client profile (`/api/v1/profile`), holdings (`/api/v1/holdings`), portfolio/balance aggregate (`/api/v1/portfolio`), and trade history (`/api/v1/trades`). Settles fills (debits/credits cash, updates holdings) via `POST /internal/holdings/settle`, called server-to-server by `core-service` and never routed through the gateway. Order placement itself stays in `core-service`.
+- **Core service** (8081): `services/core-service` — every feature not yet extracted: orders, quotes, sessions
+- **Shared libraries**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account/client entities, `GlobalExceptionHandler`; `libs/market-client` — the `MarketDataService` interface, its quote/instrument model, and a ready-made HTTP implementation (`MarketDataClient`) any servlet service can use for prices just by depending on this module
 - **Database** (5432): `database/schema` — one PostgreSQL database shared by every service, versioned via numbered SQL files
 - **API:** All endpoints use `/api/v1/` prefix
 
-**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`, `market-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`. `core-service` also calls `market-service` directly (server-to-server, bypassing the gateway) for prices.
+**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`, `market-service`, `holdings-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`. `core-service` and `holdings-service` also call `market-service` directly for prices (server-to-server, bypassing the gateway); `core-service` and `holdings-service` also call each other directly (settlement and trade-history/buying-power reads, respectively) — see `holdings-service`'s description above.
 
 ## Repository Layout
 
@@ -22,11 +23,12 @@ LeMarketJames/
 ├── pom.xml                  # Parent pom: module list, shared versions and plugins
 ├── libs/
 │   ├── common/              # Shared jar used by the servlet services
-│   └── market-client/       # MarketDataService contract + model, shared by market-service and core-service
+│   └── market-client/       # MarketDataService contract, model, and a shared HTTP client implementation
 ├── services/
-│   ├── gateway-service/     # :8080  routes /api/auth/** → auth, /api/market/** → market, everything else → core
+│   ├── gateway-service/     # :8080  routes auth/market/holdings paths to their services, everything else → core
 │   ├── auth-service/        # :8082
 │   ├── market-service/      # :8083
+│   ├── holdings-service/    # :8084
 │   └── core-service/        # :8081
 ├── apps/
 │   └── frontend/            # Angular SPA (:4200)
@@ -62,9 +64,9 @@ Run Maven commands from the repo root.
 ## Feature Dependencies (Keep Acyclic)
 
 - **Auth** → Self-contained, required by everything. The endpoints live in `auth-service`. Other services only use `libs/common` (JWT validation, shared account entities) and never call auth-service directly.
-- **Market** → Self-contained simulated price source. The engine lives in `market-service`; other features reach it via `libs/market-client`'s `MarketDataService` interface (implemented as an HTTP client, `MarketDataClient`, in `core-service`).
-- **Orders** → Auth, Holdings, Quotes
-- **Holdings** → Auth, Market
+- **Market** → Self-contained simulated price source. The engine lives in `market-service`; other features reach it via `libs/market-client`'s `MarketDataService` interface (implemented as an HTTP client, `MarketDataClient`, shared by `core-service` and `holdings-service`).
+- **Orders** → Auth. Placement/lifecycle lives in `core-service`; it triggers settlement in `holdings-service` when an order fills, and `holdings-service` reads order data back from `core-service` for trade history and buying power (both server-to-server, not through the gateway).
+- **Holdings** → Auth, Market, Orders (reads only, via `holdings-service`'s `OrdersClient`)
 - **Quotes** → Market
 - **Sessions** → Auth
 

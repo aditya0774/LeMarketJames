@@ -6,6 +6,7 @@ services:
   auth-url: ${AUTH_SERVICE_URL:http://localhost:8082}
   core-url: ${CORE_SERVICE_URL:http://localhost:8081}
   market-url: ${MARKET_SERVICE_URL:http://localhost:8083}
+  holdings-url: ${HOLDINGS_SERVICE_URL:http://localhost:8084}
 
 spring:
   application:
@@ -36,6 +37,10 @@ spring:
               uri: ${services.market-url}
               predicates:
                 - Path=/api/market/**
+            - id: holdings-service
+              uri: ${services.holdings-url}
+              predicates:
+                - Path=/api/v1/holdings/**,/api/holdings/**,/api/v1/profile/**,/api/v1/portfolio/**,/api/balance/**,/api/v1/balance/**,/api/v1/trades/**
             - id: core-service
               uri: ${services.core-url}
               predicates:

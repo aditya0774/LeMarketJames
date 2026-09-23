@@ -12,15 +12,22 @@
     </parent>
 
     <!--
-        The MarketDataService contract shared by market-service (implements it) and core-service
-        (implements it as an HTTP client). Plain jar: no Spring dependency, since the interface and
-        its model types are deliberately framework-free so both sides can unit test against them.
+        The MarketDataService contract (interface + model: plain, framework-free, unit-testable on
+        their own) plus a ready-made HTTP implementation (MarketDataClient) that any servlet service
+        can use just by depending on this module and setting market.service.url. market-service
+        provides the real implementation instead; core-service and holdings-service both consume
+        MarketDataClient as-is, which is why this module needs spring-boot-starter-web.
     -->
     <artifactId>market-client</artifactId>
     <name>LeMarketJames Market Client</name>
-    <description>MarketDataService contract and quote/instrument model shared between market-service and its callers</description>
+    <description>MarketDataService contract, quote/instrument model, and a shared HTTP client implementation</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

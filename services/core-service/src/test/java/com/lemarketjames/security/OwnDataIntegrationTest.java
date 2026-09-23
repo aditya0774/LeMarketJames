@@ -9,8 +9,6 @@ import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
-import com.lemarketjames.holdings.entity.HoldingsEntity;
-import com.lemarketjames.holdings.repository.HoldingsRepository;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.repository.InstrumentRepository;
@@ -45,7 +43,6 @@ class OwnDataIntegrationTest {
     @Autowired JwtService jwt;
     @Autowired InstrumentRepository instruments;
     @Autowired OrderRepository orders;
-    @Autowired HoldingsRepository holdings;
     Integer aliceAccount, bobAccount, instrumentId, aliceOrder, bobOrder;
     String alice, bob;
     Cookie cookie;
@@ -66,8 +63,6 @@ class OwnDataIntegrationTest {
         instrumentId = instruments.saveAndFlush(instrument).getInstrumentId();
         aliceOrder = orders.saveAndFlush(new Order(aliceAccount, instrumentId, Order.OrderType.BUY, BigDecimal.ONE)).getOrderId();
         bobOrder = orders.saveAndFlush(new Order(bobAccount, instrumentId, Order.OrderType.BUY, BigDecimal.TEN)).getOrderId();
-        holdings.saveAndFlush(new HoldingsEntity(aliceAccount, instrumentId, BigDecimal.ONE));
-        holdings.saveAndFlush(new HoldingsEntity(bobAccount, instrumentId, BigDecimal.TEN));
         // auth-service issues this cookie in production; core-service only has to accept it.
         cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, jwt.generateToken(alice));
     }
@@ -108,16 +103,6 @@ class OwnDataIntegrationTest {
     }
 
     @Test
-    void ownHoldingsAndSessionAreScopedToCookie() throws Exception {
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()).cookie(cookie))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.holdings.length()").value(1))
-            .andExpect(jsonPath("$.holdings[0].quantity").value(1));
-        mvc.perform(get("/api/v1/holdings").param("accountId", bobAccount.toString()).cookie(cookie))
-            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"))
-            .andExpect(jsonPath("$.error").value("Access denied"));
-    }
-
-    @Test
     void orderReadsAndInstrumentSearchCannotExposeOtherUsers() throws Exception {
         mvc.perform(get("/api/v1/orders/" + aliceOrder).cookie(cookie)).andExpect(status().isOk());
         for (String path : new String[]{"/api/v1/orders/" + bobOrder,
@@ -147,18 +132,12 @@ class OwnDataIntegrationTest {
             .content(json.writeValueAsString(java.util.Map.of("accountId", bobAccount,
                 "instrumentId", instrumentId, "orderType", "BUY", "quantity", 1))))
             .andExpect(status().isForbidden());
-        mvc.perform(post("/api/v1/holdings/validate").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
-            .content(json.writeValueAsString(java.util.Map.of("accountId", bobAccount,
-                "instrumentId", instrumentId, "sellQuantity", 1))))
-            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
         assertEquals(Order.OrderStatus.SUBMITTED, orders.findById(bobOrder).orElseThrow().getOrderStatus());
         assertEquals(1, orders.findByAccountId(bobAccount).size());
     }
 
     @Test
     void anonymousRequestsCannotReadPrivateData() throws Exception {
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()))
-            .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/orders/" + aliceOrder)).andExpect(status().isUnauthorized());
     }
 
@@ -177,13 +156,5 @@ class OwnDataIntegrationTest {
         mvc.perform(post("/api/sessions/validate").cookie(cookie)
             .header("Authorization", "Bearer " + jwt.generateToken(bob)).param("accountId", bobAccount.toString()))
             .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void emptyOwnHoldingsAreSuccessful() throws Exception {
-        holdings.deleteAll(holdings.findByAccountId(aliceAccount));
-        holdings.flush();
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()).cookie(cookie))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.holdings.length()").value(0));
     }
 }

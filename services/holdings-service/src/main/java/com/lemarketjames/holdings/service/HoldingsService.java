@@ -100,15 +100,24 @@ public class HoldingsService {
             .orElse(BigDecimal.ZERO);
         BigDecimal currentValue = holding.getQuantity().multiply(currentPrice).setScale(2, RoundingMode.HALF_UP);
 
+        BigDecimal averageCost = holding.getAverageCost().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalCost = holding.getQuantity().multiply(holding.getAverageCost()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal gainLoss = currentValue.subtract(totalCost).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal gainLossPercent = totalCost.compareTo(BigDecimal.ZERO) == 0
+            ? BigDecimal.ZERO
+            : gainLoss.divide(totalCost, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
+
         return new HoldingDto(
             quote.map(q -> q.instrument().ticker()).orElse(null),
             holding.getQuantity(),
-            BigDecimal.ZERO,  // averageCost: needs cost basis from fills, not yet tracked in DB
+            averageCost,
             currentPrice,
-            BigDecimal.ZERO,  // totalCost: depends on averageCost
+            totalCost,
             currentValue,
-            BigDecimal.ZERO,  // gainLoss: depends on averageCost
-            BigDecimal.ZERO   // gainLossPercent: depends on averageCost
+            gainLoss,
+            gainLossPercent
         );
     }
 
