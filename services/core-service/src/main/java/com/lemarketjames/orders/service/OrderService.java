@@ -1,6 +1,7 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.holdings.service.HoldingsService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
@@ -15,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,23 +30,35 @@ public class OrderService {
     private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
+    private final HoldingsService holdingsService;
     
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
                         AccountRepository accountRepository,
-                        CashValidationService cashValidationService) {
+                        CashValidationService cashValidationService,
+                        HoldingsService holdingsService) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
         this.cashValidationService = cashValidationService;
+        this.holdingsService = holdingsService;
     }
     
     /**
-     * Create a new order with cash validation.
+     * Submit an order after ownership, tradability and side-specific validation.
+     * SELL orders require sufficient holdings; submission does not execute a trade.
      * For BUY orders, validates that the account has sufficient cash.
      * Cost is calculated as: quantity * pricePerUnit
      */
+    @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
+        validateAccountAccess(request.getAccountId());
+        validateInstrumentTradability(request.getInstrumentId());
+        // Browser validation is advisory; every SELL must be checked again before saving.
+        if (request.getOrderType() == Order.OrderType.SELL) {
+            holdingsService.validateSufficientHoldings(request.getAccountId(), authenticatedUsername(),
+                request.getInstrumentId(), request.getQuantity());
+        }
         // For BUY orders, validate sufficient cash
         if (request.getOrderType() == Order.OrderType.BUY) {
             BigDecimal orderCost = calculateOrderCost(request);
@@ -62,10 +76,7 @@ public class OrderService {
             }
         }
         
-        // Cash validation passed or SELL order; proceed with order creation
-        validateAccountAccess(request.getAccountId());
-        validateInstrumentTradability(request.getInstrumentId());
-
+        // Persist only after all submission checks pass.
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -78,12 +89,15 @@ public class OrderService {
         }
         
         Order savedOrder = orderRepository.save(order);
+        log.info("Order submitted orderId={} accountId={} instrumentId={} side={}",
+            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(), savedOrder.getOrderType());
         return new OrderResponse(savedOrder);
     }
 
     /**
      * Submit a BUY order via the dedicated buy-order entrypoint.
      */
+    @Transactional
     public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request) {
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
             request.getAccountId(),
