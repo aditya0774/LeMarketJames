@@ -120,17 +120,18 @@ Submits a buy order via the dedicated buy-order service contract.
 
 ### POST /api/v1/orders
 
-Creates a new order.
+Creates an order through the gateway. The dashboard's SELL form uses this endpoint.
+The authenticated account must own the requested instrument quantity, and the instrument
+must be tradable. The server repeats holdings validation even if browser validation passed.
 
 #### Request
 
 ```json
 {
-  "symbol": "AAPL",
-  "quantity": 10,
-  "type": "BUY",
-  "orderType": "MARKET",
-  "price": 150.25
+  "accountId": 1,
+  "instrumentId": 1,
+  "orderType": "SELL",
+  "quantity": 1
 }
 ```
 
@@ -139,17 +140,41 @@ Creates a new order.
 ```json
 {
   "success": true,
-  "orderId": "order_12345",
-  "symbol": "AAPL",
-  "quantity": 10,
-  "type": "BUY",
-  "orderType": "MARKET",
-  "price": 150.25,
-  "status": "PENDING",
-  "createdAt": "2024-01-15T10:30:00Z",
-  "executedAt": null
+  "orderId": 123,
+  "accountId": 1,
+  "instrumentId": 1,
+  "orderType": "SELL",
+  "quantity": 1,
+  "pricePerUnit": null,
+  "orderStatus": "SUBMITTED",
+  "reason": null,
+  "rejectionReason": null,
+  "submittedAt": "2026-09-23T10:30:00",
+  "createdAt": "2026-09-23T10:30:00",
+  "updatedAt": "2026-09-23T10:30:00",
+  "acceptedAt": null,
+  "filledAt": null
 }
 ```
+
+Submission commits the order before returning HTTP 201; it does not execute the trade,
+reserve shares, change holdings, or credit cash. Execution must revalidate available shares.
+The form confirms the returned order ID and status. Readback uses
+`GET /api/v1/orders/{orderId}` or `GET /api/v1/orders/account/{accountId}`.
+The price is optional at submission and is not an execution price.
+
+Missing holdings or insufficient quantity returns HTTP 400:
+
+```json
+{
+  "success": false,
+  "error": "Insufficient holdings. Available: 3.0000, Requested: 4",
+  "code": "INSUFFICIENT_HOLDINGS"
+}
+```
+
+Missing/nonpositive IDs or quantity return HTTP 400 with an `errors` field map.
+Unauthenticated requests return HTTP 401; foreign accounts return HTTP 403.
 
 #### Response (400 Bad Request)
 

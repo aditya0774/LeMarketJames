@@ -95,6 +95,33 @@ pipeline {
             }
         }
 
+        stage('Verify sell persistence on PostgreSQL') {
+            steps {
+                sh '''
+                    set -eu
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+                    compose up -d db
+                    ready=0
+                    for attempt in $(seq 1 60); do
+                        if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                            ready=1
+                            break
+                        fi
+                        sleep 1
+                    done
+                    test "$ready" = 1
+                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test -Dtest=SellOrderIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
+                '''
+            }
+            post {
+                always { junit 'services/core-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
+            }
+        }
+
         stage('Build versioned Docker images') {
             steps {
                 sh '''
@@ -234,6 +261,10 @@ pipeline {
                     compose logs core-service auth-service gateway-service
                 '''
             }
+        }
+
+        stage('Verify sell order survives restart') {
+            steps { sh 'bash scripts/verify-sell-order.sh' }
         }
 
         stage('Run quote API contract smoke test') {
