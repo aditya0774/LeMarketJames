@@ -3,9 +3,10 @@
 -- This ensures no duplicate key errors from previous test runs on persistent PostgreSQL.
 
 DELETE FROM instrument_market_params;
+DELETE FROM audit_log;
+DELETE FROM order_events;
 DELETE FROM orders;
 DELETE FROM holdings;
-DELETE FROM sessions;
 DELETE FROM accounts;
 DELETE FROM addresses;
 DELETE FROM clients;
