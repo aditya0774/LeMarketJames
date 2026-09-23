@@ -1,29 +1,64 @@
 # AGENTS.md
 
-**LeMarketJames:** A three-tier full-stack trading application with Angular frontend, Spring Boot backend, and PostgreSQL database. Conventions keep the codebase readable and development consistent.
+**LeMarketJames:** A full-stack trading application with an Angular frontend, Spring Boot microservices, and one shared PostgreSQL database, kept together in a single monorepo. Conventions keep the codebase readable and development consistent.
 
 ## Architecture at a Glance
 
 - **Frontend** (4200): `apps/frontend/src/app` — Angular SPA
-- **Backend** (8081): `apps/backend/src/main/java/com/lemarketjames` — Spring Boot REST API
-- **Database** (5432): `database/schema` — PostgreSQL, versioned via numbered SQL files
+- **Gateway** (8080): `services/gateway-service` — Spring Cloud Gateway; the only backend entry point for the frontend
+- **Auth service** (8082): `services/auth-service` — registration, login, logout, `/api/auth/me`
+- **Core service** (8081): `services/core-service` — every feature not yet extracted: holdings, market, orders, quotes, sessions
+- **Shared library**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account entities, `GlobalExceptionHandler`
+- **Database** (5432): `database/schema` — one PostgreSQL database shared by every service, versioned via numbered SQL files
 - **API:** All endpoints use `/api/v1/` prefix
 
-**Runtime flow:** `frontend` → `backend` → `db` (only backend talks to database)
+**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`.
+
+## Repository Layout
+
+```
+LeMarketJames/
+├── pom.xml                  # Parent pom: module list, shared versions and plugins
+├── libs/
+│   └── common/              # Shared jar used by the servlet services
+├── services/
+│   ├── gateway-service/     # :8080  routes /api/auth/** → auth, everything else → core
+│   ├── auth-service/        # :8082
+│   └── core-service/        # :8081
+├── apps/
+│   └── frontend/            # Angular SPA (:4200)
+├── database/schema/         # Shared schema, numbered SQL files
+├── docker-compose.yml
+└── Jenkinsfile
+```
+
+Every library and service has its own `pom.xml` that inherits from the root parent pom.
 
 ## Quick Commands
 
+Run Maven commands from the repo root.
+
 | Task | Command |
 |---|---|
-| Backend tests | `cd apps/backend && mvn -B clean test` |
-| Backend run | `cd apps/backend && mvn spring-boot:run` |
+| All backend tests | `mvn -B clean test` |
+| One module's tests | `mvn -B -pl services/auth-service -am test` |
+| Run a service | `mvn -B -pl libs/common install` once, then `mvn -B -pl services/core-service spring-boot:run` |
 | Frontend tests | `cd apps/frontend && ng test` |
 | Frontend build | `cd apps/frontend && ng build` |
 | Full stack (Docker) | `docker compose up -d --build` |
 
+## Adding a New Microservice
+
+1. Create `services/<name>-service/` with its own `pom.xml`: parent `lemarketjames-parent`, `<relativePath>../../pom.xml</relativePath>`, and a `common` dependency if it's a servlet service.
+2. Add the folder to `<modules>` in the root `pom.xml`.
+3. Put the `@SpringBootApplication` class in the root `com.lemarketjames` package so it picks up `com.lemarketjames.common.*`. Move the feature's packages and tests out of `core-service`.
+4. Point it at the shared database (`SPRING_DATASOURCE_*`), give it the same `JWT_SECRET`, and keep `spring.jpa.hibernate.ddl-auto=validate`. Schema changes still go in `database/schema`.
+5. Add a route for its paths in `services/gateway-service/src/main/resources/application.yml`, **above** the `core-service` catch-all.
+6. Add a `Dockerfile` (copy an existing service's), a service in `docker-compose.yml`, and the name to the image loop in the Jenkinsfile.
+
 ## Feature Dependencies (Keep Acyclic)
 
-- **Auth** → Self-contained, required by everything
+- **Auth** → Self-contained, required by everything. The endpoints live in `auth-service`. Other services only use `libs/common` (JWT validation, shared account entities) and never call auth-service directly.
 - **Market** → Self-contained simulated price source; other features read prices only via `MarketDataService`
 - **Orders** → Auth, Holdings, Quotes
 - **Holdings** → Auth, Market
