@@ -3,7 +3,8 @@ FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN mvn -q package -DskipTests
+RUN mvn -q package -DskipTests && \
+    rm -rf ~/.m2/repository ~/.m2/wrapper /app/src
 
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
