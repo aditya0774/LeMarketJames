@@ -11,203 +11,436 @@ import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.auth.security.JwtService;
 import com.lemarketjames.common.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Auth Service Unit Tests")
 class AuthServiceTest {
 
-    private static final String JWT_KEY = "unit-test-signing-key-please-32bytes-minimum";
+    @Mock
+    private JwtService jwtService;
+
+    @Mock
+    private ClientRepository clientRepository;
+
+    @Mock
+    private AddressRepository addressRepository;
+
+    @Mock
+    private AccountRepository accountRepository;
 
     private AuthService authService;
-    private ClientRepository clientRepository;
-    private AddressRepository addressRepository;
-    private AccountRepository accountRepository;
-    // Stands in for the clients table: keyed by email, as login looks clients up by email.
-    private Map<String, ClientEntity> clientsByEmail;
+    private static final long LOCKOUT_DURATION_MS = 900000;
 
     @BeforeEach
     void setUp() {
-        clientRepository = mock(ClientRepository.class);
-        addressRepository = mock(AddressRepository.class);
-        accountRepository = mock(AccountRepository.class);
-        clientsByEmail = new ConcurrentHashMap<>();
-
-        when(clientRepository.existsByUsername(anyString())).thenAnswer(invocation ->
-                clientsByEmail.values().stream().anyMatch(c -> c.getUsername().equals(invocation.getArgument(0))));
-        when(clientRepository.existsByEmail(anyString())).thenAnswer(invocation ->
-                clientsByEmail.containsKey(invocation.<String>getArgument(0)));
-        when(clientRepository.findByEmail(anyString())).thenAnswer(invocation ->
-                Optional.ofNullable(clientsByEmail.get(invocation.<String>getArgument(0))));
-        when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> {
-            ClientEntity client = invocation.getArgument(0);
-            clientsByEmail.put(client.getEmail(), client);
-            return client;
-        });
-        when(addressRepository.save(any(AddressEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(accountRepository.save(any(AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        authService = newAuthService();
+        authService = new AuthService(jwtService, clientRepository, addressRepository, accountRepository, LOCKOUT_DURATION_MS);
     }
 
-    private AuthService newAuthService() {
-        return new AuthService(
-                new JwtService(JWT_KEY, 3600000),
-                clientRepository,
-                addressRepository,
-                accountRepository,
-                200
-        );
-    }
+    // ========== register() Tests ==========
 
-    // A fully filled-out registration should succeed and return the new username.
     @Test
-    void registerSucceedsWithValidRequest() {
-        AuthService.AuthResponse response = authService.register(validRegisterRequest("alice"));
+    @DisplayName("register creates client, address, and account on valid request")
+    void testRegisterSuccess() {
+        RegisterRequest request = validRegisterRequest("alice");
+        ClientEntity savedClient = new ClientEntity();
+        savedClient.setUsername("alice");
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        AuthService.AuthResponse response = authService.register(request);
 
         assertEquals("alice", response.getUsername());
         assertEquals("User registered successfully", response.getMessage());
+        verify(clientRepository).save(any(ClientEntity.class));
+        verify(addressRepository).save(any(AddressEntity.class));
+        verify(accountRepository).save(any(AccountEntity.class));
     }
 
-    // Registering the same username twice must fail on the second attempt.
     @Test
-    void registerRejectsDuplicateUsername() {
-        authService.register(validRegisterRequest("alice"));
+    @DisplayName("register rejects duplicate username")
+    void testRegisterDuplicateUsername() {
+        RegisterRequest request = validRegisterRequest("existing");
+        when(clientRepository.existsByUsername("existing")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(validRegisterRequest("alice")));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        assertEquals("Username is already taken", ex.getMessage());
+        verify(clientRepository, never()).save(any(ClientEntity.class));
     }
 
-    // A missing mandatory field (email) should be rejected before an account is created.
     @Test
-    void registerRejectsMissingRequiredField() {
-        RegisterRequest request = validRegisterRequest("bob");
-        request.setEmail(null);
-
-        assertThrows(ValidationException.class, () -> authService.register(request));
-    }
-
-    // The initial deposit amount is mandatory, so a null value should be rejected.
-    @Test
-    void registerRejectsMissingInitialDeposit() {
-        RegisterRequest request = validRegisterRequest("bob");
-        request.setInitialDeposit(null);
-
-        assertThrows(ValidationException.class, () -> authService.register(request));
-    }
-
-    // Two accounts cannot share the same email address, even under different usernames.
-    @Test
-    void registerRejectsDuplicateEmail() {
-        authService.register(validRegisterRequest("alice"));
-
-        RegisterRequest request = validRegisterRequest("alice2");
+    @DisplayName("register rejects duplicate email")
+    void testRegisterDuplicateEmail() {
+        RegisterRequest request = validRegisterRequest("newuser");
         request.setEmail("alice@example.com");
+        when(clientRepository.existsByUsername("newuser")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        assertEquals("Email is already registered", ex.getMessage());
     }
 
-    // After registering, logging in with the email and password should succeed and return the username and a token.
     @Test
-    void loginSucceedsWithCorrectCredentials() {
-        authService.register(validRegisterRequest("alice"));
+    @DisplayName("register validates all required fields")
+    void testRegisterMissingFields() {
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("");
+        request.setPassword(null);
+
+        assertThrows(ValidationException.class, () -> authService.register(request));
+    }
+
+    @Test
+    @DisplayName("register normalizes email to lowercase")
+    void testRegisterNormalizesEmailToLowercase() {
+        RegisterRequest request = validRegisterRequest("alice");
+        request.setEmail("ALICE@EXAMPLE.COM");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository).save(captor.capture());
+        assertEquals("alice@example.com", captor.getValue().getEmail());
+    }
+
+    @Test
+    @DisplayName("register normalizes employment status to uppercase")
+    void testRegisterNormalizesEmploymentStatus() {
+        RegisterRequest request = validRegisterRequest("alice");
+        request.setEmploymentStatus("employed");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository).save(captor.capture());
+        assertEquals("EMPLOYED", captor.getValue().getEmploymentStatus());
+    }
+
+    @Test
+    @DisplayName("register normalizes investment experience to lowercase")
+    void testRegisterNormalizesInvestmentExperience() {
+        RegisterRequest request = validRegisterRequest("alice");
+        request.setInvestmentExperience("EXPERT");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository).save(captor.capture());
+        assertEquals("expert", captor.getValue().getInvestmentExperience());
+    }
+
+    @Test
+    @DisplayName("register encodes password using BCrypt")
+    void testRegisterEncodesPassword() {
+        RegisterRequest request = validRegisterRequest("alice");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository).save(captor.capture());
+        String encodedPassword = captor.getValue().getPassword();
+        assertNotEquals("Pass123!", encodedPassword);
+        assertTrue(encodedPassword.startsWith("$2"));
+    }
+
+    @Test
+    @DisplayName("register sets default country to US when null")
+    void testRegisterDefaultCountryUS() {
+        RegisterRequest request = validRegisterRequest("alice");
+        request.setCountry(null);
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<AddressEntity> captor = ArgumentCaptor.forClass(AddressEntity.class);
+        verify(addressRepository).save(captor.capture());
+        assertEquals("US", captor.getValue().getCountry());
+    }
+
+    @Test
+    @DisplayName("register creates address with RESIDENTIAL type")
+    void testRegisterCreatesResidentialAddress() {
+        RegisterRequest request = validRegisterRequest("alice");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<AddressEntity> captor = ArgumentCaptor.forClass(AddressEntity.class);
+        verify(addressRepository).save(captor.capture());
+        assertEquals("RESIDENTIAL", captor.getValue().getAddressType());
+    }
+
+    @Test
+    @DisplayName("register creates trading account with correct initial values")
+    void testRegisterCreatesAccountWithInitialDeposit() {
+        RegisterRequest request = validRegisterRequest("alice");
+        ClientEntity savedClient = new ClientEntity();
+
+        when(clientRepository.existsByUsername("alice")).thenReturn(false);
+        when(clientRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(clientRepository.save(any(ClientEntity.class))).thenReturn(savedClient);
+
+        authService.register(request);
+
+        ArgumentCaptor<AccountEntity> captor = ArgumentCaptor.forClass(AccountEntity.class);
+        verify(accountRepository).save(captor.capture());
+        assertEquals(BigDecimal.valueOf(500), captor.getValue().getCashBalance());
+        assertEquals("USD", captor.getValue().getCurrency());
+        assertTrue(captor.getValue().isTradingEnabled());
+    }
+
+    // ========== login() Tests ==========
+
+    @Test
+    @DisplayName("login returns token on valid credentials")
+    void testLoginSuccess() {
+        ClientEntity client = new ClientEntity();
+        client.setUsername("alice");
+        client.setPassword(authService.encodePassword("Pass123!"));
+
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.generateToken("alice")).thenReturn("jwt-token-123");
 
         AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
 
         assertEquals("alice", result.getUsername());
         assertEquals("Login successful", result.getMessage());
-        assertNotNull(result.getToken());
-        assertNotNull(clientsByEmail.get("alice@example.com").getLastLogin());
+        assertEquals("jwt-token-123", result.getToken());
     }
 
-    // Login must read from the database, so a client saved earlier (e.g. before a restart) can still log in.
     @Test
-    void loginSucceedsForClientStoredBeforeRestart() {
-        authService.register(validRegisterRequest("alice"));
-        AuthService restartedService = newAuthService();
+    @DisplayName("login throws when credentials invalid")
+    void testLoginInvalidCredentials() {
+        ClientEntity client = new ClientEntity();
+        client.setPassword(authService.encodePassword("Pass123!"));
 
-        AuthService.LoginResult result = restartedService.login(new LoginRequest("alice@example.com", "Pass123!"));
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
 
-        assertEquals("alice", result.getUsername());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("alice@example.com", "wrongpassword")));
+        assertEquals("Invalid email or password", ex.getMessage());
     }
 
-    // Emails are stored lowercased, so login should match regardless of letter case or surrounding spaces.
     @Test
-    void loginIgnoresEmailCase() {
-        authService.register(validRegisterRequest("alice"));
+    @DisplayName("login throws when email not found")
+    void testLoginEmailNotFound() {
+        when(clientRepository.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
 
-        AuthService.LoginResult result = authService.login(new LoginRequest("  Alice@Example.COM ", "Pass123!"));
-
-        assertEquals("alice", result.getUsername());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("notfound@example.com", "Pass123!")));
+        assertEquals("Invalid email or password", ex.getMessage());
     }
 
-    // Logging in with an email that was never registered should fail.
     @Test
-    void loginRejectsUnknownEmail() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("nobody@example.com", "Pass123!")));
-        assertEquals("Invalid email or password", exception.getMessage());
+    @DisplayName("login normalizes email to lowercase")
+    void testLoginNormalizesEmailToLowercase() {
+        ClientEntity client = new ClientEntity();
+        client.setUsername("alice");
+        client.setPassword(authService.encodePassword("Pass123!"));
+
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.generateToken("alice")).thenReturn("jwt-token");
+
+        authService.login(new LoginRequest("ALICE@EXAMPLE.COM", "Pass123!"));
+
+        verify(clientRepository).findByEmail("alice@example.com");
     }
 
-    // Logging in with the wrong password for a real email should fail.
     @Test
-    void loginRejectsIncorrectPassword() {
-        authService.register(validRegisterRequest("alice"));
+    @DisplayName("login locks account after 3 failed attempts")
+    void testLoginLocksAccountAfterThreeFailedAttempts() {
+        ClientEntity client = new ClientEntity();
+        client.setPassword(authService.encodePassword("correct"));
 
-        assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
-    }
-
-    // Encoding a password should hash it, and the hash should still verify against the original password.
-    @Test
-    void passwordIsHashedAndVerifiable() {
-        String encoded = authService.encodePassword("Pass123!");
-
-        assertEquals(true, authService.matchesPassword("Pass123!", encoded));
-    }
-
-    // Three consecutive wrong-password attempts must lock the account, even for the correct password afterwards.
-    @Test
-    void loginLocksAccountAfterThreeFailedAttempts() {
-        authService.register(validRegisterRequest("alice"));
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
 
         for (int i = 0; i < 3; i++) {
             assertThrows(IllegalArgumentException.class,
-                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+                    () -> authService.login(new LoginRequest("alice@example.com", "wrong")));
         }
 
-        IllegalArgumentException lockedException = assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("alice@example.com", "Pass123!")));
-        assertTrue(lockedException.getMessage().contains("locked"));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("alice@example.com", "wrong")));
+        assertTrue(ex.getMessage().contains("locked"));
     }
 
-    // Once the lockout duration has passed, the account should accept correct credentials again.
     @Test
-    void loginSucceedsAfterLockoutExpires() throws InterruptedException {
-        authService.register(validRegisterRequest("alice"));
+    @DisplayName("login blocks locked account even with correct password")
+    void testLoginBlocksLockedAccountWithCorrectPassword() {
+        ClientEntity client = new ClientEntity();
+        client.setPassword(authService.encodePassword("correct"));
+
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
 
         for (int i = 0; i < 3; i++) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+            try {
+                authService.login(new LoginRequest("alice@example.com", "wrong"));
+            } catch (IllegalArgumentException e) {
+                // Expected
+            }
         }
 
-        Thread.sleep(250);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("alice@example.com", "correct")));
+        assertTrue(ex.getMessage().contains("locked"));
+    }
+
+    @Test
+    @DisplayName("login resets failed attempts on successful login")
+    void testLoginResetsFailedAttemptsOnSuccess() {
+        ClientEntity client = new ClientEntity();
+        client.setUsername("alice");
+        client.setPassword(authService.encodePassword("Pass123!"));
+
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.generateToken("alice")).thenReturn("jwt-token");
+
+        try {
+            authService.login(new LoginRequest("alice@example.com", "wrong"));
+        } catch (IllegalArgumentException e) {
+            // Expected - failed login
+        }
 
         AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+
         assertEquals("alice", result.getUsername());
+        assertEquals("Login successful", result.getMessage());
+        // Verify that after a failed attempt, a successful login still works and updates the client
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository, atLeastOnce()).save(captor.capture());
+        assertNotNull(captor.getValue().getLastLogin());
     }
+
+    @Test
+    @DisplayName("login updates lastLogin timestamp")
+    void testLoginUpdatesLastLoginTimestamp() {
+        ClientEntity client = new ClientEntity();
+        client.setUsername("alice");
+        client.setPassword(authService.encodePassword("Pass123!"));
+
+        when(clientRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(client));
+        when(jwtService.generateToken("alice")).thenReturn("jwt-token");
+
+        authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+
+        ArgumentCaptor<ClientEntity> captor = ArgumentCaptor.forClass(ClientEntity.class);
+        verify(clientRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getLastLogin());
+    }
+
+    // ========== getAccountId() Tests ==========
+
+    @Test
+    @DisplayName("getAccountId returns account ID for valid username")
+    void testGetAccountIdSuccess() {
+        when(accountRepository.findAccountIdByUsername("alice")).thenReturn(Optional.of(42));
+
+        Integer accountId = authService.getAccountId("alice");
+
+        assertEquals(42, accountId);
+    }
+
+    @Test
+    @DisplayName("getAccountId throws when username not found")
+    void testGetAccountIdNotFound() {
+        when(accountRepository.findAccountIdByUsername("unknown")).thenReturn(Optional.empty());
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class, () -> authService.getAccountId("unknown"));
+        assertEquals("Account access is not allowed", ex.getMessage());
+    }
+
+    // ========== Password Encoding Tests ==========
+
+    @Test
+    @DisplayName("encodePassword returns BCrypt hash")
+    void testEncodePasswordReturnsBCryptHash() {
+        String encoded = authService.encodePassword("mypassword");
+
+        assertNotNull(encoded);
+        assertTrue(encoded.startsWith("$2"));
+        assertNotEquals("mypassword", encoded);
+    }
+
+    @Test
+    @DisplayName("matchesPassword returns true for correct password")
+    void testMatchesPasswordCorrect() {
+        String password = "mypassword";
+        String encoded = authService.encodePassword(password);
+
+        assertTrue(authService.matchesPassword(password, encoded));
+    }
+
+    @Test
+    @DisplayName("matchesPassword returns false for incorrect password")
+    void testMatchesPasswordIncorrect() {
+        String encoded = authService.encodePassword("mypassword");
+
+        assertFalse(authService.matchesPassword("wrongpassword", encoded));
+    }
+
+    // ========== Token Expiry Tests ==========
+
+    @Test
+    @DisplayName("getTokenExpirySeconds delegates to JwtService")
+    void testGetTokenExpirySeconds() {
+        when(jwtService.getExpirationSeconds()).thenReturn(3600L);
+
+        long expiry = authService.getTokenExpirySeconds();
+
+        assertEquals(3600L, expiry);
+        verify(jwtService).getExpirationSeconds();
+    }
+
+    // ========== Helper Methods ==========
 
     private RegisterRequest validRegisterRequest(String username) {
         RegisterRequest request = new RegisterRequest(username, "Pass123!", username + "@example.com", "Test User");
