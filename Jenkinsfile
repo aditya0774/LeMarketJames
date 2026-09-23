@@ -21,9 +21,13 @@ pipeline {
                     set +e
                     if docker compose version >/dev/null 2>&1; then
                         docker compose down -v --remove-orphans
+                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
                         docker-compose down -v --remove-orphans
+                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
+                    # Force kill any containers still using port 8080
+                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
