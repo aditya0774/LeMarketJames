@@ -7,12 +7,13 @@
 - **Frontend** (4200): `apps/frontend/src/app` — Angular SPA
 - **Gateway** (8080): `services/gateway-service` — Spring Cloud Gateway; the only backend entry point for the frontend
 - **Auth service** (8082): `services/auth-service` — registration, login, logout, `/api/auth/me`
-- **Core service** (8081): `services/core-service` — every feature not yet extracted: holdings, market, orders, quotes, sessions
-- **Shared library**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account entities, `GlobalExceptionHandler`
+- **Market service** (8083): `services/market-service` — the GBM price simulator, exposed at `/api/market/**` for server-to-server callers (no browser ever calls it directly)
+- **Core service** (8081): `services/core-service` — every feature not yet extracted: holdings, orders, quotes, sessions
+- **Shared libraries**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account entities, `GlobalExceptionHandler`; `libs/market-client` — the `MarketDataService` interface and its quote/instrument model, shared between market-service (implements it) and core-service (implements it as an HTTP client)
 - **Database** (5432): `database/schema` — one PostgreSQL database shared by every service, versioned via numbered SQL files
 - **API:** All endpoints use `/api/v1/` prefix
 
-**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`.
+**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`, `market-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`. `core-service` also calls `market-service` directly (server-to-server, bypassing the gateway) for prices.
 
 ## Repository Layout
 
@@ -20,10 +21,12 @@
 LeMarketJames/
 ├── pom.xml                  # Parent pom: module list, shared versions and plugins
 ├── libs/
-│   └── common/              # Shared jar used by the servlet services
+│   ├── common/              # Shared jar used by the servlet services
+│   └── market-client/       # MarketDataService contract + model, shared by market-service and core-service
 ├── services/
-│   ├── gateway-service/     # :8080  routes /api/auth/** → auth, everything else → core
+│   ├── gateway-service/     # :8080  routes /api/auth/** → auth, /api/market/** → market, everything else → core
 │   ├── auth-service/        # :8082
+│   ├── market-service/      # :8083
 │   └── core-service/        # :8081
 ├── apps/
 │   └── frontend/            # Angular SPA (:4200)
@@ -59,7 +62,7 @@ Run Maven commands from the repo root.
 ## Feature Dependencies (Keep Acyclic)
 
 - **Auth** → Self-contained, required by everything. The endpoints live in `auth-service`. Other services only use `libs/common` (JWT validation, shared account entities) and never call auth-service directly.
-- **Market** → Self-contained simulated price source; other features read prices only via `MarketDataService`
+- **Market** → Self-contained simulated price source. The engine lives in `market-service`; other features reach it via `libs/market-client`'s `MarketDataService` interface (implemented as an HTTP client, `MarketDataClient`, in `core-service`).
 - **Orders** → Auth, Holdings, Quotes
 - **Holdings** → Auth, Market
 - **Quotes** → Market

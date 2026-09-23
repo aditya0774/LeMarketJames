@@ -7,8 +7,9 @@ services:
     depends_on:
       - gateway-service
 
-  # Single entry point for the frontend: routes /api/auth/** to auth-service and everything else
-  # to core-service (see services/gateway-service/src/main/resources/application.yml).
+  # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
+  # market-service, and everything else to core-service (see
+  # services/gateway-service/src/main/resources/application.yml).
   gateway-service:
     image: lemarketjames/gateway-service:${IMAGE_TAG:-dev}
     build:
@@ -20,9 +21,11 @@ services:
     depends_on:
       - auth-service
       - core-service
+      - market-service
     environment:
       AUTH_SERVICE_URL: http://auth-service:8082
       CORE_SERVICE_URL: http://core-service:8081
+      MARKET_SERVICE_URL: http://market-service:8083
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # auth-service and core-service share the same database and the same JWT_SECRET, so a token
@@ -57,12 +60,33 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      market-service:
+        condition: service_started
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      MARKET_SERVICE_URL: http://market-service:8083
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+
+  # Simulated market prices (GBM engine), called server-to-server by core-service; no JWT_SECRET
+  # needed since it never sees a browser's cookie and serves no user-specific data.
+  market-service:
+    image: lemarketjames/market-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/market-service/Dockerfile
+    ports:
+      # Published for direct debugging only; browser traffic goes through the gateway.
+      - "8083:8083"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
 
   db:
     image: postgres:16-alpine
@@ -80,7 +104,7 @@ services:
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (the frontend and gateway never call db directly;
-      # only auth-service and core-service talk to it).
+      # only auth-service, core-service, and market-service talk to it).
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data

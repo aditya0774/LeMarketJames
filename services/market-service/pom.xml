@@ -11,17 +11,16 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <!-- Everything not yet split into its own microservice: holdings, market, orders, quotes, sessions. -->
-    <artifactId>core-service</artifactId>
-    <name>LeMarketJames Core Service</name>
-    <description>Holdings, orders, quotes, and sessions; reaches market-service for prices via MarketDataClient</description>
+    <!--
+        The GBM price simulator: the only writer of simulated prices. No spring-boot-starter-security
+        here on purpose: this service is only ever called server-to-server by core-service, never
+        carries a browser's JWT, and serves no user-specific data, so a JWT filter would be unused.
+    -->
+    <artifactId>market-service</artifactId>
+    <name>LeMarketJames Market Service</name>
+    <description>Simulated market prices (GBM engine) exposed at /api/market/**</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.lemarketjames</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.lemarketjames</groupId>
             <artifactId>market-client</artifactId>
@@ -35,11 +34,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <dependency>
@@ -61,12 +55,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.lemarketjames</groupId>
+        <artifactId>lemarketjames-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <!--
+        The MarketDataService contract shared by market-service (implements it) and core-service
+        (implements it as an HTTP client). Plain jar: no Spring dependency, since the interface and
+        its model types are deliberately framework-free so both sides can unit test against them.
+    -->
+    <artifactId>market-client</artifactId>
+    <name>LeMarketJames Market Client</name>
+    <description>MarketDataService contract and quote/instrument model shared between market-service and its callers</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

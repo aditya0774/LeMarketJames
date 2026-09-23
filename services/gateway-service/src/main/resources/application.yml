@@ -5,6 +5,7 @@ server:
 services:
   auth-url: ${AUTH_SERVICE_URL:http://localhost:8082}
   core-url: ${CORE_SERVICE_URL:http://localhost:8081}
+  market-url: ${MARKET_SERVICE_URL:http://localhost:8083}
 
 spring:
   application:
@@ -31,6 +32,10 @@ spring:
               uri: ${services.auth-url}
               predicates:
                 - Path=/api/auth/**
+            - id: market-service
+              uri: ${services.market-url}
+              predicates:
+                - Path=/api/market/**
             - id: core-service
               uri: ${services.core-url}
               predicates:
