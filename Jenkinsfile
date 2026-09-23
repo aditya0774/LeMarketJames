@@ -19,42 +19,15 @@ pipeline {
             steps {
                 sh '''
                     set +e
-                    echo "=== Starting aggressive cleanup (Docker daemon was recently restarted) ==="
-                    
-                    # Remove containers by name and port
-                    echo "Step 1: Removing containers..."
-                    docker ps -a --filter "name=lemarket" -q | xargs -r docker rm -f --link 2>/dev/null || true
-                    docker ps -a --filter "publish=8080" -q | xargs -r docker rm -f --link 2>/dev/null || true
-                    
-                    # Clean up docker compose projects
-                    echo "Step 2: Running docker compose down..."
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose down -v --remove-orphans 2>/dev/null || true
+                        docker compose down -v --remove-orphans
+                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
-                        docker-compose down -v --remove-orphans 2>/dev/null || true
+                        docker-compose down -v --remove-orphans
+                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
-                    
-                    # Prune networks, images, and volumes (handles post-restart stale state)
-                    echo "Step 3: Pruning Docker system state..."
-                    docker network prune -f 2>/dev/null || true
-                    docker system prune -f 2>/dev/null || true
-                    docker volume prune -f 2>/dev/null || true
-                    
-                    # Extra safety: wait and check again
-                    echo "Step 4: Waiting for ports to fully release..."
-                    sleep 5
-                    
-                    # Force-check and remove any remaining stragglers
-                    echo "Step 5: Final straggler check..."
-                    remaining=$(docker ps -a --filter "publish=8080" -q | wc -l)
-                    if [ "$remaining" -gt 0 ]; then
-                        echo "Found $remaining container(s) still on port 8080, forcing removal..."
-                        docker ps -a --filter "publish=8080" -q | xargs docker kill 2>/dev/null || true
-                        sleep 2
-                        docker ps -a --filter "publish=8080" -q | xargs docker rm -f 2>/dev/null || true
-                    fi
-                    
-                    echo "=== Cleanup complete ==="
+                    # Force kill any containers still using port 8080
+                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
@@ -149,20 +122,11 @@ pipeline {
                 sh '''
                     set -eu
                     image_tag=$(cat .image_tag)
-                    
-                    # Final safety check: ensure nothing is on port 8080
-                    echo "=== Final check before starting containers ==="
-                    containers_on_8080=$(docker ps -a --filter "publish=8080" -q | wc -l)
-                    if [ "$containers_on_8080" -gt 0 ]; then
-                        echo "ERROR: Found $containers_on_8080 container(s) still on port 8080. Forcing removal..."
-                        docker ps -a --filter "publish=8080" -q | xargs docker rm -f --link || true
-                        sleep 2
-                    fi
 
                     if docker compose version >/dev/null 2>&1; then
-                        IMAGE_TAG="$image_tag" docker compose up -d --build --force-recreate --remove-orphans
+                        IMAGE_TAG="$image_tag" docker compose up -d --build
                     else
-                        IMAGE_TAG="$image_tag" docker-compose up -d --build --force-recreate --remove-orphans
+                        IMAGE_TAG="$image_tag" docker-compose up -d --build
                     fi
                 '''
             }
@@ -240,8 +204,8 @@ pipeline {
                     compose exec -T core-service id
                     compose exec -T auth-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080
-                    for port in 8081 8082 8080; do
+                    # core-service :8081, auth-service :8082, gateway-service :8089
+                    for port in 8081 8082 8089; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         for attempt in $(seq 1 60); do
@@ -262,7 +226,7 @@ pipeline {
                     done
 
                     # Through the gateway, so routing to core-service is exercised too.
-                    response=$(curl --fail --silent --show-error http://localhost:8080/)
+                    response=$(curl --fail --silent --show-error http://localhost:8089/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
@@ -278,7 +242,7 @@ pipeline {
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -343,7 +307,7 @@ JSON
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
