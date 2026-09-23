@@ -85,3 +85,28 @@ row in `market_quotes`; delete that row to restart an instrument from its initia
 To add an instrument to the market, insert it into `instruments` and add a matching
 `instrument_market_params` row in a new numbered migration. Instruments without params are not
 quoted.
+
+## 007 — LeBronified names
+
+`007_lebronify_instruments.sql` gives every company a LeBron-themed display name and adds two
+stocks. Tickers and ids are unchanged, so orders and holdings are unaffected, and GOOGL stays
+non-tradable.
+
+| Id | Ticker | Name |
+|---|---|---|
+| 1 | AAPL | AppLe Inc |
+| 2 | MSFT | MicroBron Corp |
+| 3 | GOOGL | Alphabron Inc (non-tradable) |
+| 4 | AMZN | Amabron.com Inc |
+| 5 | TSLA | TesLe Inc |
+| 6 | NVDA | Nvidibron Corp |
+| 7 | LMT | LeBronHeed Martin Corp (new) |
+| 8 | AVGO | Broncom Inc (new) |
+
+Apply to an existing Docker database (idempotent), then restart the backend so the simulator
+picks up the new instruments:
+
+```sh
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
+docker compose restart backend
+```

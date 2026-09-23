@@ -9,7 +9,7 @@ describe('InstrumentCatalog', () => {
 
   it('matches symbol and company name case-insensitively', () => {
     expect(catalog.search('tsl').map((i) => i.symbol)).toEqual(['TSLA']);
-    expect(catalog.search('nvidia').map((i) => i.symbol)).toEqual(['NVDA']);
+    expect(catalog.search('nvidibron').map((i) => i.symbol)).toEqual(['NVDA']);
   });
 
   it('returns nothing for an unknown query', () => {
