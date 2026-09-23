@@ -5,6 +5,7 @@ import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -27,6 +28,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +67,43 @@ class OrderServiceTest {
         SecurityContextHolder.clearContext();
     }
     
+    @Test
+    @DisplayName("Submit buy order always persists BUY type")
+    void testSubmitBuyOrderAlwaysUsesBuyType() {
+        SubmitBuyOrderRequest request = new SubmitBuyOrderRequest(
+            1,
+            1,
+            new BigDecimal("3.0000"),
+            new BigDecimal("100.50")
+        );
+
+        Instrument instrument = new Instrument();
+        instrument.setInstrumentId(1);
+        instrument.setTradable(true);
+
+        Order savedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("3.0000"));
+        savedOrder.setOrderId(77);
+        savedOrder.setPricePerUnit(new BigDecimal("100.50"));
+
+        // The dedicated entrypoint also uses the server's market price for BUY orders.
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(100.50)));
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
+        when(orderRepository.save(argThat(order ->
+            order.getOrderType() == Order.OrderType.BUY
+                && order.getAccountId().equals(1)
+                && order.getInstrumentId().equals(1)
+        ))).thenReturn(savedOrder);
+
+        OrderResponse response = orderService.submitBuyOrder(request);
+
+        assertNotNull(response);
+        assertEquals(77, response.getOrderId());
+        assertEquals(Order.OrderType.BUY, response.getOrderType());
+        assertEquals(new BigDecimal("100.50"), response.getPricePerUnit());
+    }
+
     @Test
     @DisplayName("Create order successfully")
     void testCreateOrder() {

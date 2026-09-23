@@ -4,6 +4,7 @@ import com.lemarketjames.auth.domain.AccountRepository;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.exception.NotTradableException;
@@ -96,6 +97,20 @@ public class OrderService {
         log.info("Order submitted orderId={} accountId={} instrumentId={} side={}",
             savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(), savedOrder.getOrderType());
         return new OrderResponse(savedOrder);
+    }
+
+    /**
+     * Submit a BUY order via the dedicated buy-order entrypoint.
+     */
+    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request) {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest(
+            request.getAccountId(),
+            request.getInstrumentId(),
+            Order.OrderType.BUY,
+            request.getQuantity()
+        );
+        createOrderRequest.setPricePerUnit(request.getPricePerUnit());
+        return createOrder(createOrderRequest);
     }
 
     private Order findOwnOrder(Integer orderId) {

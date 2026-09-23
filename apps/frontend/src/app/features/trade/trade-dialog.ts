@@ -146,6 +146,7 @@ export class TradeDialog implements OnDestroy {
 
   submit(): void {
     const instrument = this.instrument();
+    const quote = this.quote();
     const accountId = this.auth.currentAccountId();
     if (!this.canSubmit() || !instrument) {
       return;
@@ -160,7 +161,22 @@ export class TradeDialog implements OnDestroy {
     const side = this.side();
     const quantity = this.quantity();
 
-    this.orderService.createOrder({ accountId, instrumentId: instrument.instrumentId, orderType: side, quantity }).subscribe({
+    if (side === 'BUY' && (!quote || quote.price <= 0)) {
+      this.submitting.set(false);
+      this.errorMessage.set('Live pricing is unavailable. Please try again in a moment.');
+      return;
+    }
+
+    const orderRequest$ = side === 'BUY'
+      ? this.orderService.submitBuyOrder({
+          accountId,
+          instrumentId: instrument.instrumentId,
+          quantity,
+          pricePerUnit: quote!.price,
+        })
+      : this.orderService.createOrder({ accountId, instrumentId: instrument.instrumentId, orderType: side, quantity });
+
+    orderRequest$.subscribe({
       next: (order) => {
         this.submitting.set(false);
         if (!order.success || order.orderStatus === 'REJECTED') {

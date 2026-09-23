@@ -4,7 +4,7 @@ import { of, Subject } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
-import { OrderRequest, OrderService } from '../../core/orders/order.service';
+import { BuyOrderRequest, OrderRequest, OrderService } from '../../core/orders/order.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { TradeDialog } from './trade-dialog';
 
@@ -16,13 +16,15 @@ const quote = {
 
 describe('TradeDialog', () => {
   let fixture: ComponentFixture<TradeDialog>;
-  let placed: OrderRequest[];
+  let placedSell: OrderRequest[];
+  let placedBuy: BuyOrderRequest[];
   let closedCount: number;
   let placedEvents: number;
   let pending: Subject<any> | null;
 
   beforeEach(async () => {
-    placed = [];
+    placedSell = [];
+    placedBuy = [];
     closedCount = 0;
     placedEvents = 0;
     pending = null;
@@ -39,7 +41,11 @@ describe('TradeDialog', () => {
           provide: OrderService,
           useValue: {
             createOrder: (req: OrderRequest) => {
-              placed.push(req);
+              placedSell.push(req);
+              return pending ?? of({ success: true, orderId: 42, orderStatus: 'SUBMITTED' });
+            },
+            submitBuyOrder: (req: BuyOrderRequest) => {
+              placedBuy.push(req);
               return pending ?? of({ success: true, orderId: 42, orderStatus: 'SUBMITTED' });
             },
           },
@@ -79,7 +85,8 @@ describe('TradeDialog', () => {
     submitButton().click();
     await render();
 
-    expect(placed).toEqual([{ accountId: 7, instrumentId: 5, orderType: 'BUY', quantity: 1 }]);
+    expect(placedSell).toEqual([]);
+    expect(placedBuy).toEqual([{ accountId: 7, instrumentId: 5, quantity: 1, pricePerUnit: 250 }]);
     expect(el().querySelector('.alert.ok')?.textContent).toContain('#42');
     expect(el().querySelector('.alert.ok')?.textContent).toContain('submitted');
     expect(placedEvents).toBe(1);
@@ -90,7 +97,8 @@ describe('TradeDialog', () => {
     fixture.componentInstance.submit();
     fixture.componentInstance.submit();
     await render();
-    expect(placed.length).toBe(1);
+    expect(placedBuy.length).toBe(1);
+    expect(placedSell).toEqual([]);
     expect(submitButton().disabled).toBe(true);
     expect(submitButton().textContent).toContain('Placing order');
     pending.next({ success: true, orderId: 99, orderStatus: 'SUBMITTED' });

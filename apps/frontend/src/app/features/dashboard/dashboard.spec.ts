@@ -80,7 +80,7 @@ describe('Dashboard', () => {
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
-    expect(rows.length).toBe(6);
+    expect(rows.length).toBe(8);
     const tsla = Array.from(rows).find((r) => r.textContent?.includes('TSLA'))!;
     expect(tsla.textContent).toContain('$248.90');
     expect(tsla.textContent).toContain('▼');

@@ -45,6 +45,25 @@ describe('Order creation holdings validation', () => {
     http.expectOne('/api/v1/orders').flush({ orderId: 8 });
   });
 
+  it('submits dedicated buy orders to the buy-order endpoint', () => {
+    service.submitBuyOrder({
+      accountId: 1,
+      instrumentId: 42,
+      quantity: 3,
+      pricePerUnit: 101.25
+    }).subscribe();
+
+    const request = http.expectOne('/api/v1/buy-orders');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      accountId: 1,
+      instrumentId: 42,
+      quantity: 3,
+      pricePerUnit: 101.25
+    });
+    request.flush({ success: true, orderId: 10, orderType: 'BUY' });
+  });
+
   for (const status of [400, 403, 500, 0]) {
     it(`does not submit a SELL when validation fails with status ${status}`, () => {
       let error: unknown;
