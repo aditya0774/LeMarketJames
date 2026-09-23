@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** Real service/repository tests; also run against PostgreSQL in Jenkins. */
+/** Real service/repository tests; run with H2 locally, PostgreSQL in Jenkins via env vars. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("postgres-test")
+@ActiveProfiles("test")
 @Transactional
 class OwnDataIntegrationTest {
     @Autowired MockMvc mvc;
