@@ -9,7 +9,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci && npm test -- --watch=false && npm run build'
+                    sh 'rm -rf node_modules && npm install && npm test -- --watch=false && npm run build'
                 }
             }
         }
@@ -21,9 +21,13 @@ pipeline {
                     set +e
                     if docker compose version >/dev/null 2>&1; then
                         docker compose down -v --remove-orphans
+                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
                         docker-compose down -v --remove-orphans
+                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
+                    # Force kill any containers still using port 8080
+                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
@@ -200,8 +204,8 @@ pipeline {
                     compose exec -T core-service id
                     compose exec -T auth-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080
-                    for port in 8081 8082 8080; do
+                    # core-service :8081, auth-service :8082, gateway-service :8089
+                    for port in 8081 8082 8089; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         for attempt in $(seq 1 60); do
@@ -222,7 +226,7 @@ pipeline {
                     done
 
                     # Through the gateway, so routing to core-service is exercised too.
-                    response=$(curl --fail --silent --show-error http://localhost:8080/)
+                    response=$(curl --fail --silent --show-error http://localhost:8089/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
@@ -238,7 +242,7 @@ pipeline {
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -303,7 +307,7 @@ JSON
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
