@@ -262,6 +262,43 @@ pipeline {
             }
         }
 
+        stage('Wait for services to be running') {
+            steps {
+                sh '''
+                    set -eu
+                    
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+
+                    echo "Waiting for all containers to be running..."
+                    for service in core-service auth-service market-service holdings-service gateway-service; do
+                        echo "Checking if $service is running..."
+                        max_attempts=30
+                        attempt=0
+                        while [ $attempt -lt $max_attempts ]; do
+                            if compose ps $service 2>/dev/null | grep -q "Up"; then
+                                echo "✓ $service is running"
+                                break
+                            fi
+                            attempt=$((attempt + 1))
+                            if [ $attempt -eq $max_attempts ]; then
+                                echo "✗ $service failed to start"
+                                echo "Container logs:"
+                                compose logs $service || true
+                                exit 1
+                            fi
+                            sleep 1
+                        done
+                    done
+
+                    echo "All containers are running"
+                '''
+            }
+        }
+
         stage('Run smoke test') {
             steps {
                 sh '''
