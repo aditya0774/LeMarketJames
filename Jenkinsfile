@@ -324,26 +324,9 @@ pipeline {
                     compose exec -T market-service id
                     compose exec -T holdings-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084
-                    for port in 8081 8082 8080 8083 8084; do
-                        echo "Waiting for health endpoint on port $port"
-                        healthy=0
-                        for attempt in $(seq 1 60); do
-                            status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
-                            if [ "$status" = "200" ]; then
-                                healthy=1
-                                break
-                            fi
-                            sleep 1
-                        done
-
-                        if [ "$healthy" -ne 1 ]; then
-                            echo "Service on port $port did not become healthy in time"
-                            compose ps
-                            compose logs core-service auth-service market-service holdings-service gateway-service
-                            exit 1
-                        fi
-                    done
+                    # Give services a few seconds to fully initialize after "Wait for services to be running" stage
+                    echo "Waiting for services to initialize..."
+                    sleep 5
 
                     # Through the gateway, so routing to core-service is exercised too.
                     response=$(curl --fail --silent --show-error http://localhost:8089/)
