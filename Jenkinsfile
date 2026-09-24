@@ -84,7 +84,7 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    mvn -B -pl services/market-service -am "-Dtest=MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
+                    mvn -B -pl services/market-service -am "-Dtest=MarketServiceApplicationTest,MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
 
                     echo "=== MARKET SIMULATOR TEST SUMMARY ==="
                     if ls services/market-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
@@ -279,8 +279,8 @@ pipeline {
                     compose exec -T market-service id
                     compose exec -T holdings-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084
-                    for port in 8081 8082 8080 8083 8084; do
+                    # Use host-published ports; gateway-service maps host 8089 to container 8080.
+                    for port in 8081 8082 8089 8083 8084; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         for attempt in $(seq 1 60); do
