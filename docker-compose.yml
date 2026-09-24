@@ -24,6 +24,12 @@ services:
       - core-service
       - market-service
       - holdings-service
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     environment:
       AUTH_SERVICE_URL: http://auth-service:8082
       CORE_SERVICE_URL: http://core-service:8081
@@ -44,6 +50,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8082/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     environment:
       # Development defaults for the disposable testing stack; environment overrides remain supported.
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
@@ -65,6 +77,12 @@ services:
         condition: service_healthy
       market-service:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8081/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
@@ -92,6 +110,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8083/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
@@ -113,6 +137,12 @@ services:
         condition: service_healthy
       market-service:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8084/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
