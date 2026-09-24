@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class OrderResponse {
     private boolean success;
     private String reason;
+    private String code;
     private Integer orderId;
     private Integer accountId;
     private Integer instrumentId;
@@ -43,6 +44,15 @@ public class OrderResponse {
     public OrderResponse(boolean success, String reason) {
         this.success = success;
         this.reason = reason;
+    }
+
+    public OrderResponse(boolean success, String reason, String code) {
+        this(success, reason);
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
     }
     
     // Empty constructor

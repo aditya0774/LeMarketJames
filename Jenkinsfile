@@ -84,7 +84,7 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    mvn -B -pl services/market-service -am "-Dtest=MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
+                    mvn -B -pl services/market-service -am "-Dtest=MarketServiceApplicationTest,MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
 
                     echo "=== MARKET SIMULATOR TEST SUMMARY ==="
                     if ls services/market-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
@@ -139,7 +139,7 @@ pipeline {
             }
         }
 
-        stage('Verify sell persistence on PostgreSQL') {
+        stage('Verify buy and sell persistence on PostgreSQL') {
             steps {
                 sh '''
                     set -eu
@@ -162,7 +162,7 @@ pipeline {
                 '''
             }
             post {
-                always { junit 'services/buy-sell-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
+                always { junit 'services/core-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
             }
         }
 
@@ -280,8 +280,8 @@ pipeline {
                     compose exec -T holdings-service id
                     compose exec -T buy-sell-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084, buy-sell-service :8085
-                    for port in 8081 8082 8080 8083 8084 8085; do
+                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084
+                    for port in 8081 8082 8080 8083 8084; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         for attempt in $(seq 1 60); do
@@ -310,6 +310,10 @@ pipeline {
                     compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
                 '''
             }
+        }
+
+        stage('Verify buy order survives restart') {
+            steps { sh 'bash scripts/verify-buy-order.sh' }
         }
 
         stage('Verify sell order survives restart') {

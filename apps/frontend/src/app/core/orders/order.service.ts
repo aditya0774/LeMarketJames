@@ -23,17 +23,18 @@ export interface BuyOrderRequest {
 export interface OrderResponse {
   success: boolean;
   reason?: string | null;
+  code?: string | null;
   orderId: number;
   accountId: number;
   instrumentId: number;
   orderType: 'BUY' | 'SELL';
   quantity: number;
-  pricePerUnit?: number;
+  pricePerUnit?: number | null;
   orderStatus: 'SUBMITTED' | 'ACCEPTED' | 'PENDING' | 'FILLED' | 'REJECTED' | 'DELAYED';
-  rejectionReason?: string;
+  rejectionReason?: string | null;
   submittedAt: string;
-  acceptedAt?: string;
-  filledAt?: string;
+  acceptedAt?: string | null;
+  filledAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

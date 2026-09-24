@@ -1,5 +1,6 @@
 package com.lemarketjames.orders.service;
 
+import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.client.HoldingsSettlementClient;
 import com.lemarketjames.holdings.client.HoldingsValidationClient;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +34,8 @@ public class OrderService {
     private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
+    private final MarketDataService marketDataService;
+    
     private final HoldingsSettlementClient holdingsSettlementClient;
     private final HoldingsValidationClient holdingsValidationClient;
 
@@ -39,12 +43,14 @@ public class OrderService {
                         InstrumentRepository instrumentRepository,
                         AccountRepository accountRepository,
                         CashValidationService cashValidationService,
+                        MarketDataService marketDataService,
                         HoldingsSettlementClient holdingsSettlementClient,
                         HoldingsValidationClient holdingsValidationClient) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
         this.cashValidationService = cashValidationService;
+        this.marketDataService = marketDataService;
         this.holdingsSettlementClient = holdingsSettlementClient;
         this.holdingsValidationClient = holdingsValidationClient;
     }
@@ -53,7 +59,7 @@ public class OrderService {
      * Submit an order after ownership, tradability and side-specific validation.
      * SELL orders require sufficient holdings; submission does not execute a trade.
      * For BUY orders, validates that the account has sufficient cash.
-     * Cost is calculated as: quantity * pricePerUnit
+     * BUY prices are captured from the market, never trusted from the browser.
      */
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -64,9 +70,19 @@ public class OrderService {
             holdingsValidationClient.validateSufficientHoldings(request.getAccountId(), authenticatedUsername(),
                 request.getInstrumentId(), request.getQuantity());
         }
+        BigDecimal price = request.getPricePerUnit();
         // For BUY orders, validate sufficient cash
         if (request.getOrderType() == Order.OrderType.BUY) {
-            BigDecimal orderCost = calculateOrderCost(request);
+            var quote = marketDataService.findByInstrumentId(request.getInstrumentId());
+            if (quote.isEmpty() || !Double.isFinite(quote.get().askPrice()) || quote.get().askPrice() <= 0) {
+                return new OrderResponse(false, "Market price is unavailable. Please try again.", "PRICE_UNAVAILABLE");
+            }
+            // Match the database scale so validation and the persisted snapshot agree.
+            price = BigDecimal.valueOf(quote.get().askPrice()).setScale(4, RoundingMode.HALF_UP);
+            if (price.signum() <= 0) {
+                return new OrderResponse(false, "Market price is unavailable. Please try again.", "PRICE_UNAVAILABLE");
+            }
+            BigDecimal orderCost = request.getQuantity().multiply(price);
             
             boolean hasSufficientCash = cashValidationService.validateSufficientCash(
                 request.getAccountId(),
@@ -77,7 +93,7 @@ public class OrderService {
                 BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
                 return new OrderResponse(false, 
                     String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", 
-                        orderCost, availableCash));
+                        orderCost, availableCash), "INSUFFICIENT_CASH");
             }
         }
         
@@ -89,8 +105,8 @@ public class OrderService {
             request.getQuantity()
         );
         
-        if (request.getPricePerUnit() != null) {
-            order.setPricePerUnit(request.getPricePerUnit());
+        if (price != null) {
+            order.setPricePerUnit(price);
         }
         
         Order savedOrder = orderRepository.save(order);
@@ -149,17 +165,6 @@ public class OrderService {
             log.warn("Tradability check failed for instrumentId={}", instrumentId);
             throw new NotTradableException("Instrument is currently not tradable");
         }
-    }
-    
-    /**
-     * Calculates the total cost of an order.
-     * Cost = quantity * pricePerUnit
-     */
-    private BigDecimal calculateOrderCost(CreateOrderRequest request) {
-        if (request.getQuantity() == null || request.getPricePerUnit() == null) {
-            return BigDecimal.ZERO;
-        }
-        return request.getQuantity().multiply(request.getPricePerUnit());
     }
     
     /**

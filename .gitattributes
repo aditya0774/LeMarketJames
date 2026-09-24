@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Jenkins executes these scripts on Linux, including checkouts made on Windows.
 *.sh text eol=lf
