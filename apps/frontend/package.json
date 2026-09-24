@@ -28,7 +28,7 @@
     "@angular/build": "21.2.2",
     "@angular/cli": "21.2.2",
     "@angular/compiler-cli": "21.2.2",
-    "@types/jasmine": "^6.1.0",
+    "@types/jasmine": "^5.1.0",
     "jasmine-core": "^8.0.0",
     "jsdom": "^25.0.0",
     "karma": "^7.0.0",
