@@ -14,12 +14,17 @@
     <!-- Everything not yet split into its own microservice: holdings, market, orders, quotes, sessions. -->
     <artifactId>core-service</artifactId>
     <name>LeMarketJames Core Service</name>
-    <description>Holdings, market simulation, orders, quotes, and sessions</description>
+    <description>Holdings, orders, quotes, and sessions; reaches market-service for prices via MarketDataClient</description>
 
     <dependencies>
         <dependency>
             <groupId>com.lemarketjames</groupId>
             <artifactId>common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lemarketjames</groupId>
+            <artifactId>market-client</artifactId>
         </dependency>
 
         <dependency>

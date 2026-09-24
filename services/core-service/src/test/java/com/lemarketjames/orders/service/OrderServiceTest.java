@@ -1,13 +1,14 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.common.domain.AccountRepository;
-import com.lemarketjames.holdings.service.HoldingsService;
-import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.holdings.client.HoldingsSettlementClient;
+import com.lemarketjames.holdings.client.HoldingsValidationClient;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.orders.repository.InstrumentRepository;
 import com.lemarketjames.orders.repository.OrderRepository;
@@ -46,14 +47,18 @@ class OrderServiceTest {
     
     @Mock
     private CashValidationService cashValidationService;
+
     @Mock
-    private HoldingsService holdingsService;
-    
+    private HoldingsSettlementClient holdingsSettlementClient;
+
+    @Mock
+    private HoldingsValidationClient holdingsValidationClient;
+
     private OrderService orderService;
-    
+
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService, holdingsService);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService, holdingsSettlementClient, holdingsValidationClient);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -71,8 +76,8 @@ class OrderServiceTest {
         var request = validSell();
         when(orderRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         var response = orderService.createOrder(request);
-        var sequence = inOrder(holdingsService, orderRepository);
-        sequence.verify(holdingsService).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+        var sequence = inOrder(holdingsValidationClient, orderRepository);
+        sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
         sequence.verify(orderRepository).save(any());
         verifyNoInteractions(cashValidationService);
         assertTrue(response.isSuccess());
@@ -83,7 +88,7 @@ class OrderServiceTest {
     void insufficientHoldingsNeverSavesSell() {
         var request = validSell();
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdingsService).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
         assertThrows(InsufficientHoldingsException.class, () -> orderService.createOrder(request));
         verifyNoInteractions(orderRepository, cashValidationService);
     }
@@ -287,6 +292,39 @@ class OrderServiceTest {
         assertEquals(Order.OrderStatus.ACCEPTED, response.getOrderStatus());
     }
     
+    @Test
+    @DisplayName("Filling an order settles it via holdings-service and stamps filledAt")
+    void testUpdateOrderStatusToFilledSettles() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        order.setOrderId(1);
+        order.setOrderStatus(Order.OrderStatus.ACCEPTED);
+        order.setPricePerUnit(new BigDecimal("227.55"));
+
+        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.updateOrderStatus(1, Order.OrderStatus.FILLED);
+
+        assertEquals(Order.OrderStatus.FILLED, response.getOrderStatus());
+        assertNotNull(response.getFilledAt());
+        org.mockito.Mockito.verify(holdingsSettlementClient).settle(order);
+    }
+
+    @Test
+    @DisplayName("Filling an order with no price is rejected and never settled")
+    void testUpdateOrderStatusToFilledWithoutPriceRejected() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        order.setOrderId(1);
+        order.setOrderStatus(Order.OrderStatus.ACCEPTED);
+
+        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.updateOrderStatus(1, Order.OrderStatus.FILLED));
+        org.mockito.Mockito.verify(holdingsSettlementClient, org.mockito.Mockito.never()).settle(any(Order.class));
+    }
+
     @Test
     @DisplayName("Reject order with reason")
     void testRejectOrder() {

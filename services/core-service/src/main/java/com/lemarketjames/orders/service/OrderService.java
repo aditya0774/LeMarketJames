@@ -1,7 +1,8 @@
 package com.lemarketjames.orders.service;
 
 import com.lemarketjames.common.domain.AccountRepository;
-import com.lemarketjames.holdings.service.HoldingsService;
+import com.lemarketjames.holdings.client.HoldingsSettlementClient;
+import com.lemarketjames.holdings.client.HoldingsValidationClient;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
@@ -18,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,23 +27,26 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
-    
+
     private final OrderRepository orderRepository;
     private final CashValidationService cashValidationService;
     private final InstrumentRepository instrumentRepository;
     private final AccountRepository accountRepository;
-    private final HoldingsService holdingsService;
-    
+    private final HoldingsSettlementClient holdingsSettlementClient;
+    private final HoldingsValidationClient holdingsValidationClient;
+
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
                         AccountRepository accountRepository,
                         CashValidationService cashValidationService,
-                        HoldingsService holdingsService) {
+                        HoldingsSettlementClient holdingsSettlementClient,
+                        HoldingsValidationClient holdingsValidationClient) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
         this.cashValidationService = cashValidationService;
-        this.holdingsService = holdingsService;
+        this.holdingsSettlementClient = holdingsSettlementClient;
+        this.holdingsValidationClient = holdingsValidationClient;
     }
     
     /**
@@ -56,7 +61,7 @@ public class OrderService {
         validateInstrumentTradability(request.getInstrumentId());
         // Browser validation is advisory; every SELL must be checked again before saving.
         if (request.getOrderType() == Order.OrderType.SELL) {
-            holdingsService.validateSufficientHoldings(request.getAccountId(), authenticatedUsername(),
+            holdingsValidationClient.validateSufficientHoldings(request.getAccountId(), authenticatedUsername(),
                 request.getInstrumentId(), request.getQuantity());
         }
         // For BUY orders, validate sufficient cash
@@ -197,11 +202,22 @@ public class OrderService {
     }
     
     /**
-     * Update order status
+     * Update order status. Transitioning to FILLED settles the order (cash debit/credit and the
+     * holdings update) via holdings-service before the status change is persisted, so an order can
+     * never end up FILLED without its side effects actually happening.
      */
     public OrderResponse updateOrderStatus(Integer orderId, Order.OrderStatus newStatus) {
         Order order = findOwnOrder(orderId);
-        
+
+        if (newStatus == Order.OrderStatus.FILLED) {
+            if (order.getPricePerUnit() == null) {
+                throw new IllegalArgumentException(
+                    "Order " + orderId + " has no price and cannot be filled");
+            }
+            holdingsSettlementClient.settle(order);
+            order.setFilledAt(LocalDateTime.now());
+        }
+
         order.setOrderStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
         return new OrderResponse(updatedOrder);

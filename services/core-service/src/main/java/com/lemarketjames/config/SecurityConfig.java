@@ -50,7 +50,6 @@ public class SecurityConfig {
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/actuator/health").permitAll()
-                .requestMatchers("/api/holdings/**").authenticated()
                 .requestMatchers("/api/sessions/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);

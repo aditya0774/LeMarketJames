@@ -4,14 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lemarketjames.common.domain.*;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
-import com.lemarketjames.holdings.entity.HoldingsEntity;
-import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.holdings.client.HoldingsValidationClient;
+import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.repository.InstrumentRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,10 +22,16 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** No test transaction: HTTP writes must commit before an independent SQL readback. */
+/**
+ * No test transaction: HTTP writes must commit before an independent SQL readback.
+ * holdings-service's own validation logic is covered by its own tests; {@link HoldingsValidationClient}
+ * is mocked here so this suite can exercise OrderService's handling of that server-to-server call
+ * without holdings-service actually running.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class SellOrderIntegrationTest {
@@ -35,8 +42,8 @@ class SellOrderIntegrationTest {
     @Autowired AddressRepository addresses;
     @Autowired JwtService jwt;
     @Autowired InstrumentRepository instruments;
-    @Autowired HoldingsRepository holdings;
     @Autowired JdbcTemplate jdbc;
+    @MockBean HoldingsValidationClient holdingsValidationClient;
     String username;
     Integer accountId, instrumentId;
     Cookie cookie;
@@ -46,7 +53,8 @@ class SellOrderIntegrationTest {
         username = "sell" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         accountId = register(username);
         instrumentId = instruments.findByTicker("AAPL").orElseThrow().getInstrumentId();
-        holdings.saveAndFlush(new HoldingsEntity(accountId, instrumentId, new BigDecimal("3")));
+        // Holdings live in holdings-service's own database now; HoldingsValidationClient is mocked
+        // below instead of seeding real holdings rows here.
         cookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, jwt.generateToken(username));
     }
 
@@ -55,7 +63,6 @@ class SellOrderIntegrationTest {
         // Remove only this test's committed rows, including on the disposable PostgreSQL profile.
         if (accountId != null) {
             jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
-            jdbc.update("DELETE FROM holdings WHERE account_id=?", accountId);
             jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
         }
         jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
@@ -86,16 +93,17 @@ class SellOrderIntegrationTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.orderId").value(id));
         mvc.perform(get("/api/v1/orders/account/" + accountId).cookie(cookie))
             .andExpect(status().isOk()).andExpect(jsonPath("$[0].orderId").value(id));
-        assertEquals(0, new BigDecimal("3").compareTo(holdings.findByAccountIdAndInstrumentId(accountId, instrumentId).orElseThrow().getQuantity()));
+        verify(holdingsValidationClient).validateSufficientHoldings(accountId, username, instrumentId, new BigDecimal("3"));
         assertEquals(0, new BigDecimal("500").compareTo(accounts.findById(accountId).orElseThrow().getCashBalance()));
     }
 
     @Test
     void directRequestsCannotBypassHoldingsValidation() throws Exception {
+        doThrow(new InsufficientHoldingsException("Insufficient holdings"))
+            .when(holdingsValidationClient).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
             .content(request(accountId, instrumentId, 4)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS"));
-        holdings.deleteAll(holdings.findByAccountId(accountId));
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
             .content(request(accountId, instrumentId, 1)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS"));
