@@ -8,9 +8,11 @@
 --   2. Rename the seven tickers that carry over (AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, AVGO) and
 --      make them all tradable. This reverses 005: the NOT_TRADABLE checks in CI and the tests
 --      now use their own throwaway fixture instead of a real stock.
---   3. Add the 43 new stocks with explicit ids 9-51. Explicit ids keep every database identical:
---      re-running 006/007 (as CI does) consumes SERIAL values even when ON CONFLICT skips the
---      row, and the frontend's InstrumentCatalog hard-codes these ids.
+--   3. Add the 43 new stocks with explicit ids 9-51, and AVGO at id 8 if 007 was never applied
+--      (the other six carried-over tickers come from 001/006, which this file already requires).
+--      Explicit ids keep every database identical: re-running 006/007 (as CI does) consumes
+--      SERIAL values even when ON CONFLICT skips the row, and the frontend's InstrumentCatalog
+--      hard-codes these ids.
 --   4. Upsert simulation parameters for all 50 so the whole market uses one consistent set of
 --      roughly realistic values. Existing market_quotes snapshots are left alone, so live prices
 --      carry on from where they are (initial_price only applies to instruments with no snapshot).
@@ -61,11 +63,14 @@ FROM (VALUES
 WHERE i.ticker = v.ticker;
 
 -- ---------------------------------------------------------------------------
--- 3. The 43 new instruments (ids 9-51, in market-cap order)
+-- 3. The 43 new instruments (ids 9-51, in market-cap order), plus AVGO if it is missing
 -- ---------------------------------------------------------------------------
+-- AVGO normally already exists (id 8, from 007), so its row is skipped by ON CONFLICT; it is
+-- listed here so a database that never had 007 applied still ends up with all 50 stocks.
 -- Non-US companies (TSM, ASML, BHP, SAN, TD, TTE, SHOP) are listed by their US listing/ADR, so
 -- they trade in USD on US market hours like everything else.
 INSERT INTO instruments (instrument_id, ticker, name, asset_class, currency, tradable, location) VALUES
+    ( 8, 'AVGO',  'Broncom',                           'EQUITY', 'USD', TRUE, 'US'),
     ( 9, 'TSM',   'Taiwan SemiBronductor',             'EQUITY', 'USD', TRUE, 'US'),
     (10, 'META',  'MetaBron Platforms',                'EQUITY', 'USD', TRUE, 'US'),
     (11, 'MU',    'MicBron Technology',                'EQUITY', 'USD', TRUE, 'US'),
