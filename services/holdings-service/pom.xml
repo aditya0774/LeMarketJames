@@ -13,9 +13,9 @@
 
     <!--
         Client profile, holdings, portfolio, and trade history (/api/v1/{profile,holdings,portfolio,trades}).
-        Order placement itself stays in core-service; this service settles fills (POST
-        /internal/holdings/settle, called server-to-server by core-service, never routed through the
-        gateway) so cash and holdings actually update when an order fills.
+        Order placement itself lives in buy-sell-service; this service settles fills (POST
+        /internal/holdings/settle, called server-to-server by buy-sell-service, never routed through
+        the gateway) so cash and holdings actually update when an order fills.
     -->
     <artifactId>holdings-service</artifactId>
     <name>LeMarketJames Holdings Service</name>

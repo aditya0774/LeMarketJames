@@ -11,20 +11,21 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <!-- Everything not yet split into its own microservice: quotes, sessions. -->
-    <artifactId>core-service</artifactId>
-    <name>LeMarketJames Core Service</name>
-    <description>Quotes and sessions; reaches market-service for prices via MarketDataClient</description>
+    <!--
+        Order placement, validation, buy/sell execution, and order status/history
+        (/api/v1/orders, /api/v1/buy-orders). Triggers settlement in holdings-service (POST
+        /internal/holdings/settle) when an order fills, and validates SELL orders against holdings
+        (POST /internal/holdings/validate) before persisting them — both server-to-server, never
+        routed through the gateway.
+    -->
+    <artifactId>buy-sell-service</artifactId>
+    <name>LeMarketJames Buy-Sell Service</name>
+    <description>Order placement, validation, execution, status, and history</description>
 
     <dependencies>
         <dependency>
             <groupId>com.lemarketjames</groupId>
             <artifactId>common</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.lemarketjames</groupId>
-            <artifactId>market-client</artifactId>
         </dependency>
 
         <dependency>
