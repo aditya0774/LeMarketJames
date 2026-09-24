@@ -387,7 +387,7 @@ Retrieves the authenticated client's own profile and account info. No `accountId
 
 ## Trade History Endpoints
 
-Implemented by `holdings-service`. Order placement itself is still `core-service`'s `/api/v1/orders`; this reads that same data back, filtered to completed fills.
+Implemented by `holdings-service`. Order placement itself is `buy-sell-service`'s `/api/v1/orders` (paths unchanged, still routed through the gateway); this reads that same data back, filtered to completed fills.
 
 ### GET /api/v1/trades?accountId=...
 

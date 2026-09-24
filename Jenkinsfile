@@ -62,11 +62,11 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    mvn -B -pl services/core-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
+                    mvn -B -pl services/buy-sell-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
 
                     echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
-                    if ls services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
+                    if ls services/buy-sell-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' services/buy-sell-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
                             | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
                     else
                         echo "BuyOrderControllerTest report not found"
@@ -75,7 +75,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                    junit 'services/buy-sell-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
                 }
             }
         }
@@ -158,11 +158,11 @@ pipeline {
                         sleep 1
                     done
                     test "$ready" = 1
-                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test -Dtest=SellOrderIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
+                    mvn -B -pl services/buy-sell-service -am -Dspring.profiles.active=postgres-test -Dtest=SellOrderIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
-                always { junit 'services/core-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
+                always { junit 'services/buy-sell-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
             }
         }
 
@@ -176,7 +176,7 @@ pipeline {
                     echo "$image_tag" > .image_tag
 
                     # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    for service in core-service auth-service market-service holdings-service gateway-service; do
+                    for service in core-service auth-service market-service holdings-service buy-sell-service gateway-service; do
                         docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
                         docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
                     done
@@ -253,11 +253,11 @@ pipeline {
 
         stage('Verify own-data isolation on PostgreSQL') {
             steps {
-                sh 'mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
+                sh 'mvn -B -pl services/core-service,services/auth-service,services/holdings-service,services/buy-sell-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,OrderOwnDataIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderOwnDataIntegrationTest.xml'
                 }
             }
         }
@@ -278,9 +278,10 @@ pipeline {
                     compose exec -T auth-service id
                     compose exec -T market-service id
                     compose exec -T holdings-service id
+                    compose exec -T buy-sell-service id
 
-                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084
-                    for port in 8081 8082 8080 8083 8084; do
+                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084, buy-sell-service :8085
+                    for port in 8081 8082 8080 8083 8084 8085; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         for attempt in $(seq 1 60); do
@@ -295,7 +296,7 @@ pipeline {
                         if [ "$healthy" -ne 1 ]; then
                             echo "Service on port $port did not become healthy in time"
                             compose ps
-                            compose logs core-service auth-service market-service holdings-service gateway-service
+                            compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
                             exit 1
                         fi
                     done
@@ -306,7 +307,7 @@ pipeline {
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs core-service auth-service market-service holdings-service gateway-service
+                    compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
                 '''
             }
         }
@@ -452,9 +453,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
+                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
+                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
                 fi
             '''
         }

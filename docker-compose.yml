@@ -8,8 +8,8 @@ services:
       - gateway-service
 
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
-  # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
-  # everything else to core-service (see
+  # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service,
+  # /api/v1/{orders,buy-orders}/** to buy-sell-service, and everything else to core-service (see
   # services/gateway-service/src/main/resources/application.yml).
   gateway-service:
     image: lemarketjames/gateway-service:${IMAGE_TAG:-dev}
@@ -24,11 +24,13 @@ services:
       - core-service
       - market-service
       - holdings-service
+      - buy-sell-service
     environment:
       AUTH_SERVICE_URL: http://auth-service:8082
       CORE_SERVICE_URL: http://core-service:8081
       MARKET_SERVICE_URL: http://market-service:8083
       HOLDINGS_SERVICE_URL: http://holdings-service:8084
+      BUY_SELL_SERVICE_URL: http://buy-sell-service:8085
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # auth-service and core-service share the same database and the same JWT_SECRET, so a token
@@ -71,11 +73,6 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
       MARKET_SERVICE_URL: http://market-service:8083
-      # No depends_on here: core-service calls holdings-service (settlement) and holdings-service
-      # calls core-service (reading orders) — a real dependency cycle, so neither can wait on the
-      # other's startup via Compose. Both clients are lazy (called only on an actual request), so
-      # this only matters if a request arrives before both containers are ready.
-      HOLDINGS_SERVICE_URL: http://holdings-service:8084
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Simulated market prices (GBM engine), called server-to-server by core-service and
@@ -97,9 +94,11 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
 
-  # Client profile, holdings, portfolio, and trade history. Settles fills for core-service
+  # Client profile, holdings, portfolio, and trade history. Settles fills for buy-sell-service
   # (POST /internal/holdings/settle, never routed through the gateway) and reads order data back
-  # from core-service for trade history/buying power — see the depends_on note on core-service.
+  # from buy-sell-service for trade history/buying power — see the depends_on note on
+  # buy-sell-service below (the same real, unavoidable startup cycle as before, just between a
+  # different pair of services).
   holdings-service:
     image: lemarketjames/holdings-service:${IMAGE_TAG:-dev}
     build:
@@ -119,7 +118,34 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
       MARKET_SERVICE_URL: http://market-service:8083
-      ORDERS_SERVICE_URL: http://core-service:8081
+      ORDERS_SERVICE_URL: http://buy-sell-service:8085
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+
+  # Order placement, validation, execution, status, and history. Triggers settlement in
+  # holdings-service (POST /internal/holdings/settle) and validates SELL orders against holdings
+  # (POST /internal/holdings/validate) — both server-to-server, never routed through the gateway.
+  buy-sell-service:
+    image: lemarketjames/buy-sell-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/buy-sell-service/Dockerfile
+    ports:
+      # Published for direct debugging only; browser traffic goes through the gateway.
+      - "8085:8085"
+    depends_on:
+      db:
+        condition: service_healthy
+      # No depends_on holdings-service here: buy-sell-service calls holdings-service (settlement,
+      # validation) and holdings-service calls buy-sell-service (reading orders) — a real
+      # dependency cycle, so neither can wait on the other's startup via Compose. Both clients are
+      # lazy (called only on an actual request), so this only matters if a request arrives before
+      # both containers are ready.
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      HOLDINGS_SERVICE_URL: http://holdings-service:8084
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   db:
@@ -138,7 +164,8 @@ services:
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (the frontend and gateway never call db directly;
-      # only auth-service, core-service, market-service, and holdings-service talk to it).
+      # only auth-service, core-service, market-service, holdings-service, and buy-sell-service
+      # talk to it).
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data

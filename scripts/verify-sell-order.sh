@@ -32,10 +32,10 @@ order_id=$(node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1
 count=$(compose exec -T db psql -At -U lemarket -d lemarket \
     -c "SELECT count(*) FROM orders WHERE order_id=$order_id AND account_id=$account_id AND instrument_id=$instrument_id AND order_type='SELL' AND quantity=1 AND order_status='SUBMITTED';")
 test "$count" = 1
-compose restart core-service
+compose restart buy-sell-service
 ready=0
 for attempt in $(seq 1 60); do
-    if curl --fail --silent http://localhost:8081/actuator/health >/dev/null; then
+    if curl --fail --silent http://localhost:8085/actuator/health >/dev/null; then
         ready=1
         break
     fi
@@ -44,4 +44,4 @@ done
 test "$ready" = 1
 curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/readback.json"
 node -e 'const fs=require("fs"), a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")), b=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); for(const key of ["orderId","accountId","instrumentId","orderType","quantity","orderStatus"]) if(a[key]!==b[key]) throw Error("Restart readback mismatch: "+key);' "$scratch/order.json" "$scratch/readback.json"
-echo "SELL order persisted and remained readable after core-service restart."
+echo "SELL order persisted and remained readable after buy-sell-service restart."

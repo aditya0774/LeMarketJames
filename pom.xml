@@ -31,6 +31,7 @@
         <module>services/auth-service</module>
         <module>services/market-service</module>
         <module>services/holdings-service</module>
+        <module>services/buy-sell-service</module>
         <module>services/gateway-service</module>
     </modules>
 
