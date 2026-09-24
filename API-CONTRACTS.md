@@ -120,173 +120,88 @@ Submits a buy order via the dedicated buy-order service contract.
 
 ### POST /api/v1/orders
 
-Creates an order through the gateway. The dashboard's SELL form uses this endpoint.
-The authenticated account must own the requested instrument quantity, and the instrument
-must be tradable. The server repeats holdings validation even if browser validation passed.
+Authenticated market-order submission through the gateway. The account must belong to the JWT-cookie user.
+The dashboard trade dialog is the supported buy form; /orders redirects to /dashboard.
 
 #### Request
 
 ```json
 {
-  "accountId": 1,
-  "instrumentId": 1,
-  "orderType": "SELL",
+  "accountId": 7,
+  "instrumentId": 5,
+  "orderType": "BUY",
   "quantity": 1
 }
 ```
+
+IDs and quantity must be positive. orderType is BUY or SELL, not MARKET/LIMIT.
+The UI accepts whole shares; the API retains its existing positive decimal quantity contract.
+For BUY, the server uses MarketDataService's current ask price, rounded to four decimal
+places, for both cash validation and the saved pricePerUnit snapshot. An optional positive
+client pricePerUnit is accepted for compatibility but never determines the BUY price.
+The displayed live quote is an estimate and can differ from the submission snapshot.
+SELL orders require sufficient holdings, validated by holdings-service before persistence.
+Submission does not reserve shares, change holdings, or credit cash. Execution must
+revalidate available shares. SELL price is optional and is not an execution price.
 
 #### Response (201 Created)
 
 ```json
 {
   "success": true,
-  "orderId": 123,
-  "accountId": 1,
-  "instrumentId": 1,
-  "orderType": "SELL",
-  "quantity": 1,
-  "pricePerUnit": null,
-  "orderStatus": "SUBMITTED",
   "reason": null,
+  "code": null,
+  "orderId": 42,
+  "accountId": 7,
+  "instrumentId": 5,
+  "orderType": "BUY",
+  "quantity": 1,
+  "pricePerUnit": 244.2366,
+  "orderStatus": "SUBMITTED",
   "rejectionReason": null,
-  "submittedAt": "2026-09-23T10:30:00",
-  "createdAt": "2026-09-23T10:30:00",
-  "updatedAt": "2026-09-23T10:30:00",
+  "submittedAt": "2026-09-21T10:30:00",
   "acceptedAt": null,
-  "filledAt": null
+  "filledAt": null,
+  "createdAt": "2026-09-21T10:30:00",
+  "updatedAt": "2026-09-21T10:30:00"
 }
 ```
 
-Submission commits the order before returning HTTP 201; it does not execute the trade,
-reserve shares, change holdings, or credit cash. Execution must revalidate available shares.
-The form confirms the returned order ID and status. Readback uses
-`GET /api/v1/orders/{orderId}` or `GET /api/v1/orders/account/{accountId}`.
-The price is optional at submission and is not an execution price.
+Timestamps currently serialize Java LocalDateTime without a timezone offset.
+Creation saves a SUBMITTED order in a transaction. It does not fill the order,
+reserve/deduct cash, or update holdings. Cash validation compares this order's
+snapshot cost with current cash; aggregate reservations belong to execution/lifecycle work.
 
-Missing holdings or insufficient quantity returns HTTP 400:
+#### Failures
 
-```json
-{
-  "success": false,
-  "error": "Insufficient holdings. Available: 3.0000, Requested: 4",
-  "code": "INSUFFICIENT_HOLDINGS"
-}
-```
+| HTTP | Condition | Body fields |
+|---|---|---|
+| 400 | Insufficient holdings (SELL) | success: false, code: INSUFFICIENT_HOLDINGS, error: readable explanation |
+| 400 | Insufficient cash | success: false, code: INSUFFICIENT_CASH, reason: readable explanation |
+| 400 | Missing or invalid market price | success: false, code: PRICE_UNAVAILABLE, reason: readable explanation |
+| 400 | Non-tradable instrument | success: false, code: NOT_TRADABLE, error: readable explanation |
+| 400 | Missing/invalid request fields | errors: field-to-message map |
+| 400 | Unknown instrument | message: readable explanation |
+| 401 | Missing/expired authentication | Request denied by authentication layer |
+| 403 | Account belongs to another user or is inaccessible | success: false, code: ACCOUNT_ACCESS_DENIED, error: Access denied |
 
-Missing/nonpositive IDs or quantity return HTTP 400 with an `errors` field map.
-Unauthenticated requests return HTTP 401; foreign accounts return HTTP 403.
+Cash/price failures may include null order fields. Rejected submissions create no row.
 
-#### Response (400 Bad Request)
+### GET /api/v1/orders/{orderId}
 
-```json
-{
-  "success": false,
-  "error": "Instrument is currently not tradable",
-  "code": "NOT_TRADABLE"
-}
-```
+Returns the same order DTO as creation (HTTP 200). Missing and foreign order IDs
+both return HTTP 403 with ACCOUNT_ACCESS_DENIED to avoid disclosing their existence.
 
-#### Response (403 Forbidden)
+### GET /api/v1/orders/account/{accountId}
 
-```json
-{
-  "success": false,
-  "error": "Access denied",
-  "code": "ACCOUNT_ACCESS_DENIED"
-}
-```
+Returns a JSON array of order DTOs for the caller's account (HTTP 200); an empty
+account returns []. Foreign accounts return HTTP 403.
 
-#### Notes
+### GET /api/v1/orders/account/{accountId}/status/{status}
 
-- Tradability is enforced inline during order creation.
-- Requests for instruments with `tradable=false` are rejected with the stable error code `NOT_TRADABLE`.
-- Order creation is allowed only for the authenticated user's own account.
-- Cross-account order attempts are rejected with HTTP 403 and error code `ACCOUNT_ACCESS_DENIED`.
-
----
-
-### GET /api/orders/{id}
-
-Retrieves a specific order by ID.
-
-#### Path Parameters
-
-- `id` (string, required): The order ID
-
-#### Response (200 OK)
-
-```json
-{
-  "success": true,
-  "order": {
-    "orderId": "order_12345",
-    "symbol": "AAPL",
-    "quantity": 10,
-    "type": "BUY",
-    "orderType": "MARKET",
-    "price": 150.25,
-    "status": "EXECUTED",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "executedAt": "2024-01-15T10:30:45Z"
-  }
-}
-```
-
-#### Response (404 Not Found)
-
-```json
-{
-  "success": false,
-  "error": "Order not found"
-}
-```
-
----
-
-### GET /api/orders
-
-Retrieves all orders for the authenticated user.
-
-#### Query Parameters
-
-- `status` (string, optional): Filter by status (PENDING, EXECUTED, CANCELLED)
-- `limit` (integer, optional): Number of results per page (default: 20)
-- `offset` (integer, optional): Pagination offset (default: 0)
-
-#### Response (200 OK)
-
-```json
-{
-  "success": true,
-  "orders": [
-    {
-      "orderId": "order_12345",
-      "symbol": "AAPL",
-      "quantity": 10,
-      "type": "BUY",
-      "orderType": "MARKET",
-      "price": 150.25,
-      "status": "EXECUTED",
-      "createdAt": "2024-01-15T10:30:00Z",
-      "executedAt": "2024-01-15T10:30:45Z"
-    },
-    {
-      "orderId": "order_12346",
-      "symbol": "MSFT",
-      "quantity": 5,
-      "type": "SELL",
-      "orderType": "LIMIT",
-      "price": 380.50,
-      "status": "PENDING",
-      "createdAt": "2024-01-15T11:00:00Z",
-      "executedAt": null
-    }
-  ],
-  "total": 42,
-  "limit": 20,
-  "offset": 0
-}
-```
+Same array response, filtered by SUBMITTED, ACCEPTED, PENDING, FILLED, REJECTED,
+or DELAYED. These are the existing persisted lifecycle values. Submission is not
+an immutable-record API; the existing status/rejection operations belong to that lifecycle.
 
 ---
 
@@ -763,5 +678,5 @@ CREATE TABLE IF NOT EXISTS watchlist (
 ### Known mismatches to be aware of
 
 - `apps/frontend/src/app/core/orders/orders.service.ts` calls `GET /api/orders` and `GET /api/balance`. Neither exists on the backend yet. The dashboard uses `core/orders/order.service.ts` (`/api/v1/orders/...`) instead.
-- The **Orders Endpoints** contract above lists statuses `PENDING / EXECUTED / CANCELLED`, but the DB and backend use `SUBMITTED / ACCEPTED / PENDING / FILLED / REJECTED / DELAYED`. The dashboard follows the DB values, with filter chips All / Open (`SUBMITTED`, `ACCEPTED`, `PENDING`, `DELAYED`) / Filled / Rejected. Please update the contract text to the DB values rather than the other way round.
+- The Orders Endpoints contract and dashboard use the persisted statuses SUBMITTED / ACCEPTED / PENDING / FILLED / REJECTED / DELAYED.
 - The backend has no "order type" (MARKET/LIMIT) field. The trade page only offers Market orders; Limit is shown as "coming soon".
