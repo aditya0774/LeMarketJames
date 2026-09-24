@@ -28,7 +28,12 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
           # Routes are checked in order: the specific auth route must stay before the core catch-all.
           # Add a route here whenever a feature is extracted into its own service.
+          # The actuator route must come first to prevent /actuator/** from being routed to core-service.
           routes:
+            - id: actuator
+              uri: http://localhost:8080
+              predicates:
+                - Path=/actuator/**
             - id: auth-service
               uri: ${services.auth-url}
               predicates:
