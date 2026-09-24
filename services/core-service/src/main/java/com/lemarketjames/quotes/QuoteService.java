@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -40,9 +42,26 @@ public class QuoteService {
      */
     public QuoteDto getQuote(String rawSymbol) {
         String symbol = normalize(rawSymbol);
-        QuoteSnapshot snapshot = marketData.findByTicker(symbol)
+        return marketData.findByTicker(symbol)
+                .map(QuoteService::toDto)
                 .orElseThrow(() -> new SymbolNotFoundException("Symbol not found"));
+    }
 
+    /**
+     * Returns the current quote for every simulated instrument in one call, so a screen showing the
+     * whole market (the dashboard) makes one request per refresh instead of one per stock.
+     *
+     * @return contract-shaped quotes sorted by symbol; empty if market-service is unavailable
+     */
+    public List<QuoteDto> getAllQuotes() {
+        return marketData.findAll().stream()
+                .map(QuoteService::toDto)
+                .sorted(Comparator.comparing(QuoteDto::getSymbol))
+                .toList();
+    }
+
+    /** Shared by the single and batch lookups so both return exactly the same quote shape. */
+    private static QuoteDto toDto(QuoteSnapshot snapshot) {
         return new QuoteDto(
                 snapshot.instrument().ticker(),
                 snapshot.instrument().name(),

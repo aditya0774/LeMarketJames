@@ -240,12 +240,14 @@ pipeline {
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
                     else
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
                     fi
                 '''
             }
@@ -428,8 +430,19 @@ JSON
 
                     test -n "$account_id"
 
+                    # Every real stock is tradable (migration 009), so the NOT_TRADABLE check uses a
+                    # CI-only fixture. It has no market params, so it is never quoted or shown in the
+                    # app, and the CI database is discarded afterwards.
+                    compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket \
+                        -c "INSERT INTO instruments (ticker, name, asset_class, currency, tradable, location) VALUES ('CI-NT', 'CI non-tradable fixture', 'EQUITY', 'USD', FALSE, 'US') ON CONFLICT (ticker) DO NOTHING;"
+
+                    non_tradable_id=$(compose exec -T db psql -At -U lemarket -d lemarket \
+                        -c "SELECT instrument_id FROM instruments WHERE ticker = 'CI-NT';")
+
+                    test -n "$non_tradable_id"
+
                     order_payload=$(cat <<JSON
-{"accountId":$account_id,"instrumentId":3,"orderType":"BUY","quantity":1}
+{"accountId":$account_id,"instrumentId":$non_tradable_id,"orderType":"BUY","quantity":1}
 JSON
 )
 

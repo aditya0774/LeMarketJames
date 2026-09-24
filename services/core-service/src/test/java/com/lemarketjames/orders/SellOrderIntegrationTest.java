@@ -5,6 +5,7 @@ import com.lemarketjames.common.domain.*;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.holdings.client.HoldingsValidationClient;
+import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.repository.InstrumentRepository;
 import jakarta.servlet.http.Cookie;
@@ -45,7 +46,7 @@ class SellOrderIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @MockBean HoldingsValidationClient holdingsValidationClient;
     String username;
-    Integer accountId, instrumentId;
+    Integer accountId, instrumentId, nonTradableId;
     Cookie cookie;
 
     @BeforeEach
@@ -64,6 +65,9 @@ class SellOrderIntegrationTest {
         if (accountId != null) {
             jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
             jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
+        }
+        if (nonTradableId != null) {
+            jdbc.update("DELETE FROM instruments WHERE instrument_id=?", nonTradableId);
         }
         jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         jdbc.update("DELETE FROM clients WHERE username=?", username);
@@ -123,11 +127,23 @@ class SellOrderIntegrationTest {
         mvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
             .content(request(accountId, instrumentId, 1)))
             .andExpect(status().isUnauthorized());
-        int nonTradable = instruments.findByTicker("GOOGL").orElseThrow().getInstrumentId();
+        // Every real stock is tradable (migration 009), so this test brings its own non-tradable
+        // instrument; it runs on the H2 and PostgreSQL profiles alike and is removed in cleanup().
+        nonTradableId = saveNonTradableInstrument();
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
-            .content(request(accountId, nonTradable, 1)))
+            .content(request(accountId, nonTradableId, 1)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("NOT_TRADABLE"));
         assertNoOrders();
+    }
+
+    private Integer saveNonTradableInstrument() {
+        Instrument instrument = new Instrument();
+        instrument.setTicker("NT" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+        instrument.setName("Non-tradable test fixture");
+        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
+        instrument.setCurrency("USD");
+        instrument.setTradable(false);
+        return instruments.saveAndFlush(instrument).getInstrumentId();
     }
 
     private void assertNoOrders() {
