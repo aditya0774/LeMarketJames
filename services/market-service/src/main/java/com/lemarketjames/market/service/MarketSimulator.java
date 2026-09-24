@@ -7,6 +7,7 @@ import com.lemarketjames.market.model.PriceCandle;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -34,6 +35,7 @@ import java.util.random.RandomGenerator;
  * <p>Threading: {@code tick} and {@code load} are synchronized and are the only writers. Readers
  * get immutable {@link QuoteSnapshot}s from concurrent maps and never block.
  */
+@Primary
 @Service
 public class MarketSimulator implements MarketDataService {
 
