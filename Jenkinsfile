@@ -20,14 +20,22 @@ pipeline {
                 sh '''
                     set +e
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose down -v --remove-orphans
-                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
+                        docker compose down -v --remove-orphans 2>/dev/null || true
+                        docker compose ps -q 2>/dev/null | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
-                        docker-compose down -v --remove-orphans
-                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
+                        docker-compose down -v --remove-orphans 2>/dev/null || true
+                        docker-compose ps -q 2>/dev/null | xargs -r docker kill 2>/dev/null || true
                     fi
-                    # Force kill any containers still using port 8080
-                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
+                    
+                    # Force kill any containers using our service ports
+                    # Services: core-service (8081), auth-service (8082), market-service (8083),
+                    # holdings-service (8084), gateway-service (8089), frontend (4200), db (5432)
+                    for port in 8081 8082 8083 8084 8089 4200 5432; do
+                        docker ps --filter "publish=$port" -q 2>/dev/null | xargs -r docker kill 2>/dev/null || true
+                    done
+                    
+                    # Wait for ports to be released
+                    sleep 2
                     set -e
                 '''
             }
