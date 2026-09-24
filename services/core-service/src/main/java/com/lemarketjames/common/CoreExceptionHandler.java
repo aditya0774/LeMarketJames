@@ -1,5 +1,6 @@
 package com.lemarketjames.common;
 
+import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,16 @@ public class CoreExceptionHandler {
                     "success", false,
                     "error", ex.getMessage(),
                     "code", "NOT_TRADABLE"
+                ));
+    }
+
+    @ExceptionHandler(InsufficientHoldingsException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientHoldings(InsufficientHoldingsException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "INSUFFICIENT_HOLDINGS"
                 ));
     }
 

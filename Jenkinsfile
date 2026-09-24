@@ -9,7 +9,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci && npm test -- --watch=false && npm run build'
+                    sh 'rm -rf node_modules && npm install && npm test -- --watch=false && npm run build'
                 }
             }
         }
@@ -21,9 +21,13 @@ pipeline {
                     set +e
                     if docker compose version >/dev/null 2>&1; then
                         docker compose down -v --remove-orphans
+                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
                         docker-compose down -v --remove-orphans
+                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
+                    # Force kill any containers still using port 8080
+                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
@@ -132,6 +136,33 @@ pipeline {
                         exit 1
                     fi
                 '''
+            }
+        }
+
+        stage('Verify sell persistence on PostgreSQL') {
+            steps {
+                sh '''
+                    set -eu
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+                    compose up -d db
+                    ready=0
+                    for attempt in $(seq 1 60); do
+                        if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                            ready=1
+                            break
+                        fi
+                        sleep 1
+                    done
+                    test "$ready" = 1
+                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test -Dtest=SellOrderIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
+                '''
+            }
+            post {
+                always { junit 'services/core-service/target/surefire-reports/TEST-*SellOrderIntegrationTest.xml' }
             }
         }
 
@@ -270,7 +301,7 @@ pipeline {
                     done
 
                     # Through the gateway, so routing to core-service is exercised too.
-                    response=$(curl --fail --silent --show-error http://localhost:8080/)
+                    response=$(curl --fail --silent --show-error http://localhost:8089/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
@@ -280,13 +311,17 @@ pipeline {
             }
         }
 
+        stage('Verify sell order survives restart') {
+            steps { sh 'bash scripts/verify-sell-order.sh' }
+        }
+
         stage('Run quote API contract smoke test') {
             steps {
                 sh '''
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -351,7 +386,7 @@ JSON
                     set -eu
 
                     # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8080"
+                    base="http://localhost:8089"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 

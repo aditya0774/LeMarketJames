@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, defer, switchMap, throwError } from 'rxjs';
 import { HoldingsService } from '../holdings/holdings.service';
 import { Auth } from '../auth/auth';
+import { environment } from '../../../environments/environment';
 
 export interface OrderRequest {
   accountId: number;
@@ -20,6 +21,8 @@ export interface BuyOrderRequest {
 }
 
 export interface OrderResponse {
+  success: boolean;
+  reason?: string | null;
   orderId: number;
   accountId: number;
   instrumentId: number;
@@ -39,7 +42,7 @@ export interface OrderResponse {
   providedIn: 'root'
 })
 export class OrderService {
-  private apiUrl = '/api/v1/orders';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/v1/orders`;
 
   constructor(
     private http: HttpClient,
@@ -80,7 +83,7 @@ export class OrderService {
    * Submit a BUY order using the dedicated buy-order endpoint.
    */
   submitBuyOrder(request: BuyOrderRequest): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>('/api/v1/buy-orders', request);
+    return this.http.post<OrderResponse>(`${environment.apiBaseUrl}/api/v1/buy-orders`, request);
   }
 
   /**

@@ -1,10 +1,12 @@
 com.lemarketjames
 com.lemarketjames.auth
-com.lemarketjames.auth.domain
 com.lemarketjames.auth.dto
-com.lemarketjames.auth.security
 com.lemarketjames.common
+com.lemarketjames.common.domain
+com.lemarketjames.common.error
+com.lemarketjames.common.security
 com.lemarketjames.config
+com.lemarketjames.gateway
 com.lemarketjames.holdings
 com.lemarketjames.holdings.dto
 com.lemarketjames.holdings.entity

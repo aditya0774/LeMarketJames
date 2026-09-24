@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: services/gateway-service/Dockerfile
     ports:
-      - "8080:8080"
+      - "8089:8080"
     depends_on:
       - auth-service
       - core-service
