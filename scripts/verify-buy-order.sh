@@ -47,8 +47,8 @@ count=$(compose exec -T db psql -At -U lemarket -d lemarket \
 test "$count" = 1
 
 # Restart the application, retaining PostgreSQL and its named volume.
-compose restart backend
+compose restart core-service
 wait_for_backend
 curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/readback.json"
 node -e 'const fs=require("fs"), a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")), b=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); for(const key of ["orderId","accountId","instrumentId","orderType","quantity","pricePerUnit","orderStatus"]) if(a[key]!==b[key]) throw Error("Restart readback mismatch: "+key);' "$scratch/order.json" "$scratch/readback.json"
-echo "BUY order persisted and remained readable after backend restart."
+echo "BUY order persisted and remained readable after core-service restart."

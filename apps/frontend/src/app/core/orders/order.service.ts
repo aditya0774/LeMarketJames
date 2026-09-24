@@ -84,7 +84,7 @@ export class OrderService {
    * Submit a BUY order using the dedicated buy-order endpoint.
    */
   submitBuyOrder(request: BuyOrderRequest): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>('/api/v1/buy-orders', request);
+    return this.http.post<OrderResponse>(`${environment.apiBaseUrl}/api/v1/buy-orders`, request);
   }
 
   /**

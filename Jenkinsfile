@@ -9,7 +9,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci && npm test -- --watch=false && npm run build'
+                    sh 'rm -rf node_modules && npm install && npm test -- --watch=false && npm run build'
                 }
             }
         }
@@ -21,9 +21,13 @@ pipeline {
                     set +e
                     if docker compose version >/dev/null 2>&1; then
                         docker compose down -v --remove-orphans
+                        docker compose ps -q | xargs -r docker kill 2>/dev/null || true
                     elif command -v docker-compose >/dev/null 2>&1; then
                         docker-compose down -v --remove-orphans
+                        docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
+                    # Force kill any containers still using port 8080
+                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
@@ -31,50 +35,91 @@ pipeline {
 
         stage('Test with Maven') {
             steps {
-                dir('apps/backend') {
-                    sh '''
-                        set -eu
-                        mvn -B clean test
+                // The root parent pom builds and tests every backend module (libs/common + services/*).
+                sh '''
+                    set -eu
+                    mvn -B clean test
 
-                        echo "=== BACKEND TESTS COMPLETED: PASS ==="
-                        echo "=== BACKEND SUREFIRE SUMMARY ==="
+                    echo "=== BACKEND TESTS COMPLETED: PASS ==="
+                    echo "=== BACKEND SUREFIRE SUMMARY ==="
 
-                        if ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                            grep -h '<testsuite ' target/surefire-reports/TEST-*.xml \
-                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                        else
-                            echo "No surefire XML reports found"
-                        fi
-                    '''
-                }
+                    if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "No surefire XML reports found"
+                    fi
+                '''
             }
             post {
                 always {
-                    junit 'apps/backend/target/surefire-reports/*.xml'
+                    junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Run buy-order microservice tests') {
             steps {
-                dir('apps/backend') {
-                    sh '''
-                        set -eu
-                        mvn -B "-Dtest=BuyOrderControllerTest,OrderServiceTest" test
+                sh '''
+                    set -eu
+                    mvn -B -pl services/core-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
 
-                        echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
-                        if ls target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
-                            grep -h '<testsuite ' target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
-                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                        else
-                            echo "BuyOrderControllerTest report not found"
-                        fi
-                    '''
-                }
+                    echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
+                    if ls services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "BuyOrderControllerTest report not found"
+                    fi
+                '''
             }
             post {
                 always {
-                    junit 'apps/backend/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
+                }
+            }
+        }
+
+        stage('Run market simulator tests') {
+            steps {
+                sh '''
+                    set -eu
+                    mvn -B -pl services/market-service -am "-Dtest=MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
+
+                    echo "=== MARKET SIMULATOR TEST SUMMARY ==="
+                    if ls services/market-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' services/market-service/target/surefire-reports/TEST-*.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "Market simulator test report not found"
+                    fi
+                '''
+            }
+            post {
+                always {
+                    junit 'services/market-service/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Run holdings service tests') {
+            steps {
+                sh '''
+                    set -eu
+                    mvn -B -pl services/holdings-service -am "-Dtest=HoldingsServiceTest,HoldingsControllerTest,HoldingsSettlementServiceTest,ProfileServiceTest,PortfolioServiceTest,TradeServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
+
+                    echo "=== HOLDINGS SERVICE TEST SUMMARY ==="
+                    if ls services/holdings-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                        grep -h '<testsuite ' services/holdings-service/target/surefire-reports/TEST-*.xml \
+                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                    else
+                        echo "Holdings service test report not found"
+                    fi
+                '''
+            }
+            post {
+                always {
+                    junit 'services/holdings-service/target/surefire-reports/*.xml'
                 }
             }
         }
@@ -94,34 +139,30 @@ pipeline {
             }
         }
 
-        stage('Start PostgreSQL for integration tests') {
+        stage('Verify buy and sell persistence on PostgreSQL') {
             steps {
                 sh '''
                     set -eu
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose up -d --wait db
+                        compose() { docker compose "$@"; }
                     else
-                        docker-compose up -d db
-                        for attempt in $(seq 1 60); do
-                            if docker-compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
-                                exit 0
-                            fi
-                            sleep 1
-                        done
-                        exit 1
+                        compose() { docker-compose "$@"; }
                     fi
+                    compose up -d db
+                    ready=0
+                    for attempt in $(seq 1 60); do
+                        if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                            ready=1
+                            break
+                        fi
+                        sleep 1
+                    done
+                    test "$ready" = 1
+                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
-        }
-
-        stage('Verify orders and isolation on PostgreSQL') {
-            steps {
-                dir('apps/backend') {
-                    sh 'mvn -B -Dspring.profiles.active=postgres-test -Dtest=OwnDataIntegrationTest,BuyOrderIntegrationTest test'
-                }
-            }
             post {
-                always { junit 'apps/backend/target/surefire-reports/TEST-*IntegrationTest.xml' }
+                always { junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml' }
             }
         }
 
@@ -134,10 +175,12 @@ pipeline {
                     image_tag="${BUILD_NUMBER:-local}-${short_sha}"
                     echo "$image_tag" > .image_tag
 
-                    docker build -t "lemarketjames/backend:$image_tag" ./apps/backend
+                    # Backend images build from the repo root so Maven can see the parent pom and libs/common.
+                    for service in core-service auth-service market-service holdings-service gateway-service; do
+                        docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
+                        docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
+                    done
                     docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
-
-                    docker image inspect "lemarketjames/backend:$image_tag" >/dev/null
                     docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
 
                     echo "Built versioned images with tag: $image_tag"
@@ -196,13 +239,26 @@ pipeline {
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                         docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
+                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
                     else
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
                         docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
+                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
                     fi
                 '''
+            }
+        }
+
+        stage('Verify own-data isolation on PostgreSQL') {
+            steps {
+                sh 'mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
+            }
+            post {
+                always {
+                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                }
             }
         }
 
@@ -218,40 +274,49 @@ pipeline {
                     fi
 
                     echo "Container user and group:"
-                    compose exec -T backend id
+                    compose exec -T core-service id
+                    compose exec -T auth-service id
+                    compose exec -T market-service id
+                    compose exec -T holdings-service id
 
-                    echo "Waiting for backend health endpoint"
-                    healthy=0
-                    for attempt in $(seq 1 60); do
-                        status=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:8081/actuator/health || true)
-                        if [ "$status" = "200" ]; then
-                            healthy=1
-                            break
+                    # core-service :8081, auth-service :8082, gateway-service :8080, market-service :8083, holdings-service :8084
+                    for port in 8081 8082 8080 8083 8084; do
+                        echo "Waiting for health endpoint on port $port"
+                        healthy=0
+                        for attempt in $(seq 1 60); do
+                            status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
+                            if [ "$status" = "200" ]; then
+                                healthy=1
+                                break
+                            fi
+                            sleep 1
+                        done
+
+                        if [ "$healthy" -ne 1 ]; then
+                            echo "Service on port $port did not become healthy in time"
+                            compose ps
+                            compose logs core-service auth-service market-service holdings-service gateway-service
+                            exit 1
                         fi
-                        sleep 1
                     done
 
-                    if [ "$healthy" -ne 1 ]; then
-                        echo "Backend did not become healthy in time"
-                        compose ps
-                        compose logs backend
-                        exit 1
-                    fi
-
-                    response=$(curl --fail --silent --show-error http://localhost:8081/)
+                    # Through the gateway, so routing to core-service is exercised too.
+                    response=$(curl --fail --silent --show-error http://localhost:8089/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs backend
+                    compose logs core-service auth-service market-service holdings-service gateway-service
                 '''
             }
         }
 
         stage('Verify buy order survives restart') {
-            steps {
-                sh 'bash scripts/verify-buy-order.sh'
-            }
+            steps { sh 'bash scripts/verify-buy-order.sh' }
+        }
+
+        stage('Verify sell order survives restart') {
+            steps { sh 'bash scripts/verify-sell-order.sh' }
         }
 
         stage('Run quote API contract smoke test') {
@@ -259,7 +324,8 @@ pipeline {
                 sh '''
                     set -eu
 
-                    base="http://localhost:8081"
+                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
+                    base="http://localhost:8089"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -323,7 +389,8 @@ JSON
                 sh '''
                     set -eu
 
-                    base="http://localhost:8081"
+                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
+                    base="http://localhost:8089"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
@@ -389,9 +456,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 backend db || true
+                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 backend db || true
+                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
                 fi
             '''
         }

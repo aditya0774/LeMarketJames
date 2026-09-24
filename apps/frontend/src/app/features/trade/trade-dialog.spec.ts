@@ -21,6 +21,7 @@ describe('TradeDialog', () => {
   let closedCount: number;
   let placedEvents: number;
   let pending: Subject<any> | null;
+  let pendingSell: Subject<any> | null;
 
   beforeEach(async () => {
     placedSell = [];
@@ -28,6 +29,7 @@ describe('TradeDialog', () => {
     closedCount = 0;
     placedEvents = 0;
     pending = null;
+    pendingSell = null;
     await TestBed.configureTestingModule({
       imports: [TradeDialog],
       providers: [
@@ -42,7 +44,7 @@ describe('TradeDialog', () => {
           useValue: {
             createOrder: (req: OrderRequest) => {
               placedSell.push(req);
-              return pending ?? of({ success: true, orderId: 42, orderStatus: 'SUBMITTED' });
+              return pendingSell ?? of({ success: true, orderId: 42, orderStatus: 'SUBMITTED' });
             },
             submitBuyOrder: (req: BuyOrderRequest) => {
               placedBuy.push(req);
@@ -135,6 +137,53 @@ describe('TradeDialog', () => {
 
     expect(submitButton().disabled).toBe(true);
     expect(el().textContent).toContain("You can't sell more shares than you hold.");
+  });
+
+  it('submits SELL once while loading and confirms the returned order ID and status', async () => {
+    pendingSell = new Subject();
+    (el().querySelectorAll('.type-toggle .opt')[1] as HTMLButtonElement).click();
+    fixture.componentInstance.submit();
+    fixture.componentInstance.submit();
+    await render();
+    expect(placedBuy).toEqual([]);
+    expect(placedSell).toEqual([{ accountId: 7, instrumentId: 5, orderType: 'SELL', quantity: 1 }]);
+    expect(submitButton().disabled).toBe(true);
+    expect(submitButton().textContent).toContain('Placing order');
+    pendingSell.next({ success: true, orderId: 99, orderStatus: 'SUBMITTED' });
+    pendingSell.complete();
+    await render();
+    expect(el().querySelector('[role=status]')?.textContent).toContain('Sell order #99 for 1 TSLA is submitted');
+    expect(submitButton().disabled).toBe(false);
+    expect(placedEvents).toBe(1);
+  });
+
+  for (const failure of [
+    { status: 400, error: { error: 'Insufficient holdings' }, message: 'Insufficient holdings' },
+    { status: 401, error: {}, message: 'Your session has expired' },
+    { status: 0, error: {}, message: 'Unable to place the order' },
+  ]) {
+    it(`recovers from SELL failure: ${failure.message}`, async () => {
+      pendingSell = new Subject();
+      (el().querySelectorAll('.type-toggle .opt')[1] as HTMLButtonElement).click();
+      fixture.componentInstance.submit();
+      pendingSell.error(new HttpErrorResponse(failure));
+      await render();
+      expect(el().querySelector('[role=alert]')?.textContent).toContain(failure.message);
+      expect(el().querySelector('[role=status]')).toBeNull();
+      expect(submitButton().disabled).toBe(false);
+      expect(placedEvents).toBe(0);
+    });
+  }
+
+  it('does not confirm a SELL rejected in the response body', async () => {
+    pendingSell = new Subject();
+    (el().querySelectorAll('.type-toggle .opt')[1] as HTMLButtonElement).click();
+    fixture.componentInstance.submit();
+    pendingSell.next({ success: false, reason: 'Insufficient holdings' });
+    pendingSell.complete();
+    await render();
+    expect(el().querySelector('[role=alert]')?.textContent).toContain('Insufficient holdings');
+    expect(placedEvents).toBe(0);
   });
 
   it('closes on Escape, the × button and a backdrop click, but not a click inside', () => {

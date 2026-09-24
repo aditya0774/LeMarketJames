@@ -120,7 +120,7 @@ Submits a buy order via the dedicated buy-order service contract.
 
 ### POST /api/v1/orders
 
-Authenticated market-order submission. The account must belong to the JWT-cookie user.
+Authenticated market-order submission through the gateway. The account must belong to the JWT-cookie user.
 The dashboard trade dialog is the supported buy form; /orders redirects to /dashboard.
 
 #### Request
@@ -140,7 +140,9 @@ For BUY, the server uses MarketDataService's current ask price, rounded to four 
 places, for both cash validation and the saved pricePerUnit snapshot. An optional positive
 client pricePerUnit is accepted for compatibility but never determines the BUY price.
 The displayed live quote is an estimate and can differ from the submission snapshot.
-SELL behavior is unchanged by OP-14.
+SELL orders require sufficient holdings, validated by holdings-service before persistence.
+Submission does not reserve shares, change holdings, or credit cash. Execution must
+revalidate available shares. SELL price is optional and is not an execution price.
 
 #### Response (201 Created)
 
@@ -174,6 +176,7 @@ snapshot cost with current cash; aggregate reservations belong to execution/life
 
 | HTTP | Condition | Body fields |
 |---|---|---|
+| 400 | Insufficient holdings (SELL) | success: false, code: INSUFFICIENT_HOLDINGS, error: readable explanation |
 | 400 | Insufficient cash | success: false, code: INSUFFICIENT_CASH, reason: readable explanation |
 | 400 | Missing or invalid market price | success: false, code: PRICE_UNAVAILABLE, reason: readable explanation |
 | 400 | Non-tradable instrument | success: false, code: NOT_TRADABLE, error: readable explanation |
@@ -203,6 +206,8 @@ an immutable-record API; the existing status/rejection operations belong to that
 ---
 
 ## Holdings Endpoints
+
+Implemented by `holdings-service` (`/api/v1/holdings`, alias `/api/holdings`). `averageCost`/`totalCost`/`gainLoss`/`gainLossPercent` are now real, computed from cost basis tracked by holdings-service's settlement logic (`HoldingsSettlementService`) — previously these were hardcoded to zero. Settlement itself (`POST /internal/holdings/settle`) is internal, server-to-server only (`core-service` → `holdings-service` when an order fills) — it is not part of this public contract and has no gateway route.
 
 ### GET /api/holdings
 
@@ -242,6 +247,8 @@ Retrieves all stock holdings for the authenticated user.
 
 ## Balance Endpoints
 
+**Implemented** by `holdings-service`, mapped at `/api/balance`, `/api/v1/balance`, and `/api/v1/portfolio`. No `accountId` param — scoped from the JWT like `/api/auth/me`, per this section's own rule below. See "1. GET /api/balance" under "Dashboard & Trade" for the field-source rules used to compute it (now implemented, not just documented).
+
 ### GET /api/balance
 
 Retrieves the account balance and portfolio summary.
@@ -263,6 +270,56 @@ Retrieves the account balance and portfolio summary.
     "currency": "USD"
   }
 }
+```
+
+---
+
+## Profile Endpoints
+
+Implemented by `holdings-service`.
+
+### GET /api/v1/profile
+
+Retrieves the authenticated client's own profile and account info. No `accountId` param — scoped from the JWT, self-service only (there is no lookup-by-id or admin concept anywhere in this app).
+
+#### Response (200 OK)
+
+```json
+{
+  "username": "alice",
+  "fullName": "Alice Smith",
+  "email": "alice@example.com",
+  "phone": "555-1234",
+  "accountId": 7,
+  "cashBalance": 1000.00,
+  "currency": "USD",
+  "tradingEnabled": true,
+  "openedDate": "2024-01-01"
+}
+```
+
+---
+
+## Trade History Endpoints
+
+Implemented by `holdings-service`. Order placement itself is still `core-service`'s `/api/v1/orders`; this reads that same data back, filtered to completed fills.
+
+### GET /api/v1/trades?accountId=...
+
+Retrieves the authenticated user's completed (`FILLED`) orders, ownership-scoped the same way as `GET /api/v1/holdings`.
+
+#### Response (200 OK)
+
+```json
+[
+  {
+    "symbol": "AAPL",
+    "side": "BUY",
+    "quantity": 5,
+    "pricePerUnit": 227.55,
+    "filledAt": "2026-09-21T14:30:01"
+  }
+]
 ```
 
 ---
@@ -490,9 +547,9 @@ The Angular dashboard (`/dashboard`) and trade page (`/trade/:symbol`) are built
 
 Priority order: 1 and 2 unblock the most UI, 3 is a small additive change, and 4 and 5 are nice-to-have.
 
-### 1. GET /api/balance (contracted above, not implemented yet)
+### 1. GET /api/balance (implemented, by holdings-service)
 
-The contract already exists in **Balance Endpoints** above. These are the details the dashboard relies on:
+The contract already exists in **Balance Endpoints** above. These are the details the dashboard relies on (now implemented in `holdings-service`'s `PortfolioService`):
 
 | Field | Source / rule |
 |---|---|
@@ -503,9 +560,9 @@ The contract already exists in **Balance Endpoints** above. These are the detail
 | `dayGainLoss` / `dayGainLossPercent` | Σ holdings `quantity × (price − openPrice)`, using `QuoteSnapshot.openPrice` (today's first price); percent is relative to Σ `quantity × openPrice` |
 | `totalGainLoss` / `totalGainLossPercent` | Same totals as `GET /api/v1/holdings` (`gainLoss`, relative to total cost) |
 
-- Path: keep `/api/balance`, and add `/api/v1/balance` as an alias to match the `/api/v1/` convention.
+- Path: `/api/balance`, plus `/api/v1/balance` and `/api/v1/portfolio` aliases.
 - Errors: `401` when not authenticated; `404 { "success": false, "error": "Account not found" }` when the login has no account.
-- **Frontend switch-over:** `features/dashboard/stat-strip/stat-strip.ts` (Buying power card, currently "—"; the "Total P/L" card becomes "Day P/L" as in the mockup) and `features/trade/trade.ts` (block BUY orders above `buyingPower`). `core/orders/orders.service.ts#getBalance` already calls this path.
+- **Frontend switch-over (still needed):** `features/dashboard/stat-strip/stat-strip.ts` (Buying power card, currently "—"; the "Total P/L" card becomes "Day P/L" as in the mockup) and `features/trade/trade.ts` (block BUY orders above `buyingPower`). `core/orders/orders.service.ts#getBalance` already calls this path — the backend now exists, but the frontend still needs to actually wire the stat-strip up to it.
 
 ### 2. GET /api/v1/instruments (new)
 
