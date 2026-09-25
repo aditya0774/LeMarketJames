@@ -12,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +87,27 @@ class QuoteServiceTest {
         assertEquals(new BigDecimal("33.71"), quote.getPeRatio());
         assertEquals(new BigDecimal("0.44"), quote.getDividendYield());
         assertEquals(new BigDecimal("0.00"), quote.getPriceChange());
+    }
+
+    @Test
+    void returnsEveryQuoteSortedBySymbol() {
+        when(marketData.findAll()).thenReturn(List.of(
+                quoteFor(instrument(2, "MSFT", "Bronisoft", 429.85)),
+                quoteFor(instrument(1, "AAPL", "BronApple", 227.55))));
+
+        List<QuoteDto> quotes = quoteService.getAllQuotes();
+
+        assertEquals(List.of("AAPL", "MSFT"), quotes.stream().map(QuoteDto::getSymbol).toList());
+        // Same mapping as the single-symbol lookup.
+        assertEquals(new BigDecimal("227.55"), quotes.get(0).getPrice());
+        assertEquals("BronApple", quotes.get(0).getName());
+    }
+
+    @Test
+    void returnsNoQuotesWhenTheMarketIsUnavailable() {
+        when(marketData.findAll()).thenReturn(List.of());
+
+        assertTrue(quoteService.getAllQuotes().isEmpty());
     }
 
     private static MarketInstrument instrument(int id, String ticker, String name, double price) {

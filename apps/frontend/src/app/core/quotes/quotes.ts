@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, firstValueFrom, forkJoin, map, of, switchMap, timer } from 'rxjs';
+import { Observable, catchError, firstValueFrom, map, of, switchMap, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Quote, QuoteSuccessResponse } from '../../shared/models/quote.model';
+import { Quote, QuoteSuccessResponse, QuotesListResponse } from '../../shared/models/quote.model';
 
 /** How often live quotes are refreshed. The backend simulator ticks every second. */
 export const DEFAULT_QUOTE_REFRESH_MS = 5000;
@@ -31,8 +31,12 @@ export class Quotes {
   }
 
   /**
-   * Polls several symbols together and emits a symbol → Quote map (null when that symbol
-   * failed), so one unknown or failing symbol never blanks the others.
+   * Polls several symbols together and emits a symbol → Quote map (null when that symbol has
+   * no quote), so one unknown symbol never blanks the others.
+   *
+   * Each refresh is a single `GET /api/quotes` for the whole market rather than one request per
+   * symbol: with 50 stocks on the dashboard, per-symbol polling would mean 50 requests every tick.
+   * If the batch request fails, every symbol is null for that tick and the next tick retries.
    */
   watchQuotes(
     symbols: readonly string[],
@@ -43,16 +47,15 @@ export class Quotes {
     }
     return timer(0, refreshMs).pipe(
       switchMap(() =>
-        forkJoin(
-          symbols.map((symbol) =>
-            this.http.get<QuoteSuccessResponse>(`${this.baseUrl}/${symbol}`).pipe(
-              map((response) => response.quote),
-              catchError(() => of(null)),
-            ),
-          ),
+        this.http.get<QuotesListResponse>(this.baseUrl).pipe(
+          map((response) => response.quotes ?? []),
+          catchError(() => of([] as Quote[])),
         ),
       ),
-      map((quotes) => Object.fromEntries(symbols.map((symbol, i) => [symbol, quotes[i]]))),
+      map((quotes) => {
+        const bySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
+        return Object.fromEntries(symbols.map((symbol) => [symbol, bySymbol.get(symbol) ?? null]));
+      }),
     );
   }
 }

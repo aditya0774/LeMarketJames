@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import static org.mockito.Mockito.when;
 import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.orders.entity.Instrument;
 import com.lemarketjames.orders.repository.InstrumentRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +49,7 @@ class BuyOrderIntegrationTest {
     String username;
     Integer accountId;
     Integer instrumentId;
+    Integer nonTradableId;
     Cookie cookie;
 
     @BeforeEach
@@ -70,6 +72,9 @@ class BuyOrderIntegrationTest {
         jdbc.update("DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         jdbc.update("DELETE FROM clients WHERE username=?", username);
+        if (nonTradableId != null) {
+            jdbc.update("DELETE FROM instruments WHERE instrument_id=?", nonTradableId);
+        }
     }
 
     private String request(int account, int instrument, int quantity) throws Exception {
@@ -107,9 +112,11 @@ class BuyOrderIntegrationTest {
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
             .content(request(accountId, instrumentId, 0)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.quantity").exists());
-        int nonTradable = instruments.findByTicker("GOOGL").orElseThrow().getInstrumentId();
+        // Every real stock is tradable (migration 009), so this test brings its own non-tradable
+        // instrument; it runs on the H2 and PostgreSQL profiles alike and is removed afterwards.
+        nonTradableId = saveNonTradableInstrument();
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
-            .content(request(accountId, nonTradable, 1)))
+            .content(request(accountId, nonTradableId, 1)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("NOT_TRADABLE"));
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
             .content(request(Integer.MAX_VALUE, instrumentId, 1)))
@@ -119,6 +126,16 @@ class BuyOrderIntegrationTest {
             .andExpect(status().isUnauthorized());
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM orders WHERE account_id=?", Integer.class, accountId));
     }
+    private Integer saveNonTradableInstrument() {
+        Instrument instrument = new Instrument();
+        instrument.setTicker("NT" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+        instrument.setName("Non-tradable test fixture");
+        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
+        instrument.setCurrency("USD");
+        instrument.setTradable(false);
+        return instruments.saveAndFlush(instrument).getInstrumentId();
+    }
+
     // Auth is a separate service; seed its shared account data and use its JWT format.
     private Integer register(String username) {
         ClientEntity client = new ClientEntity();

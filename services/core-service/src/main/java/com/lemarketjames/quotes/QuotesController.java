@@ -2,6 +2,7 @@ package com.lemarketjames.quotes;
 
 import com.lemarketjames.quotes.dto.QuoteErrorResponse;
 import com.lemarketjames.quotes.dto.QuoteSuccessResponse;
+import com.lemarketjames.quotes.dto.QuotesListResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,12 @@ public class QuotesController {
 
     public QuotesController(QuoteService quoteService) {
         this.quoteService = quoteService;
+    }
+
+    /** Every quote in one response, so the dashboard polls once per refresh rather than once per stock. */
+    @GetMapping
+    public QuotesListResponse getAllQuotes() {
+        return new QuotesListResponse(true, quoteService.getAllQuotes());
     }
 
     @GetMapping("/{symbol}")

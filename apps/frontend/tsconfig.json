@@ -3,9 +3,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
-      "@app/*": ["src/app/*"]
+      "@app/*": ["./src/app/*"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
