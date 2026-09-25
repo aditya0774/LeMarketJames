@@ -8,7 +8,6 @@
 
 # Frontend build output
 apps/frontend/node_modules/
-apps/frontend/package-lock.json
 apps/frontend/.angular/
 apps/frontend/dist/
 apps/frontend/coverage/
