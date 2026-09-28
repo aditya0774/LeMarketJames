@@ -366,6 +366,41 @@ Retrieves the current stock quote for a given symbol.
 }
 ```
 
+### GET /api/quotes
+
+Retrieves the current quote for every stock in the market in one call. The dashboard polls this once per refresh instead of calling `GET /api/quotes/{symbol}` once per stock (the market has 50).
+
+Served by core-service's quotes feature, which reads every price from market-service server-to-server (`MarketDataService.findAll()`); the browser never calls market-service directly. Requires the `jwt` cookie, like the single-symbol endpoint.
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "quotes": [
+    {
+      "symbol": "AAPL",
+      "name": "BronApple",
+      "price": 255.10,
+      "priceChange": 1.35,
+      "priceChangePercent": 0.53,
+      "highPrice": 256.00,
+      "lowPrice": 252.40,
+      "openPrice": 253.75,
+      "volume": 41234567,
+      "marketCap": 3775480000000,
+      "peRatio": 34.01,
+      "dividendYield": 0.41,
+      "lastUpdate": "2026-09-24T16:00:00Z"
+    }
+  ]
+}
+```
+
+- Each item has exactly the same fields and definitions as `quote` in `GET /api/quotes/{symbol}`.
+- Sorted by `symbol` ascending.
+- If market-service is unavailable, `quotes` is an empty array (still `200`); clients treat every symbol as having no quote for that refresh.
+
 ---
 
 ## Reports Endpoints
@@ -595,10 +630,10 @@ Lists instruments with a live price. It powers dashboard stock search and replac
 ```
 
 - Sort by `symbol` ascending. No pagination is needed at the current catalog size. Add `limit` later if the catalog grows.
-- `price`, `priceChange`, and `priceChangePercent` use the same definitions as `GET /api/quotes/{symbol}`. They are `null` if the simulator has no snapshot for that instrument (for example, non-tradable instruments).
+- `price`, `priceChange`, and `priceChangePercent` use the same definitions as `GET /api/quotes/{symbol}`. They are `null` if the simulator has no snapshot for that instrument (an instrument without `instrument_market_params`).
 - No matches return `200` with `"instruments": []`, not 404.
 - Data: the `instruments` table joined with `MarketDataService.findAll()`. Read-only; no migration needed.
-- **Frontend switch-over:** `core/market/instrument-catalog.ts` (currently a hard-coded copy of the seed rows in `001`/`006`) and `features/dashboard/stock-search/stock-search.ts` (currently polls `GET /api/quotes/{symbol}` once per symbol).
+- **Frontend switch-over:** `core/market/instrument-catalog.ts` (currently a hard-coded copy of the 50 instruments seeded by `009`). Live prices already come from one `GET /api/quotes` batch call per refresh (`core/quotes/quotes.ts`, `watchQuotes`).
 
 ### 3. Add `symbol` and `instrumentName` to order responses (additive)
 

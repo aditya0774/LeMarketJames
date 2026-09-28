@@ -19,6 +19,12 @@ export interface QuoteSuccessResponse {
   quote: Quote;
 }
 
+/** GET /api/quotes: every simulated stock's quote in one response. */
+export interface QuotesListResponse {
+  success: true;
+  quotes: Quote[];
+}
+
 export interface QuoteErrorResponse {
   success: false;
   error: string;

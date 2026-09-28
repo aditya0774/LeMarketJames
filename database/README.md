@@ -90,7 +90,8 @@ quoted.
 
 `007_lebronify_instruments.sql` gives every company a LeBron-themed display name and adds two
 stocks. Tickers and ids are unchanged, so orders and holdings are unaffected, and GOOGL stays
-non-tradable.
+non-tradable. **Superseded by 009**, which sets the final names, removes LMT and makes GOOGL
+tradable; the table below shows the state after 007 only.
 
 | Id | Ticker | Name |
 |---|---|---|
@@ -109,4 +110,106 @@ picks up the new instruments:
 ```sh
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
 docker compose restart backend
+```
+
+## 009 — The full 50-stock market
+
+`009_full_lebron_market.sql` replaces the placeholder line-up with the final market: 50 LeBronified
+parodies of real companies, **all tradable**.
+
+| Change | Detail |
+|---|---|
+| LMT removed | Deleted along with every row that references it (`audit_log`, `order_events`, `orders`, `holdings`, `price_candles`, `market_quotes`, `instrument_market_params`). Id 7 is left unused. |
+| 7 tickers kept | AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, AVGO keep their ids and get their final names. GOOGL becomes tradable (reverses 005). |
+| 43 tickers added | Explicit ids 9–51, so every database (and the frontend's `InstrumentCatalog`) agrees on them. |
+| Market params | Upserted for all 50 with roughly realistic 2026 values. Existing `market_quotes` snapshots are kept, so live prices continue from where they are. |
+
+Non-US companies (TSM, ASML, BHP, SAN, TD, TTE, SHOP) use their US listing/ADR: USD, US market
+hours. Every stock is priced well under the $5,000 minimum deposit (the most expensive are about
+$950), so any new account can buy whole shares of anything. BRK-A is therefore priced like
+Berkshire's class B share (about $490 rather than the real class A's ~$730k), with shares
+outstanding and EPS rescaled so its market cap and P/E are unchanged.
+
+Nothing in the real market is non-tradable any more. Tests that check the `NOT_TRADABLE` rejection
+bring their own fixture instead: `SellOrderIntegrationTest` creates (and deletes) a non-tradable
+instrument, and the Jenkins smoke test inserts `CI-NT` into its throwaway database.
+
+If 009 fails with a duplicate key on `instruments_pkey`, an earlier run of the `postgres-test`
+integration tests left an instrument (ticker `IA…`) at an id between 9 and 51. The transaction rolls
+back cleanly; delete those leftover test instruments and their orders, then apply 009 again.
+
+| Id | Ticker | Name |
+|---|---|---|
+| 1 | AAPL | BronApple |
+| 2 | MSFT | Bronisoft |
+| 3 | GOOGL | AlphaBron |
+| 4 | AMZN | AkronZon |
+| 5 | TSLA | TesLe |
+| 6 | NVDA | BronVidia |
+| 8 | AVGO | Broncom |
+| 9 | TSM | Taiwan SemiBronductor |
+| 10 | META | MetaBron Platforms |
+| 11 | MU | MicBron Technology |
+| 12 | LLY | eLe Bronny |
+| 13 | BRK-A | Bronshire Hathaway |
+| 14 | AMD | Advanced Micro Bronvices |
+| 15 | JPM | JPBron Chase |
+| 16 | WMT | BronMart |
+| 17 | V | VisaBron |
+| 18 | ASML | ASBron Holding |
+| 19 | XOM | Exxon MoBron |
+| 20 | JNJ | Bronson & Bronson |
+| 21 | INTC | BronTel |
+| 22 | MA | MasterBronCard |
+| 23 | ABBV | BronVie |
+| 24 | ORCL | Bronacle |
+| 25 | PLTR | PalanBron |
+| 26 | CSCO | BronCisco Systems |
+| 27 | CVX | CheBron |
+| 28 | COST | CostBronco |
+| 29 | BAC | Bank of Akron |
+| 30 | LRCX | LamBron Research |
+| 31 | KO | Coca-Bronla |
+| 32 | AMAT | Applied Bronterials |
+| 33 | CAT | CaterBron |
+| 34 | MRK | Merck & Bron |
+| 35 | DELL | BronDell Technologies |
+| 36 | PG | Bronter & Gamble |
+| 37 | IBM | International Bronsiness Machines |
+| 38 | AMGN | AmBron |
+| 39 | BHP | BronHP Group |
+| 40 | LIN | LindBron |
+| 41 | SAN | Banco SantanBron |
+| 42 | QCOM | QualBroncomm |
+| 43 | TD | Toronto-Bronminion Bank |
+| 44 | STX | SeaBron Technology |
+| 45 | AXP | AmeriBron Express |
+| 46 | APH | AmphenBron |
+| 47 | TTE | TotalBronergies |
+| 48 | CRM | Bronforce |
+| 49 | VZ | VeriBron |
+| 50 | SHOP | ShopiBron |
+| 51 | DE | Deere & Bronpany |
+
+Apply to an existing Docker database (idempotent). Stop market-service first: it holds LMT in
+memory and would try to write LMT's price back after the delete.
+
+```sh
+docker compose stop market-service
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
+docker compose start market-service
+```
+
+```powershell
+docker compose stop market-service
+Get-Content database/schema/009_full_lebron_market.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket
+docker compose start market-service
+```
+
+To restart a carried-over stock from its new `initial_price` instead of its stored price, delete its
+snapshot (with market-service stopped):
+
+```sql
+DELETE FROM market_quotes
+WHERE instrument_id = (SELECT instrument_id FROM instruments WHERE ticker = 'NVDA');
 ```

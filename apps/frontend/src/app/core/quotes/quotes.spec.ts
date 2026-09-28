@@ -79,17 +79,37 @@ describe('Quotes', () => {
       httpMock.expectNone(`${baseUrl}/AAPL`);
     });
 
-    it('watchQuotes should keep good symbols when another one fails', () => {
+    it('watchQuotes should fetch every symbol in one batch request per refresh', () => {
       const emissions: Record<string, unknown>[] = [];
       const subscription = quotes.watchQuotes(['AAPL', 'NOPE'], 1000).subscribe((m) => emissions.push(m));
 
       vi.advanceTimersByTime(0);
-      httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.55 } });
-      httpMock
-        .expectOne(`${baseUrl}/NOPE`)
-        .flush({ success: false, error: 'Symbol not found' }, { status: 404, statusText: 'Not Found' });
+      const request = httpMock.expectOne(baseUrl);
+      expect(request.request.method).toBe('GET');
+      // Symbols missing from the batch (unknown to the market) map to null without blanking the rest.
+      request.flush({ success: true, quotes: [{ symbol: 'AAPL', price: 227.55 }, { symbol: 'MSFT', price: 510 }] });
 
       expect(emissions).toEqual([{ AAPL: { symbol: 'AAPL', price: 227.55 }, NOPE: null }]);
+
+      vi.advanceTimersByTime(1000);
+      httpMock.expectOne(baseUrl).flush({ success: true, quotes: [{ symbol: 'AAPL', price: 227.61 }] });
+      expect(emissions[1]).toEqual({ AAPL: { symbol: 'AAPL', price: 227.61 }, NOPE: null });
+
+      subscription.unsubscribe();
+    });
+
+    it('watchQuotes should emit nulls when the batch request fails, then keep polling', () => {
+      const emissions: Record<string, unknown>[] = [];
+      const subscription = quotes.watchQuotes(['AAPL'], 1000).subscribe((m) => emissions.push(m));
+
+      vi.advanceTimersByTime(0);
+      httpMock.expectOne(baseUrl).flush(null, { status: 503, statusText: 'Service Unavailable' });
+      expect(emissions).toEqual([{ AAPL: null }]);
+
+      vi.advanceTimersByTime(1000);
+      httpMock.expectOne(baseUrl).flush({ success: true, quotes: [{ symbol: 'AAPL', price: 227.55 }] });
+      expect(emissions[1]).toEqual({ AAPL: { symbol: 'AAPL', price: 227.55 } });
+
       subscription.unsubscribe();
     });
   });

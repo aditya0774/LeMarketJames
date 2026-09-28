@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -76,6 +77,26 @@ class QuotesControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Symbol not found"));
+    }
+
+    @Test
+    void allQuotesEndpointRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/quotes"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void authenticatedRequestReturnsEveryQuote() throws Exception {
+        Cookie jwtCookie = loginAs("quotesuser3");
+        when(marketData.findAll()).thenReturn(List.of(sampleAaplQuote()));
+
+        mockMvc.perform(get("/api/quotes").cookie(jwtCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.quotes.length()").value(1))
+                .andExpect(jsonPath("$.quotes[0].symbol").value("AAPL"))
+                .andExpect(jsonPath("$.quotes[0].price").isNumber())
+                .andExpect(jsonPath("$.quotes[0].lastUpdate").isString());
     }
 
     // auth-service issues the jwt cookie in production; here the shared JwtService mints an
