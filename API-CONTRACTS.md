@@ -197,6 +197,16 @@ both return HTTP 403 with ACCOUNT_ACCESS_DENIED to avoid disclosing their existe
 Returns a JSON array of order DTOs for the caller's account (HTTP 200); an empty
 account returns []. Foreign accounts return HTTP 403.
 
+The dashboard's LMKT-32 date filter uses this complete array, filtering `submittedAt`
+in the browser's local timezone before pagination. Day, month (including year), and
+year selections combine with the status filter; Clear filter resets both to show the
+full history. No matches for an active date filter display `No orders in this period`.
+No date query parameters are added. Offset-bearing timestamps are converted to local
+time; existing offset-free LocalDateTime values are interpreted as local time, matching
+the table display. The API must supply an offset to preserve the original instant
+across timezones. This is the existing repository contract used for the mocked tests;
+the separate C6 agreement has not been supplied.
+
 ### GET /api/v1/orders/account/{accountId}/status/{status}
 
 Same array response, filtered by SUBMITTED, ACCEPTED, PENDING, FILLED, REJECTED,
