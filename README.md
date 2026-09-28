@@ -199,7 +199,7 @@ Before running the application, ensure you have the following installed:
 
 ## Running the Application
 
-Choose one of the three methods below based on your use case:
+Choose one of the three methods below based on your use case. The team's current setup is **[Method 3](#method-3-docker-compose-full-stack-with-database)**: backend and database in Docker Compose on the Linux host, with the frontend dev server on the Windows machine.
 
 ### Method 1: Local Development (Maven + npm)
 
@@ -309,44 +309,67 @@ This method builds one service's Docker image and runs it in a container. Backen
 
 ### Method 3: Docker Compose (Full Stack with Database)
 
-This method spins up the complete stack: Angular frontend + gateway + auth and core services + PostgreSQL database.
+This is the team's current setup. The backend and database run in Docker Compose on the Linux host (`10.14.129.6`), and the Angular dev server runs on the Windows machine, proxying API calls to that host.
 
-1. Start all services:
+**Backend + database (Linux host):**
+
+1. From the repo root, build and start every service in the background:
    ```bash
    docker compose up -d --build
    ```
-   - Angular frontend: `http://localhost:4200`
-   - Gateway (backend entry point): `http://localhost:8080`
+   (On older installs with Compose v1, the command is `docker-compose up -d --build`.)
+
+   This starts:
+   - Gateway (backend entry point): `http://localhost:8089` (container port 8080 is published on host port 8089)
    - Core service: `http://localhost:8081` (direct access for debugging)
    - Auth service: `http://localhost:8082` (direct access for debugging)
+   - Market service: `http://localhost:8083` (direct access for debugging)
+   - Holdings service: `http://localhost:8084` (direct access for debugging)
    - PostgreSQL database: `localhost:5432`
+   - A production (nginx) build of the frontend: `http://localhost:4200`
 
-2. Apply the schema (schema application is manual, not automated — see `database/README.md`):
+2. The schema is applied automatically. On first start, Postgres runs every file in `database/schema/` in numeric order, because that folder is mounted into `docker-entrypoint-initdb.d`. This only happens when the `db_data` volume is empty. To pick up new schema files on an existing database, either apply them with `psql` (see [database/README.md](database/README.md)) or wipe and recreate the database:
    ```bash
-   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
+   docker compose down -v
+   docker compose up -d --build
    ```
 
 3. Confirm the services are up and connected to the database:
    ```bash
+   curl http://localhost:8089/actuator/health
    curl http://localhost:8081/actuator/health
    curl http://localhost:8082/actuator/health
-   curl http://localhost:8080/actuator/health
+   curl http://localhost:8083/actuator/health
+   curl http://localhost:8084/actuator/health
    ```
 
 4. View logs:
    ```bash
-   docker compose logs -f gateway-service auth-service core-service
+   docker compose logs -f gateway-service auth-service core-service market-service holdings-service
    ```
 
 5. Stop all services:
    ```bash
    docker compose down
    ```
+
+**Frontend dev server (Windows machine):**
+
+1. Install dependencies (first time, or after `package.json` changes):
+   ```powershell
+   cd apps\frontend
+   npm install
+   ```
+
+2. Start the dev server against the Linux host's gateway:
+   ```powershell
+   npm run start:vm
+   ```
+   This runs `ng serve --proxy-config proxy.vm.json`, which forwards every `/api/**` request to `http://10.14.129.6:8089`. If the Linux host's IP changes, update the `target` in [apps/frontend/proxy.vm.json](apps/frontend/proxy.vm.json).
+
+   The equivalent without the npm script is `npx ng serve --proxy-config proxy.vm.json`. To pass extra flags through the npm script, put them after `--`, e.g. `npm run start:vm -- --port 4300`.
+
+3. Open `http://localhost:4200` on the Windows machine.
 
 **Database Credentials:**
 - Username: `lemarket`
