@@ -11,6 +11,23 @@
     </div>
   </div>
 
+  <div class="date-filters" role="group" aria-label="Filter orders by date">
+    <label>Period
+      <select [value]="period()" (change)="setPeriod($any($event.target).value)">
+        <option value="day">Day</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </label>
+    <label>{{ period() === 'day' ? 'Choose day' : period() === 'month' ? 'Choose month' : 'Choose year' }}
+      <input [type]="period() === 'day' ? 'date' : period() === 'month' ? 'month' : 'number'"
+        [attr.min]="period() === 'year' ? 1 : null" [attr.max]="period() === 'year' ? 9999 : null"
+        [value]="dateValue()" (input)="setDate($any($event.target).value)" />
+    </label>
+    <button type="button" class="chip" (click)="clearFilter()">Clear filter</button>
+    <span>Dates use your local time zone.</span>
+  </div>
+
   <div class="panel-scroll">
     <table>
       <thead>
@@ -44,7 +61,7 @@
           } @empty {
             <tr>
               <td colspan="6" class="empty-row">
-                {{ orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
+                {{ dateValue() ? 'No orders in this period' : orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
               </td>
             </tr>
           }

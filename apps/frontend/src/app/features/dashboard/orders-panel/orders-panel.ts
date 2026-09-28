@@ -11,6 +11,7 @@ import {
 } from './order-status';
 
 const PAGE_SIZE = 5;
+type Period = 'day' | 'month' | 'year';
 
 /**
  * Orders table with status filter chips and client-side pagination. Presentational:
@@ -20,6 +21,7 @@ const PAGE_SIZE = 5;
   selector: 'app-orders-panel',
   imports: [CurrencyPipe, DatePipe, DecimalPipe],
   templateUrl: './orders-panel.html',
+  styleUrl: './orders-panel.css',
 })
 export class OrdersPanel {
   private readonly catalog = inject(InstrumentCatalog);
@@ -31,6 +33,8 @@ export class OrdersPanel {
   protected readonly filters = ORDER_FILTERS;
   protected readonly filter = signal<OrderFilter>('ALL');
   protected readonly page = signal(1);
+  protected readonly period = signal<Period>('day');
+  protected readonly dateValue = signal('');
   protected readonly statusPillClass = statusPillClass;
   protected readonly statusLabel = statusLabel;
 
@@ -38,6 +42,7 @@ export class OrdersPanel {
   protected readonly filtered = computed(() =>
     [...this.orders()]
       .filter((o) => matchesFilter(o.orderStatus, this.filter()))
+      .filter((o) => this.matchesPeriod(o.submittedAt))
       .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt)),
   );
 
@@ -55,6 +60,34 @@ export class OrdersPanel {
   setFilter(filter: OrderFilter): void {
     this.filter.set(filter);
     this.page.set(1);
+  }
+
+  setPeriod(value: string): void {
+    if (value !== 'day' && value !== 'month' && value !== 'year') return;
+    this.period.set(value);
+    this.setDate('');
+  }
+
+  setDate(value: string): void {
+    this.dateValue.set(value);
+    this.page.set(1);
+  }
+
+  clearFilter(): void {
+    this.setDate('');
+    this.filter.set('ALL');
+  }
+
+  private matchesPeriod(timestamp: string): boolean {
+    const value = this.dateValue();
+    if (!value) return true;
+    // Local calendar fields match the displayed date, including offset-bearing API times.
+    // Legacy timestamps without an offset retain the browser's local-time interpretation.
+    const date = new Date(timestamp);
+    const year = String(date.getFullYear()).padStart(4, '0');
+    const month = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const day = `${month}-${String(date.getDate()).padStart(2, '0')}`;
+    return value === (this.period() === 'year' ? year : this.period() === 'month' ? month : day);
   }
 
   goToPage(page: number): void {
