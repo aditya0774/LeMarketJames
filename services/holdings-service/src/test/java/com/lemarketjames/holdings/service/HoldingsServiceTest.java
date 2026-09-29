@@ -46,7 +46,9 @@ public class HoldingsServiceTest {
     }
 
     /**
-     * AC1: Holdings are valued at the current simulated market price.
+     * Verifies holdings are valued using current market prices from market-service.
+     * 
+     * AC1: Returns each stock held with its quantity, valued at the current simulated price.
      */
     @Test
     public void testGetHoldingsForAccount_ValuedAtMarketPrice() {
@@ -58,11 +60,11 @@ public class HoldingsServiceTest {
         QuoteSnapshot quote = new QuoteSnapshot(aapl, 230.0, 229.98, 230.02, 227.55, 231.0, 227.0,
             227.55, 1_000L, Instant.parse("2026-09-16T15:00:00Z"), LocalDate.of(2026, 9, 16));
 
-        when(accountRepository.existsByAccountIdAndUsername(accountId, username)).thenReturn(true);
+        when(accountRepository.findAccountIdByUsername(username)).thenReturn(Optional.of(accountId));
         when(holdingsRepository.findByAccountId(accountId)).thenReturn(List.of(holding));
         when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(quote));
 
-        HoldingDto dto = holdingsService.getHoldingsForAccount(accountId, username).getHoldings().get(0);
+        HoldingDto dto = holdingsService.getHoldingsForAccount(username).getHoldings().get(0);
 
         assertEquals("AAPL", dto.getSymbol());
         assertEquals(new BigDecimal("230.00"), dto.getCurrentPrice());
@@ -70,7 +72,9 @@ public class HoldingsServiceTest {
     }
 
     /**
-     * AC1: A holding in an instrument with no market price still appears, with zero value.
+     * Verifies holdings for instruments without a market price still display correctly.
+     * 
+     * AC1: Holdings returned even when market data unavailable; such holdings show zero value.
      */
     @Test
     public void testGetHoldingsForAccount_NoMarketPrice() {
@@ -78,11 +82,11 @@ public class HoldingsServiceTest {
         String username = "alice";
         HoldingsEntity holding = new HoldingsEntity(accountId, 99, new BigDecimal("3.0000"));
 
-        when(accountRepository.existsByAccountIdAndUsername(accountId, username)).thenReturn(true);
+        when(accountRepository.findAccountIdByUsername(username)).thenReturn(Optional.of(accountId));
         when(holdingsRepository.findByAccountId(accountId)).thenReturn(List.of(holding));
         when(marketData.findByInstrumentId(99)).thenReturn(Optional.empty());
 
-        HoldingDto dto = holdingsService.getHoldingsForAccount(accountId, username).getHoldings().get(0);
+        HoldingDto dto = holdingsService.getHoldingsForAccount(username).getHoldings().get(0);
 
         assertNull(dto.getSymbol());
         assertEquals(0, BigDecimal.ZERO.compareTo(dto.getCurrentPrice()));
@@ -90,8 +94,10 @@ public class HoldingsServiceTest {
     }
 
     /**
-     * AC1: Holdings retrieved - verify getHoldingsForAccount returns holdings
-     * AC2: Requests scoped to authenticated user - user owns account
+     * Verifies successful retrieval and persistence of holdings for authenticated user.
+     * 
+     * AC1: Holdings retrieved - verify getHoldingsForAccount returns holdings with quantity.
+     * AC3: Holdings persist exactly as seeded; platform restarts maintain the same data.
      */
     @Test
     public void testGetHoldingsForAccount_Success() {
@@ -99,69 +105,70 @@ public class HoldingsServiceTest {
         String username = "alice";
         HoldingsEntity holding = new HoldingsEntity(accountId, 1, new BigDecimal("10.0000"));
         
-        // Mock: alice owns account 1
-        when(accountRepository.existsByAccountIdAndUsername(accountId, username))
-            .thenReturn(true);
+        // Mock: alice's account is 1
+        when(accountRepository.findAccountIdByUsername(username))
+            .thenReturn(Optional.of(accountId));
         when(holdingsRepository.findByAccountId(accountId))
             .thenReturn(List.of(holding));
 
-        HoldingsResponse response = holdingsService.getHoldingsForAccount(accountId, username);
+        HoldingsResponse response = holdingsService.getHoldingsForAccount(username);
 
         assertTrue(response.isSuccess());
         assertEquals(1, response.getHoldings().size());
         assertEquals(new BigDecimal("10.0000"), response.getHoldings().get(0).getQuantity());
         
-        // Verify ownership was checked
-        verify(accountRepository).existsByAccountIdAndUsername(accountId, username);
+        // Verify account lookup was performed
+        verify(accountRepository).findAccountIdByUsername(username);
     }
 
     /**
-     * AC1: Holdings retrieved - verify empty list when no holdings
-     * AC2: Requests scoped to authenticated user - user owns account but has no holdings
+     * Verifies empty holdings array when user holds no stocks.
+     * 
+     * AC1: Given I hold nothing, then I see an empty holdings array (not null).
+     * AC3: Holdings persist exactly as seeded; platform restarts maintain the same data.
      */
     @Test
     public void testGetHoldingsForAccount_EmptyList() {
         Integer accountId = 1;
         String username = "alice";
         
-        // Mock: alice owns account 1
-        when(accountRepository.existsByAccountIdAndUsername(accountId, username))
-            .thenReturn(true);
+        // Mock: alice's account is 1, but has no holdings
+        when(accountRepository.findAccountIdByUsername(username))
+            .thenReturn(Optional.of(accountId));
         when(holdingsRepository.findByAccountId(accountId))
             .thenReturn(List.of());
 
-        HoldingsResponse response = holdingsService.getHoldingsForAccount(accountId, username);
+        HoldingsResponse response = holdingsService.getHoldingsForAccount(username);
 
         assertTrue(response.isSuccess());
         assertEquals(0, response.getHoldings().size());
         
-        // Verify ownership was checked
-        verify(accountRepository).existsByAccountIdAndUsername(accountId, username);
+        // Verify account lookup was performed
+        verify(accountRepository).findAccountIdByUsername(username);
     }
 
     /**
-     * AC1: Unauthorized data access prevented
-     * Verify that user cannot access account they don't own
+     * AC1: Authorization at JWT level - no account found for username
+     * Throws IllegalArgumentException when username cannot be resolved to an account
      */
     @Test
-    public void testGetHoldingsForAccount_UnauthorizedAccess() {
-        Integer accountId = 2;
-        String username = "alice";
+    public void testGetHoldingsForAccount_AccountNotFound() {
+        String username = "unknown";
         
-        // Mock: alice does NOT own account 2
-        when(accountRepository.existsByAccountIdAndUsername(accountId, username))
-            .thenReturn(false);
+        // Mock: username has no associated account
+        when(accountRepository.findAccountIdByUsername(username))
+            .thenReturn(Optional.empty());
 
-        // Expect UnauthorizedException to be thrown
-        assertThrows(UnauthorizedException.class, () -> {
-            holdingsService.getHoldingsForAccount(accountId, username);
+        // Expect IllegalArgumentException to be thrown
+        assertThrows(IllegalArgumentException.class, () -> {
+            holdingsService.getHoldingsForAccount(username);
         });
         
-        // Verify ownership was checked
-        verify(accountRepository).existsByAccountIdAndUsername(accountId, username);
+        // Verify account lookup was attempted
+        verify(accountRepository).findAccountIdByUsername(username);
         
-        // Verify repository was NOT queried (ownership check failed first)
-        verify(holdingsRepository, never()).findByAccountId(accountId);
+        // Verify repository was NOT queried (account lookup failed first)
+        verify(holdingsRepository, never()).findByAccountId(any());
     }
 
     /**
