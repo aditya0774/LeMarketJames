@@ -1,0 +1,89 @@
+<#
+.SYNOPSIS
+    Creates the lemarket database on a locally installed PostgreSQL and applies database/schema.
+
+.DESCRIPTION
+    Windows counterpart of the db container in docker-compose.yml, for machines that can't run
+    Linux containers. Creates the `lemarket` login and database (the same names and default
+    password every service expects), then runs every database/schema/*.sql file in numeric order,
+    exactly like docker-entrypoint-initdb.d does on first start.
+
+    Schema files are only applied to a freshly created database, because they are not safe to
+    re-run. Pass -Reset to drop and recreate the database (wipes all data).
+
+.EXAMPLE
+    .\scripts\windows\setup-db.ps1
+    .\scripts\windows\setup-db.ps1 -Reset
+#>
+param(
+    # Must match SPRING_DATASOURCE_PASSWORD / DB_PASSWORD (services default to 'changeme').
+    [string]$DbPassword = 'changeme',
+    [string]$PgHost = 'localhost',
+    [int]$PgPort = 5432,
+    [switch]$Reset
+)
+
+$ErrorActionPreference = 'Stop'
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
+$schemaDir = Join-Path $repoRoot 'database\schema'
+
+# Use psql from PATH, else the newest PostgreSQL install under Program Files.
+$psql = (Get-Command psql -ErrorAction SilentlyContinue).Source
+if (-not $psql) {
+    $psql = Get-ChildItem 'C:\Program Files\PostgreSQL\*\bin\psql.exe' -ErrorAction SilentlyContinue |
+        Sort-Object { [int]$_.Directory.Parent.Name } -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $psql) { throw 'psql not found. Install PostgreSQL (https://www.postgresql.org/download/windows/) first.' }
+
+function Invoke-Psql([string]$User, [string]$Password, [string]$Database, [string[]]$Arguments) {
+    $env:PGPASSWORD = $Password
+    # Windows psql otherwise reads the UTF-8 schema files in the console's code page.
+    $env:PGCLIENTENCODING = 'UTF8'
+    # Hide NOTICEs such as the schema's "DROP TABLE IF EXISTS ... skipping"; warnings and errors still show.
+    $env:PGOPTIONS = '-c client_min_messages=warning'
+    try {
+        & $psql -h $PgHost -p $PgPort -U $User -d $Database -v ON_ERROR_STOP=1 -At @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "psql failed (exit $LASTEXITCODE)" }
+    } finally {
+        Remove-Item Env:PGPASSWORD, Env:PGOPTIONS -ErrorAction SilentlyContinue
+    }
+}
+
+# The superuser password is only needed to create the role and database; it is never stored.
+$secure = Read-Host 'Password for the PostgreSQL "postgres" superuser' -AsSecureString
+$superPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+
+# Create the login, or reset its password so it matches what the services use.
+$escaped = $DbPassword.Replace("'", "''")
+Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', @"
+DO `$`$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lemarket') THEN
+    CREATE ROLE lemarket LOGIN PASSWORD '$escaped';
+  ELSE
+    ALTER ROLE lemarket WITH LOGIN PASSWORD '$escaped';
+  END IF;
+END `$`$;
+"@)
+
+$exists = Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', "SELECT 1 FROM pg_database WHERE datname = 'lemarket'")
+if ($exists -and $Reset) {
+    Write-Host 'Dropping existing lemarket database (-Reset)...'
+    Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', 'DROP DATABASE lemarket WITH (FORCE)')
+    $exists = $null
+}
+if ($exists) {
+    Write-Host 'Database lemarket already exists; schema not re-applied. Use -Reset to recreate it, or apply new files with psql (see database/README.md).'
+    return
+}
+
+# The owner can create tables in public (PostgreSQL 15+ no longer lets every role do so).
+Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', 'CREATE DATABASE lemarket OWNER lemarket')
+
+# Apply as lemarket so the tables are owned by the same role the services log in with.
+Get-ChildItem $schemaDir -Filter '*.sql' | Sort-Object Name | ForEach-Object {
+    Write-Host "Applying $($_.Name)"
+    Invoke-Psql 'lemarket' $DbPassword 'lemarket' @('-q', '-f', $_.FullName) | Out-Null
+}
+Write-Host 'Database lemarket is ready.'

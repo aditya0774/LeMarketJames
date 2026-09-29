@@ -62,7 +62,8 @@ psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket -f database/schema/
 ```
 
 Alternatively `docker compose down -v && docker compose up -d` rebuilds the database from all
-scripts, **deleting any local data**.
+scripts, **deleting any local data**. With a native Windows PostgreSQL install (README Method 1),
+`.\scripts\windows\setup-db.ps1 -Reset` does the same.
 
 Verify:
 
