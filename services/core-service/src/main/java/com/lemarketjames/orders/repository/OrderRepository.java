@@ -6,10 +6,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
     
+    // Half-open bounds include the first instant and exclude the next calendar period.
+    @Query("""
+        SELECT o FROM Order o WHERE o.accountId = :accountId
+        AND (:status IS NULL OR o.orderStatus = :status)
+        AND o.submittedAt >= :start AND o.submittedAt < :end
+        """)
+    List<Order> findHistory(@Param("accountId") Integer accountId,
+        @Param("status") Order.OrderStatus status,
+        @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
     /**
      * Find all orders for a specific account
      */

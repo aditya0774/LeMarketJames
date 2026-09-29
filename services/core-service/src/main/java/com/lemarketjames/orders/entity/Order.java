@@ -3,6 +3,7 @@ package com.lemarketjames.orders.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "orders")
@@ -60,10 +61,10 @@ public class Order {
     
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneOffset.UTC);
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC);
         if (submittedAt == null) {
-            submittedAt = LocalDateTime.now();
+            submittedAt = LocalDateTime.now(ZoneOffset.UTC);
         }
         if (orderStatus == null) {
             orderStatus = OrderStatus.SUBMITTED;
@@ -72,7 +73,7 @@ public class Order {
     
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
     
     // Constructors

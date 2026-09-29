@@ -53,8 +53,10 @@ public class OrderController {
      * GET /api/v1/orders/account/{accountId}
      */
     @GetMapping("/account/{accountId}")
-    public ResponseEntity<List<OrderResponse>> getOrdersByAccountId(@PathVariable Integer accountId) {
-        List<OrderResponse> orders = orderService.getOrdersByAccountId(accountId);
+    public ResponseEntity<List<OrderResponse>> getOrdersByAccountId(@PathVariable Integer accountId,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String timeZone) {
+        List<OrderResponse> orders = orderService.getOrdersByAccountId(accountId, date, timeZone);
         return ResponseEntity.ok(orders);
     }
     
@@ -65,8 +67,10 @@ public class OrderController {
     @GetMapping("/account/{accountId}/status/{status}")
     public ResponseEntity<List<OrderResponse>> getOrdersByAccountAndStatus(
             @PathVariable Integer accountId,
-            @PathVariable Order.OrderStatus status) {
-        List<OrderResponse> orders = orderService.getOrdersByAccountAndStatus(accountId, status);
+            @PathVariable Order.OrderStatus status,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String timeZone) {
+        List<OrderResponse> orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone);
         return ResponseEntity.ok(orders);
     }
     
