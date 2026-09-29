@@ -142,7 +142,7 @@ pipeline {
             }
         }
 
-        stage('Verify buy and sell persistence on PostgreSQL') {
+        stage('Run backend integration tests on shared PostgreSQL') {
             steps {
                 sh '''
                     set -eu
@@ -161,11 +161,18 @@ pipeline {
                         sleep 1
                     done
                     test "$ready" = 1
-                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test
+
+                    # Keep one Maven invocation so integration tests share startup work.
+                    mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am \
+                        -Dspring.profiles.active=postgres-test \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
-                always { junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml' }
+                always {
+                    junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                }
             }
         }
 
@@ -250,17 +257,6 @@ pipeline {
                         compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket < "$f"
                     done
                 '''
-            }
-        }
-
-        stage('Verify own-data isolation on PostgreSQL') {
-            steps {
-                sh 'mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
-            }
-            post {
-                always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
-                }
             }
         }
 
