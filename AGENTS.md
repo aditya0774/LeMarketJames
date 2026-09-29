@@ -16,6 +16,19 @@
 
 **Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`, `market-service`, `holdings-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`. `core-service` and `holdings-service` also call `market-service` directly for prices (server-to-server, bypassing the gateway); `core-service` and `holdings-service` also call each other directly (settlement and trade-history/buying-power reads, respectively) — see `holdings-service`'s description above.
 
+## Shared Contracts (C1–C7): read before coding
+
+[contracts/](contracts/README.md) defines what every feature codes against. Read the ones your change touches first:
+- order statuses and lifecycle (C1)
+- the audit event format (C2)
+- seed personas and data (C3)
+- quote-feed test controls (C4)
+- business settings (C5)
+- REST endpoints, internal events and the execution interface (C6)
+- roles (C7)
+
+Value lists and defaults live once, in code; the contract docs link to them. When you change a contract's code, update its doc in the same change. Never copy a list or a default into another file.
+
 ## Repository Layout
 
 ```
@@ -31,8 +44,11 @@ LeMarketJames/
 │   ├── holdings-service/    # :8084
 │   └── core-service/        # :8081
 ├── apps/
-│   └── frontend/            # Angular SPA (:4200)
-├── database/schema/         # Shared schema, numbered SQL files
+│   ├── frontend/            # Angular SPA (:4200)
+│   └── e2e/                 # Playwright end-to-end tests, run against a live stack
+├── contracts/               # Shared contracts C1–C7 (read before coding)
+├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)
+├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1
 ├── docker-compose.yml
 └── Jenkinsfile
 ```
@@ -50,7 +66,9 @@ Run Maven commands from the repo root.
 | Run a service | `mvn -B -pl libs/common install` once, then `mvn -B -pl services/core-service spring-boot:run` |
 | Frontend tests | `cd apps/frontend && ng test` |
 | Frontend build | `cd apps/frontend && ng build` |
-| Full stack (Docker) | `docker compose up -d --build` |
+| End-to-end tests (stack must be running on :4200) | `cd apps/e2e && npm install && npm test` |
+| Full stack (Docker, Linux/Jenkins) | `docker compose up -d --build` |
+| Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1` |
 
 ## Adding a New Microservice
 
@@ -69,21 +87,21 @@ Run Maven commands from the repo root.
 - **Holdings** → Auth, Market, Orders (reads only, via `holdings-service`'s `OrdersClient`)
 - **Quotes** → Market
 - **Sessions** → Auth
+- **Instruments** → Auth. The supported stock list (`GET /api/v1/instruments`) lives in `core-service`, next to the `Instrument` entity orders use.
+- **Audit** → nothing. `libs/common`'s `AuditRecorder` is called by Orders (core-service) and Holdings settlement (holdings-service) inside their own transactions ([C2](contracts/C2-audit.md)).
+- **Roles** → Auth. They travel in the JWT, and each service enforces them in its own `SecurityConfig` ([C7](contracts/C7-roles.md)).
 
-## Layer-Specific Conventions
+## Further Reading
 
-- **[Backend Architecture](docs/BACKEND.md)** — Feature packages, Repository/Service pattern, exceptions, testing
-- **[Frontend Architecture](docs/FRONTEND.md)** — Directory structure, RxJS observables, dependency injection
-- **[Market Simulation](docs/MARKET.md)** — GBM price engine: model, state, configuration, how other features read prices
-- **[Database Migrations](docs/DATABASE.md)** — Schema versioning workflow
-- **[API Design](docs/API-DESIGN.md)** — Versioning, contracts, change management
-- **[Guidelines & Pitfalls](docs/GUIDELINES.md)** — Common mistakes, best practices
+- **[Shared contracts](contracts/README.md)**: order lifecycle, audit, seed data, quote feed, settings, API and events, roles
+- **[Database migrations](database/README.md)**: schema versioning workflow and per-migration notes
+- `docs/` holds generated Javadoc only
 
 ## General Principles
 
 - **Feature-driven design:** Each feature is self-contained in its package/folder
 - **Layered responsibility:** Repository (data), Service (logic), Controller/Component (HTTP/UI)
-- **API contracts first:** Backend and frontend stay in sync via `/API-CONTRACTS.md`
+- **API contracts first:** Backend and frontend stay in sync via [contracts/C6-api.md](contracts/C6-api.md)
 - **Secrets in env files:** Never commit credentials or API keys
 - **Readability:** Include comments of why code exists to improve readability.
 

@@ -63,6 +63,8 @@ class SellOrderIntegrationTest {
     void cleanup() {
         // Remove only this test's committed rows, including on the disposable PostgreSQL profile.
         if (accountId != null) {
+            // Audit events reference the orders, so they go first.
+            jdbc.update("DELETE FROM audit_log WHERE account_id=?", accountId);
             jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
             jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
         }
@@ -163,7 +165,7 @@ class SellOrderIntegrationTest {
         client.setSsn("test-only");
         client.setEmploymentStatus("EMPLOYED");
         client.setInvestmentExperience("beginner");
-        client.setAccountStatus("ACTIVE");
+        client.setAccountStatus(com.lemarketjames.common.domain.AccountStatus.ACTIVE);
         client = clients.saveAndFlush(client);
         AddressEntity address = new AddressEntity();
         address.setClientId(client.getClientId());

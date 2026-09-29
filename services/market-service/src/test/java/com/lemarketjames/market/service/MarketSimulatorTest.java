@@ -7,13 +7,16 @@ import com.lemarketjames.market.model.QuoteSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MarketSimulatorTest {
@@ -144,6 +147,75 @@ class MarketSimulatorTest {
 
         double price = simulator.findByTicker("AAPL").orElseThrow().lastPrice();
         assertTrue(Math.abs(Math.log(price / 227.55)) < 0.01);
+    }
+
+    @Test
+    void pricesDoNotMoveOnAConfiguredHoliday() {
+        // Thursday 26 Nov 2026 (Thanksgiving, in the default holiday list), 11:00 New York.
+        Instant thanksgiving = Instant.parse("2026-11-26T16:00:00Z");
+        MarketSimulator simulator = simulator(thanksgiving, true);
+        QuoteSnapshot before = simulator.findByTicker("AAPL").orElseThrow();
+
+        simulator.tick(thanksgiving.plusSeconds(1));
+
+        assertEquals(before, simulator.findByTicker("AAPL").orElseThrow());
+    }
+
+    // Contract C4: a test can set a stock's price and hold it there while the rest of the market moves.
+    @Test
+    void pinnedPriceHoldsThroughTicks() {
+        MarketSimulator simulator = simulator(OPEN, true);
+        double msftBefore = simulator.findByTicker("MSFT").orElseThrow().lastPrice();
+
+        simulator.setPrice("aapl", 100.0, true);
+        simulator.tick(OPEN.plusSeconds(1));
+
+        assertEquals(100.0, simulator.findByTicker("AAPL").orElseThrow().lastPrice(), 1e-9);
+        assertNotEquals(msftBefore, simulator.findByTicker("MSFT").orElseThrow().lastPrice());
+        assertEquals(Set.of("AAPL"), simulator.pinnedTickers());
+
+        simulator.releasePrice("AAPL");
+        simulator.tick(OPEN.plusSeconds(2));
+        assertNotEquals(100.0, simulator.findByTicker("AAPL").orElseThrow().lastPrice());
+    }
+
+    @Test
+    void unpinnedPriceMovesOnFromTheSetValue() {
+        MarketSimulator simulator = simulator(OPEN, true);
+
+        simulator.setPrice("AAPL", 100.0, false);
+        simulator.tick(OPEN.plusSeconds(1));
+
+        double moved = simulator.findByTicker("AAPL").orElseThrow().lastPrice();
+        assertNotEquals(100.0, moved);
+        assertTrue(Math.abs(moved - 100.0) < 1.0, "moves from 100, not from the old price");
+    }
+
+    // Contract C4: STALE makes readers see old quotes at once, without corrupting what gets persisted.
+    @Test
+    void staleFeedBackdatesQuotesButNotPersistedPrices() {
+        MarketSimulator simulator = simulator(OPEN, true);
+        simulator.setFeedMode(FeedMode.STALE);
+        simulator.tick(OPEN.plusSeconds(1));
+
+        QuoteSnapshot seen = simulator.findByTicker("AAPL").orElseThrow();
+        assertEquals(OPEN.minus(Duration.ofMinutes(10)), seen.lastUpdated());
+        assertEquals(227.55, seen.lastPrice(), 1e-9, "frozen at the moment the feed went stale");
+        QuoteSnapshot stored = simulator.latestSnapshots().stream()
+                .filter(q -> q.instrument().ticker().equals("AAPL")).findFirst().orElseThrow();
+        assertEquals(OPEN.plusSeconds(1), stored.lastUpdated());
+
+        simulator.reset();
+        assertEquals(FeedMode.LIVE, simulator.feedMode());
+        assertEquals(stored, simulator.findByTicker("AAPL").orElseThrow());
+    }
+
+    @Test
+    void settingThePriceOfAnUnknownTickerFails() {
+        MarketSimulator simulator = simulator(OPEN, true);
+
+        assertThrows(IllegalArgumentException.class, () -> simulator.setPrice("NOPE", 10.0, true));
+        assertThrows(IllegalArgumentException.class, () -> simulator.setPrice("AAPL", -1.0, true));
     }
 
     private static MarketSimulator simulator(Instant now, boolean respectMarketHours) {

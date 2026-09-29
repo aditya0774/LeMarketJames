@@ -1,5 +1,7 @@
 package com.lemarketjames.holdings.service;
 
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.dto.SettlementRequest;
@@ -13,11 +15,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,11 +35,14 @@ class HoldingsSettlementServiceTest {
     @Mock
     private AccountRepository accountRepository;
 
+    @Mock
+    private AuditRecorder auditRecorder;
+
     private HoldingsSettlementService settlementService;
 
     @BeforeEach
     void setUp() {
-        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository);
+        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository, auditRecorder);
     }
 
     @Test
@@ -52,6 +59,9 @@ class HoldingsSettlementServiceTest {
         verify(holdingsRepository).save(captor.capture());
         assertEquals(new BigDecimal("10"), captor.getValue().getQuantity());
         assertEquals(new BigDecimal("100.00"), captor.getValue().getAverageCost());
+        // Contract C2: the settlement is audited with the cash and quantity it moved.
+        verify(auditRecorder).record(eq(AuditEventType.SETTLED), any(), eq(1), eq(Map.of(
+                "cashDelta", new BigDecimal("-1000.00"), "quantityDelta", new BigDecimal("10"))));
     }
 
     @Test

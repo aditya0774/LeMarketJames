@@ -1,0 +1,5 @@
+node_modules/
+# Playwright output: traces/screenshots per test, the HTML report, and the JUnit file for Jenkins.
+test-results/
+playwright-report/
+results/

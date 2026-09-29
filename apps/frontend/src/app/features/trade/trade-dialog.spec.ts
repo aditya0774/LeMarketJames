@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, Subject } from 'rxjs';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { BuyOrderRequest, OrderRequest, OrderService } from '../../core/orders/order.service';
@@ -52,8 +54,11 @@ describe('TradeDialog', () => {
             },
           },
         },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
+    await loadTestInstruments();
 
     fixture = TestBed.createComponent(TradeDialog);
     fixture.componentRef.setInput('symbol', 'tsla');

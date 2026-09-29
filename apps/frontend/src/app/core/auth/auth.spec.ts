@@ -84,4 +84,20 @@ describe('Auth', () => {
     expect(auth.currentAccountId()).toBeNull();
   });
 
+  it('keeps the session roles, so staff logins (no account) are recognised', async () => {
+    const restored = auth.restoreSession();
+    httpMock.expectOne(`${baseUrl}/me`).flush({ username: 'olivia_ops', roles: ['TRADING_OPS'] });
+    await restored;
+
+    expect(auth.roles()).toEqual(['TRADING_OPS']);
+    expect(auth.hasRole('TRADING_OPS')).toBe(true);
+    expect(auth.hasRole('CLIENT')).toBe(false);
+    expect(auth.currentAccountId()).toBeNull();
+
+    const loggedOut = auth.logout();
+    httpMock.expectOne(`${baseUrl}/logout`).flush({});
+    await loggedOut;
+    expect(auth.roles()).toEqual([]);
+  });
+
 });

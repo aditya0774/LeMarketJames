@@ -96,6 +96,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      # This stack is a test environment, so the quote-feed test controls are on (contract C4,
+      # contracts/C4-quote-feed.md). They sit under /internal on port 8083, never behind the gateway.
+      SIM_CONTROL_ENABLED: "true"
 
   # Client profile, holdings, portfolio, and trade history. Settles fills for core-service
   # (POST /internal/holdings/settle, never routed through the gateway) and reads order data back

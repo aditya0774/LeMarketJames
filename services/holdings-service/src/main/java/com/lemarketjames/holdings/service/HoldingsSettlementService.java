@@ -1,5 +1,7 @@
 package com.lemarketjames.holdings.service;
 
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.dto.SettlementRequest;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -31,20 +34,31 @@ public class HoldingsSettlementService {
 
     private final HoldingsRepository holdingsRepository;
     private final AccountRepository accountRepository;
+    private final AuditRecorder auditRecorder;
 
-    public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository) {
+    public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository,
+                                     AuditRecorder auditRecorder) {
         this.holdingsRepository = holdingsRepository;
         this.accountRepository = accountRepository;
+        this.auditRecorder = auditRecorder;
     }
 
+    /**
+     * Applies the fill and records it as SETTLED in the same transaction (contract C2), so the audit
+     * trail never shows a settlement that didn't happen, or misses one that did.
+     */
     @Transactional
     public void settle(SettlementRequest request) {
         BigDecimal cost = request.getQuantity().multiply(request.getPricePerUnit());
-        if (request.getOrderType() == SettlementRequest.OrderType.BUY) {
+        boolean buy = request.getOrderType() == SettlementRequest.OrderType.BUY;
+        if (buy) {
             settleBuy(request, cost);
         } else {
             settleSell(request, cost);
         }
+        auditRecorder.record(AuditEventType.SETTLED, request.getOrderId(), request.getAccountId(), Map.of(
+                "cashDelta", buy ? cost.negate() : cost,
+                "quantityDelta", buy ? request.getQuantity() : request.getQuantity().negate()));
         log.info("Settled order={} account={} instrument={} type={} qty={} price={}",
                 request.getOrderId(), request.getAccountId(), request.getInstrumentId(),
                 request.getOrderType(), request.getQuantity(), request.getPricePerUnit());

@@ -1,31 +1,36 @@
 package com.lemarketjames.auth;
 
+import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.AccountStatus;
 import com.lemarketjames.common.domain.AddressEntity;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.LoginAccount;
+import com.lemarketjames.common.domain.StaffUserEntity;
+import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Locale;
-import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service class providing authentication and authorization business logic.
@@ -35,16 +40,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-    private static final int MAX_FAILED_ATTEMPTS = 3;
 
-    private final Map<String, Integer> failedLoginAttempts = new ConcurrentHashMap<>();
-    private final Map<String, Instant> lockedUntil = new ConcurrentHashMap<>();
     private final ClientRepository clientRepository;
     private final AddressRepository addressRepository;
     private final AccountRepository accountRepository;
+    private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final long lockoutDurationMs;
+    private final PlatformSettings.Auth.Lockout lockout;
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
@@ -59,19 +62,23 @@ public class AuthService {
      * @param clientRepository repository for client records
      * @param addressRepository repository for client addresses
      * @param accountRepository repository for trading accounts
+     * @param staffUserRepository repository for staff logins
+     * @param settings platform settings; supplies the lockout rule (contract C5)
      */
     public AuthService(
             JwtService jwtService,
             ClientRepository clientRepository,
             AddressRepository addressRepository,
             AccountRepository accountRepository,
-            @Value("${auth.lockout-duration-ms:900000}") long lockoutDurationMs) {
+            StaffUserRepository staffUserRepository,
+            PlatformSettings settings) {
         this.clientRepository = clientRepository;
         this.addressRepository = addressRepository;
         this.accountRepository = accountRepository;
+        this.staffUserRepository = staffUserRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
-        this.lockoutDurationMs = lockoutDurationMs;
+        this.lockout = settings.getAuth().getLockout();
     }
 
     /**
@@ -110,7 +117,7 @@ public class AuthService {
         client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());
         // PostgreSQL's investment_experience constraint uses lowercase values.
         client.setInvestmentExperience(request.getInvestmentExperience().trim().toLowerCase(Locale.ROOT));
-        client.setAccountStatus("ACTIVE");
+        client.setAccountStatus(AccountStatus.ACTIVE);
         client = clientRepository.save(client);
 
         AddressEntity address = new AddressEntity();
@@ -138,14 +145,18 @@ public class AuthService {
     }
 
     /**
-     * Authenticates a user by email and password against the clients table.
+     * Authenticates a client or staff user by email and password (contract C7: one login for both).
      * The request's username field carries the email; it is matched case-insensitively
      * because registration stores emails lowercased. The password is verified against
      * the stored BCrypt hash.
      *
+     * <p>Lockout (contract C5) is stored on the login itself, so it survives restarts: after
+     * {@code lmj.auth.lockout.max-attempts} consecutive wrong passwords the login is locked for
+     * {@code lmj.auth.lockout.duration}.
+     *
      * @param request the login request containing the email (as username) and password
-     * @return a LoginResult with the client's username, success message, and JWT token
-     * @throws IllegalArgumentException if validation fails, the account is locked, or credentials are invalid
+     * @return a LoginResult with the username, success message, JWT token and roles
+     * @throws IllegalArgumentException if validation fails, the login is locked or barred, or credentials are invalid
      */
     public LoginResult login(LoginRequest request) {
         validateLoginRequest(request);
@@ -153,42 +164,65 @@ public class AuthService {
         String email = request.getUsername().trim().toLowerCase(Locale.ROOT);
         String password = request.getPassword();
 
-        Instant lockExpiry = lockedUntil.get(email);
-        if (lockExpiry != null) {
-            if (Instant.now().isBefore(lockExpiry)) {
-                log.warn("Login blocked for email={} due to active lockout", email);
-                throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
-            }
-            lockedUntil.remove(email);
-            failedLoginAttempts.remove(email);
-        }
-
-        ClientEntity client = clientRepository.findByEmail(email)
-                .filter(found -> matchesPassword(password, found.getPassword()))
+        // Clients first: they are the vast majority of logins. Staff never share an email with a client.
+        LoginAccount account = clientRepository.findByEmail(email)
+                .<LoginAccount>map(client -> client)
+                .or(() -> staffUserRepository.findByEmail(email))
                 .orElse(null);
-
-        if (client == null) {
-            registerFailedAttempt(email);
+        if (account == null) {
             log.warn("Login failed for email={}", email);
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        failedLoginAttempts.remove(email);
-        client.setLastLogin(LocalDateTime.now());
-        clientRepository.save(client);
+        Instant now = Instant.now();
+        if (account.getLockedUntil() != null && now.isBefore(account.getLockedUntil())) {
+            log.warn("Login blocked for email={} due to active lockout", email);
+            throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
+        }
+
+        if (!matchesPassword(password, account.getPassword())) {
+            registerFailedAttempt(account, now);
+            log.warn("Login failed for email={}", email);
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        // Checked only after the password, so a wrong guess never reveals an account's status.
+        if (!account.canLogIn()) {
+            log.warn("Login refused for email={}: account is not active", email);
+            throw new IllegalArgumentException("This account is not active. Please contact support.");
+        }
+
+        account.setFailedLoginAttempts(0);
+        account.setLockedUntil(null);
+        if (account instanceof ClientEntity client) {
+            client.setLastLogin(LocalDateTime.now());
+        }
+        persist(account);
 
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
-        String username = client.getUsername();
-        String token = jwtService.generateToken(username);
-        log.info("Login succeeded for username={}", username);
-        return new LoginResult(username, "Login successful", token);
+        String username = account.getUsername();
+        Set<Role> roles = account.roles();
+        String token = jwtService.generateToken(username, roles);
+        log.info("Login succeeded for username={} roles={}", username, roles);
+        return new LoginResult(username, "Login successful", token, roles);
     }
 
-    // Tracks a failed login and locks the account once MAX_FAILED_ATTEMPTS is reached
-    private void registerFailedAttempt(String email) {
-        int attempts = failedLoginAttempts.merge(email, 1, Integer::sum);
-        if (attempts >= MAX_FAILED_ATTEMPTS) {
-            lockedUntil.put(email, Instant.now().plusMillis(lockoutDurationMs));
+    // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
+    private void registerFailedAttempt(LoginAccount account, Instant now) {
+        int attempts = account.getFailedLoginAttempts() + 1;
+        if (attempts >= lockout.getMaxAttempts()) {
+            account.setLockedUntil(now.plus(lockout.getDuration()));
+            attempts = 0;
+        }
+        account.setFailedLoginAttempts(attempts);
+        persist(account);
+    }
+
+    private void persist(LoginAccount account) {
+        if (account instanceof ClientEntity client) {
+            clientRepository.save(client);
+        } else {
+            staffUserRepository.save((StaffUserEntity) account);
         }
     }
 
@@ -314,11 +348,18 @@ public class AuthService {
         private final String username;
         private final String message;
         private final String token;
+        private final Set<Role> roles;
 
-        public LoginResult(String username, String message, String token) {
+        public LoginResult(String username, String message, String token, Set<Role> roles) {
             this.username = username;
             this.message = message;
             this.token = token;
+            this.roles = roles;
+        }
+
+        /** The roles written into the token; tells the controller whether this login has an account. */
+        public Set<Role> getRoles() {
+            return roles;
         }
 
         public String getUsername() {

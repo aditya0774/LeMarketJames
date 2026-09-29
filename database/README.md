@@ -8,11 +8,18 @@ All backend microservices connect to this same `lemarket` database. This folder 
 
 | Tables | Written by | Read by |
 |---|---|---|
-| `clients`, `addresses` | auth-service (registration, last login) | — |
-| `accounts` | auth-service (created at registration) | auth-service, core-service (ownership and cash-balance checks) |
-| `instruments`, `orders`, `holdings`, `market_quotes`, `instrument_market_params`, `price_candles` | core-service | core-service |
+| `clients`, `addresses` | auth-service (registration, last login, lockout) | holdings-service (profile), core-service (client status) |
+| `staff_users` | seed data only (no staff admin yet) | auth-service (staff login) |
+| `accounts` | auth-service (created at registration), holdings-service (cash on settlement) | every servlet service |
+| `instruments` | migrations only | core-service (orders, `GET /api/v1/instruments`), market-service |
+| `orders` | core-service | core-service, holdings-service (through core-service's API) |
+| `holdings` | holdings-service (settlement) | holdings-service |
+| `audit_log` | core-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)) | — (audit views are planned) |
+| `market_quotes`, `price_candles` | market-service | market-service |
+| `instrument_market_params` | migrations only | market-service |
+| `reporting_trades` (view) | — | reports and insights ([C6](../contracts/C6-api.md#internal-events-and-the-execution-interface-core-service)) |
 
-The shared JPA mappings for `clients`/`addresses`/`accounts` live in `libs/common` (`com.lemarketjames.common.domain`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
+The shared JPA mappings for `clients`/`addresses`/`accounts`/`staff_users`/`audit_log` live in `libs/common` (`com.lemarketjames.common.domain` and `.audit`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
 
 Existing Docker volumes do not rerun initialization scripts. For an existing database
 that already has scripts 001–003, apply the SSN hash column update without deleting data:
@@ -33,7 +40,7 @@ apply it automatically with the other initialization scripts.
 ## 006 — Market simulation
 
 `006_market_simulation.sql` adds the tables used by the backend's simulated stock market
-(`com.lemarketjames.market`, design notes in [docs/MARKET.md](../docs/MARKET.md)):
+(`com.lemarketjames.market`, contract in [contracts/C4-quote-feed.md](../contracts/C4-quote-feed.md)):
 
 | Table | Change | Purpose |
 |---|---|---|
@@ -62,7 +69,8 @@ psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket -f database/schema/
 ```
 
 Alternatively `docker compose down -v && docker compose up -d` rebuilds the database from all
-scripts, **deleting any local data**.
+scripts, **deleting any local data**. With a native Windows PostgreSQL install (README Method 1),
+`.\scripts\windows\setup-db.ps1 -Reset` does the same.
 
 Verify:
 
@@ -121,7 +129,7 @@ parodies of real companies, **all tradable**.
 |---|---|
 | LMT removed | Deleted along with every row that references it (`audit_log`, `order_events`, `orders`, `holdings`, `price_candles`, `market_quotes`, `instrument_market_params`). Id 7 is left unused. |
 | 7 tickers kept | AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, AVGO keep their ids and get their final names. GOOGL becomes tradable (reverses 005). |
-| 43 tickers added | Explicit ids 9–51, so every database (and the frontend's `InstrumentCatalog`) agrees on them. |
+| 43 tickers added | Explicit ids 9–51, so every database agrees on them. |
 | Market params | Upserted for all 50 with roughly realistic 2026 values. Existing `market_quotes` snapshots are kept, so live prices continue from where they are. |
 
 Non-US companies (TSM, ASML, BHP, SAN, TD, TTE, SHOP) use their US listing/ADR: USD, US market
@@ -130,9 +138,9 @@ $950), so any new account can buy whole shares of anything. BRK-A is therefore p
 Berkshire's class B share (about $490 rather than the real class A's ~$730k), with shares
 outstanding and EPS rescaled so its market cap and P/E are unchanged.
 
-Nothing in the real market is non-tradable any more. Tests that check the `NOT_TRADABLE` rejection
-bring their own fixture instead: `SellOrderIntegrationTest` creates (and deletes) a non-tradable
-instrument, and the Jenkins smoke test inserts `CI-NT` into its throwaway database.
+Nothing in the 50-stock real market is non-tradable any more. The suspended stock `CAVS` (added by
+010, see [C3](../contracts/C3-seed-data.md)) is what the Jenkins smoke test uses for the
+`NOT_TRADABLE` rejection; `SellOrderIntegrationTest` still creates (and deletes) its own fixture.
 
 If 009 fails with a duplicate key on `instruments_pkey`, an earlier run of the `postgres-test`
 integration tests left an instrument (ticker `IA…`) at an id between 9 and 51. The transaction rolls
@@ -213,3 +221,23 @@ snapshot (with market-service stopped):
 DELETE FROM market_quotes
 WHERE instrument_id = (SELECT instrument_id FROM instruments WHERE ticker = 'NVDA');
 ```
+
+## 010 — Shared contracts, 011 — Seed data set
+
+`010_shared_contracts.sql` adds what the shared contracts need: staff logins, client segment and
+persistent lockout, the audit event format, the suspended stock `CAVS` and the `reporting_trades`
+view. `011_seed_test_data.sql` is the seed data set. What they are for is described in
+[contracts/](../contracts/README.md) (C2, C3, C5, C6, C7); the test logins are in
+[C3](../contracts/C3-seed-data.md).
+
+Both are idempotent. Apply them to an existing database without losing data (restart
+market-service afterwards so it picks up `CAVS`):
+
+```sh
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/010_shared_contracts.sql
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/011_seed_test_data.sql
+docker compose restart market-service
+```
+
+With a native Windows PostgreSQL install, `.\scripts\windows\setup-db.ps1 -Reset` rebuilds
+everything including both.

@@ -2,8 +2,12 @@ package com.lemarketjames.market.model;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,6 +31,28 @@ class MarketHoursTest {
     void usEquityClosedAtWeekends() {
         assertFalse(MarketHours.US_EQUITY.isOpen(Instant.parse("2026-09-19T15:00:00Z")), "Saturday");
         assertFalse(MarketHours.US_EQUITY.isOpen(Instant.parse("2026-09-20T15:00:00Z")), "Sunday");
+    }
+
+    @Test
+    void holidaysCloseTheWholeExchangeLocalDay() {
+        Set<LocalDate> holidays = Set.of(LocalDate.of(2026, 11, 26));
+
+        assertFalse(MarketHours.US_EQUITY.isOpen(Instant.parse("2026-11-26T16:00:00Z"), holidays), "Thanksgiving");
+        assertTrue(MarketHours.US_EQUITY.isOpen(Instant.parse("2026-11-27T16:00:00Z"), holidays), "the day after");
+    }
+
+    @Test
+    void quoteFreshnessComparesAgeWithTheLimit() {
+        Instant now = Instant.parse("2026-09-16T15:00:00Z");
+        Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+
+        assertFalse(QuoteFreshness.isStale(quoteAt(now.minusSeconds(60)), Duration.ofSeconds(60), clock));
+        assertTrue(QuoteFreshness.isStale(quoteAt(now.minusSeconds(61)), Duration.ofSeconds(60), clock));
+        assertTrue(QuoteFreshness.isStale(quoteAt(null), Duration.ofSeconds(60), clock), "no timestamp is stale");
+    }
+
+    private static QuoteSnapshot quoteAt(Instant lastUpdated) {
+        return new QuoteSnapshot(null, 1, 1, 1, 1, 1, 1, 1, 0, lastUpdated, null);
     }
 
     @Test

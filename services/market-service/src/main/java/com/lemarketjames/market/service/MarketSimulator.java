@@ -10,19 +10,26 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
 
 /**
  * In-memory stock market driven by Geometric Brownian Motion.
@@ -35,7 +42,7 @@ import java.util.random.RandomGenerator;
  * get immutable {@link QuoteSnapshot}s from concurrent maps and never block.
  */
 @Service
-public class MarketSimulator implements MarketDataService {
+public class MarketSimulator implements MarketDataService, MarketFeedControl {
 
     private static final Logger log = LoggerFactory.getLogger(MarketSimulator.class);
 
@@ -59,11 +66,19 @@ public class MarketSimulator implements MarketDataService {
     private final Map<String, QuoteSnapshot> snapshotsByTicker = new ConcurrentHashMap<>();
     private final Queue<PriceCandle> completedCandles = new ConcurrentLinkedQueue<>();
 
+    /** Test controls (contract C4). Pinned instruments are skipped by tick; guarded by this object's lock. */
+    private final Set<Integer> pinned = new HashSet<>();
+    private volatile FeedMode feedMode = FeedMode.LIVE;
+    /** What readers see while STALE: the quotes at the moment the feed went stale, backdated. */
+    private volatile Map<Integer, QuoteSnapshot> staleSnapshotsById = Map.of();
+
+    private final Set<LocalDate> holidays;
     private Instant lastTickAt;
 
     public MarketSimulator(MarketSimulationProperties properties, Clock clock) {
         this.properties = properties;
         this.clock = clock;
+        this.holidays = properties.holidaySet();
         // A fixed seed replays exactly the same market, which is useful for demos and bug reports.
         this.random = properties.getSeed() != null
                 ? new SplittableRandom(properties.getSeed())
@@ -116,7 +131,10 @@ public class MarketSimulator implements MarketDataService {
         // One shared draw per tick is what makes instruments move together.
         double marketShock = random.nextGaussian();
         for (SimulatedInstrument instrument : instruments.values()) {
-            if (instrument.isTrading(now, properties.isRespectMarketHours())) {
+            if (pinned.contains(instrument.instrument().instrumentId())) {
+                continue; // held at the price a test set
+            }
+            if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {
                 double shock = GbmModel.correlatedShock(
                         marketShock, random.nextGaussian(), instrument.instrument().marketCorrelation());
                 instrument.advance(now, elapsedSeconds, shock, random.nextGaussian())
@@ -145,17 +163,98 @@ public class MarketSimulator implements MarketDataService {
         if (ticker == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(snapshotsByTicker.get(ticker.trim().toUpperCase(Locale.ROOT)));
+        return Optional.ofNullable(snapshotsByTicker.get(ticker.trim().toUpperCase(Locale.ROOT)))
+                .map(live -> visible(live.instrument().instrumentId(), live));
     }
 
     @Override
     public Optional<QuoteSnapshot> findByInstrumentId(int instrumentId) {
-        return Optional.ofNullable(snapshotsById.get(instrumentId));
+        return Optional.ofNullable(snapshotsById.get(instrumentId)).map(live -> visible(instrumentId, live));
+    }
+
+    /** What quote readers see: the live quotes, or the frozen stale ones while the feed is STALE. */
+    @Override
+    public Collection<QuoteSnapshot> findAll() {
+        return feedMode == FeedMode.STALE
+                ? List.copyOf(staleSnapshotsById.values())
+                : List.copyOf(snapshotsById.values());
+    }
+
+    /**
+     * The real current prices whatever the feed mode, for persistence: a STALE feed must never
+     * overwrite the stored prices with its backdated copies.
+     */
+    public Collection<QuoteSnapshot> latestSnapshots() {
+        return List.copyOf(snapshotsById.values());
+    }
+
+    private QuoteSnapshot visible(int instrumentId, QuoteSnapshot live) {
+        return feedMode == FeedMode.STALE ? staleSnapshotsById.getOrDefault(instrumentId, live) : live;
     }
 
     @Override
-    public Collection<QuoteSnapshot> findAll() {
-        return List.copyOf(snapshotsById.values());
+    public FeedMode feedMode() {
+        return feedMode;
+    }
+
+    @Override
+    public synchronized void setFeedMode(FeedMode mode) {
+        if (mode == FeedMode.STALE && feedMode != FeedMode.STALE) {
+            Duration age = properties.getControl().getStaleAge();
+            Map<Integer, QuoteSnapshot> frozen = new HashMap<>();
+            snapshotsById.forEach((id, quote) -> frozen.put(id, backdated(quote, age)));
+            staleSnapshotsById = Map.copyOf(frozen);
+        }
+        feedMode = mode;
+        log.info("Quote feed mode set to {}", mode);
+    }
+
+    @Override
+    public synchronized void setPrice(String ticker, double price, boolean pin) {
+        if (!(price > 0) || !Double.isFinite(price)) {
+            throw new IllegalArgumentException("Price must be a positive number");
+        }
+        SimulatedInstrument instrument = simulated(ticker);
+        instrument.overridePrice(price, clock.instant());
+        int id = instrument.instrument().instrumentId();
+        if (pin) {
+            pinned.add(id);
+        } else {
+            pinned.remove(id);
+        }
+        publish(instrument);
+        log.info("Price of {} set to {} (pinned={})", instrument.instrument().ticker(), price, pin);
+    }
+
+    @Override
+    public synchronized void releasePrice(String ticker) {
+        pinned.remove(simulated(ticker).instrument().instrumentId());
+    }
+
+    @Override
+    public synchronized Set<String> pinnedTickers() {
+        return pinned.stream().map(id -> instruments.get(id).instrument().ticker())
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    @Override
+    public synchronized void reset() {
+        pinned.clear();
+        setFeedMode(FeedMode.LIVE);
+    }
+
+    private SimulatedInstrument simulated(String ticker) {
+        String wanted = ticker == null ? "" : ticker.trim().toUpperCase(Locale.ROOT);
+        return instruments.values().stream()
+                .filter(instrument -> instrument.instrument().ticker().equalsIgnoreCase(wanted))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown ticker: " + ticker));
+    }
+
+    private static QuoteSnapshot backdated(QuoteSnapshot q, Duration age) {
+        Instant updated = q.lastUpdated() == null ? null : q.lastUpdated().minus(age);
+        return new QuoteSnapshot(q.instrument(), q.lastPrice(), q.bidPrice(), q.askPrice(), q.openPrice(),
+                q.highPrice(), q.lowPrice(), q.previousClose(), q.volume(), updated, q.tradingDate());
     }
 
     private void publish(SimulatedInstrument instrument) {

@@ -104,6 +104,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.message").value("Login successful"))
+                .andExpect(jsonPath("$.roles[0]").value("CLIENT"))
                 .andReturn()
                 .getResponse()
                 .getCookie(JwtAuthenticationFilter.COOKIE_NAME);
@@ -112,7 +113,9 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/api/auth/me").cookie(jwtCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("testuser"));
+                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.roles[0]").value("CLIENT"))
+                .andExpect(jsonPath("$.accountId").exists());
 
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());

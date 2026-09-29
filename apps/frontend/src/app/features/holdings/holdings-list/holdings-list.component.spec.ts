@@ -283,6 +283,46 @@ describe('HoldingsListComponent', () => {
       // Component logic: verify empty holdings array
       expect(emptyResponse.holdings.length).toBe(0);
     });
+
+    /**
+     * AC2: Test empty state includes link to place order
+     * Verify "Place an Order" button is shown in empty state
+     */
+    it('should display Place an Order button in empty state', () => {
+      const emptyResponse: HoldingsResponse = {
+        success: true,
+        holdings: []
+      };
+
+      holdingsServiceMock.isLoading.set(false);
+      holdingsServiceMock.error.set(null);
+      holdingsServiceMock.holdings = of(emptyResponse);
+
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector('.empty-state .order-button');
+      expect(button).toBeTruthy();
+      expect(button.textContent.trim()).toBe('Place an Order');
+    });
+
+    /**
+     * AC2: Verify button links to dashboard (order screen)
+     */
+    it('should link to dashboard when Place an Order is clicked', () => {
+      const emptyResponse: HoldingsResponse = {
+        success: true,
+        holdings: []
+      };
+
+      holdingsServiceMock.isLoading.set(false);
+      holdingsServiceMock.error.set(null);
+      holdingsServiceMock.holdings = of(emptyResponse);
+
+      fixture.detectChanges();
+
+      const button = fixture.nativeElement.querySelector('.empty-state .order-button');
+      expect(button.getAttribute('routerLink')).toBe('/dashboard');
+    });
   });
 
   describe('Retry Functionality (AC1)', () => {

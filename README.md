@@ -6,10 +6,10 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
 
 **Before writing any code, read these:**
 
-- **[API-CONTRACTS.md](API-CONTRACTS.md)** — The single source of truth for all API endpoints, request/response formats, and team agreements. Ensures all 6 developers can work in parallel without blocking.
-- **[AGENTS.md](AGENTS.md)** — Project conventions, package structure, and **API Contract implementation guidelines** for backend (Spring Boot) and frontend (Angular).
+- **[contracts/](contracts/README.md)**: The shared contracts (C1–C7) every feature codes against: order lifecycle, audit format, seed data and test logins, quote-feed controls, settings, API endpoints and events, and roles. These are what let the team work in parallel without blocking each other.
+- **[AGENTS.md](AGENTS.md)**: Project conventions and package structure for backend (Spring Boot) and frontend (Angular).
 
-**TL;DR:** Check [AGENTS.md](AGENTS.md) for how to implement against `/API-CONTRACTS.md` and you can build features independently without waiting on anyone else.
+**TL;DR:** Read the contract your change touches in [contracts/](contracts/README.md), follow [AGENTS.md](AGENTS.md), and you can build features independently without waiting on anyone else. Test logins for every kind of user are in [C3 seed data](contracts/C3-seed-data.md).
 
 ---
 
@@ -82,7 +82,7 @@ LeMarketJames/
 ├── docker-compose.yml            # Full-stack orchestration
 ├── Jenkinsfile                   # CI/CD pipeline
 ├── AGENTS.md                     # Conventions for developers
-├── API-CONTRACTS.md              # Endpoint & data contracts
+├── contracts/                    # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
 └── README.md                     # This file
 ```
 
@@ -158,7 +158,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 
 ### Current Features & Endpoints
 
-**See [API-CONTRACTS.md](API-CONTRACTS.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
+**See [contracts/C6-api.md](contracts/C6-api.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
 **Key Features:**
 - **Authentication:** User registration, login, JWT-based stateless sessions with HTTP-only cookies
@@ -170,7 +170,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 - Feature-based organization: `auth/`, `market/`, `holdings/`, `orders/`, `quotes/`, `sessions/` packages
 - Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
 - Data persisted in PostgreSQL; market prices and session state in-memory
-- Full design and tuning details: **[docs/MARKET.md](docs/MARKET.md)**, **[docs/BACKEND.md](docs/BACKEND.md)**
+- Quote-feed design, settings and test controls: **[contracts/C4-quote-feed.md](contracts/C4-quote-feed.md)**
 
 ### Design Principles
 
@@ -199,52 +199,48 @@ Before running the application, ensure you have the following installed:
 
 ## Running the Application
 
-Choose one of the three methods below based on your use case. The team's current setup is **[Method 3](#method-3-docker-compose-full-stack-with-database)**: backend and database in Docker Compose on the Linux host, with the frontend dev server on the Windows machine.
+Choose one of the three methods below based on your use case. The team's current setup:
+- **Windows development:** [Method 1](#method-1-local-development-maven--npm), with everything running natively. Windows Server and machines without virtualization can't run Docker's Linux containers.
+- **Linux / Jenkins testing:** [Method 3](#method-3-docker-compose-full-stack-with-database), with the whole stack in Docker Compose.
+
+Either way, everything runs on your own machine; nothing depends on a shared host.
 
 ### Method 1: Local Development (Maven + npm)
 
-This is the recommended approach for active development, as it provides hot-reload for both backend and frontend.
+Runs the database, all five backend services, and the Angular dev server directly on your machine, with no Docker. This is the Windows setup, and it gives hot reload for the frontend.
 
-**Database Setup (required before starting the backend):**
+**Prerequisites:** JDK 21 or newer, Maven 3.9+, Node.js, and PostgreSQL 16+ installed as a local service on port 5432. On Windows, use the EnterpriseDB installer and remember the `postgres` superuser password you choose.
 
-1. Start just the `db` service (Postgres 16) in the background:
-   ```bash
-   docker compose up -d db
-   ```
+**Database setup (once):**
 
-2. Apply the schema files **in numeric order** (only needed once, or after `docker compose down -v`):
-   ```bash
-   psql -h localhost -U lemarket -d lemarket -f database/schema/001_core_schema.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/002_add_email_unique.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/003_add_experience.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/004_widen_ssn_for_hash.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/005_set_googl_non_tradable.sql
-   psql -h localhost -U lemarket -d lemarket -f database/schema/006_market_simulation.sql
-   ```
-   Default password is `changeme` (see `docker-compose.yml`). Schema changes always land in new numbered files — never edit `001_...`/`002_...` in place.
+On Windows, from the repo root:
+```powershell
+.\scripts\windows\setup-db.ps1
+```
+It asks for the `postgres` superuser password. It then creates the `lemarket` login and database, using the password `changeme` that every service expects by default, and applies every file in `database/schema/` in numeric order. Run it again with `-Reset` to wipe and recreate the database, for example after new schema files land. On other OSes, do the same by hand: create role and database `lemarket`, then `psql -U lemarket -d lemarket -f` each schema file in order. Schema changes always go in new numbered files; never edit existing ones in place.
 
-**Backend Setup (three Spring Boot services):**
+**Start everything:**
 
-1. From the repo root, build every module once. This installs `libs/common`, which the services depend on:
-   ```bash
-   mvn clean install -DskipTests
-   ```
+On Windows, from the repo root:
+```powershell
+.\scripts\windows\start-all.ps1          # add -SkipBuild if the backend hasn't changed
+```
+It runs `mvn install -DskipTests` once, then opens one PowerShell window per process. Close a window to stop that process. To do the same by hand, run each of these in its own terminal from the repo root, after `mvn install -DskipTests`:
+```bash
+mvn -pl services/market-service spring-boot:run     # http://localhost:8083
+mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
+mvn -pl services/core-service spring-boot:run       # http://localhost:8081
+mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
+mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
+cd apps/frontend && npm install && npm start        # http://localhost:4200
+```
+The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
 
-2. Start each service in its own terminal (all from the repo root):
-   ```bash
-   mvn -pl services/core-service spring-boot:run      # http://localhost:8081
-   mvn -pl services/auth-service spring-boot:run      # http://localhost:8082
-   mvn -pl services/gateway-service spring-boot:run   # http://localhost:8080  (frontend talks to this one)
-   ```
-   core-service and auth-service both connect to `jdbc:postgresql://localhost:5432/lemarket` by default (see each service's `src/main/resources/application.properties`). Override with the `SPRING_DATASOURCE_URL`/`SPRING_DATASOURCE_USERNAME`/`SPRING_DATASOURCE_PASSWORD` env vars if needed. The gateway reaches them at `AUTH_SERVICE_URL`/`CORE_SERVICE_URL`, which default to localhost.
-
-3. Confirm every service is up and the gateway routes to them:
-   ```bash
-   curl http://localhost:8081/actuator/health
-   curl http://localhost:8082/actuator/health
-   curl http://localhost:8080/
-   ```
-   Expect `{"status":"UP"}`, then `Hello from LeMarketJames!` through the gateway. `{"status":"DOWN"}` usually means the `db` container isn't running or the schema hasn't been applied yet.
+**Confirm it's up** (services take about 30 seconds):
+```bash
+curl http://localhost:8089/actuator/health
+```
+Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
 
 **Frontend Setup (Angular on port 4200):**
 
@@ -282,7 +278,7 @@ This is the recommended approach for active development, as it provides hot-relo
 - **State-based Management:** Using Angular signals for reactive state updates
 - **Responsive Design:** Mobile, tablet, and desktop layouts
 
-**Note:** The frontend itself has no database dependency. But to exercise registration/login end-to-end, all three backend services must be running (the dev proxy sends `/api` to the gateway on `http://localhost:8080`) *and* connected to a schema-initialized Postgres instance (see Database Setup above).
+**Note:** The frontend itself has no database dependency. But to exercise registration/login end-to-end, all five backend services must be running (the dev proxy sends `/api` to the gateway on `http://localhost:8089`) *and* connected to a schema-initialized Postgres instance (see Database setup above).
 
 ---
 
@@ -309,9 +305,9 @@ This method builds one service's Docker image and runs it in a container. Backen
 
 ### Method 3: Docker Compose (Full Stack with Database)
 
-This is the team's current setup. The backend and database run in Docker Compose on the Linux host (`10.14.129.6`), and the Angular dev server runs on the Windows machine, proxying API calls to that host.
+This is the Linux/Jenkins setup. The frontend, backend, and database all run on one machine. It also works on Windows 10/11 with Docker Desktop, but not on Windows Server or on VMs without nested virtualization; use Method 1 there. Nothing points at a shared host.
 
-**Backend + database (Linux host):**
+**Full stack (Windows or Linux):**
 
 1. From the repo root, build and start every service in the background:
    ```bash
@@ -343,33 +339,45 @@ This is the team's current setup. The backend and database run in Docker Compose
    curl http://localhost:8084/actuator/health
    ```
 
-4. View logs:
+4. Open `http://localhost:4200` and log in or register.
+
+5. View logs:
    ```bash
    docker compose logs -f gateway-service auth-service core-service market-service holdings-service
    ```
 
-5. Stop all services:
+6. Stop all services:
    ```bash
    docker compose down
    ```
 
-**Frontend dev server (Windows machine):**
+**Hot-reload frontend (optional, for UI work):**
 
-1. Install dependencies (first time, or after `package.json` changes):
-   ```powershell
-   cd apps\frontend
+Run the backend in Docker and the Angular dev server on the same machine, so frontend edits reload instantly.
+
+1. Start everything except the frontend container, which would otherwise hold port 4200. Starting the gateway also starts the services and database it depends on:
+   ```bash
+   docker compose stop frontend
+   docker compose up -d --build gateway-service
+   ```
+
+2. Install dependencies (first time, or after `package.json` changes) and start the dev server:
+   ```bash
+   cd apps/frontend
    npm install
+   npm start
    ```
+   `npm start` uses [apps/frontend/proxy.conf.json](apps/frontend/proxy.conf.json), which forwards every `/api/**` request to the local gateway at `http://localhost:8089`.
 
-2. Start the dev server against the Linux host's gateway:
-   ```powershell
-   npm run start:vm
-   ```
-   This runs `ng serve --proxy-config proxy.vm.json`, which forwards every `/api/**` request to `http://10.14.129.6:8089`. If the Linux host's IP changes, update the `target` in [apps/frontend/proxy.vm.json](apps/frontend/proxy.vm.json).
+3. Open `http://localhost:4200`.
 
-   The equivalent without the npm script is `npx ng serve --proxy-config proxy.vm.json`. To pass extra flags through the npm script, put them after `--`, e.g. `npm run start:vm -- --port 4300`.
+**Opening a Linux/Jenkins host's stack from another machine:**
 
-3. Open `http://localhost:4200` on the Windows machine.
+The gateway and services only accept browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
+```bash
+APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
+```
+This is per-machine configuration and is never committed, so the repo stays tied to no particular host.
 
 **Database Credentials:**
 - Username: `lemarket`
@@ -384,17 +392,7 @@ DB_PASSWORD=your_secure_password docker compose up -d --build
 
 ### Market simulation settings
 
-The simulated market is configured in `services/core-service/src/main/resources/application.properties`.
-Each setting can be overridden with an environment variable:
-
-| Property | Env variable | Default | Purpose |
-|---|---|---|---|
-| `sim.enabled` | `SIM_ENABLED` | `true` | Whether prices tick automatically |
-| `sim.tick-ms` | `SIM_TICK_MS` | `1000` | Milliseconds between price ticks |
-| `sim.seed` | `SIM_SEED` | *(empty)* | Fixed random seed to replay the same market |
-| `sim.speed-multiplier` | `SIM_SPEED_MULTIPLIER` | `1` | Simulated seconds per real second; raise for faster-moving demos |
-| `sim.snapshot-interval-ms` | `SIM_SNAPSHOT_INTERVAL_MS` | `5000` | How often latest prices and candles are saved |
-| `sim.respect-market-hours` | `SIM_RESPECT_MARKET_HOURS` | `true` | Only move prices while each exchange is open |
+market-service simulates every stock's price. Its settings (tick rate, seed, speed, market hours, holidays) and the test controls, which can set a price or make the feed stale or unavailable, are described in [contracts/C4-quote-feed.md](contracts/C4-quote-feed.md). The business settings every service shares (lockout, staleness limit, ...) are in [contracts/C5-config.md](contracts/C5-config.md).
 
 Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
 table — see [database/README.md](database/README.md#tuning-the-market).
@@ -428,6 +426,22 @@ cd apps/frontend
 npm test
 ```
 
+### End-to-End Tests (Playwright)
+
+[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, and buying a stock. The tests don't start the app. Run them against a stack that is already up on `http://localhost:4200` (Method 1 or Method 3). Every test registers its own user, so they never depend on existing data.
+
+```bash
+cd apps/e2e
+npm install
+npx playwright install chromium   # first time only: downloads the browser
+npm test                          # or: npm run test:headed to watch the browser
+npm run report                    # open the HTML report from the last run
+```
+
+To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`).
+
+Jenkins runs the suite in the stage **Run Playwright E2E tests**, right after the smoke test. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
+
 ---
 
 ## API & Frontend Access
@@ -436,19 +450,19 @@ Once the application is running (via any of the three methods), you can access:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Angular Frontend** | `http://localhost:4200` | User interface (when using Method 1) |
+| **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
 | **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
-| **API Gateway** | `http://localhost:8080` | Single entry point for all REST API endpoints |
-| **Auth Register API** | `POST http://localhost:8080/api/auth/register` | Register new user (routed to auth-service) |
-| **Auth Login API** | `POST http://localhost:8080/api/auth/login` | User login (routed to auth-service) |
-| **Health Checks** | `GET http://localhost:{8080,8081,8082}/actuator/health` | Gateway / core / auth liveness (`UP`/`DOWN`) |
+| **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
+| **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
+| **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |
+| **Health Checks** | `GET http://localhost:{8089,8081,8082,8083,8084}/actuator/health` | Gateway / core / auth / market / holdings liveness (`UP`/`DOWN`) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 
 **Frontend Routes:**
 - `/register` - User registration page with comprehensive form
 - `/login` - User login
 
-See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [API-CONTRACTS.md](API-CONTRACTS.md) for the rest.
+See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [contracts/C6-api.md](contracts/C6-api.md) for the rest.
 
 **Form Validation:**
 All form validation is performed client-side using Zod schema validation before submission to the backend. See [apps/frontend/src/app/features/auth/register/register.schema.ts](apps/frontend/src/app/features/auth/register/register.schema.ts) for validation rules.
@@ -524,21 +538,20 @@ java -version
   docker compose ps
   ```
 
-- For local dev (Method 1), confirm the `db` container is up:
+- For local dev (Method 1), confirm the PostgreSQL service is running:
+  ```powershell
+  Get-Service postgresql*
+  ```
+
+- Confirm the schema was applied. Because of `spring.jpa.hibernate.ddl-auto=validate`, a service refuses to start if expected tables or columns are missing:
   ```bash
-  docker compose up -d db
+  psql -h localhost -U lemarket -d lemarket -c "\dt"
+  ```
+  If tables are missing, rerun `.\scripts\windows\setup-db.ps1 -Reset` (Method 1) or rebuild the Docker database (below).
+
+- Ensure PostgreSQL has had time to start (Docker; it may take 10-15 seconds):
+  ```bash
   docker compose logs db
-  ```
-
-- Confirm the schema was applied — `spring.jpa.hibernate.ddl-auto=validate` means the backend refuses to start if expected tables/columns are missing:
-  ```bash
-  psql -h localhost -U paysprint -d paysprint -c "\dt"
-  ```
-  If tables are missing, re-run the `psql -f database/schema/...sql` commands from the Database Setup section, in order.
-
-- Ensure PostgreSQL has time to start (it may take 10-15 seconds):
-  ```bash
-  docker compose logs backend | grep "Hibernate" | head -1
   ```
 
 - Rebuild from scratch:

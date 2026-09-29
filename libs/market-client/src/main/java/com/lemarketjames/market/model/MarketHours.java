@@ -7,12 +7,14 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 /**
  * Trading hours for a market, used to decide when an instrument's price may move and how long
  * a "trading year" is for the GBM time step.
  *
- * <p>Deliberately simple: exchange holidays and half days are not modelled.
+ * <p>Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; market-service
+ * configures them as {@code sim.holidays}). Half days are not modelled.
  *
  * @param zone               time zone the exchange operates in
  * @param open               local opening time
@@ -67,11 +69,22 @@ public record MarketHours(ZoneId zone, LocalTime open, LocalTime close, boolean 
         return US_EQUITY;
     }
 
-    /** @return whether the market is open at the given instant */
+    /** @return whether the market is open at the given instant, ignoring holidays */
     public boolean isOpen(Instant instant) {
+        return isOpen(instant, Set.of());
+    }
+
+    /**
+     * @param holidays exchange-local dates the market is closed all day
+     * @return whether the market is open at the given instant
+     */
+    public boolean isOpen(Instant instant, Set<LocalDate> holidays) {
         ZonedDateTime local = instant.atZone(zone);
         DayOfWeek day = local.getDayOfWeek();
         if (weekdaysOnly && (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)) {
+            return false;
+        }
+        if (holidays.contains(local.toLocalDate())) {
             return false;
         }
         LocalTime time = local.toLocalTime();

@@ -7,6 +7,8 @@ import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.StaffUserRepository;
+import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.common.security.JwtService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +46,8 @@ class AuthPersistenceIntegrationTest {
     @Autowired ClientRepository clients;
     @Autowired AddressRepository addresses;
     @Autowired JwtService jwt;
+    @Autowired StaffUserRepository staff;
+    @Autowired PlatformSettings settings;
     String alice;
     Integer aliceAccount;
     Cookie cookie;
@@ -82,7 +86,7 @@ class AuthPersistenceIntegrationTest {
 
     @Test
     void aFreshAuthServiceCanLogInUsingPersistedCredentials() {
-        AuthService restarted = new AuthService(jwt, clients, addresses, accounts, 30000);
+        AuthService restarted = new AuthService(jwt, clients, addresses, accounts, staff, settings);
         var request = new LoginRequest();
         request.setUsername(alice + "@example.com");
         request.setPassword("Pass123!");

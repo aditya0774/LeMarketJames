@@ -1,5 +1,6 @@
 package com.lemarketjames;
 
+import com.lemarketjames.market.MarketControlController;
 import com.lemarketjames.market.MarketController;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.service.MarketSimulator;
@@ -32,5 +33,11 @@ class MarketServiceApplicationTest {
         assertEquals(1, providers.size());
         assertInstanceOf(MarketSimulator.class, providers.values().iterator().next());
         assertNotNull(context.getBean(MarketController.class));
+    }
+
+    // The quote-feed test controls only exist where an environment turns them on (sim.control.enabled).
+    @Test
+    void feedControlsAreOffByDefault() {
+        assertTrue(context.getBeansOfType(MarketControlController.class).isEmpty());
     }
 }
