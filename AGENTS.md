@@ -31,7 +31,8 @@ LeMarketJames/
 │   ├── holdings-service/    # :8084
 │   └── core-service/        # :8081
 ├── apps/
-│   └── frontend/            # Angular SPA (:4200)
+│   ├── frontend/            # Angular SPA (:4200)
+│   └── e2e/                 # Playwright end-to-end tests, run against a live stack
 ├── database/schema/         # Shared schema, numbered SQL files
 ├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1
 ├── docker-compose.yml
@@ -51,6 +52,7 @@ Run Maven commands from the repo root.
 | Run a service | `mvn -B -pl libs/common install` once, then `mvn -B -pl services/core-service spring-boot:run` |
 | Frontend tests | `cd apps/frontend && ng test` |
 | Frontend build | `cd apps/frontend && ng build` |
+| End-to-end tests (stack must be running on :4200) | `cd apps/e2e && npm install && npm test` |
 | Full stack (Docker, Linux/Jenkins) | `docker compose up -d --build` |
 | Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1` |
 

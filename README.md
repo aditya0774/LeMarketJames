@@ -436,6 +436,22 @@ cd apps/frontend
 npm test
 ```
 
+### End-to-End Tests (Playwright)
+
+[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, and buying a stock. The tests don't start the app. Run them against a stack that is already up on `http://localhost:4200` (Method 1 or Method 3). Every test registers its own user, so they never depend on existing data.
+
+```bash
+cd apps/e2e
+npm install
+npx playwright install chromium   # first time only: downloads the browser
+npm test                          # or: npm run test:headed to watch the browser
+npm run report                    # open the HTML report from the last run
+```
+
+To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`).
+
+Jenkins runs the suite in the stage **Run Playwright E2E tests**, right after the smoke test. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
+
 ---
 
 ## API & Frontend Access

@@ -313,6 +313,33 @@ pipeline {
             }
         }
 
+        // Drives the real app in a browser through the nginx frontend on :4200, the same origin a
+        // user opens. Runs right after the smoke test so the whole stack is known to be healthy.
+        stage('Run Playwright E2E tests') {
+            steps {
+                sh '''
+                    set -eu
+                    # The official image ships Chromium and its OS libraries, so the agent needs only
+                    # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
+                    # --network host lets the browser reach localhost:4200 on the agent; running as
+                    # the Jenkins user keeps the report files deletable by the workspace cleanup.
+                    docker run --rm --network host --ipc=host \
+                        --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        mcr.microsoft.com/playwright:v1.63.0-noble \
+                        sh -c 'npm ci --no-audit --no-fund && npx playwright test'
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'apps/e2e/results/junit.xml'
+                    // HTML report plus traces, screenshots and videos of any failed test.
+                    archiveArtifacts artifacts: 'apps/e2e/playwright-report/**, apps/e2e/test-results/**', allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Verify buy order survives restart') {
             steps { sh 'bash scripts/verify-buy-order.sh' }
         }
