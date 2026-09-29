@@ -49,9 +49,9 @@ pipeline {
                     touches_backend=false
                     touches_db_or_contract=false
 
-                    grep -Eq '^apps/frontend/' ci/reports/changed-files.txt && touches_frontend=true || true
+                    grep -Eq '^apps/frontend/|^apps/e2e/' ci/reports/changed-files.txt && touches_frontend=true || true
                     grep -Eq '^(services/|libs/|pom.xml)' ci/reports/changed-files.txt && touches_backend=true || true
-                    grep -Eq '^(database/schema/|contracts/|API-CONTRACTS.md|docker-compose.yml)' ci/reports/changed-files.txt && touches_db_or_contract=true || true
+                    grep -Eq '^(database/schema/|contracts/|API-CONTRACTS.md|docker-compose.yml|Jenkinsfile)' ci/reports/changed-files.txt && touches_db_or_contract=true || true
 
                     cat > ci/reports/change-scope.md <<EOF
 # Change Scope
@@ -68,6 +68,27 @@ EOF
 
                     sed 's/^/- /' ci/reports/changed-files.txt >> ci/reports/change-scope.md
                 '''
+                script {
+                    def changedFiles = readFile('ci/reports/changed-files.txt')
+                        .readLines()
+                        .findAll { it?.trim() }
+
+                    def touchesFrontend = changedFiles.any { it.startsWith('apps/frontend/') || it.startsWith('apps/e2e/') }
+                    def touchesBackend = changedFiles.any { it.startsWith('services/') || it.startsWith('libs/') || it == 'pom.xml' }
+                    def touchesDbOrContract = changedFiles.any {
+                        it.startsWith('database/schema/') || it.startsWith('contracts/') ||
+                            it == 'API-CONTRACTS.md' || it == 'docker-compose.yml' || it == 'Jenkinsfile'
+                    }
+
+                    env.CI_TOUCHES_FRONTEND = touchesFrontend.toString()
+                    env.CI_TOUCHES_BACKEND = touchesBackend.toString()
+                    env.CI_TOUCHES_DB_OR_CONTRACT = touchesDbOrContract.toString()
+                    env.CI_RUN_FRONTEND_PIPELINE = (touchesFrontend || touchesDbOrContract).toString()
+                    env.CI_RUN_BACKEND_PIPELINE = (touchesBackend || touchesDbOrContract).toString()
+                    env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
+
+                    echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
+                }
             }
             post {
                 always {
@@ -77,6 +98,9 @@ EOF
         }
 
         stage('Test and build Angular') {
+            when {
+                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
             steps {
                 dir('apps/frontend') {
                     sh 'npm ci --no-audit --no-fund && npm test -- --watch=false --code-coverage && npm run build'
@@ -104,6 +128,9 @@ EOF
         }
 
         stage('Prepare backend test dependencies') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
             steps {
                 // Build shared libraries once to avoid repeating -am work in parallel lanes.
                 sh '''
@@ -114,6 +141,9 @@ EOF
         }
 
         stage('Test backend units (parallel)') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
             parallel {
                 stage('Test libs') {
                     steps {
@@ -189,6 +219,9 @@ EOF
         }
 
         stage('Run backend integration tests on shared PostgreSQL') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -223,6 +256,9 @@ EOF
         }
 
         stage('Build versioned Docker images') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -245,6 +281,9 @@ EOF
         }
 
         stage('Start application with Docker Compose') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -261,6 +300,9 @@ EOF
         }
 
         stage('Verify PostgreSQL connection') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     echo "PostgreSQL connection: host=db port=5432 database=lemarket user=lemarket"
@@ -286,6 +328,9 @@ EOF
         }
 
         stage('Apply schema updates') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 // Init scripts only run for an empty Postgres volume; CI keeps its volume.
                 // Every script from 004 on must be idempotent (safe to run twice); 001-003 are not,
@@ -307,6 +352,9 @@ EOF
         }
 
         stage('Run smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -358,6 +406,9 @@ EOF
         // Drives the real app in a browser through the nginx frontend on :4200, the same origin a
         // user opens. Runs right after the smoke test so the whole stack is known to be healthy.
         stage('Run Playwright E2E tests') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -383,14 +434,23 @@ EOF
         }
 
         stage('Verify buy order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps { sh 'bash scripts/verify-buy-order.sh' }
         }
 
         stage('Verify sell order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps { sh 'bash scripts/verify-sell-order.sh' }
         }
 
         stage('Run quote API contract smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -456,6 +516,9 @@ JSON
         }
 
         stage('Run tradability API smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -528,6 +591,9 @@ JSON
         }
 
         stage('Generate CI test evidence') {
+            when {
+                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' || env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
