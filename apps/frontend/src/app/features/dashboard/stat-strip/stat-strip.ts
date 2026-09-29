@@ -6,7 +6,7 @@ import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
 /**
  * The four headline cards. Buying power stays "—" until the backend implements
  * GET /api/balance; the mockup's "Day P/L" is shown as total unrealised P/L because
- * no day-open prices are exposed yet (see API-CONTRACTS.md, "Dashboard & Trade").
+ * no day-open prices are exposed yet (see contracts/C6-api.md).
  */
 @Component({
   selector: 'app-stat-strip',

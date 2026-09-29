@@ -98,11 +98,12 @@ CREATE TABLE orders (
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Order Events: audit trail (BR-14, BR-15)
+-- Order Events: early audit draft, unused by the services. The audit trail is audit_log, reshaped
+-- by 010; see contracts/C2-audit.md.
 CREATE TABLE order_events (
     event_id        SERIAL PRIMARY KEY,
     order_id        INTEGER NOT NULL REFERENCES orders(order_id),
-    event_type      VARCHAR(50) NOT NULL, -- SUBMITTED, ACCEPTED, FILLED, REJECTED, PENDING, DELAYED
+    event_type      VARCHAR(50) NOT NULL,
     event_timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
     quote_used      JSONB, -- {bid_price, ask_price, quote_time}
     validation_results JSONB, -- {checks passed, cash available, etc}
@@ -119,12 +120,13 @@ CREATE TABLE holdings (
     UNIQUE(account_id, instrument_id)
 );
 
--- Audit Log: permanent legal record (7-year retention, BR-14)
+-- Audit Log: permanent legal record (7-year retention, BR-14). 010 reshapes it into the contract
+-- C2 event format (event types, client_id, details); see contracts/C2-audit.md.
 CREATE TABLE audit_log (
     audit_id        BIGSERIAL PRIMARY KEY,
     order_id        INTEGER NOT NULL REFERENCES orders(order_id),
     account_id      INTEGER NOT NULL REFERENCES accounts(account_id),
-    action          VARCHAR(100) NOT NULL, -- ORDER_ACCEPTED, ORDER_FILLED, HOLDING_UPDATED, CASH_ADJUSTED
+    action          VARCHAR(100) NOT NULL,
     old_values      JSONB,
     new_values      JSONB,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),

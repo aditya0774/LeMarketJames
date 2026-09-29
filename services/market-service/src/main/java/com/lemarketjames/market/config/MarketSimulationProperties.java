@@ -4,6 +4,12 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+
 /**
  * Tunable settings for the market simulator, bound from {@code sim.*} properties.
  *
@@ -41,6 +47,66 @@ public class MarketSimulationProperties {
      * which is convenient for development outside market hours.
      */
     private boolean respectMarketHours = true;
+
+    /**
+     * Exchange holidays: exchange-local dates the market stays closed all day (only applies while
+     * respectMarketHours is true). Defaults to the NYSE holidays for 2026 and 2027; override with a
+     * comma-separated list of yyyy-MM-dd dates, e.g. {@code SIM_HOLIDAYS=2028-01-03,2028-01-17}.
+     */
+    private List<LocalDate> holidays = Stream.of(
+            "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-06-19",
+            "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+            "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18",
+            "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24")
+            .map(LocalDate::parse).toList();
+
+    /** Test controls for the quote feed (contract C4). */
+    private final Control control = new Control();
+
+    public List<LocalDate> getHolidays() {
+        return holidays;
+    }
+
+    public void setHolidays(List<LocalDate> holidays) {
+        this.holidays = holidays;
+    }
+
+    /** The holidays as a set, for fast lookup on every tick. */
+    public Set<LocalDate> holidaySet() {
+        return Set.copyOf(holidays);
+    }
+
+    public Control getControl() {
+        return control;
+    }
+
+    /**
+     * Lets tests and demos steer the feed: set a stock's price, or make quotes stale or
+     * unavailable. Exposed only at /internal/market/control, which the gateway never routes.
+     */
+    public static class Control {
+        /** Whether the control endpoints exist at all. Off unless an environment turns it on. */
+        private boolean enabled = false;
+
+        /** How far in the past quotes claim to be while the feed is STALE. */
+        private Duration staleAge = Duration.ofMinutes(10);
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public Duration getStaleAge() {
+            return staleAge;
+        }
+
+        public void setStaleAge(Duration staleAge) {
+            this.staleAge = staleAge;
+        }
+    }
 
     public boolean isEnabled() {
         return enabled;

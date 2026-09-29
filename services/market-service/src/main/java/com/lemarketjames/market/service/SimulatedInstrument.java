@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Mutable price state for one instrument. Only ever touched by the simulator's tick, under the
@@ -72,9 +73,22 @@ class SimulatedInstrument {
      * Whether this instrument's price may move at {@code now}.
      *
      * @param respectMarketHours when false, the market is treated as always open
+     * @param holidays           exchange-local dates the market is closed
      */
-    boolean isTrading(Instant now, boolean respectMarketHours) {
-        return !respectMarketHours || hours.isOpen(now);
+    boolean isTrading(Instant now, boolean respectMarketHours, Set<LocalDate> holidays) {
+        return !respectMarketHours || hours.isOpen(now, holidays);
+    }
+
+    /**
+     * Sets the price by hand (contract C4 test control), as if the market had traded there.
+     * Day high/low stretch to include it; volume is unchanged.
+     */
+    void overridePrice(double price, Instant now) {
+        rollTradingDayIfNeeded(now);
+        lastPrice = price;
+        highPrice = Math.max(highPrice, price);
+        lowPrice = Math.min(lowPrice, price);
+        lastUpdated = now;
     }
 
     /**

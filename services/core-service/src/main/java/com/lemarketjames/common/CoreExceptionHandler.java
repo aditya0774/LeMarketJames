@@ -1,6 +1,8 @@
 package com.lemarketjames.common;
 
+import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.exception.InsufficientHoldingsException;
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
 import org.springframework.http.HttpStatus;
@@ -24,7 +26,7 @@ public class CoreExceptionHandler {
                 .body(Map.of(
                     "success", false,
                     "error", ex.getMessage(),
-                    "code", "NOT_TRADABLE"
+                    "code", RejectionReason.NOT_TRADABLE.name()
                 ));
     }
 
@@ -34,7 +36,18 @@ public class CoreExceptionHandler {
                 .body(Map.of(
                     "success", false,
                     "error", ex.getMessage(),
-                    "code", "INSUFFICIENT_HOLDINGS"
+                    "code", RejectionReason.INSUFFICIENT_HOLDINGS.name()
+                ));
+    }
+
+    // The order exists but is somewhere its lifecycle doesn't allow this move from (contract C1).
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidTransition(InvalidStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                    "success", false,
+                    "error", ex.getMessage(),
+                    "code", "INVALID_STATUS_TRANSITION"
                 ));
     }
 

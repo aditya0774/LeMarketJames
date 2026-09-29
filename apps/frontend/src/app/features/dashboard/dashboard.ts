@@ -69,7 +69,11 @@ export class Dashboard implements OnInit {
   protected readonly openOrders = computed(() => this.orders().filter((o) => isOpenStatus(o.orderStatus)).length);
 
   ngOnInit(): void {
-    this.watchMarket();
+    // Quotes are polled per symbol, so the stock list has to arrive first.
+    this.catalog.load().then(
+      () => this.watchMarket(),
+      (err) => this.flagExpiredSession(err),
+    );
     this.loadHoldings();
     this.loadOrders();
   }

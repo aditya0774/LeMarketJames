@@ -6,10 +6,10 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
 
 **Before writing any code, read these:**
 
-- **[API-CONTRACTS.md](API-CONTRACTS.md)** — The single source of truth for all API endpoints, request/response formats, and team agreements. Ensures all 6 developers can work in parallel without blocking.
-- **[AGENTS.md](AGENTS.md)** — Project conventions, package structure, and **API Contract implementation guidelines** for backend (Spring Boot) and frontend (Angular).
+- **[contracts/](contracts/README.md)**: The shared contracts (C1–C7) every feature codes against: order lifecycle, audit format, seed data and test logins, quote-feed controls, settings, API endpoints and events, and roles. These are what let the team work in parallel without blocking each other.
+- **[AGENTS.md](AGENTS.md)**: Project conventions and package structure for backend (Spring Boot) and frontend (Angular).
 
-**TL;DR:** Check [AGENTS.md](AGENTS.md) for how to implement against `/API-CONTRACTS.md` and you can build features independently without waiting on anyone else.
+**TL;DR:** Read the contract your change touches in [contracts/](contracts/README.md), follow [AGENTS.md](AGENTS.md), and you can build features independently without waiting on anyone else. Test logins for every kind of user are in [C3 seed data](contracts/C3-seed-data.md).
 
 ---
 
@@ -82,7 +82,7 @@ LeMarketJames/
 ├── docker-compose.yml            # Full-stack orchestration
 ├── Jenkinsfile                   # CI/CD pipeline
 ├── AGENTS.md                     # Conventions for developers
-├── API-CONTRACTS.md              # Endpoint & data contracts
+├── contracts/                    # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
 └── README.md                     # This file
 ```
 
@@ -158,7 +158,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 
 ### Current Features & Endpoints
 
-**See [API-CONTRACTS.md](API-CONTRACTS.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
+**See [contracts/C6-api.md](contracts/C6-api.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
 **Key Features:**
 - **Authentication:** User registration, login, JWT-based stateless sessions with HTTP-only cookies
@@ -170,7 +170,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 - Feature-based organization: `auth/`, `market/`, `holdings/`, `orders/`, `quotes/`, `sessions/` packages
 - Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
 - Data persisted in PostgreSQL; market prices and session state in-memory
-- Full design and tuning details: **[docs/MARKET.md](docs/MARKET.md)**, **[docs/BACKEND.md](docs/BACKEND.md)**
+- Quote-feed design, settings and test controls: **[contracts/C4-quote-feed.md](contracts/C4-quote-feed.md)**
 
 ### Design Principles
 
@@ -392,17 +392,7 @@ DB_PASSWORD=your_secure_password docker compose up -d --build
 
 ### Market simulation settings
 
-The simulated market is configured in `services/core-service/src/main/resources/application.properties`.
-Each setting can be overridden with an environment variable:
-
-| Property | Env variable | Default | Purpose |
-|---|---|---|---|
-| `sim.enabled` | `SIM_ENABLED` | `true` | Whether prices tick automatically |
-| `sim.tick-ms` | `SIM_TICK_MS` | `1000` | Milliseconds between price ticks |
-| `sim.seed` | `SIM_SEED` | *(empty)* | Fixed random seed to replay the same market |
-| `sim.speed-multiplier` | `SIM_SPEED_MULTIPLIER` | `1` | Simulated seconds per real second; raise for faster-moving demos |
-| `sim.snapshot-interval-ms` | `SIM_SNAPSHOT_INTERVAL_MS` | `5000` | How often latest prices and candles are saved |
-| `sim.respect-market-hours` | `SIM_RESPECT_MARKET_HOURS` | `true` | Only move prices while each exchange is open |
+market-service simulates every stock's price. Its settings (tick rate, seed, speed, market hours, holidays) and the test controls, which can set a price or make the feed stale or unavailable, are described in [contracts/C4-quote-feed.md](contracts/C4-quote-feed.md). The business settings every service shares (lockout, staleness limit, ...) are in [contracts/C5-config.md](contracts/C5-config.md).
 
 Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
 table — see [database/README.md](database/README.md#tuning-the-market).
@@ -472,7 +462,7 @@ Once the application is running (via any of the three methods), you can access:
 - `/register` - User registration page with comprehensive form
 - `/login` - User login
 
-See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [API-CONTRACTS.md](API-CONTRACTS.md) for the rest.
+See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [contracts/C6-api.md](contracts/C6-api.md) for the rest.
 
 **Form Validation:**
 All form validation is performed client-side using Zod schema validation before submission to the backend. See [apps/frontend/src/app/features/auth/register/register.schema.ts](apps/frontend/src/app/features/auth/register/register.schema.ts) for validation rules.

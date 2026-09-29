@@ -2,7 +2,7 @@ package com.lemarketjames.portfolio.dto;
 
 import java.math.BigDecimal;
 
-/** Matches the balance shape documented in API-CONTRACTS.md's GET /api/v1/portfolio contract. */
+/** Matches the balance shape documented for GET /api/v1/portfolio in contracts/C6-api.md. */
 public class PortfolioBalance {
 
     private final BigDecimal cash;

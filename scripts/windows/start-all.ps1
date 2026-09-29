@@ -41,7 +41,8 @@ function Start-Window([string]$Title, [string]$WorkingDir, [string]$Command) {
 
 # market-service first: core and holdings fetch prices from it. Their clients are lazy, so the
 # rest can start in any order.
-Start-Window 'market-service :8083'   $repoRoot 'mvn -B -pl services/market-service spring-boot:run'
+# A local stack is a test environment, so the quote-feed test controls are on (contracts/C4-quote-feed.md).
+Start-Window 'market-service :8083'   $repoRoot '$env:SIM_CONTROL_ENABLED = ''true''; mvn -B -pl services/market-service spring-boot:run'
 Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'

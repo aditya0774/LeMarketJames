@@ -35,7 +35,7 @@ public class MarketScheduler {
             initialDelayString = "${sim.snapshot-interval-ms:5000}")
     public void saveSnapshot() {
         try {
-            persistence.save(simulator.findAll(), simulator.drainCompletedCandles());
+            persistence.save(simulator.latestSnapshots(), simulator.drainCompletedCandles());
         } catch (RuntimeException ex) {
             // A failed save must not stop the market; the next save writes the latest prices again.
             // Candles drained in this attempt are lost, which only leaves a gap in chart history.

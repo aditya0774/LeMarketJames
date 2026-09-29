@@ -3,6 +3,7 @@ package com.lemarketjames.orders;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -81,7 +82,7 @@ public class OrderController {
     }
     
     /**
-     * Update order status
+     * Move an order to its next status (TRADING_OPS only, see SecurityConfig)
      * PUT /api/v1/orders/{orderId}/status/{status}
      */
     @PutMapping("/{orderId}/status/{status}")
@@ -93,14 +94,14 @@ public class OrderController {
     }
     
     /**
-     * Reject an order
-     * POST /api/v1/orders/{orderId}/reject
+     * Reject an order with a RejectionReason code (TRADING_OPS only, see SecurityConfig)
+     * POST /api/v1/orders/{orderId}/reject?reason=CODE
      */
     @PostMapping("/{orderId}/reject")
     public ResponseEntity<OrderResponse> rejectOrder(
             @PathVariable Integer orderId,
-            @RequestParam(required = false) String reason) {
-        OrderResponse response = orderService.rejectOrder(orderId, reason != null ? reason : "No reason provided");
+            @RequestParam(defaultValue = "REJECTED_BY_OPERATIONS") RejectionReason reason) {
+        OrderResponse response = orderService.rejectOrder(orderId, reason);
         return ResponseEntity.ok(response);
     }
 }

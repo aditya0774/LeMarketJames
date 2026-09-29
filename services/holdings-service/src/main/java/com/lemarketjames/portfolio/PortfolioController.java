@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The GET /api/balance contract API-CONTRACTS.md already documents (unimplemented until now).
+ * The GET /api/balance contract documented in contracts/C6-api.md.
  * No accountId param, per that section's own rule: scoped from the JWT like /api/auth/me. Also
  * mapped at /api/v1/portfolio and /api/v1/balance (the /api/v1/ convention alias it calls for).
  */

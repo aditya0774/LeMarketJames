@@ -1,8 +1,11 @@
 package com.lemarketjames.orders.entity;
 
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "orders")
@@ -12,8 +15,75 @@ public class Order {
         BUY, SELL
     }
     
+    /**
+     * Where an order is in its life (contract C1). The allowed moves are defined here, in
+     * {@link #allowedNext()}, and enforced by {@link Order#transitionTo}; nothing else may set a status.
+     *
+     * <p>Mirrors: the {@code orders.order_status} CHECK constraint (database/schema/001), the
+     * frontend's {@code OrderStatus} type (apps/frontend/src/app/core/orders/order.service.ts) and
+     * holdings-service's OrderSummary open-status list.
+     */
     public enum OrderStatus {
-        SUBMITTED, ACCEPTED, PENDING, FILLED, REJECTED, DELAYED
+        /** Saved after passing placement checks; waiting to be accepted for execution. */
+        SUBMITTED,
+        /** Accepted for execution; waiting for the execution engine. */
+        ACCEPTED,
+        /** Sent for execution; waiting for the fill. */
+        PENDING,
+        /** Executed; cash and holdings are settled. Final. */
+        FILLED,
+        /** Refused, with a {@link RejectionReason} in rejection_reason. Final. */
+        REJECTED,
+        /** Accepted while the market is closed; waits for the open before being sent for execution. */
+        DELAYED;
+
+        /** The statuses an order in this status may move to next; empty for final statuses. */
+        public Set<OrderStatus> allowedNext() {
+            return switch (this) {
+                case SUBMITTED -> EnumSet.of(ACCEPTED, REJECTED);
+                case ACCEPTED -> EnumSet.of(PENDING, DELAYED, FILLED, REJECTED);
+                case DELAYED -> EnumSet.of(PENDING, REJECTED);
+                case PENDING -> EnumSet.of(FILLED, REJECTED);
+                case FILLED, REJECTED -> EnumSet.noneOf(OrderStatus.class);
+            };
+        }
+
+        public boolean canMoveTo(OrderStatus next) {
+            return allowedNext().contains(next);
+        }
+
+        /** Still in progress, i.e. not FILLED or REJECTED. */
+        public boolean isOpen() {
+            return !allowedNext().isEmpty();
+        }
+    }
+
+    /**
+     * Moves the order to {@code next}, stamping the matching timestamp.
+     *
+     * @throws InvalidStatusTransitionException if the lifecycle doesn't allow the move
+     */
+    public void transitionTo(OrderStatus next) {
+        if (!orderStatus.canMoveTo(next)) {
+            throw new InvalidStatusTransitionException(orderStatus, next);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (next == OrderStatus.ACCEPTED) {
+            acceptedAt = now;
+        } else if (next == OrderStatus.FILLED) {
+            filledAt = now;
+        }
+        orderStatus = next;
+    }
+
+    /**
+     * Rejects the order with a reason code.
+     *
+     * @throws InvalidStatusTransitionException if the order is already final
+     */
+    public void reject(RejectionReason reason) {
+        transitionTo(OrderStatus.REJECTED);
+        rejectionReason = reason.name();
     }
     
     @Id
@@ -83,6 +153,8 @@ public class Order {
         this.instrumentId = instrumentId;
         this.orderType = orderType;
         this.quantity = quantity;
+        // Every new order starts its lifecycle here (contract C1).
+        this.orderStatus = OrderStatus.SUBMITTED;
     }
     
     // Getters and Setters
@@ -138,6 +210,10 @@ public class Order {
         return orderStatus;
     }
     
+    /**
+     * Sets the status without lifecycle checks. Only for putting an order into a known state
+     * (tests, fixtures); every real status change goes through {@link #transitionTo}.
+     */
     public void setOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }

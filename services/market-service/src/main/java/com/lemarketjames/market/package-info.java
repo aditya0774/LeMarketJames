@@ -15,6 +15,6 @@
  * {@code instrument_market_params} in database/schema/006_market_simulation.sql. Runtime settings
  * are the {@code sim.*} properties in application.properties.
  *
- * <p>Design notes, tuning and planned extensions: {@code docs/MARKET.md}.
+ * <p>The quote-feed contract, settings and test controls: {@code contracts/C4-quote-feed.md}.
  */
 package com.lemarketjames.market;

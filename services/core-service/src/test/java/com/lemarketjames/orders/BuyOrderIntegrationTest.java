@@ -25,6 +25,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,6 +69,8 @@ class BuyOrderIntegrationTest {
     @AfterEach
     void removeOnlyThisTestsCommittedData() {
         // The disposable PostgreSQL suite also runs other tests; never truncate shared tables.
+        // Audit events reference the orders, so they go first.
+        jdbc.update("DELETE FROM audit_log WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
         jdbc.update("DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
         jdbc.update("DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
@@ -98,6 +101,11 @@ class BuyOrderIntegrationTest {
         assertEquals(0, BigDecimal.ONE.compareTo((BigDecimal) row.get("quantity")));
         assertEquals(0, expectedPrice.compareTo((BigDecimal) row.get("price_per_unit")));
         assertEquals("SUBMITTED", row.get("order_status"));
+        // Contract C2: the order's audit events were committed with it, tied to the client.
+        var audit = jdbc.queryForList("SELECT action, client_id FROM audit_log WHERE order_id=? ORDER BY audit_id", orderId);
+        assertEquals(List.of("SUBMITTED", "VALIDATED"), audit.stream().map(event -> event.get("action")).toList());
+        Integer clientId = clients.findByUsername(username).orElseThrow().getClientId();
+        audit.forEach(event -> assertEquals(clientId, ((Number) event.get("client_id")).intValue()));
         mvc.perform(get("/api/v1/orders/" + orderId).cookie(cookie))
             .andExpect(status().isOk()).andExpect(jsonPath("$.orderId").value(orderId));
         mvc.perform(get("/api/v1/orders/account/" + accountId).cookie(cookie))
@@ -149,7 +157,7 @@ class BuyOrderIntegrationTest {
         client.setSsn("test-only");
         client.setEmploymentStatus("EMPLOYED");
         client.setInvestmentExperience("beginner");
-        client.setAccountStatus("ACTIVE");
+        client.setAccountStatus(com.lemarketjames.common.domain.AccountStatus.ACTIVE);
         client = clients.saveAndFlush(client);
         AddressEntity address = new AddressEntity();
         address.setClientId(client.getClientId());

@@ -87,7 +87,7 @@ class HoldingsOwnDataIntegrationTest {
         client.setSsn("not-used-by-holdings-service");
         client.setEmploymentStatus("EMPLOYED");
         client.setInvestmentExperience("beginner");
-        client.setAccountStatus("ACTIVE");
+        client.setAccountStatus(com.lemarketjames.common.domain.AccountStatus.ACTIVE);
         client = clients.saveAndFlush(client);
 
         AddressEntity address = new AddressEntity();
