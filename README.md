@@ -373,7 +373,7 @@ Run the backend in Docker and the Angular dev server on the same machine, so fro
 
 **Opening a Linux/Jenkins host's stack from another machine:**
 
-The gateway and services only accept browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file (copy [.env.example](.env.example)) or in the Jenkins agent's environment:
+The gateway and services only accept browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
 ```bash
 APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
 ```
