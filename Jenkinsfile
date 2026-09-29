@@ -4,8 +4,32 @@ pipeline {
         jdk 'JDK21'
         nodejs 'NodeJS'
     }
+    environment {
+        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+        NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+    }
 
     stages {
+        stage('Preflight checks') {
+            steps {
+                sh '''
+                    set -eu
+                    java -version
+                    mvn -version
+                    node --version
+                    npm --version
+                    if docker compose version >/dev/null 2>&1; then
+                        echo "Using Docker Compose v2"
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        echo "Using legacy docker-compose"
+                    else
+                        echo "Docker Compose is not installed on this Jenkins agent"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
@@ -33,43 +57,88 @@ pipeline {
             }
         }
 
-        stage('Test with Maven') {
+        stage('Prepare backend test dependencies') {
             steps {
-                // The root parent pom builds and tests every backend module (libs/common + services/*).
+                // Build shared libraries once to avoid repeating -am work in parallel lanes.
                 sh '''
                     set -eu
-                    mvn -B clean test
-
-                    echo "=== BACKEND TESTS COMPLETED: PASS ==="
-                    echo "=== BACKEND SUREFIRE SUMMARY ==="
-
-                    if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "No surefire XML reports found"
-                    fi
+                    mvn -B -pl libs/common,libs/market-client -am -DskipTests install
                 '''
-            }
-            post {
-                always {
-                    junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
-                }
             }
         }
 
-        stage('Verify Docker Compose') {
-            steps {
-                sh '''
-                    if docker compose version >/dev/null 2>&1; then
-                        echo "Using Docker Compose v2"
-                    elif command -v docker-compose >/dev/null 2>&1; then
-                        echo "Using legacy docker-compose"
-                    else
-                        echo "Docker Compose is not installed on this Jenkins agent"
-                        exit 1
-                    fi
-                '''
+        stage('Test backend units (parallel)') {
+            parallel {
+                stage('Test libs') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl libs/common,libs/market-client test
+                        '''
+                    }
+                }
+
+                stage('Test core service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/core-service test
+                        '''
+                    }
+                }
+
+                stage('Test auth service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/auth-service test
+                        '''
+                    }
+                }
+
+                stage('Test market service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/market-service test
+                        '''
+                    }
+                }
+
+                stage('Test holdings service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/holdings-service test
+                        '''
+                    }
+                }
+
+                stage('Test gateway service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/gateway-service test
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    sh '''
+                        set +e
+                        echo "=== BACKEND UNIT SUREFIRE SUMMARY ==="
+                        if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "No surefire XML reports found"
+                        fi
+                        set -e
+                    '''
+
+                    junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
+                }
             }
         }
 
