@@ -102,4 +102,26 @@ class PortfolioServiceTest {
         assertEquals(new BigDecimal("0.00"), balance.getDayGainLoss()); // scaled to 2 decimals
         assertEquals(new BigDecimal("0.00"), balance.getTotalGainLoss()); // scaled to 2 decimals
     }
+
+    @Test
+    void buyingPowerHandlesNullOrderPrices() {
+        // Null-safety: Order with null pricePerUnit should not crash; treat as 0
+        AccountEntity account = new AccountEntity();
+        account.setCashBalance(new BigDecimal("2000.00"));
+        account.setCurrency("USD");
+
+        when(accountRepository.existsByAccountIdAndUsername(1, "alice")).thenReturn(true);
+        when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+        when(holdingsRepository.findByAccountId(1)).thenReturn(List.of());
+
+        // Order with null pricePerUnit
+        OrderSummary orderWithNullPrice = new OrderSummary(5, "BUY", new BigDecimal("10"), null, "SUBMITTED", null);
+        when(ordersClient.getOrdersForAccount(1)).thenReturn(List.of(orderWithNullPrice));
+
+        // Should not throw NPE
+        PortfolioBalance balance = portfolioService.getPortfolio(1, "alice");
+
+        assertEquals(new BigDecimal("2000.00"), balance.getCash());
+        assertEquals(new BigDecimal("2000.00"), balance.getBuyingPower()); // null treated as 0, no deduction
+    }
 }
