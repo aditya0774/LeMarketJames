@@ -33,7 +33,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
+                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false --code-coverage && npm run build'
                 }
             }
         }
@@ -478,6 +478,21 @@ JSON
                     grep -q '"success":false' "$order_error_file"
                     grep -q '"code":"NOT_TRADABLE"' "$order_error_file"
                 '''
+            }
+        }
+
+        stage('Generate CI test evidence') {
+            steps {
+                sh '''
+                    set -eu
+                    bash scripts/ci/collect-coverage.sh
+                    bash scripts/ci/test-inventory.sh
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'ci/reports/**', allowEmptyArchive: false
+                }
             }
         }
     }
