@@ -207,9 +207,33 @@ an immutable-record API; the existing status/rejection operations belong to that
 
 ## Holdings Endpoints
 
-Implemented by `holdings-service` (`/api/v1/holdings`, alias `/api/holdings`). `averageCost`/`totalCost`/`gainLoss`/`gainLossPercent` are now real, computed from cost basis tracked by holdings-service's settlement logic (`HoldingsSettlementService`) — previously these were hardcoded to zero. Settlement itself (`POST /internal/holdings/settle`) is internal, server-to-server only (`core-service` → `holdings-service` when an order fills) — it is not part of this public contract and has no gateway route.
+/**
+ * Holdings API for LMKT-29: View my holdings
+ * 
+ * Implemented by `holdings-service` (`/api/v1/holdings`, alias `/api/holdings`).
+ * `averageCost`/`totalCost`/`gainLoss`/`gainLossPercent` are computed from cost basis
+ * tracked by holdings-service's settlement logic (`HoldingsSettlementService`).
+ * 
+ * Settlement itself (`POST /internal/holdings/settle`) is internal, server-to-server only
+ * (`core-service` → `holdings-service` when an order fills) — it is not part of this
+ * public contract and has no gateway route.
+ * 
+ * Fulfills AC1 (display holdings with quantity), AC3 (persistence via seeded data).
+ * Empty state handled separately to fulfill AC2.
+ */
 
 ### GET /api/holdings
+
+/**
+ * Retrieves all stock holdings for the authenticated user, scoped by JWT identity.
+ * 
+ * LMKT-29 AC1: Returns each stock held with its quantity, as currently recorded in the database.
+ * LMKT-29 AC3: Holdings persist exactly as seeded; subsequent platform restarts maintain the same data.
+ * LMKT-29 AC2: When the user holds no stocks, the `holdings` array is empty (frontend renders
+ *              a friendly empty state with a link to place an order).
+ * 
+ * @return Holdings array with current-price and gain/loss fields computed server-side
+ */
 
 Retrieves all stock holdings for the authenticated user.
 
@@ -242,6 +266,54 @@ Retrieves all stock holdings for the authenticated user.
   ]
 }
 ```
+
+#### Response (200 OK – Empty Holdings)
+
+```json
+{
+  "success": true,
+  "holdings": []
+}
+```
+
+#### Response (401 Unauthorized)
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "JWT cookie missing or expired"
+}
+```
+
+#### Response (404 Not Found)
+
+```json
+{
+  "success": false,
+  "error": "Account not found",
+  "code": "ACCOUNT_NOT_FOUND"
+}
+```
+
+#### Field Definitions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | string | Stock ticker symbol (e.g., AAPL, MSFT) |
+| `quantity` | number | Number of shares held (LMKT-29 AC1) |
+| `averageCost` | decimal | Average cost per share at purchase (basis) |
+| `currentPrice` | decimal | Live price from market-service (real-time) |
+| `totalCost` | decimal | `quantity × averageCost` (total basis) |
+| `currentValue` | decimal | `quantity × currentPrice` (market value) |
+| `gainLoss` | decimal | `currentValue − totalCost` (absolute gain/loss) |
+| `gainLossPercent` | decimal | `(gainLoss / totalCost) × 100` (percentage gain/loss) |
+
+#### Notes
+
+- Sorted by `symbol` ascending.
+- `currentPrice` reflects the latest quote from market-service; all holdings share the same market data.
+- Authenticated via JWT cookie (same as `GET /api/auth/me`); no `accountId` parameter — scoped to the caller's own account.
+- Empty portfolio (AC2): Returns `200 OK` with an empty `holdings` array, never `404`. Frontend displays a friendly empty state with a call-to-action to place an order.
 
 ---
 

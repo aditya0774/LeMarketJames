@@ -67,22 +67,23 @@ public class HoldingsService {
     }
 
     /**
-     * AC1: Retrieve all holdings for an authenticated user.
+     * AC1: Retrieve all holdings for an authenticated user, resolved from JWT username.
      *
      * <p>Symbol, current price and current value come from the simulated market. A holding whose
      * instrument is not simulated keeps a null symbol and zero price/value rather than failing
      * the whole response.
      *
-     * AC2: Requests scoped to authenticated user
+     * AC2: Requests scoped to authenticated user (no accountId parameter)
+     * AC3: Holdings persist exactly as seeded; platform restarts maintain the same data
      *
-     * @param accountId the account ID to retrieve holdings for
      * @param username the authenticated user's username from JWT
-     * @return HoldingsResponse containing success flag and list of holdings DTOs
-     * @throws UnauthorizedException if user doesn't own the account
+     * @return HoldingsResponse containing success flag and list of holdings DTOs (empty if no holdings)
+     * @throws IllegalArgumentException if no account found for username
      */
-    public HoldingsResponse getHoldingsForAccount(Integer accountId, String username) {
-        // AC1: Validate user owns this account before returning any data
-        validateAccountOwnership(accountId, username);
+    public HoldingsResponse getHoldingsForAccount(String username) {
+        // Resolve accountId from username
+        Integer accountId = accountRepository.findAccountIdByUsername(username)
+            .orElseThrow(() -> new IllegalArgumentException("No account found for username: " + username));
         
         List<HoldingsEntity> holdings = holdingsRepository.findByAccountId(accountId);
 

@@ -27,17 +27,21 @@ public class HoldingsController {
     }
 
     /**
-     * AC1: Retrieve all holdings for the authenticated user.
-     * AC2: Requests scoped to authenticated user
+     * AC1: Retrieve all holdings for the authenticated user, scoped from JWT identity.
      * 
-     * @param accountId the account ID
-     * @return holdings response with success flag and holdings list
+     * Returns each stock held with its quantity and current market value, as currently recorded
+     * in the database. Returns empty array if user holds no stocks (AC2).
+     * 
+     * AC3: Holdings persist exactly as seeded; platform restarts maintain the same data.
+     *
+     * @return 200 OK with holdings array and success flag
+     * @return 401 Unauthorized if JWT missing/expired (not signed in — AC1 requirement)
+     * @return 404 Not Found if signed-in user has no account (edge case, should not happen)
      */
     @GetMapping
-    public ResponseEntity<HoldingsResponse> getHoldings(
-            @RequestParam Integer accountId) {
+    public ResponseEntity<HoldingsResponse> getHoldings() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        HoldingsResponse response = holdingsService.getHoldingsForAccount(accountId, username);
+        HoldingsResponse response = holdingsService.getHoldingsForAccount(username);
         return ResponseEntity.ok(response);
     }
 

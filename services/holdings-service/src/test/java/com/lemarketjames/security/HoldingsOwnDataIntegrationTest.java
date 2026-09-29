@@ -109,16 +109,34 @@ class HoldingsOwnDataIntegrationTest {
         return accounts.saveAndFlush(account).getAccountId();
     }
 
+    /**
+     * Verifies holdings API is scoped to the authenticated user's JWT identity.
+     * 
+     * AC1: Each user sees only their own holdings, scoped by JWT cookie.
+     * 
+     * @throws Exception if mock MVC performs invalid request
+     */
     @Test
     void ownHoldingsAreScopedToCookie() throws Exception {
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()).cookie(cookie))
+        // Alice's JWT should return alice's holdings (1 share)
+        mvc.perform(get("/api/v1/holdings").cookie(cookie))
             .andExpect(status().isOk()).andExpect(jsonPath("$.holdings.length()").value(1))
             .andExpect(jsonPath("$.holdings[0].quantity").value(1));
-        mvc.perform(get("/api/v1/holdings").param("accountId", bobAccount.toString()).cookie(cookie))
-            .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"))
-            .andExpect(jsonPath("$.error").value("Access denied"));
+        
+        // Bob's JWT should return bob's holdings (10 shares)
+        Cookie bobCookie = new Cookie(JwtAuthenticationFilter.COOKIE_NAME, jwt.generateToken(bob));
+        mvc.perform(get("/api/v1/holdings").cookie(bobCookie))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.holdings.length()").value(1))
+            .andExpect(jsonPath("$.holdings[0].quantity").value(10));
     }
 
+    /**
+     * Verifies holdings validation endpoint prevents access to other users' accounts.
+     * 
+     * AC1: Unauthorized data access prevented - validate endpoint scoped to authenticated user.
+     * 
+     * @throws Exception if mock MVC performs invalid request
+     */
     @Test
     void validateHoldingsCannotExposeOtherUsers() throws Exception {
         mvc.perform(post("/api/v1/holdings/validate").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
@@ -126,17 +144,31 @@ class HoldingsOwnDataIntegrationTest {
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
     }
 
+    /**
+     * Verifies anonymous (unauthenticated) requests cannot access holdings API.
+     * 
+     * AC1: Given I am signed in (requirement) - unsigned-in requests return 401.
+     * 
+     * @throws Exception if mock MVC performs invalid request
+     */
     @Test
     void anonymousRequestsCannotReadPrivateData() throws Exception {
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()))
+        mvc.perform(get("/api/v1/holdings"))
             .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * Verifies authenticated users with no holdings receive an empty array (not an error).
+     * 
+     * AC1: Given I hold nothing, then I see an empty holdings array (HTTP 200 success).
+     * 
+     * @throws Exception if mock MVC performs invalid request
+     */
     @Test
     void emptyOwnHoldingsAreSuccessful() throws Exception {
         holdings.deleteAll(holdings.findByAccountId(aliceAccount));
         holdings.flush();
-        mvc.perform(get("/api/v1/holdings").param("accountId", aliceAccount.toString()).cookie(cookie))
+        mvc.perform(get("/api/v1/holdings").cookie(cookie))
             .andExpect(status().isOk()).andExpect(jsonPath("$.holdings.length()").value(0));
     }
 }
