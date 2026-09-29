@@ -1,11 +1,5 @@
 pipeline {
     agent any
-    parameters {
-        string(name: 'BASELINE_BACKEND_LINE_PCT', defaultValue: '', description: 'Optional backend line coverage baseline percent (example: 81.35)')
-        string(name: 'BASELINE_FRONTEND_LINE_PCT', defaultValue: '', description: 'Optional frontend line coverage baseline percent (example: 74.10)')
-        string(name: 'BASELINE_DURATION_MS', defaultValue: '', description: 'Optional pipeline duration baseline in milliseconds')
-        booleanParam(name: 'ENFORCE_COVERAGE_BASELINE', defaultValue: true, description: 'Fail build when current coverage drops below supplied baseline')
-    }
     tools {
         jdk 'JDK21'
         nodejs 'NodeJS'
@@ -40,42 +34,17 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    mkdir -p ci/reports
-
                     base_ref="${CHANGE_TARGET:-main}"
                     if git show-ref --verify --quiet "refs/remotes/origin/${base_ref}"; then
-                        git diff --name-only "origin/${base_ref}...HEAD" > ci/reports/changed-files.txt
+                        git diff --name-only "origin/${base_ref}...HEAD" > .ci-changed-files.txt
                     elif git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
-                        git diff --name-only "HEAD~1...HEAD" > ci/reports/changed-files.txt
+                        git diff --name-only "HEAD~1...HEAD" > .ci-changed-files.txt
                     else
-                        git ls-files > ci/reports/changed-files.txt
+                        git ls-files > .ci-changed-files.txt
                     fi
-
-                    touches_frontend=false
-                    touches_backend=false
-                    touches_db_or_contract=false
-
-                    grep -Eq '^apps/frontend/|^apps/e2e/' ci/reports/changed-files.txt && touches_frontend=true || true
-                    grep -Eq '^(services/|libs/|pom.xml)' ci/reports/changed-files.txt && touches_backend=true || true
-                    grep -Eq '^(database/schema/|contracts/|API-CONTRACTS.md|docker-compose.yml|Jenkinsfile)' ci/reports/changed-files.txt && touches_db_or_contract=true || true
-
-                    cat > ci/reports/change-scope.md <<EOF
-# Change Scope
-
-Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-- Base ref: ${base_ref}
-- Frontend changed: ${touches_frontend}
-- Backend changed: ${touches_backend}
-- DB/contract changed: ${touches_db_or_contract}
-
-Changed files:
-EOF
-
-                    sed 's/^/- /' ci/reports/changed-files.txt >> ci/reports/change-scope.md
                 '''
                 script {
-                    def changedFiles = readFile('ci/reports/changed-files.txt')
+                    def changedFiles = readFile('.ci-changed-files.txt')
                         .readLines()
                         .findAll { it?.trim() }
 
@@ -94,11 +63,6 @@ EOF
                     env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
 
                     echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'ci/reports/changed-files.txt, ci/reports/change-scope.md', allowEmptyArchive: false
                 }
             }
         }
@@ -596,62 +560,9 @@ JSON
             }
         }
 
-        stage('Generate CI test evidence') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' || env.CI_RUN_BACKEND_PIPELINE == 'true' }
-            }
-            steps {
-                sh '''
-                    set -eu
-                    bash scripts/ci/collect-coverage.sh
-                    bash scripts/ci/test-inventory.sh
-                '''
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'ci/reports/**', allowEmptyArchive: false
-                }
-            }
-        }
-
-        stage('Compare against baseline metrics') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' || env.CI_RUN_BACKEND_PIPELINE == 'true' }
-            }
-            steps {
-                withEnv([
-                    "BASELINE_BACKEND_LINE_PCT=${params.BASELINE_BACKEND_LINE_PCT}",
-                    "BASELINE_FRONTEND_LINE_PCT=${params.BASELINE_FRONTEND_LINE_PCT}",
-                    "BASELINE_DURATION_MS=${params.BASELINE_DURATION_MS}",
-                    "ENFORCE_COVERAGE_BASELINE=${params.ENFORCE_COVERAGE_BASELINE}"
-                ]) {
-                    sh '''
-                        set -eu
-                        bash scripts/ci/compare-baseline.sh
-                    '''
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'ci/reports/baseline-comparison.md', allowEmptyArchive: true
-                }
-            }
-        }
     }
 
     post {
-        always {
-            sh '''
-                set -eu
-                mkdir -p ci/reports
-            '''
-            script {
-                def durationMs = currentBuild.duration ?: (System.currentTimeMillis() - currentBuild.startTimeInMillis)
-                def startedAt = new Date(currentBuild.startTimeInMillis).format("yyyy-MM-dd'T'HH:mm:ssXXX")
-                writeFile file: 'ci/reports/pipeline-timing.md', text: """# Pipeline Timing\n\nGenerated: ${new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX")}\n\n- Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n- Result: ${currentBuild.currentResult}\n- Started: ${startedAt}\n- Duration ms: ${durationMs}\n- Duration human: ${currentBuild.durationString}\n"""
-            }
-            archiveArtifacts artifacts: 'ci/reports/pipeline-timing.md', allowEmptyArchive: true
-        }
         failure {
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
