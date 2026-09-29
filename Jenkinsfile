@@ -9,7 +9,7 @@ pipeline {
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
-                    sh 'rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm test -- --watch=false && npm run build'
+                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
                 }
             }
         }
@@ -54,72 +54,6 @@ pipeline {
             post {
                 always {
                     junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Run buy-order microservice tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/core-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
-                    if ls services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "BuyOrderControllerTest report not found"
-                    fi
-                '''
-            }
-            post {
-                always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
-                }
-            }
-        }
-
-        stage('Run market simulator tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/market-service -am "-Dtest=MarketServiceApplicationTest,MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== MARKET SIMULATOR TEST SUMMARY ==="
-                    if ls services/market-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/market-service/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "Market simulator test report not found"
-                    fi
-                '''
-            }
-            post {
-                always {
-                    junit 'services/market-service/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Run holdings service tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/holdings-service -am "-Dtest=HoldingsServiceTest,HoldingsControllerTest,HoldingsSettlementServiceTest,ProfileServiceTest,PortfolioServiceTest,TradeServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== HOLDINGS SERVICE TEST SUMMARY ==="
-                    if ls services/holdings-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/holdings-service/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "Holdings service test report not found"
-                    fi
-                '''
-            }
-            post {
-                always {
-                    junit 'services/holdings-service/target/surefire-reports/*.xml'
                 }
             }
         }
@@ -195,9 +129,10 @@ pipeline {
                     image_tag=$(cat .image_tag)
 
                     if docker compose version >/dev/null 2>&1; then
-                        IMAGE_TAG="$image_tag" docker compose up -d --build
+                        # Images are built in the previous stage; avoid rebuilding here.
+                        IMAGE_TAG="$image_tag" docker compose up -d
                     else
-                        IMAGE_TAG="$image_tag" docker-compose up -d --build
+                        IMAGE_TAG="$image_tag" docker-compose up -d
                     fi
                 '''
             }
