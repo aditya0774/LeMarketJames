@@ -197,15 +197,28 @@ both return HTTP 403 with ACCOUNT_ACCESS_DENIED to avoid disclosing their existe
 Returns a JSON array of order DTOs for the caller's account (HTTP 200); an empty
 account returns []. Foreign accounts return HTTP 403.
 
-The dashboard's LMKT-32 date filter uses this complete array, filtering `submittedAt`
-in the browser's local timezone before pagination. Day, month (including year), and
-year selections combine with the status filter; Clear filter resets both to show the
-full history. No matches for an active date filter display `No orders in this period`.
-No date query parameters are added. Offset-bearing timestamps are converted to local
-time; existing offset-free LocalDateTime values are interpreted as local time, matching
-the table display. The API must supply an offset to preserve the original instant
-across timezones. This is the existing repository contract used for the mocked tests;
-the separate C6 agreement has not been supplied.
+Optional date-filter query parameters (LMKT-91 / C6):
+
+- `date`: local calendar day (`YYYY-MM-DD`), month (`YYYY-MM`), or year (`YYYY`).
+- `timeZone`: client time-zone ID, e.g. `America/New_York` or `UTC`.
+- Supply both together, or omit both for the complete history.
+- Example: `/api/v1/orders/account/7?date=2026-03-08&timeZone=America/New_York`.
+- Filters `submittedAt` (placement time), including the local period's start and
+  excluding the next period's start. Boundaries respect daylight-saving changes.
+- No matches return HTTP 200 with `[]`. Clearing means omitting both parameters.
+- Invalid dates, unknown zones, blank values, or an incomplete pair return HTTP 400
+  with `{ "message": "readable explanation" }`. Years must be 0001 through 9999.
+- Ownership checks apply before querying; foreign accounts return 403.
+- The same parameters work on the status endpoint below, combined with its status.
+
+Storage convention: offset-free `submitted_at` values are interpreted as UTC; new
+orders explicitly write UTC regardless of JVM time zone. Existing data created in a
+non-UTC server time zone must be converted using its known source zone before using
+this filter. No automatic conversion can recover that missing information.
+Response fields and offset-free timestamp serialization remain unchanged.
+
+The dashboard currently filters locally; sending these parameters and aligning the
+UI's UTC timestamp interpretation belong to LMKT-92 (end-to-end wiring).
 
 ### GET /api/v1/orders/account/{accountId}/status/{status}
 
