@@ -30,6 +30,52 @@ pipeline {
             }
         }
 
+        stage('Collect change scope') {
+            steps {
+                sh '''
+                    set -eu
+                    mkdir -p ci/reports
+
+                    base_ref="${CHANGE_TARGET:-main}"
+                    if git show-ref --verify --quiet "refs/remotes/origin/${base_ref}"; then
+                        git diff --name-only "origin/${base_ref}...HEAD" > ci/reports/changed-files.txt
+                    elif git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
+                        git diff --name-only "HEAD~1...HEAD" > ci/reports/changed-files.txt
+                    else
+                        git ls-files > ci/reports/changed-files.txt
+                    fi
+
+                    touches_frontend=false
+                    touches_backend=false
+                    touches_db_or_contract=false
+
+                    grep -Eq '^apps/frontend/' ci/reports/changed-files.txt && touches_frontend=true || true
+                    grep -Eq '^(services/|libs/|pom.xml)' ci/reports/changed-files.txt && touches_backend=true || true
+                    grep -Eq '^(database/schema/|contracts/|API-CONTRACTS.md|docker-compose.yml)' ci/reports/changed-files.txt && touches_db_or_contract=true || true
+
+                    cat > ci/reports/change-scope.md <<EOF
+# Change Scope
+
+Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+- Base ref: ${base_ref}
+- Frontend changed: ${touches_frontend}
+- Backend changed: ${touches_backend}
+- DB/contract changed: ${touches_db_or_contract}
+
+Changed files:
+EOF
+
+                    sed 's/^/- /' ci/reports/changed-files.txt >> ci/reports/change-scope.md
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'ci/reports/changed-files.txt, ci/reports/change-scope.md', allowEmptyArchive: false
+                }
+            }
+        }
+
         stage('Test and build Angular') {
             steps {
                 dir('apps/frontend') {
@@ -498,6 +544,18 @@ JSON
     }
 
     post {
+        always {
+            sh '''
+                set -eu
+                mkdir -p ci/reports
+            '''
+            script {
+                def durationMs = currentBuild.duration ?: (System.currentTimeMillis() - currentBuild.startTimeInMillis)
+                def startedAt = new Date(currentBuild.startTimeInMillis).format("yyyy-MM-dd'T'HH:mm:ssXXX")
+                writeFile file: 'ci/reports/pipeline-timing.md', text: """# Pipeline Timing\n\nGenerated: ${new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX")}\n\n- Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n- Result: ${currentBuild.currentResult}\n- Started: ${startedAt}\n- Duration ms: ${durationMs}\n- Duration human: ${currentBuild.durationString}\n"""
+            }
+            archiveArtifacts artifacts: 'ci/reports/pipeline-timing.md', allowEmptyArchive: true
+        }
         failure {
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
