@@ -1,5 +1,11 @@
 pipeline {
     agent any
+    parameters {
+        string(name: 'BASELINE_BACKEND_LINE_PCT', defaultValue: '', description: 'Optional backend line coverage baseline percent (example: 81.35)')
+        string(name: 'BASELINE_FRONTEND_LINE_PCT', defaultValue: '', description: 'Optional frontend line coverage baseline percent (example: 74.10)')
+        string(name: 'BASELINE_DURATION_MS', defaultValue: '', description: 'Optional pipeline duration baseline in milliseconds')
+        booleanParam(name: 'ENFORCE_COVERAGE_BASELINE', defaultValue: true, description: 'Fail build when current coverage drops below supplied baseline')
+    }
     tools {
         jdk 'JDK21'
         nodejs 'NodeJS'
@@ -604,6 +610,30 @@ JSON
             post {
                 always {
                     archiveArtifacts artifacts: 'ci/reports/**', allowEmptyArchive: false
+                }
+            }
+        }
+
+        stage('Compare against baseline metrics') {
+            when {
+                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' || env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
+            steps {
+                withEnv([
+                    "BASELINE_BACKEND_LINE_PCT=${params.BASELINE_BACKEND_LINE_PCT}",
+                    "BASELINE_FRONTEND_LINE_PCT=${params.BASELINE_FRONTEND_LINE_PCT}",
+                    "BASELINE_DURATION_MS=${params.BASELINE_DURATION_MS}",
+                    "ENFORCE_COVERAGE_BASELINE=${params.ENFORCE_COVERAGE_BASELINE}"
+                ]) {
+                    sh '''
+                        set -eu
+                        bash scripts/ci/compare-baseline.sh
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'ci/reports/baseline-comparison.md', allowEmptyArchive: true
                 }
             }
         }
