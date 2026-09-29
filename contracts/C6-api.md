@@ -109,11 +109,15 @@ The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ acco
 
 | Method & path | Returns |
 |---|---|
-| `GET /api/v1/holdings?accountId=…` (alias `/api/holdings`) | `{ success, holdings: [{ symbol, quantity, averageCost, currentPrice, totalCost, currentValue, gainLoss, gainLossPercent }] }` |
+| `GET /api/v1/holdings` (alias `/api/holdings`) | `{ success, holdings: [{ symbol, quantity, averageCost, currentPrice, totalCost, currentValue, gainLoss, gainLossPercent }] }` for the caller. An empty portfolio is `200` with `holdings: []`, never a 404. |
 | `POST /api/v1/holdings/validate` | Body `{ accountId, instrumentId, sellQuantity }` → `200 { success: true, message }`, or `400 { success: false, error }` when there aren't enough shares |
-| `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }`. No accountId: scoped to the caller. `400 { message }` if the login has no account (e.g. staff). |
+| `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }` for the caller |
 | `GET /api/v1/profile` | `{ username, fullName, email, phone, accountId, cashBalance, currency, tradingEnabled, openedDate }` for the caller |
 | `GET /api/v1/trades?accountId=…` | the account's filled orders: `[{ symbol, side, quantity, pricePerUnit, filledAt }]` |
+
+Holdings, balance and profile take no `accountId`; they are scoped to the caller's own account. A login without an account (staff) gets `404 { "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` from all three.
+
+Holding fields: `averageCost` is the average price paid per share, from settlement's cost basis. `currentPrice` is the latest market-service quote. `totalCost` = quantity × averageCost, `currentValue` = quantity × currentPrice, `gainLoss` = currentValue − totalCost, `gainLossPercent` = gainLoss / totalCost × 100.
 
 How the balance fields are computed:
 
