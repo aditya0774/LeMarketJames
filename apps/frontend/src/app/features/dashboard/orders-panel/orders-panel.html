@@ -11,19 +11,38 @@
     </div>
   </div>
 
+  <div class="date-filters" role="group" aria-label="Filter orders by date">
+    <label>Period
+      <select aria-label="Period" [value]="period()" (change)="setPeriod($any($event.target).value)">
+        <option value="day">Day</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </label>
+    <label>{{ period() === 'day' ? 'Choose day' : period() === 'month' ? 'Choose month' : 'Choose year' }}
+      <input [type]="period() === 'day' ? 'date' : period() === 'month' ? 'month' : 'number'"
+        [attr.min]="period() === 'year' ? 1 : null" [attr.max]="period() === 'year' ? 9999 : null"
+        [value]="dateValue()" (input)="setDate($any($event.target).value)" />
+    </label>
+    <button type="button" class="chip" (click)="clearFilter()">Clear filter</button>
+    <span>Dates use your local time zone.</span>
+  </div>
+
   <div class="panel-scroll">
     <table>
       <thead>
         <tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>Date</th></tr>
       </thead>
       <tbody>
-        @if (loading()) {
+        @if (dateError()) {
+          <tr><td colspan="6" class="empty-row">{{ dateError() }}</td></tr>
+        } @else if (loading()) {
           <tr><td colspan="6" class="empty-row">Loading orders…</td></tr>
         } @else if (error()) {
           <tr><td colspan="6" class="empty-row">{{ error() }}</td></tr>
         } @else {
           @for (order of pageRows(); track order.orderId) {
-            <tr>
+            <tr [attr.data-order-id]="order.orderId">
               <td><span class="sym">{{ symbolFor(order) }}</span><span class="sym-sub">{{ nameFor(order) }}</span></td>
               <td>
                 <span class="pill" [class.pill-buy]="order.orderType === 'BUY'" [class.pill-sell]="order.orderType === 'SELL'">
@@ -44,7 +63,7 @@
           } @empty {
             <tr>
               <td colspan="6" class="empty-row">
-                {{ orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
+                {{ dateValue() ? 'No orders in this period' : orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
               </td>
             </tr>
           }
@@ -53,7 +72,7 @@
     </table>
   </div>
 
-  @if (!loading() && !error() && filtered().length) {
+  @if (!dateError() && !loading() && !error() && filtered().length) {
     <div class="panel-foot">
       <div class="pg-info">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ filtered().length }} orders</div>
       <div class="pg-row">

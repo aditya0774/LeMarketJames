@@ -392,6 +392,9 @@ pipeline {
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
                         -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_ALLOW_DATABASE_SEED=true \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket \
+                        -e PGPASSWORD="${DB_PASSWORD:-changeme}" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test'

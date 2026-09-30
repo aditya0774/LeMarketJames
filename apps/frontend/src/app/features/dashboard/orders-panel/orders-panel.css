@@ -1,0 +1,26 @@
+.date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+.date-filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.date-filters input,
+.date-filters select {
+  padding: 7px;
+  border: 1px solid #64748b;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.date-filters span {
+  font-size: 12px;
+  align-self: center;
+}

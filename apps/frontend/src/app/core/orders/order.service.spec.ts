@@ -41,4 +41,23 @@ describe('BUY order HTTP integration', () => {
       .flush({ success: false, code: 'INSUFFICIENT_CASH' }, { status: 400, statusText: 'Bad Request' });
     expect(code).toBe('INSUFFICIENT_CASH');
   });
+  it('sends a local period and zone and normalizes UTC placement timestamps', () => {
+    let submittedAt = '';
+    service.getOrdersByAccountId(7, { date: '2026-03', timeZone: 'America/New_York' })
+      .subscribe(orders => submittedAt = orders[0].submittedAt);
+    const call = http.expectOne(request => request.url.endsWith('/account/7'));
+    expect(call.request.params.get('date')).toBe('2026-03');
+    expect(call.request.params.get('timeZone')).toBe('America/New_York');
+    call.flush([{ submittedAt: '2026-03-08T05:00:00' }]);
+    expect(submittedAt).toBe('2026-03-08T05:00:00Z');
+  });
+
+  it('omits date parameters when cleared and preserves explicit offsets', () => {
+    let submittedAt = '';
+    service.getOrdersByAccountId(7).subscribe(orders => submittedAt = orders[0].submittedAt);
+    const call = http.expectOne(`${environment.apiBaseUrl}/api/v1/orders/account/7`);
+    expect(call.request.params.keys()).toEqual([]);
+    call.flush([{ submittedAt: '2026-01-01T00:00:00+05:30' }]);
+    expect(submittedAt).toBe('2026-01-01T00:00:00+05:30');
+  });
 });

@@ -26,6 +26,36 @@ test.describe('Seed data', () => {
     await expect(portfolio.getByRole('row').filter({ hasText: 'AAPL' })).toBeVisible();
   });
 
+  test('the main seed client filters multi-year history and clears it', async ({ page }) => {
+    await loginViaUi(page, seed('seed_active'));
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const orders = page.locator('app-orders-panel');
+    const info = orders.locator('.pg-info');
+    await expect(info).toContainText(/of \d+ orders/);
+    const fullCount = Number((await info.textContent())?.match(/of (\d+) orders/)?.[1]);
+
+    const year = String(new Date().getFullYear());
+    await orders.getByLabel('Period', { exact: true }).selectOption('year');
+    const filteredResponse = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname.includes('/orders/account/') && url.searchParams.get('date') === year;
+    });
+    await orders.locator('.date-filters input').fill(year);
+    expect((await filteredResponse).status()).toBe(200);
+    await expect(info).toContainText(/of \d+ orders/);
+    const filteredCount = Number((await info.textContent())?.match(/of (\d+) orders/)?.[1]);
+    expect(filteredCount).toBeGreaterThan(0);
+    expect(filteredCount).toBeLessThan(fullCount);
+
+    const clearedResponse = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname.includes('/orders/account/') && !url.search;
+    });
+    await orders.getByRole('button', { name: 'Clear filter' }).click();
+    expect((await clearedResponse).status()).toBe(200);
+    await expect(info).toContainText(`of ${fullCount} orders`);
+  });
+
   test('the suspended stock is listed but cannot be traded', async ({ page }) => {
     await loginViaUi(page, seed('seed_active'));
     await expect(page).toHaveURL(/\/dashboard$/);

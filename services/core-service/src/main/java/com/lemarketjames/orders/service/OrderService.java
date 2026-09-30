@@ -263,6 +263,24 @@ public class OrderService {
             .collect(Collectors.toList());
     }
 
+    public List<OrderResponse> getOrdersByAccountId(Integer accountId, String date, String timeZone) {
+        return getOrdersByAccountAndStatus(accountId, null, date, timeZone);
+    }
+
+    public List<OrderResponse> getOrdersByAccountAndStatus(
+            Integer accountId, Order.OrderStatus status, String date, String timeZone) {
+        validateAccountAccess(accountId);
+        OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);
+        List<Order> orders;
+        if (period == null) {
+            orders = status == null ? orderRepository.findByAccountId(accountId)
+                : orderRepository.findByAccountIdAndOrderStatus(accountId, status);
+        } else {
+            orders = orderRepository.findHistory(accountId, status, period.start(), period.end());
+        }
+        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());
+    }
+
     /**
      * Get all orders for an instrument
      */

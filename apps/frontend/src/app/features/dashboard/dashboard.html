@@ -28,7 +28,7 @@
   (selectSymbol)="openTrade($event)"
 />
 
-<app-orders-panel [orders]="orders()" [loading]="ordersLoading()" [error]="ordersError()" />
+<app-orders-panel [orders]="historyOrders()" (dateChange)="onHistoryDateChange($event)" [loading]="ordersLoading()" [error]="ordersError()" />
 
 @if (tradeSymbol(); as symbol) {
   <app-trade-dialog

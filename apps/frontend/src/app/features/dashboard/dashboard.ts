@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
@@ -46,6 +47,9 @@ export class Dashboard implements OnInit {
   protected readonly holdingsError = signal<string | null>(null);
 
   protected readonly orders = signal<OrderResponse[]>([]);
+  protected readonly historyOrders = signal<OrderResponse[]>([]);
+  private historyDate = '';
+  private historyRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
 
@@ -76,6 +80,7 @@ export class Dashboard implements OnInit {
     );
     this.loadHoldings();
     this.loadOrders();
+    this.loadHistory();
   }
 
   protected openTrade(symbol: string): void {
@@ -90,6 +95,7 @@ export class Dashboard implements OnInit {
   protected onOrderPlaced(): void {
     this.loadHoldings();
     this.loadOrders();
+    this.loadHistory();
   }
 
   protected async logout(): Promise<void> {
@@ -149,10 +155,38 @@ export class Dashboard implements OnInit {
       .subscribe({
         next: (orders) => {
           this.orders.set(orders ?? []);
-          this.ordersError.set(null);
-          this.ordersLoading.set(false);
         },
         error: (err) => {
+          this.flagExpiredSession(err);
+        },
+      });
+  }
+
+  protected onHistoryDateChange(date: string): void {
+    this.historyDate = date;
+    this.loadHistory();
+  }
+
+  private loadHistory(): void {
+    // Unsubscribe first so a slow earlier selection cannot replace newer results.
+    this.historyRequest?.unsubscribe();
+    const accountId = this.auth.currentAccountId();
+    if (!accountId) return;
+    this.ordersLoading.set(true);
+    this.ordersError.set(null);
+    const filter = this.historyDate ? {
+      date: this.historyDate,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    } : undefined;
+    this.historyRequest = this.orderService.getOrdersByAccountId(accountId, filter)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: orders => {
+          this.historyOrders.set(orders ?? []);
+          this.ordersLoading.set(false);
+        },
+        error: err => {
+          this.historyOrders.set([]);
           this.ordersError.set('Unable to load orders. Please try again.');
           this.ordersLoading.set(false);
           this.flagExpiredSession(err);

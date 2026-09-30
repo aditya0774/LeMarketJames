@@ -9,7 +9,7 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 - **Entry point.** Browsers call only the gateway (`:8080` in a container, `:8089` on the host), under `/api/**`. Paths under `/internal/**` exist only service-to-service and are never routed by the gateway.
 - **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. The cookie carries the caller's roles ([C7](C7-roles.md)).
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
-- **Money** is a JSON number in USD. **Timestamps** in order and session DTOs are local date-times without an offset (`2026-09-21T10:30:00`). Quote times are ISO-8601 UTC.
+- **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
 - **Validation failures** return `400 { "errors": { "<field>": "<message>" } }`. Other bad input returns `400 { "message": "..." }`.
 
 ## Auth (auth-service)
@@ -93,6 +93,17 @@ The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ acco
 | `GET /api/v1/orders/account/{accountId}` | the account's orders (`[]` if none) |
 | `GET /api/v1/orders/account/{accountId}/status/{status}` | the account's orders in one status |
 | `GET /api/v1/orders/instrument/{instrumentId}` | the caller's own orders for one stock |
+
+The two account-history endpoints accept these optional date-filter parameters:
+
+- `date`: a client-local calendar day (`YYYY-MM-DD`), month (`YYYY-MM`), or year (`YYYY`).
+- `timeZone`: an IANA time-zone ID such as `America/New_York` or `UTC`.
+- Supply both parameters together, or omit both to return the complete history. Clearing the UI filter omits both.
+- Filtering uses `submittedAt`, includes the selected period's local start, and excludes the next period's local start. Converting both boundaries separately preserves daylight-saving transitions.
+- No matches return `200 []`. Invalid dates, unknown or blank zones, and incomplete parameter pairs return `400 { "message": "..." }`.
+- Ownership is checked before querying. The status endpoint combines its status restriction with the same date period.
+
+The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
 ### Changing an order's status (TRADING_OPS only)
 

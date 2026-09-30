@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { OrderResponse } from '../../../core/orders/order.service';
 import { InstrumentCatalog } from '../../../core/market/instrument-catalog';
@@ -11,6 +11,7 @@ import {
 } from './order-status';
 
 const PAGE_SIZE = 5;
+type Period = 'day' | 'month' | 'year';
 
 /**
  * Orders table with status filter chips and client-side pagination. Presentational:
@@ -20,17 +21,24 @@ const PAGE_SIZE = 5;
   selector: 'app-orders-panel',
   imports: [CurrencyPipe, DatePipe, DecimalPipe],
   templateUrl: './orders-panel.html',
+  styleUrl: './orders-panel.css',
 })
 export class OrdersPanel {
   private readonly catalog = inject(InstrumentCatalog);
 
   readonly orders = input<readonly OrderResponse[]>([]);
+  readonly dateChange = output<string>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
 
   protected readonly filters = ORDER_FILTERS;
   protected readonly filter = signal<OrderFilter>('ALL');
   protected readonly page = signal(1);
+  protected readonly period = signal<Period>('day');
+  protected readonly dateValue = signal('');
+  protected readonly dateError = computed(() => this.period() === 'year' && this.dateValue()
+    && (!/^[0-9]{4}$/.test(this.dateValue()) || Number(this.dateValue()) < 1)
+    ? 'Enter a four-digit year between 0001 and 9999.' : null);
   protected readonly statusPillClass = statusPillClass;
   protected readonly statusLabel = statusLabel;
 
@@ -55,6 +63,26 @@ export class OrdersPanel {
   setFilter(filter: OrderFilter): void {
     this.filter.set(filter);
     this.page.set(1);
+  }
+
+  setPeriod(value: string): void {
+    if (value !== 'day' && value !== 'month' && value !== 'year') return;
+    this.period.set(value);
+    this.setDate('');
+  }
+
+  setDate(value: string): void {
+    this.dateValue.set(value);
+    this.page.set(1);
+    // Wait for a complete year instead of requesting partial values while typing.
+    if (!value || (this.period() === 'year' ? /^[0-9]{4}$/.test(value) && Number(value) > 0 : true)) {
+      this.dateChange.emit(value);
+    }
+  }
+
+  clearFilter(): void {
+    this.setDate('');
+    this.filter.set('ALL');
   }
 
   goToPage(page: number): void {
