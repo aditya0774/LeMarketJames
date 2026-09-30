@@ -7,6 +7,8 @@ pipeline {
     environment {
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
         NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+        CI_HEALTH_RETRIES = '180'
+        CI_HEALTH_SLEEP_SECONDS = '1'
     }
 
     stages {
@@ -345,17 +347,18 @@ pipeline {
                     for port in 8081 8082 8089 8083 8084; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
-                        for attempt in $(seq 1 60); do
+                        status="000"
+                        for attempt in $(seq 1 "$CI_HEALTH_RETRIES"); do
                             status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
                             if [ "$status" = "200" ]; then
                                 healthy=1
                                 break
                             fi
-                            sleep 1
+                            sleep "$CI_HEALTH_SLEEP_SECONDS"
                         done
 
                         if [ "$healthy" -ne 1 ]; then
-                            echo "Service on port $port did not become healthy in time"
+                            echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
                             compose logs core-service auth-service market-service holdings-service gateway-service
                             exit 1
