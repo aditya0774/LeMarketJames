@@ -1,0 +1,73 @@
+name: Publish Coverage Report
+
+# Runs the back-end and front-end unit tests with coverage on every push to main and commits the
+# reports to docs/coverage/, which GitHub Pages serves next to the Javadocs. This lets the PO read
+# coverage from the repo without running anything (LMKT-135). The pass/fail coverage gate stays
+# in Jenkins, which also checks pull requests.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# One run at a time: each run appends a row to docs/coverage/history.csv, so runs must not overlap.
+concurrency:
+  group: coverage-report
+  cancel-in-progress: false
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Latest main rather than the triggering commit, so this run's history row builds on
+          # the previous run's and its commit never conflicts with it.
+          ref: main
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Run back-end tests with coverage
+        run: mvn -B test  # JaCoCo writes target/site/jacoco/ in every module
+
+      - name: Run front-end tests with coverage
+        working-directory: apps/frontend
+        run: npm ci --no-audit --no-fund && npx ng test --watch=false --coverage
+
+      - name: Build coverage site
+        run: node scripts/coverage/build-coverage-site.mjs docs/coverage
+
+      - name: Commit to docs/coverage
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/coverage
+          if git diff --cached --quiet; then
+            echo "Coverage report unchanged"
+            exit 0
+          fi
+          git commit -m "Update coverage report"
+          # The Javadoc workflow may push in the meantime; it never touches docs/coverage/, so a
+          # rebase always applies cleanly.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

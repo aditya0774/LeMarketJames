@@ -1,3 +1,13 @@
+// Coverage floors (percent) for the quality gate in the 'Publish coverage' stage. A build whose
+// line or branch coverage falls below these fails, so coverage on main can only hold or improve.
+// Only ever raise these numbers (to the latest main build's figures, rounded down); never lower
+// them to get a build through. Back end = every JaCoCo module in libs/ and services/, front end =
+// the Angular unit tests.
+def COVERAGE_BASELINE = [
+    backend : [line: 72.1, branch: 72.5],
+    frontend: [line: 87.9, branch: 76.9],
+]
+
 pipeline {
     agent any
     tools {
@@ -60,8 +70,16 @@ pipeline {
                     env.CI_TOUCHES_FRONTEND = touchesFrontend.toString()
                     env.CI_TOUCHES_BACKEND = touchesBackend.toString()
                     env.CI_TOUCHES_DB_OR_CONTRACT = touchesDbOrContract.toString()
-                    env.CI_RUN_FRONTEND_PIPELINE = (touchesFrontend || touchesDbOrContract).toString()
-                    env.CI_RUN_BACKEND_PIPELINE = (touchesBackend || touchesDbOrContract).toString()
+                    // Main always runs both unit-test lanes so its coverage report, trend and
+                    // baseline always cover the whole codebase; PRs keep the change-scope gating.
+                    // Commits from the GitHub docs bots (Javadoc and coverage workflows) only add
+                    // generated files under docs/, so they don't force the lanes.
+                    def lastAuthor = sh(script: 'git log -1 --format=%an', returnStdout: true).trim()
+                    def onMain = env.CHANGE_ID == null && lastAuthor != 'github-actions[bot]' &&
+                        (env.BRANCH_NAME == 'main' || env.GIT_BRANCH in ['main', 'origin/main'])
+
+                    env.CI_RUN_FRONTEND_PIPELINE = (onMain || touchesFrontend || touchesDbOrContract).toString()
+                    env.CI_RUN_BACKEND_PIPELINE = (onMain || touchesBackend || touchesDbOrContract).toString()
                     env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
 
                     echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
@@ -75,7 +93,9 @@ pipeline {
             }
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
+                    // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
+                    // old folder is removed first so a stale report is never published.
+                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- --watch=false --coverage && npm run build'
                 }
             }
         }
@@ -105,8 +125,11 @@ pipeline {
             }
             steps {
                 // Build shared libraries once to avoid repeating -am work in parallel lanes.
+                // JaCoCo appends to jacoco.exec and the workspace is kept between builds, so old
+                // execution data is removed first; otherwise a deleted test would not lower coverage.
                 sh '''
                     set -eu
+                    rm -f libs/*/target/jacoco.exec services/*/target/jacoco.exec
                     mvn -B -pl libs/common,libs/market-client -am -DskipTests install
                 '''
             }
@@ -223,6 +246,57 @@ pipeline {
             post {
                 always {
                     junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                }
+            }
+        }
+
+        // Publishes coverage on the build page so the PO can review it in Jenkins (Coverage plugin).
+        // Runs after the integration tests, whose JaCoCo data is merged into the core, auth and
+        // holdings reports. "Coverage (all)" is the combined view with the trend; the back-end and
+        // front-end reports carry the quality gates, so a PR that ran only one side is judged only
+        // on that side. Only lanes that ran this build are read, so stale reports in the kept
+        // workspace are never published.
+        stage('Publish coverage') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' || env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                script {
+                    def backendTool = [parser: 'JACOCO', pattern: 'libs/*/target/site/jacoco/jacoco.xml, services/*/target/site/jacoco/jacoco.xml']
+                    def frontendTool = [parser: 'COBERTURA', pattern: 'apps/frontend/coverage/lemarket-ui/cobertura-coverage.xml']
+                    // JaCoCo paths are package-relative, so each module's source root is listed;
+                    // Cobertura paths are relative to apps/frontend.
+                    def backendSources = ['libs/common', 'libs/market-client', 'services/core-service',
+                                          'services/auth-service', 'services/market-service',
+                                          'services/holdings-service', 'services/gateway-service']
+                        .collect { [path: "${it}/src/main/java"] }
+                    def frontendSources = [[path: 'apps/frontend']]
+                    def gates = { floor ->
+                        [[metric: 'LINE', baseline: 'PROJECT', threshold: floor.line as double, criticality: 'FAILURE'],
+                         [metric: 'BRANCH', baseline: 'PROJECT', threshold: floor.branch as double, criticality: 'FAILURE']]
+                    }
+
+                    def ranBackend = env.CI_RUN_BACKEND_PIPELINE == 'true'
+                    def ranFrontend = env.CI_RUN_FRONTEND_PIPELINE == 'true'
+
+                    recordCoverage(
+                        id: 'coverage', name: 'Coverage (all)',
+                        tools: (ranBackend ? [backendTool] : []) + (ranFrontend ? [frontendTool] : []),
+                        sourceDirectories: (ranBackend ? backendSources : []) + (ranFrontend ? frontendSources : []),
+                        sourceCodeRetention: 'EVERY_BUILD')
+
+                    if (ranBackend) {
+                        recordCoverage(
+                            id: 'backend', name: 'Coverage (back end)',
+                            tools: [backendTool], sourceDirectories: backendSources,
+                            qualityGates: gates(COVERAGE_BASELINE.backend))
+                    }
+                    if (ranFrontend) {
+                        recordCoverage(
+                            id: 'frontend', name: 'Coverage (front end)',
+                            tools: [frontendTool], sourceDirectories: frontendSources,
+                            qualityGates: gates(COVERAGE_BASELINE.frontend))
+                    }
                 }
             }
         }

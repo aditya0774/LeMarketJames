@@ -584,11 +584,14 @@ Common causes:
 
 This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 
-1. Runs Maven tests (`mvn test`)
-2. Builds the Docker image
-3. Runs the containerized application
-4. Verifies the output
-5. Cleans up resources
+1. Runs Maven tests (`mvn test`) and the Angular unit tests
+2. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
+3. Builds the Docker image
+4. Runs the containerized application
+5. Verifies the output
+6. Cleans up resources
+
+The Jenkins controller also needs the [Coverage](https://plugins.jenkins.io/coverage/) plugin to publish the coverage reports.
 
 The Jenkins agent requires:
 - Java 21
@@ -789,15 +792,45 @@ sequenceDiagram
     OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
 ```
 
-## Java Code Coverage Using Jacoco
+## Code Coverage
 
-To generate a code coverage report, run the following commands in your terminal:
+**Latest coverage report for `main`:** https://aditya0774.github.io/LeMarketJames/coverage/
+
+That page has the summary for every service and the front end, the lowest-covered classes, the coverage history across builds, and links to each module's full report. The same summary is in the repo at [docs/coverage/README.md](docs/coverage/README.md), which renders on GitHub.
+
+The [coverage workflow](.github/workflows/coverage.yml) regenerates both on every push to `main` (or on demand from the repo's Actions tab) and commits them to `docs/coverage/`, the same way the Javadocs are published. Don't edit that folder by hand; it's rebuilt each run by [scripts/coverage/build-coverage-site.mjs](scripts/coverage/build-coverage-site.mjs).
+
+### In Jenkins
+
+Every build of `main` and every pull request publishes coverage for the back end (JaCoCo, every module in `libs/` and `services/`) and the front end (Angular unit tests):
+
+- **Trend:** the **Coverage** chart on the job's (or branch's) main page shows coverage across builds.
+- **Report:** open a build and click **Coverage (all)** in the left sidebar. It has the combined summary for every service plus the front end, then a table of packages and files you can sort by coverage (lowest first shows the gaps) and click through to highlighted source lines.
+- **Per side:** **Coverage (back end)** and **Coverage (front end)** show each side on its own, with its quality-gate result.
+
+On `main` both sides always run. A pull request runs only the side(s) it touches, so its reports cover just those.
+
+**Quality gate:** the build fails when line or branch coverage drops below the floors in `COVERAGE_BASELINE` at the top of the [Jenkinsfile](Jenkinsfile). The floors only ever go up: when `main` improves, raise them to the new figures (rounded down) in the same change. Never lower them to get a build through.
+
+Publishing needs the Jenkins [Coverage](https://plugins.jenkins.io/coverage/) plugin on the controller.
+
+### Locally
+
+Back end (JaCoCo runs during `test`, one report per module):
 
 ```bash
 mvn clean test
 ```
 
-Each module writes its own report (JaCoCo runs during `test`). Open one in your browser, e.g. core-service, using one of the following commands depending on your OS:
+Front end (writes `apps/frontend/coverage/lemarket-ui/index.html`):
+
+```bash
+cd apps/frontend && npx ng test --watch=false --coverage
+```
+
+After both, `node scripts/coverage/build-coverage-site.mjs <folder>` builds the same combined site the workflow publishes (don't point it at `docs/coverage` locally; the workflow owns that folder).
+
+Open a back-end module's report in your browser, e.g. core-service, using one of the following commands depending on your OS:
 
 Windows:
 ```bash
