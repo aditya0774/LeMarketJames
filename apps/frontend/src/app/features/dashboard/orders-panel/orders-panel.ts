@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { OrderResponse } from '../../../core/orders/order.service';
 import { InstrumentCatalog } from '../../../core/market/instrument-catalog';
@@ -27,6 +27,7 @@ export class OrdersPanel {
   private readonly catalog = inject(InstrumentCatalog);
 
   readonly orders = input<readonly OrderResponse[]>([]);
+  readonly dateChange = output<string>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
 
@@ -35,6 +36,9 @@ export class OrdersPanel {
   protected readonly page = signal(1);
   protected readonly period = signal<Period>('day');
   protected readonly dateValue = signal('');
+  protected readonly dateError = computed(() => this.period() === 'year' && this.dateValue()
+    && (!/^[0-9]{4}$/.test(this.dateValue()) || Number(this.dateValue()) < 1)
+    ? 'Enter a four-digit year between 0001 and 9999.' : null);
   protected readonly statusPillClass = statusPillClass;
   protected readonly statusLabel = statusLabel;
 
@@ -42,7 +46,6 @@ export class OrdersPanel {
   protected readonly filtered = computed(() =>
     [...this.orders()]
       .filter((o) => matchesFilter(o.orderStatus, this.filter()))
-      .filter((o) => this.matchesPeriod(o.submittedAt))
       .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt)),
   );
 
@@ -71,23 +74,15 @@ export class OrdersPanel {
   setDate(value: string): void {
     this.dateValue.set(value);
     this.page.set(1);
+    // Wait for a complete year instead of requesting partial values while typing.
+    if (!value || (this.period() === 'year' ? /^[0-9]{4}$/.test(value) && Number(value) > 0 : true)) {
+      this.dateChange.emit(value);
+    }
   }
 
   clearFilter(): void {
     this.setDate('');
     this.filter.set('ALL');
-  }
-
-  private matchesPeriod(timestamp: string): boolean {
-    const value = this.dateValue();
-    if (!value) return true;
-    // Local calendar fields match the displayed date, including offset-bearing API times.
-    // Legacy timestamps without an offset retain the browser's local-time interpretation.
-    const date = new Date(timestamp);
-    const year = String(date.getFullYear()).padStart(4, '0');
-    const month = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const day = `${month}-${String(date.getDate()).padStart(2, '0')}`;
-    return value === (this.period() === 'year' ? year : this.period() === 'month' ? month : day);
   }
 
   goToPage(page: number): void {

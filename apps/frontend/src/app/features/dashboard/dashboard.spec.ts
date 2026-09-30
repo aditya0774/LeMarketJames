@@ -4,7 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderService } from '../../core/orders/order.service';
@@ -33,8 +33,10 @@ function order(orderId: number, orderStatus: string, instrumentId = 1) {
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let ordersResult: Observable<unknown>;
+  let requestedFilters: unknown[];
 
   async function setup() {
+    requestedFilters = [];
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
@@ -43,7 +45,7 @@ describe('Dashboard', () => {
         provideRouter([]),
         { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7), logout: async () => {} } },
         { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings }), error: signal(null) } },
-        { provide: OrderService, useValue: { getOrdersByAccountId: () => ordersResult } },
+        { provide: OrderService, useValue: { getOrdersByAccountId: (_accountId: number, filter: unknown) => { requestedFilters.push(filter); return ordersResult; } } },
         {
           provide: Quotes,
           useValue: {
@@ -125,5 +127,47 @@ describe('Dashboard', () => {
     await setup();
 
     expect(text()).toContain('Your session has expired');
+  });
+  it('requests the local period, cancels stale requests, and clears without parameters', async () => {
+    ordersResult = of([order(1, 'SUBMITTED')]);
+    await setup();
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
+    const previous = new Subject<unknown>();
+    ordersResult = previous;
+    input.value = '2026-03-08';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(requestedFilters.at(-1)).toEqual({ date: '2026-03-08', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    expect(previous.observed).toBe(true);
+    const latest = new Subject<unknown>();
+    ordersResult = latest;
+    input.value = '2026-03-09';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(previous.observed).toBe(false);
+    latest.next([]);
+    fixture.detectChanges();
+    expect(text()).toContain('No orders in this period');
+    ordersResult = of([order(1, 'SUBMITTED')]);
+    fixture.nativeElement.querySelector('.date-filters button').click();
+    fixture.detectChanges();
+    expect(requestedFilters.at(-1)).toBeUndefined();
+    expect(text()).not.toContain('No orders in this period');
+  });
+
+  it('allows clearing after a filtered request fails', async () => {
+    ordersResult = of([]);
+    await setup();
+    ordersResult = throwError(() => new HttpErrorResponse({ status: 500 }));
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
+    input.value = '2026-03-08';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(text()).toContain('Unable to load orders');
+    expect(text()).not.toContain('No orders in this period');
+    ordersResult = of([]);
+    fixture.nativeElement.querySelector('.date-filters button').click();
+    fixture.detectChanges();
+    expect(text()).not.toContain('Unable to load orders');
   });
 });

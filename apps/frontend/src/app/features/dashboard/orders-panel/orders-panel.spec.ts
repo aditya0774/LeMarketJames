@@ -56,50 +56,49 @@ describe('OrdersPanel date filtering', () => {
       (element: any) => element.textContent.trim());
   }
 
-  it('filters a day by placement rather than fill time', () => {
+  it('emits day, month and year selections for the container to fetch', () => {
+    const changes: string[] = [];
+    fixture.componentInstance.dateChange.subscribe(value => changes.push(value));
     choose('day', '2024-02-29');
-    expect(symbols()).toEqual(['#901']);
-  });
-
-  it('includes both ends of a month and excludes neighbouring months', () => {
     choose('month', '2026-02');
-    expect(symbols()).toEqual(['#905', '#904']);
-  });
-
-  it('filters the selected year', () => {
     choose('year', '2026');
-    expect(symbols()).toEqual(['#906', '#905', '#904', '#903']);
+    expect(changes).toEqual(['', '2024-02-29', '', '2026-02', '', '2026']);
   });
 
-  it('shows the exact no-results message', () => {
+  it('does not locally re-filter the server response', () => {
     choose('year', '2023');
+    expect(symbols().length).toBe(5);
+  });
+
+  it('does not request incomplete years', () => {
+    const changes: string[] = [];
+    fixture.componentInstance.dateChange.subscribe(value => changes.push(value));
+    choose('year', '20');
+    expect(changes).toEqual(['']);
+  });
+
+  it('shows the exact no-results message for an empty API result', () => {
+    choose('year', '2023');
+    fixture.componentRef.setInput('orders', []);
+    fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.empty-row').textContent.trim())
       .toBe('No orders in this period');
     expect(fixture.nativeElement.querySelector('.panel-foot')).toBeNull();
   });
 
-  it('clears both date and status restrictions and resets pagination', () => {
+  it('clears date and status restrictions and resets pagination', () => {
+    const changes: string[] = [];
+    fixture.componentInstance.dateChange.subscribe(value => changes.push(value));
     fixture.componentInstance.goToPage(2);
     choose('year', '2026');
-    expect(symbols().length).toBe(4);
     fixture.componentInstance.setFilter('REJECTED');
     fixture.detectChanges();
     fixture.nativeElement.querySelector('.date-filters button').click();
     fixture.detectChanges();
+    expect(changes.at(-1)).toBe('');
     expect(symbols().length).toBe(5);
     expect(fixture.nativeElement.querySelector('.pg-info').textContent).toContain('of 6 orders');
     expect(fixture.nativeElement.querySelector('input').value).toBe('');
-  });
-
-  it('uses local calendar boundaries for UTC timestamps', () => {
-    // On a non-UTC test run these instants differ from their UTC calendar dates.
-    fixture.componentRef.setInput('orders', [
-      order(910, new Date(2026, 0, 1, 0, 0, 0).toISOString()),
-      order(911, new Date(2025, 11, 31, 23, 59, 59).toISOString()),
-      order(912, new Date(2026, 0, 2, 0, 0, 0).toISOString()),
-    ]);
-    choose('day', '2026-01-01');
-    expect(symbols()).toEqual(['#910']);
   });
 
   it('keeps loading and failures distinct from empty results', () => {
