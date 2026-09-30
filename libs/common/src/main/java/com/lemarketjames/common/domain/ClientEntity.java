@@ -1,14 +1,17 @@
 package com.lemarketjames.common.domain;
 
+import com.lemarketjames.common.security.Role;
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /** Maps to the `clients` table (database/schema/001_core_schema.sql): a registered user's identity and profile. */
 @Entity
 @Table(name = "clients")
-public class ClientEntity {
+public class ClientEntity implements LoginAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,11 +54,61 @@ public class ClientEntity {
 
     private String occupation;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "account_status", nullable = false)
-    private String accountStatus;
+    private AccountStatus accountStatus;
 
     @Column(name = "investment_experience", nullable = false)
     private String investmentExperience;
+
+    // Initialised here because Hibernate inserts every mapped column, bypassing the DB defaults.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ClientSegment segment = ClientSegment.RETAIL;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
+    @Override
+    public Set<Role> roles() {
+        return Set.of(Role.CLIENT);
+    }
+
+    @Override
+    public boolean canLogIn() {
+        return accountStatus == null || accountStatus.canLogIn();
+    }
+
+    public ClientSegment getSegment() {
+        return segment;
+    }
+
+    public void setSegment(ClientSegment segment) {
+        this.segment = segment;
+    }
+
+    @Override
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    @Override
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    @Override
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
+    @Override
+    public void setLockedUntil(Instant lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
 
     public Integer getClientId() {
         return clientId;
@@ -157,11 +210,11 @@ public class ClientEntity {
         this.occupation = occupation;
     }
 
-    public String getAccountStatus() {
+    public AccountStatus getAccountStatus() {
         return accountStatus;
     }
 
-    public void setAccountStatus(String accountStatus) {
+    public void setAccountStatus(AccountStatus accountStatus) {
         this.accountStatus = accountStatus;
     }
 

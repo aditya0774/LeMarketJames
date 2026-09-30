@@ -1,0 +1,9 @@
+# The image runs its own `npm install` on Linux. Copying the host's node_modules over it
+# (e.g. a Windows install with win32 esbuild binaries) would break `ng build` inside the image.
+node_modules
+dist
+.angular
+coverage
+
+# Saved test logs are not part of the build.
+*.txt

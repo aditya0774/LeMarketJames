@@ -82,7 +82,7 @@ class OwnDataIntegrationTest {
         client.setSsn("not-used-by-core-service");
         client.setEmploymentStatus("EMPLOYED");
         client.setInvestmentExperience("beginner");
-        client.setAccountStatus("ACTIVE");
+        client.setAccountStatus(com.lemarketjames.common.domain.AccountStatus.ACTIVE);
         client = clients.saveAndFlush(client);
 
         AddressEntity address = new AddressEntity();
@@ -136,6 +136,17 @@ class OwnDataIntegrationTest {
             .andExpect(status().isForbidden());
         assertEquals(Order.OrderStatus.SUBMITTED, orders.findById(bobOrder).orElseThrow().getOrderStatus());
         assertEquals(1, orders.findByAccountId(bobAccount).size());
+    }
+
+    // Moving orders through their lifecycle is for trading operations staff only, so a client can't
+    // mark even their own order FILLED (contract C7).
+    @Test
+    void clientsCannotChangeTheStatusOfTheirOwnOrders() throws Exception {
+        mvc.perform(put("/api/v1/orders/" + aliceOrder + "/status/ACCEPTED").cookie(cookie))
+            .andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/orders/" + aliceOrder + "/reject").cookie(cookie))
+            .andExpect(status().isForbidden());
+        assertEquals(Order.OrderStatus.SUBMITTED, orders.findById(aliceOrder).orElseThrow().getOrderStatus());
     }
 
     @Test

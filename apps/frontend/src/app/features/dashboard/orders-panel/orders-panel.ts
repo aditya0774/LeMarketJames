@@ -89,7 +89,7 @@ export class OrdersPanel {
     this.page.set(Math.min(Math.max(1, page), this.pageCount()));
   }
 
-  // Orders only carry instrumentId until the backend adds symbol (see API-CONTRACTS.md).
+  // Orders only carry instrumentId until the backend adds symbol (planned in contracts/C6-api.md).
   protected symbolFor(order: OrderResponse): string {
     return this.catalog.byId(order.instrumentId)?.symbol ?? `#${order.instrumentId}`;
   }

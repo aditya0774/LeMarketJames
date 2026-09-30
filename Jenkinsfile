@@ -231,24 +231,20 @@ pipeline {
         stage('Apply schema updates') {
             steps {
                 // Init scripts only run for an empty Postgres volume; CI keeps its volume.
-                // Every script applied here must be idempotent (safe to run twice).
+                // Every script from 004 on must be idempotent (safe to run twice); 001-003 are not,
+                // so they only ever run on an empty volume. New migrations are picked up automatically.
                 sh '''
                     set -eu
                     if docker compose version >/dev/null 2>&1; then
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
-                        docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
+                        compose() { docker compose "$@"; }
                     else
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/004_widen_ssn_for_hash.sql
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/005_set_googl_non_tradable.sql
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/006_market_simulation.sql
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/007_lebronify_instruments.sql
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/008_holdings_cost_basis.sql
-                        docker-compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
+                        compose() { docker-compose "$@"; }
                     fi
+                    for f in database/schema/0*.sql; do
+                        case "$(basename "$f")" in 001_*|002_*|003_*) continue ;; esac
+                        echo "Applying $f"
+                        compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket < "$f"
+                    done
                 '''
             }
         }
@@ -310,6 +306,36 @@ pipeline {
                     echo "Spring Boot container logs:"
                     compose logs core-service auth-service market-service holdings-service gateway-service
                 '''
+            }
+        }
+
+        // Drives the real app in a browser through the nginx frontend on :4200, the same origin a
+        // user opens. Runs right after the smoke test so the whole stack is known to be healthy.
+        stage('Run Playwright E2E tests') {
+            steps {
+                sh '''
+                    set -eu
+                    # The official image ships Chromium and its OS libraries, so the agent needs only
+                    # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
+                    # --network host lets the browser reach localhost:4200 on the agent; running as
+                    # the Jenkins user keeps the report files deletable by the workspace cleanup.
+                    docker run --rm --network host --ipc=host \
+                        --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_ALLOW_DATABASE_SEED=true \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket \
+                        -e PGPASSWORD="${DB_PASSWORD:-changeme}" \
+                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        mcr.microsoft.com/playwright:v1.63.0-noble \
+                        sh -c 'npm ci --no-audit --no-fund && npx playwright test'
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'apps/e2e/results/junit.xml'
+                    // HTML report plus traces, screenshots and videos of any failed test.
+                    archiveArtifacts artifacts: 'apps/e2e/playwright-report/**, apps/e2e/test-results/**', allowEmptyArchive: true
+                }
             }
         }
 
@@ -434,14 +460,9 @@ JSON
 
                     test -n "$account_id"
 
-                    # Every real stock is tradable (migration 009), so the NOT_TRADABLE check uses a
-                    # CI-only fixture. It has no market params, so it is never quoted or shown in the
-                    # app, and the CI database is discarded afterwards.
-                    compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket \
-                        -c "INSERT INTO instruments (ticker, name, asset_class, currency, tradable, location) VALUES ('CI-NT', 'CI non-tradable fixture', 'EQUITY', 'USD', FALSE, 'US') ON CONFLICT (ticker) DO NOTHING;"
-
+                    # The seed data set's suspended stock (contracts/C3-seed-data.md).
                     non_tradable_id=$(compose exec -T db psql -At -U lemarket -d lemarket \
-                        -c "SELECT instrument_id FROM instruments WHERE ticker = 'CI-NT';")
+                        -c "SELECT instrument_id FROM instruments WHERE ticker = 'CAVS' AND NOT tradable;")
 
                     test -n "$non_tradable_id"
 

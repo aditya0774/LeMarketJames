@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
@@ -27,6 +28,7 @@ import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model'
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     DecimalPipe,
     MatProgressSpinnerModule,
     MatButtonModule,

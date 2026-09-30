@@ -7,7 +7,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,6 +41,19 @@ class JwtAuthenticationFilterTest {
 
         assertEquals("alice", SecurityContextHolder.getContext().getAuthentication().getName());
         verify(filterChain).doFilter(request, response);
+    }
+
+    // The token's roles become ROLE_* authorities, which endpoints check with hasRole(...).
+    @Test
+    void grantsRoleAuthoritiesFromToken() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie(JwtAuthenticationFilter.COOKIE_NAME,
+                jwtService.generateToken("olivia_ops", Set.of(Role.TRADING_OPS))));
+
+        filter.doFilter(request, new MockHttpServletResponse(), mock(FilterChain.class));
+
+        assertEquals(List.of("ROLE_TRADING_OPS"), SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
     }
 
     // A request with no JWT cookie at all should be left unauthenticated.

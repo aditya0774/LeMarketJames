@@ -1,0 +1,17 @@
+{
+  "name": "lemarket-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright end-to-end tests that drive the running app through a real browser",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "pg": "^8.16.3"
+  }
+}

@@ -3,6 +3,7 @@ package com.lemarketjames.auth;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import com.lemarketjames.common.security.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for handling authentication-related endpoints.
@@ -60,9 +65,11 @@ public class AuthController {
         AuthService.LoginResult result = authService.login(request);
         ResponseCookie cookie = buildAuthCookie(result.getToken(), authService.getTokenExpirySeconds());
 
+        Map<String, Object> body = sessionBody(result.getUsername(), result.getRoles());
+        body.put("message", result.getMessage());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(Map.of("username", result.getUsername(), "message", result.getMessage(), "accountId", authService.getAccountId(result.getUsername())));
+                .body(body);
     }
 
     /**
@@ -86,7 +93,25 @@ public class AuthController {
      */
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
-        return ResponseEntity.ok(Map.of("username", authentication.getName(), "accountId", authService.getAccountId(authentication.getName())));
+        Set<Role> roles = authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority().substring("ROLE_".length()))
+                .map(Role::valueOf)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
+        return ResponseEntity.ok(sessionBody(authentication.getName(), roles));
+    }
+
+    /**
+     * What the frontend needs to know about a session (contract C7): who, which roles, and, for
+     * clients only, the trading account. Staff have no account, so accountId is left out for them.
+     */
+    private Map<String, Object> sessionBody(String username, Set<Role> roles) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("username", username);
+        body.put("roles", roles.stream().map(Role::name).sorted().toList());
+        if (roles.contains(Role.CLIENT)) {
+            body.put("accountId", authService.getAccountId(username));
+        }
+        return body;
     }
 
     /**

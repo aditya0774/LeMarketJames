@@ -1,9 +1,14 @@
 package com.lemarketjames.common.security;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,5 +64,36 @@ class JwtServiceTest {
     @Test
     void getExpirationSecondsConvertsMillisecondsToSeconds() {
         assertEquals(3600, jwtService.getExpirationSeconds());
+    }
+
+    // Roles written into a token come back unchanged, so every service can authorize from the token.
+    @Test
+    void rolesRoundTripThroughToken() {
+        String token = jwtService.generateToken("olivia_ops", Set.of(Role.TRADING_OPS));
+
+        TokenClaims claims = jwtService.extractClaims(token).orElseThrow();
+
+        assertEquals("olivia_ops", claims.username());
+        assertEquals(Set.of(Role.TRADING_OPS), claims.roles());
+    }
+
+    // The username-only overload is a client login.
+    @Test
+    void usernameOnlyTokenIsAClient() {
+        String token = jwtService.generateToken("alice");
+
+        assertEquals(Set.of(Role.CLIENT), jwtService.extractClaims(token).orElseThrow().roles());
+    }
+
+    // Tokens issued before roles existed have no roles claim; they were all client logins.
+    @Test
+    void tokenWithoutRolesClaimCountsAsClient() {
+        String legacyToken = Jwts.builder()
+                .subject("alice")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        assertEquals(Set.of(Role.CLIENT), jwtService.extractClaims(legacyToken).orElseThrow().roles());
     }
 }

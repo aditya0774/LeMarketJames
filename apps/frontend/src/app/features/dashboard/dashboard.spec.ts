@@ -10,6 +10,7 @@ import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderService } from '../../core/orders/order.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { Dashboard } from './dashboard';
+import { TEST_INSTRUMENTS, loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 
 const holdings = [
   { symbol: 'AAPL', quantity: 10, averageCost: 100, currentPrice: 120, totalCost: 1000, currentValue: 1200, gainLoss: 200, gainLossPercent: 20 },
@@ -55,8 +56,12 @@ describe('Dashboard', () => {
         },
       ],
     }).compileComponents();
+    await loadTestInstruments();
 
     fixture = TestBed.createComponent(Dashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    // Quote polling starts once the (already loaded) stock list resolves, a microtask later.
     fixture.detectChanges();
     await fixture.whenStable();
   }
@@ -82,7 +87,7 @@ describe('Dashboard', () => {
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
-    expect(rows.length).toBe(50);
+    expect(rows.length).toBe(TEST_INSTRUMENTS.length);
     const tsla = Array.from(rows).find((r) => r.textContent?.includes('TSLA'))!;
     expect(tsla.textContent).toContain('$248.90');
     expect(tsla.textContent).toContain('▼');

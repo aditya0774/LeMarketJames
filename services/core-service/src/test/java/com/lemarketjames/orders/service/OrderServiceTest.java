@@ -2,7 +2,18 @@ package com.lemarketjames.orders.service;
 
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.AccountStatus;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.events.OrderStatusChanged;
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
+import org.springframework.context.ApplicationEventPublisher;
+import java.util.Map;
 import com.lemarketjames.holdings.client.HoldingsSettlementClient;
 import com.lemarketjames.holdings.client.HoldingsValidationClient;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
@@ -59,11 +70,22 @@ class OrderServiceTest {
     @Mock
     private HoldingsValidationClient holdingsValidationClient;
 
+    @Mock
+    private ClientRepository clientRepository;
+
+    @Mock
+    private AuditRecorder auditRecorder;
+
+    @Mock
+    private ApplicationEventPublisher events;
+
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, cashValidationService, marketDataService, holdingsSettlementClient, holdingsValidationClient);
+        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, clientRepository,
+            cashValidationService, marketDataService, holdingsSettlementClient, holdingsValidationClient,
+            auditRecorder, events);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -394,27 +416,92 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("Reject order with reason")
+    @DisplayName("Reject order with a reason code, audited and published")
     void testRejectOrder() {
         when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
         // Arrange
         Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
         order.setOrderId(1);
-        
-        Order rejectedOrder = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
-        rejectedOrder.setOrderId(1);
-        rejectedOrder.setOrderStatus(Order.OrderStatus.REJECTED);
-        rejectedOrder.setRejectionReason("Insufficient funds");
-        
+
         when(orderRepository.findById(1)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any(Order.class))).thenReturn(rejectedOrder);
-        
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
         // Act
-        OrderResponse response = orderService.rejectOrder(1, "Insufficient funds");
-        
+        OrderResponse response = orderService.rejectOrder(1, RejectionReason.INSUFFICIENT_CASH);
+
         // Assert
         assertEquals(Order.OrderStatus.REJECTED, response.getOrderStatus());
-        assertEquals("Insufficient funds", response.getRejectionReason());
+        assertEquals("INSUFFICIENT_CASH", response.getRejectionReason());
+        verify(auditRecorder).record(AuditEventType.REJECTED, 1, 1, Map.of("reason", "INSUFFICIENT_CASH"));
+        verify(events).publishEvent(argThat((Object e) -> e instanceof OrderStatusChanged changed
+            && changed.from() == Order.OrderStatus.SUBMITTED && changed.to() == Order.OrderStatus.REJECTED));
+    }
+
+    @Test
+    @DisplayName("A move the lifecycle doesn't allow is refused before anything is saved or settled")
+    void illegalTransitionIsRefused() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        Order order = new Order(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        order.setOrderId(1);
+        order.setPricePerUnit(new BigDecimal("100"));
+        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+
+        // SUBMITTED can't jump straight to FILLED: it must be ACCEPTED first.
+        assertThrows(InvalidStatusTransitionException.class,
+            () -> orderService.updateOrderStatus(1, Order.OrderStatus.FILLED));
+        verify(holdingsSettlementClient, never()).settle(any(Order.class));
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("Trading operations staff can act on any client's order")
+    void tradingOpsBypassesOwnership() {
+        SecurityContextHolder.getContext()
+            .setAuthentication(new TestingAuthenticationToken("olivia_ops", "n/a", "ROLE_TRADING_OPS"));
+        Order order = new Order(7, 1, Order.OrderType.BUY, new BigDecimal("10"));
+        order.setOrderId(1);
+        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse response = orderService.updateOrderStatus(1, Order.OrderStatus.ACCEPTED);
+
+        assertEquals(Order.OrderStatus.ACCEPTED, response.getOrderStatus());
+        verify(accountRepository, never()).existsByAccountIdAndUsername(any(), any());
+    }
+
+    @Test
+    @DisplayName("An account with trading disabled can't place orders")
+    void restrictedAccountIsRefused() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        AccountEntity account = new AccountEntity();
+        account.setClientId(3);
+        account.setTradingEnabled(false);
+        when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+
+        OrderResponse response = orderService.createOrder(
+            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")));
+
+        assertFalse(response.isSuccess());
+        assertEquals("ACCOUNT_RESTRICTED", response.getCode());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("An EXPIRED client can't place orders even with trading enabled")
+    void expiredClientIsRefused() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        AccountEntity account = new AccountEntity();
+        account.setClientId(3);
+        account.setTradingEnabled(true);
+        ClientEntity client = new ClientEntity();
+        client.setAccountStatus(AccountStatus.EXPIRED);
+        when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+        when(clientRepository.findById(3)).thenReturn(Optional.of(client));
+
+        OrderResponse response = orderService.createOrder(
+            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")));
+
+        assertEquals("ACCOUNT_RESTRICTED", response.getCode());
     }
     
     @Test

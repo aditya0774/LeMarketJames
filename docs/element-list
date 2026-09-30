@@ -2,6 +2,8 @@ com.lemarketjames
 com.lemarketjames.auth
 com.lemarketjames.auth.dto
 com.lemarketjames.common
+com.lemarketjames.common.audit
+com.lemarketjames.common.config
 com.lemarketjames.common.domain
 com.lemarketjames.common.error
 com.lemarketjames.common.security
@@ -14,6 +16,7 @@ com.lemarketjames.holdings.entity
 com.lemarketjames.holdings.exception
 com.lemarketjames.holdings.repository
 com.lemarketjames.holdings.service
+com.lemarketjames.instruments
 com.lemarketjames.market
 com.lemarketjames.market.client
 com.lemarketjames.market.config
@@ -25,7 +28,9 @@ com.lemarketjames.orders
 com.lemarketjames.orders.client
 com.lemarketjames.orders.dto
 com.lemarketjames.orders.entity
+com.lemarketjames.orders.events
 com.lemarketjames.orders.exception
+com.lemarketjames.orders.execution
 com.lemarketjames.orders.repository
 com.lemarketjames.orders.service
 com.lemarketjames.portfolio

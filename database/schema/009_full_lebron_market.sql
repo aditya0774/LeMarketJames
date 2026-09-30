@@ -11,8 +11,8 @@
 --   3. Add the 43 new stocks with explicit ids 9-51, and AVGO at id 8 if 007 was never applied
 --      (the other six carried-over tickers come from 001/006, which this file already requires).
 --      Explicit ids keep every database identical: re-running 006/007 (as CI does) consumes
---      SERIAL values even when ON CONFLICT skips the row, and the frontend's InstrumentCatalog
---      hard-codes these ids.
+--      SERIAL values even when ON CONFLICT skips the row, and orders and holdings refer to
+--      instruments by id.
 --   4. Upsert simulation parameters for all 50 so the whole market uses one consistent set of
 --      roughly realistic values. Existing market_quotes snapshots are left alone, so live prices
 --      carry on from where they are (initial_price only applies to instruments with no snapshot).

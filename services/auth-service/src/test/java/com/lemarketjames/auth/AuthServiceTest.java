@@ -6,9 +6,14 @@ import com.lemarketjames.common.domain.AddressEntity;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.AccountStatus;
+import com.lemarketjames.common.domain.StaffUserEntity;
+import com.lemarketjames.common.domain.StaffUserRepository;
+import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,15 +42,23 @@ class AuthServiceTest {
     private ClientRepository clientRepository;
     private AddressRepository addressRepository;
     private AccountRepository accountRepository;
-    // Stands in for the clients table: keyed by email, as login looks clients up by email.
+    private StaffUserRepository staffUserRepository;
+    private final MutableClock clock = new MutableClock();
+    // Stand in for the clients and staff_users tables: keyed by email, as login looks both up by email.
     private Map<String, ClientEntity> clientsByEmail;
+    private Map<String, StaffUserEntity> staffByEmail;
 
     @BeforeEach
     void setUp() {
         clientRepository = mock(ClientRepository.class);
         addressRepository = mock(AddressRepository.class);
         accountRepository = mock(AccountRepository.class);
+        staffUserRepository = mock(StaffUserRepository.class);
         clientsByEmail = new ConcurrentHashMap<>();
+        staffByEmail = new ConcurrentHashMap<>();
+        when(staffUserRepository.findByEmail(anyString())).thenAnswer(invocation ->
+                Optional.ofNullable(staffByEmail.get(invocation.<String>getArgument(0))));
+        when(staffUserRepository.save(any(StaffUserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         when(clientRepository.existsByUsername(anyString())).thenAnswer(invocation ->
                 clientsByEmail.values().stream().anyMatch(c -> c.getUsername().equals(invocation.getArgument(0))));
@@ -64,12 +78,19 @@ class AuthServiceTest {
     }
 
     private AuthService newAuthService() {
+        return newAuthService(new PlatformSettings());
+    }
+
+    // Every service in a test shares one clock, as restarted instances share real time.
+    private AuthService newAuthService(PlatformSettings settings) {
         return new AuthService(
                 new JwtService(JWT_KEY, 3600000),
                 clientRepository,
                 addressRepository,
                 accountRepository,
-                200
+                staffUserRepository,
+                settings,
+                clock
         );
     }
 
@@ -195,7 +216,7 @@ class AuthServiceTest {
 
     // Once the lockout duration has passed, the account should accept correct credentials again.
     @Test
-    void loginSucceedsAfterLockoutExpires() throws InterruptedException {
+    void loginSucceedsAfterLockoutExpires() {
         authService.register(validRegisterRequest("alice"));
 
         for (int i = 0; i < 3; i++) {
@@ -203,10 +224,84 @@ class AuthServiceTest {
                     () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
-        Thread.sleep(250);
+        clock.advance(new PlatformSettings().getAuth().getLockout().getDuration().plusMillis(1));
 
         AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
         assertEquals("alice", result.getUsername());
+    }
+
+    // The lock is stored on the client, so a restarted auth-service still refuses the login.
+    @Test
+    void lockoutSurvivesRestart() {
+        authService.register(validRegisterRequest("alice"));
+        for (int i = 0; i < 3; i++) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        }
+
+        AuthService restartedService = newAuthService();
+
+        IllegalArgumentException locked = assertThrows(IllegalArgumentException.class,
+                () -> restartedService.login(new LoginRequest("alice@example.com", "Pass123!")));
+        assertTrue(locked.getMessage().contains("locked"));
+    }
+
+    // The attempt limit comes from lmj.auth.lockout.max-attempts rather than being hard-coded.
+    @Test
+    void lockoutUsesConfiguredAttemptLimit() {
+        PlatformSettings settings = new PlatformSettings();
+        settings.getAuth().getLockout().setMaxAttempts(5);
+        AuthService lenient = newAuthService(settings);
+        lenient.register(validRegisterRequest("alice"));
+
+        for (int i = 0; i < 4; i++) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> lenient.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        }
+
+        assertEquals("alice", lenient.login(new LoginRequest("alice@example.com", "Pass123!")).getUsername());
+    }
+
+    // Clients get the CLIENT role in their token.
+    @Test
+    void clientLoginCarriesClientRole() {
+        authService.register(validRegisterRequest("alice"));
+
+        AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+
+        assertEquals(Set.of(Role.CLIENT), result.getRoles());
+        assertEquals(Set.of(Role.CLIENT), new JwtService(JWT_KEY, 3600000).extractClaims(result.getToken()).orElseThrow().roles());
+    }
+
+    // Staff log in through the same endpoint and get their staff role instead of CLIENT.
+    @Test
+    void staffLoginCarriesStaffRole() {
+        StaffUserEntity ops = new StaffUserEntity();
+        ops.setUsername("olivia_ops");
+        ops.setEmail("ops@example.com");
+        ops.setPassword(authService.encodePassword("Pass123!"));
+        ops.setFullName("Olivia Ops");
+        ops.setRole(Role.TRADING_OPS);
+        staffByEmail.put(ops.getEmail(), ops);
+
+        AuthService.LoginResult result = authService.login(new LoginRequest("ops@example.com", "Pass123!"));
+
+        assertEquals("olivia_ops", result.getUsername());
+        assertEquals(Set.of(Role.TRADING_OPS), result.getRoles());
+    }
+
+    // A closed client knows their password but may not log in; an expired one may (they just can't trade).
+    @Test
+    void closedClientIsRefusedButExpiredClientMayLogIn() {
+        authService.register(validRegisterRequest("carl"));
+        authService.register(validRegisterRequest("eve"));
+        clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
+        clientsByEmail.get("eve@example.com").setAccountStatus(AccountStatus.EXPIRED);
+
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("carl@example.com", "Pass123!")));
+        assertTrue(refused.getMessage().contains("not active"));
+        assertEquals("eve", authService.login(new LoginRequest("eve@example.com", "Pass123!")).getUsername());
     }
 
     private RegisterRequest validRegisterRequest(String username) {

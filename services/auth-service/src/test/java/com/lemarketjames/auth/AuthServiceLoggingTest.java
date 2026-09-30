@@ -9,6 +9,8 @@ import com.lemarketjames.common.domain.AddressEntity;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.StaffUserRepository;
+import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtService;
@@ -59,7 +61,8 @@ class AuthServiceLoggingTest {
                 clientRepository,
                 addressRepository,
                 accountRepository,
-                30000
+                mock(StaffUserRepository.class),
+                new PlatformSettings()
         );
 
         authServiceLogger = (Logger) LoggerFactory.getLogger(AuthService.class);
