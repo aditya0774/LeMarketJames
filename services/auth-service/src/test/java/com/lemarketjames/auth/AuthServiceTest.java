@@ -80,7 +80,8 @@ class AuthServiceTest {
     private AuthService newAuthService() {
         PlatformSettings settings = new PlatformSettings();
         settings.getAuth().getLockout().setMaxAttempts(3);
-        settings.getAuth().getLockout().setDuration(Duration.ofMillis(200));
+        // Keep default lockout long enough to be deterministic on slower CI agents.
+        settings.getAuth().getLockout().setDuration(Duration.ofSeconds(5));
         return newAuthService(settings);
     }
 
@@ -218,16 +219,21 @@ class AuthServiceTest {
     // Once the lockout duration has passed, the account should accept correct credentials again.
     @Test
     void loginSucceedsAfterLockoutExpires() throws InterruptedException {
-        authService.register(validRegisterRequest("alice"));
+        PlatformSettings shortLockout = new PlatformSettings();
+        shortLockout.getAuth().getLockout().setMaxAttempts(3);
+        shortLockout.getAuth().getLockout().setDuration(Duration.ofMillis(200));
+        AuthService service = newAuthService(shortLockout);
+
+        service.register(validRegisterRequest("alice"));
 
         for (int i = 0; i < 3; i++) {
             assertThrows(IllegalArgumentException.class,
-                    () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+                    () -> service.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
         Thread.sleep(250);
 
-        AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+        AuthService.LoginResult result = service.login(new LoginRequest("alice@example.com", "Pass123!"));
         assertEquals("alice", result.getUsername());
     }
 
