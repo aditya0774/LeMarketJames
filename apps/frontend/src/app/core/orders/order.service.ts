@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, defer, switchMap, throwError } from 'rxjs';
+import { Observable, defer, map, switchMap, throwError } from 'rxjs';
 import { HoldingsService } from '../holdings/holdings.service';
 import { Auth } from '../auth/auth';
 import { environment } from '../../../environments/environment';
@@ -37,6 +37,16 @@ export interface OrderResponse {
   filledAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** The backend stores UTC but currently serializes LocalDateTime without an offset. */
+export function orderTimestamp(timestamp: string): string {
+  return /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestamp) ? timestamp : `${timestamp}Z`;
+}
+
+export interface OrderHistoryFilter {
+  date: string;
+  timeZone: string;
 }
 
 @Injectable({
@@ -97,8 +107,11 @@ export class OrderService {
   /**
    * Get all orders for an account
    */
-  getOrdersByAccountId(accountId: number): Observable<OrderResponse[]> {
-    return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`);
+  getOrdersByAccountId(accountId: number, filter?: OrderHistoryFilter): Observable<OrderResponse[]> {
+    const params = filter ? { date: filter.date, timeZone: filter.timeZone } : undefined;
+    return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`, { params }).pipe(
+      map(orders => orders.map(order => ({ ...order, submittedAt: orderTimestamp(order.submittedAt) }))),
+    );
   }
 
   /**
