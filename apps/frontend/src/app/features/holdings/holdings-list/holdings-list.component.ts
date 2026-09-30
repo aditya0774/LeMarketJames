@@ -5,6 +5,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
 import { Auth } from '@app/core/auth/auth';
 import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model';
@@ -33,7 +34,8 @@ import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model'
     MatProgressSpinnerModule,
     MatButtonModule,
     MatTableModule,
-    MatCardModule
+    MatCardModule,
+    MatIconModule
   ]
 })
 export class HoldingsListComponent implements OnInit {
