@@ -18,13 +18,14 @@ import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -48,6 +49,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final PlatformSettings.Auth.Lockout lockout;
+    private final Clock clock;
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
@@ -65,6 +67,7 @@ public class AuthService {
      * @param staffUserRepository repository for staff logins
      * @param settings platform settings; supplies the lockout rule (contract C5)
      */
+    @Autowired
     public AuthService(
             JwtService jwtService,
             ClientRepository clientRepository,
@@ -72,6 +75,19 @@ public class AuthService {
             AccountRepository accountRepository,
             StaffUserRepository staffUserRepository,
             PlatformSettings settings) {
+        this(jwtService, clientRepository, addressRepository, accountRepository, staffUserRepository, settings,
+                Clock.systemUTC());
+    }
+
+    /** Takes the clock the lockout is timed with, so tests can move time instead of sleeping. */
+    AuthService(
+            JwtService jwtService,
+            ClientRepository clientRepository,
+            AddressRepository addressRepository,
+            AccountRepository accountRepository,
+            StaffUserRepository staffUserRepository,
+            PlatformSettings settings,
+            Clock clock) {
         this.clientRepository = clientRepository;
         this.addressRepository = addressRepository;
         this.accountRepository = accountRepository;
@@ -79,6 +95,7 @@ public class AuthService {
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtService = jwtService;
         this.lockout = settings.getAuth().getLockout();
+        this.clock = clock;
     }
 
     /**
@@ -174,14 +191,13 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        Instant now = Instant.now();
-        if (account.getLockedUntil() != null && now.isBefore(account.getLockedUntil())) {
+        if (account.getLockedUntil() != null && clock.instant().isBefore(account.getLockedUntil())) {
             log.warn("Login blocked for email={} due to active lockout", email);
             throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
         }
 
         if (!matchesPassword(password, account.getPassword())) {
-            registerFailedAttempt(account, now);
+            registerFailedAttempt(account);
             log.warn("Login failed for email={}", email);
             throw new IllegalArgumentException("Invalid email or password");
         }
@@ -208,10 +224,11 @@ public class AuthService {
     }
 
     // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
-    private void registerFailedAttempt(LoginAccount account, Instant now) {
+    // The lock is timed from now, after the (slow) password check, so it lasts the full duration.
+    private void registerFailedAttempt(LoginAccount account) {
         int attempts = account.getFailedLoginAttempts() + 1;
         if (attempts >= lockout.getMaxAttempts()) {
-            account.setLockedUntil(now.plus(lockout.getDuration()));
+            account.setLockedUntil(clock.instant().plus(lockout.getDuration()));
             attempts = 0;
         }
         account.setFailedLoginAttempts(attempts);
