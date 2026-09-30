@@ -13,8 +13,8 @@ export default defineConfig({
   // Every test registers its own user, so tests never share state and can run in parallel.
   fullyParallel: true,
   forbidOnly: isCi,
-  // One retry in CI absorbs a slow first page load while the stack warms up; a real bug still fails twice.
-  retries: isCi ? 1 : 0,
+  // CI must expose flakiness instead of hiding it with automatic retries.
+  retries: 0,
   workers: isCi ? 2 : undefined,
   reporter: isCi
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]

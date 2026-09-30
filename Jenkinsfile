@@ -4,12 +4,78 @@ pipeline {
         jdk 'JDK21'
         nodejs 'NodeJS'
     }
+    environment {
+        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+        NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+        CI_HEALTH_RETRIES = '180'
+        CI_HEALTH_SLEEP_SECONDS = '1'
+    }
 
     stages {
+        stage('Preflight checks') {
+            steps {
+                sh '''
+                    set -eu
+                    java -version
+                    mvn -version
+                    node --version
+                    npm --version
+                    if docker compose version >/dev/null 2>&1; then
+                        echo "Using Docker Compose v2"
+                    elif command -v docker-compose >/dev/null 2>&1; then
+                        echo "Using legacy docker-compose"
+                    else
+                        echo "Docker Compose is not installed on this Jenkins agent"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        stage('Collect change scope') {
+            steps {
+                sh '''
+                    set -eu
+                    base_ref="${CHANGE_TARGET:-main}"
+                    if git show-ref --verify --quiet "refs/remotes/origin/${base_ref}"; then
+                        git diff --name-only "origin/${base_ref}...HEAD" > .ci-changed-files.txt
+                    elif git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
+                        git diff --name-only "HEAD~1...HEAD" > .ci-changed-files.txt
+                    else
+                        git ls-files > .ci-changed-files.txt
+                    fi
+                '''
+                script {
+                    def changedFiles = readFile('.ci-changed-files.txt')
+                        .readLines()
+                        .findAll { it?.trim() }
+
+                    def touchesFrontend = changedFiles.any { it.startsWith('apps/frontend/') || it.startsWith('apps/e2e/') }
+                    def touchesBackend = changedFiles.any { it.startsWith('services/') || it.startsWith('libs/') || it == 'pom.xml' }
+                    def touchesDbOrContract = changedFiles.any {
+                        it.startsWith('database/schema/') || it.startsWith('contracts/') ||
+                            it == 'API-CONTRACTS.md' || it == 'docker-compose.yml' || it == 'Jenkinsfile'
+                    }
+
+                    env.CI_TOUCHES_FRONTEND = touchesFrontend.toString()
+                    env.CI_TOUCHES_BACKEND = touchesBackend.toString()
+                    env.CI_TOUCHES_DB_OR_CONTRACT = touchesDbOrContract.toString()
+                    env.CI_RUN_FRONTEND_PIPELINE = (touchesFrontend || touchesDbOrContract).toString()
+                    env.CI_RUN_BACKEND_PIPELINE = (touchesBackend || touchesDbOrContract).toString()
+                    env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
+
+                    echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
+                }
+            }
+        }
+
         stage('Test and build Angular') {
+            when {
+                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
             steps {
                 dir('apps/frontend') {
-                    sh 'rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm test -- --watch=false && npm run build'
+                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
                 }
             }
         }
@@ -33,113 +99,101 @@ pipeline {
             }
         }
 
-        stage('Test with Maven') {
+        stage('Prepare backend test dependencies') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
             steps {
-                // The root parent pom builds and tests every backend module (libs/common + services/*).
+                // Build shared libraries once to avoid repeating -am work in parallel lanes.
                 sh '''
                     set -eu
-                    mvn -B clean test
-
-                    echo "=== BACKEND TESTS COMPLETED: PASS ==="
-                    echo "=== BACKEND SUREFIRE SUMMARY ==="
-
-                    if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "No surefire XML reports found"
-                    fi
+                    mvn -B -pl libs/common,libs/market-client -am -DskipTests install
                 '''
+            }
+        }
+
+        stage('Test backend units (parallel)') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
+            parallel {
+                stage('Test libs') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl libs/common,libs/market-client test
+                        '''
+                    }
+                }
+
+                stage('Test core service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/core-service test
+                        '''
+                    }
+                }
+
+                stage('Test auth service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/auth-service test
+                        '''
+                    }
+                }
+
+                stage('Test market service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/market-service test
+                        '''
+                    }
+                }
+
+                stage('Test holdings service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/holdings-service test
+                        '''
+                    }
+                }
+
+                stage('Test gateway service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/gateway-service test
+                        '''
+                    }
+                }
             }
             post {
                 always {
+                    sh '''
+                        set +e
+                        echo "=== BACKEND UNIT SUREFIRE SUMMARY ==="
+                        if ls libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+                            grep -h '<testsuite ' libs/*/target/surefire-reports/TEST-*.xml services/*/target/surefire-reports/TEST-*.xml \
+                                | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
+                        else
+                            echo "No surefire XML reports found"
+                        fi
+                        set -e
+                    '''
+
                     junit 'libs/*/target/surefire-reports/*.xml, services/*/target/surefire-reports/*.xml'
                 }
             }
         }
 
-        stage('Run buy-order microservice tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/core-service -am "-Dtest=BuyOrderControllerTest,OrderServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== BUY-ORDER MICROSERVICE TEST SUMMARY ==="
-                    if ls services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "BuyOrderControllerTest report not found"
-                    fi
-                '''
+        stage('Run backend integration tests on shared PostgreSQL') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
             }
-            post {
-                always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*BuyOrderControllerTest.xml'
-                }
-            }
-        }
-
-        stage('Run market simulator tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/market-service -am "-Dtest=MarketServiceApplicationTest,MarketSimulatorTest,GbmModelTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== MARKET SIMULATOR TEST SUMMARY ==="
-                    if ls services/market-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/market-service/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "Market simulator test report not found"
-                    fi
-                '''
-            }
-            post {
-                always {
-                    junit 'services/market-service/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Run holdings service tests') {
-            steps {
-                sh '''
-                    set -eu
-                    mvn -B -pl services/holdings-service -am "-Dtest=HoldingsServiceTest,HoldingsControllerTest,HoldingsSettlementServiceTest,ProfileServiceTest,PortfolioServiceTest,TradeServiceTest" -Dsurefire.failIfNoSpecifiedTests=false test
-
-                    echo "=== HOLDINGS SERVICE TEST SUMMARY ==="
-                    if ls services/holdings-service/target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-                        grep -h '<testsuite ' services/holdings-service/target/surefire-reports/TEST-*.xml \
-                            | sed -E 's/.*name="([^"]+)".*tests="([0-9]+)".*failures="([0-9]+)".*errors="([0-9]+)".*skipped="([0-9]+)".*/- \1: tests=\2 failures=\3 errors=\4 skipped=\5/'
-                    else
-                        echo "Holdings service test report not found"
-                    fi
-                '''
-            }
-            post {
-                always {
-                    junit 'services/holdings-service/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Verify Docker Compose') {
-            steps {
-                sh '''
-                    if docker compose version >/dev/null 2>&1; then
-                        echo "Using Docker Compose v2"
-                    elif command -v docker-compose >/dev/null 2>&1; then
-                        echo "Using legacy docker-compose"
-                    else
-                        echo "Docker Compose is not installed on this Jenkins agent"
-                        exit 1
-                    fi
-                '''
-            }
-        }
-
-        stage('Verify buy and sell persistence on PostgreSQL') {
             steps {
                 sh '''
                     set -eu
@@ -158,15 +212,25 @@ pipeline {
                         sleep 1
                     done
                     test "$ready" = 1
-                    mvn -B -pl services/core-service -am -Dspring.profiles.active=postgres-test "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test
+
+                    # Keep one Maven invocation so integration tests share startup work.
+                    mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am \
+                        -Dspring.profiles.active=postgres-test \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
-                always { junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml' }
+                always {
+                    junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                }
             }
         }
 
         stage('Build versioned Docker images') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -189,21 +253,28 @@ pipeline {
         }
 
         stage('Start application with Docker Compose') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
                     image_tag=$(cat .image_tag)
 
                     if docker compose version >/dev/null 2>&1; then
-                        IMAGE_TAG="$image_tag" docker compose up -d --build
+                        # Images are built in the previous stage; avoid rebuilding here.
+                        IMAGE_TAG="$image_tag" docker compose up -d
                     else
-                        IMAGE_TAG="$image_tag" docker-compose up -d --build
+                        IMAGE_TAG="$image_tag" docker-compose up -d
                     fi
                 '''
             }
         }
 
         stage('Verify PostgreSQL connection') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     echo "PostgreSQL connection: host=db port=5432 database=lemarket user=lemarket"
@@ -229,6 +300,9 @@ pipeline {
         }
 
         stage('Apply schema updates') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 // Init scripts only run for an empty Postgres volume; CI keeps its volume.
                 // Every script from 004 on must be idempotent (safe to run twice); 001-003 are not,
@@ -249,18 +323,10 @@ pipeline {
             }
         }
 
-        stage('Verify own-data isolation on PostgreSQL') {
-            steps {
-                sh 'mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am -Dspring.profiles.active=postgres-test "-Dtest=OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" -Dsurefire.failIfNoSpecifiedTests=false test'
-            }
-            post {
-                always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
-                }
-            }
-        }
-
         stage('Run smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -281,17 +347,18 @@ pipeline {
                     for port in 8081 8082 8089 8083 8084; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
-                        for attempt in $(seq 1 60); do
+                        status="000"
+                        for attempt in $(seq 1 "$CI_HEALTH_RETRIES"); do
                             status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
                             if [ "$status" = "200" ]; then
                                 healthy=1
                                 break
                             fi
-                            sleep 1
+                            sleep "$CI_HEALTH_SLEEP_SECONDS"
                         done
 
                         if [ "$healthy" -ne 1 ]; then
-                            echo "Service on port $port did not become healthy in time"
+                            echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
                             compose logs core-service auth-service market-service holdings-service gateway-service
                             exit 1
@@ -312,6 +379,9 @@ pipeline {
         // Drives the real app in a browser through the nginx frontend on :4200, the same origin a
         // user opens. Runs right after the smoke test so the whole stack is known to be healthy.
         stage('Run Playwright E2E tests') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -337,14 +407,23 @@ pipeline {
         }
 
         stage('Verify buy order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps { sh 'bash scripts/verify-buy-order.sh' }
         }
 
         stage('Verify sell order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps { sh 'bash scripts/verify-sell-order.sh' }
         }
 
         stage('Run quote API contract smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -410,6 +489,9 @@ JSON
         }
 
         stage('Run tradability API smoke test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
             steps {
                 sh '''
                     set -eu
@@ -480,6 +562,7 @@ JSON
                 '''
             }
         }
+
     }
 
     post {
