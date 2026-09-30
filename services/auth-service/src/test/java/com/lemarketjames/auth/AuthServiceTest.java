@@ -79,6 +79,7 @@ class AuthServiceTest {
 
     private AuthService newAuthService() {
         PlatformSettings settings = new PlatformSettings();
+        settings.getAuth().getLockout().setMaxAttempts(3);
         settings.getAuth().getLockout().setDuration(Duration.ofMillis(200));
         return newAuthService(settings);
     }
