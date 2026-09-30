@@ -4,6 +4,7 @@
     <div class="sub">Welcome back, {{ auth.currentUser() }} — here's where things stand.</div>
   </div>
   <div class="header-actions">
+    <a routerLink="/holdings" type="button" class="btn btn-outline">Holdings</a>
     <button type="button" class="btn btn-outline" (click)="logout()">Log out</button>
   </div>
 </header>
