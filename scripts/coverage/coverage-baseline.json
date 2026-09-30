@@ -1,0 +1,5 @@
+{
+  "about": "Coverage floors (percent) enforced by check-coverage-gate.mjs in Jenkins. Only ever raise them, to the latest main build's figures rounded down; never lower them to get a build through.",
+  "backend": { "line": 72.1, "branch": 72.5 },
+  "frontend": { "line": 87.9, "branch": 76.9 }
+}

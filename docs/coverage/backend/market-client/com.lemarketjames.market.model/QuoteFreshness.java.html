@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuoteFreshness.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.model</a> &gt; <span class="el_source">QuoteFreshness.java</span></div><h1>QuoteFreshness.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.model;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+
+/**
+ * Decides whether a quote is too old to price an order with (contract C4/C5). The limit is the
+ * platform setting {@code lmj.market.staleness-limit}; callers pass it in so this class stays free
+ * of configuration.
+ */
+public final class QuoteFreshness {
+
+    private QuoteFreshness() {
+    }
+
+    /**
+     * @param quote the quote to check
+     * @param limit the oldest a quote may be and still be used
+     * @param clock the current time
+     * @return true when the quote is older than {@code limit}, or has no timestamp at all
+     */
+    public static boolean isStale(QuoteSnapshot quote, Duration limit, Clock clock) {
+<span class="fc" id="L24">        Instant updated = quote.lastUpdated();</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">        return updated == null || Duration.between(updated, clock.instant()).compareTo(limit) &gt; 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

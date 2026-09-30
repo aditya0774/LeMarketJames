@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GbmModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.model</a> &gt; <span class="el_source">GbmModel.java</span></div><h1>GbmModel.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.model;
+
+/**
+ * Geometric Brownian Motion (GBM) price math.
+ *
+ * &lt;p&gt;GBM models a price whose log returns are normally distributed:
+ * {@code dS = mu * S * dt + sigma * S * dW}. We use the exact discrete solution rather than a
+ * linear (Euler) approximation, which guarantees prices stay positive and avoids a
+ * systematic upward bias:
+ *
+ * &lt;pre&gt;
+ *   S(t + dt) = S(t) * exp((mu - sigma^2 / 2) * dt + sigma * sqrt(dt) * Z),   Z ~ N(0, 1)
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;Kept free of Spring and state so the maths can be unit tested in isolation.
+ */
+public final class GbmModel {
+
+    private GbmModel() {
+    }
+
+    /**
+     * Advances a price by one time step.
+     *
+     * @param price      current price, must be positive
+     * @param drift      annualised expected return (mu), e.g. 0.08
+     * @param volatility annualised volatility (sigma), e.g. 0.25
+     * @param dtYears    length of the step in trading years
+     * @param shock      standard normal random draw (Z)
+     * @return the next price, always positive
+     */
+    public static double nextPrice(double price, double drift, double volatility, double dtYears, double shock) {
+        // The -sigma^2/2 term (Ito correction) keeps the *expected* price growing at mu;
+        // without it simulated prices would drift upward faster than configured.
+<span class="fc" id="L35">        double logReturn = (drift - 0.5 * volatility * volatility) * dtYears</span>
+<span class="fc" id="L36">                + volatility * Math.sqrt(dtYears) * shock;</span>
+<span class="fc" id="L37">        return price * Math.exp(logReturn);</span>
+    }
+
+    /**
+     * Blends a market-wide shock with an instrument-specific shock using a one-factor model:
+     * {@code Z = rho * Z_market + sqrt(1 - rho^2) * Z_own}.
+     *
+     * &lt;p&gt;The result is still standard normal, so volatility is unchanged, but instruments with
+     * a higher {@code rho} move together more often, as real stocks do on market-wide news.
+     *
+     * @param marketShock       shared standard normal draw for this tick
+     * @param idiosyncraticShock instrument's own standard normal draw
+     * @param marketCorrelation rho in [0, 1]
+     * @return the correlated standard normal shock
+     */
+    public static double correlatedShock(double marketShock, double idiosyncraticShock, double marketCorrelation) {
+<span class="fc" id="L53">        return marketCorrelation * marketShock</span>
+<span class="fc" id="L54">                + Math.sqrt(1.0 - marketCorrelation * marketCorrelation) * idiosyncraticShock;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

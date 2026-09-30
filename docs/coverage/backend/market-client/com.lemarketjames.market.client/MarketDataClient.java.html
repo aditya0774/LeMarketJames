@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketDataClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.client</a> &gt; <span class="el_source">MarketDataClient.java</span></div><h1>MarketDataClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.client;
+
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * {@link MarketDataService} over HTTP, reached at market-service's {@code /api/market/**}.
+ * Since market prices are non-critical read data, a failed or slow call degrades to &quot;no quote&quot;
+ * (empty/404) rather than throwing, matching how callers already treated an unsimulated instrument
+ * before this feature was ever a separate service (see HoldingsService's zero-valued fallback).
+ *
+ * &lt;p&gt;Only created in services that set {@code market.service.url} (core-service, holdings-service).
+ * market-service component-scans this library too (it needs the shared model and interface), and
+ * without this condition it would get a second {@link MarketDataService} bean next to its own
+ * {@code MarketSimulator} and fail to start.
+ */
+@Service
+@ConditionalOnProperty(name = &quot;market.service.url&quot;)
+public class MarketDataClient implements MarketDataService {
+
+<span class="nc" id="L33">    private static final Logger log = LoggerFactory.getLogger(MarketDataClient.class);</span>
+
+    private final RestClient restClient;
+
+<span class="nc" id="L37">    public MarketDataClient(@Value(&quot;${market.service.url}&quot;) String marketServiceUrl) {</span>
+<span class="nc" id="L38">        this.restClient = RestClient.builder().baseUrl(marketServiceUrl).build();</span>
+<span class="nc" id="L39">    }</span>
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByTicker(String ticker) {
+<span class="nc" id="L43">        return get(&quot;/api/market/quotes/{ticker}&quot;, QuoteSnapshot.class, ticker);</span>
+    }
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByInstrumentId(int instrumentId) {
+<span class="nc" id="L48">        return get(&quot;/api/market/quotes/by-instrument/{instrumentId}&quot;, QuoteSnapshot.class, instrumentId);</span>
+    }
+
+    @Override
+    public Collection&lt;QuoteSnapshot&gt; findAll() {
+        try {
+<span class="nc" id="L54">            QuoteSnapshot[] quotes = restClient.get()</span>
+<span class="nc" id="L55">                    .uri(&quot;/api/market/quotes&quot;)</span>
+<span class="nc" id="L56">                    .retrieve()</span>
+<span class="nc" id="L57">                    .body(QuoteSnapshot[].class);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            return quotes == null ? List.of() : List.of(quotes);</span>
+<span class="nc" id="L59">        } catch (RestClientException e) {</span>
+<span class="nc" id="L60">            log.warn(&quot;market-service call failed for findAll(): {}&quot;, e.getMessage());</span>
+<span class="nc" id="L61">            return List.of();</span>
+        }
+    }
+
+    private &lt;T&gt; Optional&lt;T&gt; get(String uriTemplate, Class&lt;T&gt; responseType, Object... uriVariables) {
+        try {
+<span class="nc" id="L67">            return Optional.ofNullable(restClient.get()</span>
+<span class="nc" id="L68">                    .uri(uriTemplate, uriVariables)</span>
+<span class="nc" id="L69">                    .retrieve()</span>
+<span class="nc" id="L70">                    .onStatus(HttpStatusCode::is4xxClientError, (req, res) -&gt; { })</span>
+<span class="nc" id="L71">                    .body(responseType));</span>
+<span class="nc" id="L72">        } catch (RestClientException e) {</span>
+<span class="nc" id="L73">            log.warn(&quot;market-service call failed for {}: {}&quot;, uriTemplate, e.getMessage());</span>
+<span class="nc" id="L74">            return Optional.empty();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

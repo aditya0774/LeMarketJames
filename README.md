@@ -606,11 +606,12 @@ Common causes:
 
 This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 
-1. Runs Maven tests (`mvn test`)
-2. Builds the Docker image
-3. Runs the containerized application
-4. Verifies the output
-5. Cleans up resources
+1. Runs Maven tests (`mvn test`) and the Angular unit tests
+2. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
+3. Builds the Docker image
+4. Runs the containerized application
+5. Verifies the output
+6. Cleans up resources
 
 The Jenkins agent requires:
 - Java 21
@@ -811,15 +812,44 @@ sequenceDiagram
     OrderController-->>User: 201 Created<br/>{orderId, status: "EXECUTED"}
 ```
 
-## Java Code Coverage Using Jacoco
+## Code Coverage
 
-To generate a code coverage report, run the following commands in your terminal:
+**Latest coverage report for `main`:** https://aditya0774.github.io/LeMarketJames/coverage/
+
+That page has the summary for every service and the front end, the lowest-covered classes, the coverage history across builds, and links to each module's full report. The same summary is in the repo at [docs/coverage/README.md](docs/coverage/README.md), which renders on GitHub.
+
+The [coverage workflow](.github/workflows/coverage.yml) regenerates both on every push to `main` (or on demand from the repo's Actions tab) and commits them to `docs/coverage/`, the same way the Javadocs are published. Don't edit that folder by hand; it's rebuilt each run by [scripts/coverage/build-coverage-site.mjs](scripts/coverage/build-coverage-site.mjs).
+
+### In Jenkins
+
+Every build of `main` and every pull request attaches the same combined report (without the history) to the build: open a build and click **Coverage** in the left sidebar. On `main` both sides always run. A pull request runs only the side(s) it touches, so its report covers just those. It uses the HTML Publisher plugin, which the pipeline already relies on, so there is nothing extra to install.
+
+Jenkins' security policy blocks scripts in published reports, so there the front-end report's bars and column sorting don't work; the numbers do. The GitHub Pages copy is fully interactive.
+
+**Quality gate:** the build fails when line or branch coverage drops below the floors in [scripts/coverage/coverage-baseline.json](scripts/coverage/coverage-baseline.json), checked by [check-coverage-gate.mjs](scripts/coverage/check-coverage-gate.mjs). The floors only ever go up: when `main` improves, raise them to the new figures (rounded down) in the same change. Never lower them to get a build through.
+
+### Locally
+
+Back end (JaCoCo runs during `test`, one report per module):
 
 ```bash
 mvn clean test
 ```
 
-Each module writes its own report (JaCoCo runs during `test`). Open one in your browser, e.g. core-service, using one of the following commands depending on your OS:
+Front end (writes `apps/frontend/coverage/lemarket-ui/index.html`):
+
+```bash
+cd apps/frontend && npx ng test --watch=false --coverage
+```
+
+After both, build the combined site and run the same gate Jenkins runs (don't point the site at `docs/coverage` locally; the workflow owns that folder):
+
+```bash
+node scripts/coverage/build-coverage-site.mjs target/coverage-site --no-history
+node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json
+```
+
+Open a back-end module's report in your browser, e.g. core-service, using one of the following commands depending on your OS:
 
 Windows:
 ```bash

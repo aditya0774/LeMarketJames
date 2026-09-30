@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsServiceApplication.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames</a> &gt; <span class="el_source">HoldingsServiceApplication.java</span></div><h1>HoldingsServiceApplication.java</h1><pre class="source lang-java linenums">package com.lemarketjames;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * Entry point for the holdings microservice (client profile, holdings, portfolio, trade history).
+ * Lives in the root package so component, entity, and repository scanning also picks up the
+ * shared beans in com.lemarketjames.common (JWT, account/client domain) and market-client's
+ * MarketDataClient.
+ */
+@SpringBootApplication
+<span class="fc" id="L13">public class HoldingsServiceApplication {</span>
+
+    public static void main(String[] args) {
+<span class="nc" id="L16">        SpringApplication.run(HoldingsServiceApplication.class, args);</span>
+<span class="nc" id="L17">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

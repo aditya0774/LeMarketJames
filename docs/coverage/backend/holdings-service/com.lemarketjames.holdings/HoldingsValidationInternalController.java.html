@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsValidationInternalController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings</a> &gt; <span class="el_source">HoldingsValidationInternalController.java</span></div><h1>HoldingsValidationInternalController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings;
+
+import com.lemarketjames.holdings.dto.InternalHoldingsValidationRequest;
+import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.holdings.service.HoldingsService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+/**
+ * Internal, server-to-server only: core-service calls this directly (Docker hostname, bypassing
+ * the gateway) to re-check a SELL order's holdings before persisting it, since the browser's own
+ * {@code /api/v1/holdings/validate} call is advisory only. Deliberately outside /api/v1/** so no
+ * gateway route pattern can accidentally expose it to a browser (see SecurityConfig's /internal/**
+ * permit).
+ */
+@RestController
+public class HoldingsValidationInternalController {
+
+    private final HoldingsService holdingsService;
+
+<span class="fc" id="L26">    public HoldingsValidationInternalController(HoldingsService holdingsService) {</span>
+<span class="fc" id="L27">        this.holdingsService = holdingsService;</span>
+<span class="fc" id="L28">    }</span>
+
+    @PostMapping(&quot;/internal/holdings/validate&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; validate(@RequestBody InternalHoldingsValidationRequest request) {
+        try {
+<span class="nc" id="L33">            holdingsService.validateSufficientHoldings(</span>
+<span class="nc" id="L34">                request.getAccountId(),</span>
+<span class="nc" id="L35">                request.getUsername(),</span>
+<span class="nc" id="L36">                request.getInstrumentId(),</span>
+<span class="nc" id="L37">                request.getSellQuantity()</span>
+            );
+<span class="nc" id="L39">            return ResponseEntity.ok(Map.of(&quot;success&quot;, true));</span>
+<span class="nc" id="L40">        } catch (InsufficientHoldingsException e) {</span>
+<span class="nc" id="L41">            return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L42">                .body(Map.of(</span>
+<span class="nc" id="L43">                    &quot;success&quot;, false,</span>
+<span class="nc" id="L44">                    &quot;error&quot;, e.getMessage()</span>
+                ));
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

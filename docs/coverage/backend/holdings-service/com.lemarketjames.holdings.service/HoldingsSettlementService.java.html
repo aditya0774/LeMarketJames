@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsSettlementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.service</a> &gt; <span class="el_source">HoldingsSettlementService.java</span></div><h1>HoldingsSettlementService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.service;
+
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.holdings.dto.SettlementRequest;
+import com.lemarketjames.holdings.entity.HoldingsEntity;
+import com.lemarketjames.holdings.repository.HoldingsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Applies the cash and holdings side effects of a fill. This is the only place in the system that
+ * writes to holdings or debits/credits cash — order placement (core-service) only validates and
+ * records the order; nothing is settled until this runs.
+ *
+ * &lt;p&gt;Order placement's cash check is a point-in-time check and can't account for other orders
+ * placed in the meantime, so the cash/quantity checks here are re-validated defensively rather than
+ * trusted from core-service. This is not a full reservation/holds system: two orders placed before
+ * either fills can still both pass their placement-time check and one settlement can fail here.
+ */
+@Service
+public class HoldingsSettlementService {
+
+<span class="fc" id="L33">    private static final Logger log = LoggerFactory.getLogger(HoldingsSettlementService.class);</span>
+
+    private final HoldingsRepository holdingsRepository;
+    private final AccountRepository accountRepository;
+    private final AuditRecorder auditRecorder;
+
+    public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository,
+<span class="fc" id="L40">                                     AuditRecorder auditRecorder) {</span>
+<span class="fc" id="L41">        this.holdingsRepository = holdingsRepository;</span>
+<span class="fc" id="L42">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L43">        this.auditRecorder = auditRecorder;</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Applies the fill and records it as SETTLED in the same transaction (contract C2), so the audit
+     * trail never shows a settlement that didn't happen, or misses one that did.
+     */
+    @Transactional
+    public void settle(SettlementRequest request) {
+<span class="fc" id="L52">        BigDecimal cost = request.getQuantity().multiply(request.getPricePerUnit());</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        boolean buy = request.getOrderType() == SettlementRequest.OrderType.BUY;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (buy) {</span>
+<span class="fc" id="L55">            settleBuy(request, cost);</span>
+        } else {
+<span class="fc" id="L57">            settleSell(request, cost);</span>
+        }
+<span class="fc" id="L59">        auditRecorder.record(AuditEventType.SETTLED, request.getOrderId(), request.getAccountId(), Map.of(</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                &quot;cashDelta&quot;, buy ? cost.negate() : cost,</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                &quot;quantityDelta&quot;, buy ? request.getQuantity() : request.getQuantity().negate()));</span>
+<span class="fc" id="L62">        log.info(&quot;Settled order={} account={} instrument={} type={} qty={} price={}&quot;,</span>
+<span class="fc" id="L63">                request.getOrderId(), request.getAccountId(), request.getInstrumentId(),</span>
+<span class="fc" id="L64">                request.getOrderType(), request.getQuantity(), request.getPricePerUnit());</span>
+<span class="fc" id="L65">    }</span>
+
+    private void settleBuy(SettlementRequest request, BigDecimal cost) {
+<span class="fc" id="L68">        AccountEntity account = findAccount(request.getAccountId());</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (account.getCashBalance().compareTo(cost) &lt; 0) {</span>
+<span class="fc" id="L70">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L71">                    &quot;Insufficient cash to settle order &quot; + request.getOrderId());</span>
+        }
+<span class="fc" id="L73">        account.setCashBalance(account.getCashBalance().subtract(cost));</span>
+<span class="fc" id="L74">        accountRepository.save(account);</span>
+
+<span class="fc" id="L76">        Optional&lt;HoldingsEntity&gt; existing = holdingsRepository</span>
+<span class="fc" id="L77">                .findByAccountIdAndInstrumentId(request.getAccountId(), request.getInstrumentId());</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (existing.isPresent()) {</span>
+<span class="fc" id="L80">            HoldingsEntity holding = existing.get();</span>
+<span class="fc" id="L81">            BigDecimal newQuantity = holding.getQuantity().add(request.getQuantity());</span>
+<span class="fc" id="L82">            BigDecimal newCostBasis = holding.getQuantity().multiply(holding.getAverageCost()).add(cost);</span>
+<span class="fc" id="L83">            holding.setAverageCost(newCostBasis.divide(newQuantity, 4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L84">            holding.setQuantity(newQuantity);</span>
+<span class="fc" id="L85">            holdingsRepository.save(holding);</span>
+<span class="fc" id="L86">        } else {</span>
+<span class="fc" id="L87">            holdingsRepository.save(new HoldingsEntity(</span>
+<span class="fc" id="L88">                    request.getAccountId(), request.getInstrumentId(), request.getQuantity(), request.getPricePerUnit()));</span>
+        }
+<span class="fc" id="L90">    }</span>
+
+    private void settleSell(SettlementRequest request, BigDecimal proceeds) {
+<span class="fc" id="L93">        HoldingsEntity holding = holdingsRepository</span>
+<span class="fc" id="L94">                .findByAccountIdAndInstrumentId(request.getAccountId(), request.getInstrumentId())</span>
+<span class="fc" id="L95">                .orElseThrow(() -&gt; new IllegalArgumentException(</span>
+<span class="fc" id="L96">                        &quot;No holding to settle sell order &quot; + request.getOrderId()));</span>
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (!holding.canSell(request.getQuantity())) {</span>
+<span class="fc" id="L99">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L100">                    &quot;Insufficient holdings to settle order &quot; + request.getOrderId());</span>
+        }
+
+<span class="fc" id="L103">        BigDecimal remaining = holding.getQuantity().subtract(request.getQuantity());</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (remaining.compareTo(BigDecimal.ZERO) == 0) {</span>
+<span class="fc" id="L105">            holdingsRepository.delete(holding);</span>
+        } else {
+            // Average cost is unchanged for the shares that remain; only realized gain (not tracked
+            // yet) would use the sale price.
+<span class="fc" id="L109">            holding.setQuantity(remaining);</span>
+<span class="fc" id="L110">            holdingsRepository.save(holding);</span>
+        }
+
+<span class="fc" id="L113">        AccountEntity account = findAccount(request.getAccountId());</span>
+<span class="fc" id="L114">        account.setCashBalance(account.getCashBalance().add(proceeds));</span>
+<span class="fc" id="L115">        accountRepository.save(account);</span>
+<span class="fc" id="L116">    }</span>
+
+    private AccountEntity findAccount(Integer accountId) {
+<span class="fc" id="L119">        return accountRepository.findById(accountId)</span>
+<span class="pc" id="L120">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

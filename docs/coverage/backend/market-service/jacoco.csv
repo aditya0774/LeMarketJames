@@ -1,0 +1,24 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+LeMarketJames Market Service,com.lemarketjames.market.model,GbmModel,0,35,0,0,0,5,0,2,0,2
+LeMarketJames Market Service,com.lemarketjames.market.model,PriceCandle,0,24,0,0,0,1,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames.market.config,MarketSimulationProperties,13,154,0,0,5,27,4,13,4,13
+LeMarketJames Market Service,com.lemarketjames.market.config,MarketConfig,0,5,0,0,0,2,0,2,0,2
+LeMarketJames Market Service,com.lemarketjames.market.config,MarketSimulationProperties.Control,11,13,0,0,5,4,3,2,3,2
+LeMarketJames Market Service,com.lemarketjames.market.config,MarketSchedulingConfig,3,0,0,0,1,0,1,0,1,0
+LeMarketJames Market Service,com.lemarketjames.market,MarketControlController.PriceRequest,0,9,0,0,0,1,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames.market,MarketControlController.FeedRequest,0,6,0,0,0,1,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames.market,MarketController,13,53,1,3,1,13,3,7,2,6
+LeMarketJames Market Service,com.lemarketjames.market,MarketControlController.ControlState,0,9,0,0,0,1,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames.market,MarketControlController,5,58,3,1,0,13,2,7,0,7
+LeMarketJames Market Service,com.lemarketjames.market.service,MarketScheduler,33,0,0,0,12,0,4,0,4,0
+LeMarketJames Market Service,com.lemarketjames.market.service,FeedMode,0,21,0,0,0,4,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames.market.service,MarketSimulator,29,576,9,29,7,103,10,36,2,25
+LeMarketJames Market Service,com.lemarketjames.market.service,MarketPersistenceService,292,0,6,0,56,0,14,0,11,0
+LeMarketJames Market Service,com.lemarketjames.market.service,SimulatedInstrument,0,357,0,16,0,69,0,19,0,11
+LeMarketJames Market Service,com.lemarketjames.market.service,MarketInitializer,0,31,1,1,0,10,1,3,0,3
+LeMarketJames Market Service,com.lemarketjames.market.service,MarketSimulator.StoredQuote,0,24,0,0,0,1,0,1,0,1
+LeMarketJames Market Service,com.lemarketjames,MarketServiceApplication,5,3,0,0,2,1,1,1,1,1
+LeMarketJames Market Service,com.lemarketjames.market.entity,PriceCandleEntity.Key,56,0,8,0,12,0,8,0,4,0
+LeMarketJames Market Service,com.lemarketjames.market.entity,MarketQuoteEntity,73,3,0,0,31,2,21,1,21,1
+LeMarketJames Market Service,com.lemarketjames.market.entity,PriceCandleEntity,48,0,0,0,18,0,9,0,9,0
+LeMarketJames Market Service,com.lemarketjames.market.entity,InstrumentMarketParamsEntity,73,0,0,0,32,0,21,0,21,0

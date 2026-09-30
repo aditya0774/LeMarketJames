@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortfolioService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.portfolio</a> &gt; <span class="el_source">PortfolioService.java</span></div><h1>PortfolioService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.portfolio;
+
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.holdings.entity.HoldingsEntity;
+import com.lemarketjames.holdings.exception.UnauthorizedException;
+import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.orders.client.OrderSummary;
+import com.lemarketjames.orders.client.OrdersClient;
+import com.lemarketjames.portfolio.dto.PortfolioBalance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Implements the balance aggregate documented in contracts/C6-api.md (previously undocumented as
+ * unimplemented). cash/invested/totalValue/gain-loss come from this service's own data plus live
+ * quotes; buyingPower needs the caller's open BUY orders, which live in core-service.
+ */
+@Service
+public class PortfolioService {
+
+<span class="fc" id="L30">    private static final Logger log = LoggerFactory.getLogger(PortfolioService.class);</span>
+
+    private final AccountRepository accountRepository;
+    private final HoldingsRepository holdingsRepository;
+    private final MarketDataService marketData;
+    private final OrdersClient ordersClient;
+
+    public PortfolioService(AccountRepository accountRepository, HoldingsRepository holdingsRepository,
+<span class="fc" id="L38">                             MarketDataService marketData, OrdersClient ordersClient) {</span>
+<span class="fc" id="L39">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L40">        this.holdingsRepository = holdingsRepository;</span>
+<span class="fc" id="L41">        this.marketData = marketData;</span>
+<span class="fc" id="L42">        this.ordersClient = ordersClient;</span>
+<span class="fc" id="L43">    }</span>
+
+    /** GET /api/balance's entry point: no accountId param, resolved from the JWT like /api/auth/me. */
+    public PortfolioBalance getOwnPortfolio(String username) {
+<span class="nc" id="L47">        Integer accountId = accountRepository.findAccountIdByUsername(username)</span>
+<span class="nc" id="L48">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No account found for username: &quot; + username));</span>
+<span class="nc" id="L49">        return getPortfolio(accountId, username);</span>
+    }
+
+    public PortfolioBalance getPortfolio(Integer accountId, String username) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (!accountRepository.existsByAccountIdAndUsername(accountId, username)) {</span>
+<span class="nc" id="L54">            log.warn(&quot;Portfolio access denied for username={} accountId={}&quot;, username, accountId);</span>
+<span class="nc" id="L55">            throw new UnauthorizedException(&quot;User is not authorized to access this account&quot;);</span>
+        }
+
+<span class="fc" id="L58">        AccountEntity account = accountRepository.findById(accountId)</span>
+<span class="pc" id="L59">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
+<span class="fc" id="L60">        BigDecimal cash = account.getCashBalance();</span>
+
+<span class="fc" id="L62">        List&lt;HoldingsEntity&gt; holdings = holdingsRepository.findByAccountId(accountId);</span>
+<span class="fc" id="L63">        BigDecimal invested = BigDecimal.ZERO;</span>
+<span class="fc" id="L64">        BigDecimal totalCost = BigDecimal.ZERO;</span>
+<span class="fc" id="L65">        BigDecimal dayGainLoss = BigDecimal.ZERO;</span>
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (HoldingsEntity holding : holdings) {</span>
+<span class="fc" id="L68">            Optional&lt;QuoteSnapshot&gt; quote = marketData.findByInstrumentId(holding.getInstrumentId());</span>
+<span class="fc" id="L69">            BigDecimal currentPrice = quote.map(q -&gt; BigDecimal.valueOf(q.lastPrice())).orElse(BigDecimal.ZERO);</span>
+<span class="fc" id="L70">            BigDecimal openPrice = quote.map(q -&gt; BigDecimal.valueOf(q.openPrice())).orElse(currentPrice);</span>
+
+<span class="fc" id="L72">            invested = invested.add(holding.getQuantity().multiply(currentPrice));</span>
+<span class="fc" id="L73">            totalCost = totalCost.add(holding.getQuantity().multiply(holding.getAverageCost()));</span>
+<span class="fc" id="L74">            dayGainLoss = dayGainLoss.add(holding.getQuantity().multiply(currentPrice.subtract(openPrice)));</span>
+<span class="fc" id="L75">        }</span>
+
+<span class="fc" id="L77">        BigDecimal totalValue = cash.add(invested);</span>
+<span class="fc" id="L78">        BigDecimal totalGainLoss = invested.subtract(totalCost);</span>
+<span class="fc" id="L79">        BigDecimal dayGainLossPercent = percentOf(dayGainLoss, invested.subtract(dayGainLoss));</span>
+<span class="fc" id="L80">        BigDecimal totalGainLossPercent = percentOf(totalGainLoss, totalCost);</span>
+
+<span class="fc" id="L82">        BigDecimal openBuyCost = ordersClient.getOrdersForAccount(accountId).stream()</span>
+<span class="fc" id="L83">                .filter(OrderSummary::isOpen)</span>
+<span class="fc" id="L84">                .filter(OrderSummary::isBuy)</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                .map(o -&gt; o.quantity().multiply(o.pricePerUnit() == null ? BigDecimal.ZERO : o.pricePerUnit()))</span>
+<span class="fc" id="L86">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+<span class="fc" id="L87">        BigDecimal buyingPower = cash.subtract(openBuyCost);</span>
+
+<span class="fc" id="L89">        return new PortfolioBalance(</span>
+<span class="fc" id="L90">                scale(cash), scale(invested), scale(totalValue), scale(buyingPower),</span>
+<span class="fc" id="L91">                scale(dayGainLoss), scale(dayGainLossPercent),</span>
+<span class="fc" id="L92">                scale(totalGainLoss), scale(totalGainLossPercent),</span>
+<span class="fc" id="L93">                account.getCurrency());</span>
+    }
+
+    private static BigDecimal percentOf(BigDecimal change, BigDecimal base) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        return base.compareTo(BigDecimal.ZERO) == 0</span>
+<span class="fc" id="L98">                ? BigDecimal.ZERO</span>
+<span class="fc" id="L99">                : change.divide(base, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));</span>
+    }
+
+    private static BigDecimal scale(BigDecimal value) {
+<span class="fc" id="L103">        return value.setScale(2, RoundingMode.HALF_UP);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

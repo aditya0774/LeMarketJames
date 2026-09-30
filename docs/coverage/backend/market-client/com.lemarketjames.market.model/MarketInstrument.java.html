@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketInstrument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.model</a> &gt; <span class="el_source">MarketInstrument.java</span></div><h1>MarketInstrument.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.model;
+
+/**
+ * Immutable definition of a simulated instrument: its identity from {@code instruments} plus
+ * its simulation settings from {@code instrument_market_params}.
+ *
+ * @param instrumentId      primary key shared with {@code instruments}
+ * @param ticker            symbol, e.g. AAPL
+ * @param name              display name
+ * @param assetClass        EQUITY, FOREX or CRYPTO
+ * @param currency          ISO currency code
+ * @param location          market location (US, UK, INDIA); may be null
+ * @param initialPrice      starting price when no stored snapshot exists
+ * @param drift             annualised expected return (mu)
+ * @param volatility        annualised volatility (sigma)
+ * @param marketCorrelation 0..1, how strongly the price follows the overall market
+ * @param spreadBps         bid/ask spread in basis points
+ * @param sharesOutstanding shares for market cap; null when not applicable
+ * @param avgDailyVolume    typical daily traded volume
+ * @param earningsPerShare  annual EPS for the P/E ratio; null when not applicable
+ * @param dividendPerShare  annual dividend per share
+ */
+<span class="nc" id="L23">public record MarketInstrument(</span>
+        int instrumentId,
+        String ticker,
+        String name,
+        String assetClass,
+        String currency,
+        String location,
+        double initialPrice,
+        double drift,
+        double volatility,
+        double marketCorrelation,
+        double spreadBps,
+        Long sharesOutstanding,
+        long avgDailyVolume,
+        Double earningsPerShare,
+        double dividendPerShare) {
+
+    /** @return trading hours for this instrument's asset class and location */
+    public MarketHours marketHours() {
+<span class="nc" id="L42">        return MarketHours.forInstrument(assetClass, location);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

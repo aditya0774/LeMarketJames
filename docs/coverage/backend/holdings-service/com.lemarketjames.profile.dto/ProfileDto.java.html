@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.profile.dto</a> &gt; <span class="el_source">ProfileDto.java</span></div><h1>ProfileDto.java</h1><pre class="source lang-java linenums">package com.lemarketjames.profile.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/** Self-service client + account profile — a client can only ever fetch their own (see ProfileService). */
+public class ProfileDto {
+
+    private final String username;
+    private final String fullName;
+    private final String email;
+    private final String phone;
+    private final Integer accountId;
+    private final BigDecimal cashBalance;
+    private final String currency;
+    private final boolean tradingEnabled;
+    private final LocalDate openedDate;
+
+    public ProfileDto(String username, String fullName, String email, String phone, Integer accountId,
+<span class="fc" id="L20">                       BigDecimal cashBalance, String currency, boolean tradingEnabled, LocalDate openedDate) {</span>
+<span class="fc" id="L21">        this.username = username;</span>
+<span class="fc" id="L22">        this.fullName = fullName;</span>
+<span class="fc" id="L23">        this.email = email;</span>
+<span class="fc" id="L24">        this.phone = phone;</span>
+<span class="fc" id="L25">        this.accountId = accountId;</span>
+<span class="fc" id="L26">        this.cashBalance = cashBalance;</span>
+<span class="fc" id="L27">        this.currency = currency;</span>
+<span class="fc" id="L28">        this.tradingEnabled = tradingEnabled;</span>
+<span class="fc" id="L29">        this.openedDate = openedDate;</span>
+<span class="fc" id="L30">    }</span>
+
+    public String getUsername() {
+<span class="fc" id="L33">        return username;</span>
+    }
+
+    public String getFullName() {
+<span class="fc" id="L37">        return fullName;</span>
+    }
+
+    public String getEmail() {
+<span class="fc" id="L41">        return email;</span>
+    }
+
+    public String getPhone() {
+<span class="nc" id="L45">        return phone;</span>
+    }
+
+    public Integer getAccountId() {
+<span class="fc" id="L49">        return accountId;</span>
+    }
+
+    public BigDecimal getCashBalance() {
+<span class="fc" id="L53">        return cashBalance;</span>
+    }
+
+    public String getCurrency() {
+<span class="fc" id="L57">        return currency;</span>
+    }
+
+    public boolean isTradingEnabled() {
+<span class="nc" id="L61">        return tradingEnabled;</span>
+    }
+
+    public LocalDate getOpenedDate() {
+<span class="nc" id="L65">        return openedDate;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

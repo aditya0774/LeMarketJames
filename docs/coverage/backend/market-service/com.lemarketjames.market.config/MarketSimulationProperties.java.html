@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketSimulationProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.config</a> &gt; <span class="el_source">MarketSimulationProperties.java</span></div><h1>MarketSimulationProperties.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.config;
+
+import jakarta.validation.constraints.Positive;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+
+/**
+ * Tunable settings for the market simulator, bound from {@code sim.*} properties.
+ *
+ * &lt;p&gt;Defaults live here (not only in {@code application.properties}) because the test
+ * classpath ships its own {@code application.properties} that replaces the main one.
+ */
+@Validated
+@ConfigurationProperties(prefix = &quot;sim&quot;)
+<span class="fc" id="L21">public class MarketSimulationProperties {</span>
+
+    /** Whether prices tick automatically. Tests disable this so results are deterministic. */
+<span class="fc" id="L24">    private boolean enabled = true;</span>
+
+    /** Milliseconds between simulation ticks. */
+<span class="fc" id="L27">    @Positive</span>
+    private long tickMs = 1000;
+
+    /** Random seed. Set it to replay the exact same market; leave empty for a different market each run. */
+    private Long seed;
+
+    /**
+     * How many simulated seconds pass per real second. 1 = real time. Larger values make
+     * prices move faster, which is useful for demos.
+     */
+<span class="fc" id="L37">    @Positive</span>
+    private double speedMultiplier = 1.0;
+
+    /** Milliseconds between writes of the latest prices and completed candles to the database. */
+<span class="fc" id="L41">    @Positive</span>
+    private long snapshotIntervalMs = 5000;
+
+    /**
+     * When true, instruments only tick while their exchange is open (e.g. US equities
+     * 09:30-16:00 New York time, weekdays). When false, every instrument ticks around the clock,
+     * which is convenient for development outside market hours.
+     */
+<span class="fc" id="L49">    private boolean respectMarketHours = true;</span>
+
+    /**
+     * Exchange holidays: exchange-local dates the market stays closed all day (only applies while
+     * respectMarketHours is true). Defaults to the NYSE holidays for 2026 and 2027; override with a
+     * comma-separated list of yyyy-MM-dd dates, e.g. {@code SIM_HOLIDAYS=2028-01-03,2028-01-17}.
+     */
+<span class="fc" id="L56">    private List&lt;LocalDate&gt; holidays = Stream.of(</span>
+            &quot;2026-01-01&quot;, &quot;2026-01-19&quot;, &quot;2026-02-16&quot;, &quot;2026-04-03&quot;, &quot;2026-05-25&quot;, &quot;2026-06-19&quot;,
+            &quot;2026-07-03&quot;, &quot;2026-09-07&quot;, &quot;2026-11-26&quot;, &quot;2026-12-25&quot;,
+            &quot;2027-01-01&quot;, &quot;2027-01-18&quot;, &quot;2027-02-15&quot;, &quot;2027-03-26&quot;, &quot;2027-05-31&quot;, &quot;2027-06-18&quot;,
+            &quot;2027-07-05&quot;, &quot;2027-09-06&quot;, &quot;2027-11-25&quot;, &quot;2027-12-24&quot;)
+<span class="fc" id="L61">            .map(LocalDate::parse).toList();</span>
+
+    /** Test controls for the quote feed (contract C4). */
+<span class="fc" id="L64">    private final Control control = new Control();</span>
+
+    public List&lt;LocalDate&gt; getHolidays() {
+<span class="nc" id="L67">        return holidays;</span>
+    }
+
+    public void setHolidays(List&lt;LocalDate&gt; holidays) {
+<span class="nc" id="L71">        this.holidays = holidays;</span>
+<span class="nc" id="L72">    }</span>
+
+    /** The holidays as a set, for fast lookup on every tick. */
+    public Set&lt;LocalDate&gt; holidaySet() {
+<span class="fc" id="L76">        return Set.copyOf(holidays);</span>
+    }
+
+    public Control getControl() {
+<span class="fc" id="L80">        return control;</span>
+    }
+
+    /**
+     * Lets tests and demos steer the feed: set a stock's price, or make quotes stale or
+     * unavailable. Exposed only at /internal/market/control, which the gateway never routes.
+     */
+<span class="fc" id="L87">    public static class Control {</span>
+        /** Whether the control endpoints exist at all. Off unless an environment turns it on. */
+<span class="fc" id="L89">        private boolean enabled = false;</span>
+
+        /** How far in the past quotes claim to be while the feed is STALE. */
+<span class="fc" id="L92">        private Duration staleAge = Duration.ofMinutes(10);</span>
+
+        public boolean isEnabled() {
+<span class="nc" id="L95">            return enabled;</span>
+        }
+
+        public void setEnabled(boolean enabled) {
+<span class="nc" id="L99">            this.enabled = enabled;</span>
+<span class="nc" id="L100">        }</span>
+
+        public Duration getStaleAge() {
+<span class="fc" id="L103">            return staleAge;</span>
+        }
+
+        public void setStaleAge(Duration staleAge) {
+<span class="nc" id="L107">            this.staleAge = staleAge;</span>
+<span class="nc" id="L108">        }</span>
+    }
+
+    public boolean isEnabled() {
+<span class="nc" id="L112">        return enabled;</span>
+    }
+
+    public void setEnabled(boolean enabled) {
+<span class="fc" id="L116">        this.enabled = enabled;</span>
+<span class="fc" id="L117">    }</span>
+
+    public long getTickMs() {
+<span class="fc" id="L120">        return tickMs;</span>
+    }
+
+    public void setTickMs(long tickMs) {
+<span class="fc" id="L124">        this.tickMs = tickMs;</span>
+<span class="fc" id="L125">    }</span>
+
+    public Long getSeed() {
+<span class="fc" id="L128">        return seed;</span>
+    }
+
+    public void setSeed(Long seed) {
+<span class="fc" id="L132">        this.seed = seed;</span>
+<span class="fc" id="L133">    }</span>
+
+    public double getSpeedMultiplier() {
+<span class="fc" id="L136">        return speedMultiplier;</span>
+    }
+
+    public void setSpeedMultiplier(double speedMultiplier) {
+<span class="fc" id="L140">        this.speedMultiplier = speedMultiplier;</span>
+<span class="fc" id="L141">    }</span>
+
+    public long getSnapshotIntervalMs() {
+<span class="nc" id="L144">        return snapshotIntervalMs;</span>
+    }
+
+    public void setSnapshotIntervalMs(long snapshotIntervalMs) {
+<span class="fc" id="L148">        this.snapshotIntervalMs = snapshotIntervalMs;</span>
+<span class="fc" id="L149">    }</span>
+
+    public boolean isRespectMarketHours() {
+<span class="fc" id="L152">        return respectMarketHours;</span>
+    }
+
+    public void setRespectMarketHours(boolean respectMarketHours) {
+<span class="fc" id="L156">        this.respectMarketHours = respectMarketHours;</span>
+<span class="fc" id="L157">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

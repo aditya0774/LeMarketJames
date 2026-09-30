@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InstrumentMarketParamsEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.entity</a> &gt; <span class="el_source">InstrumentMarketParamsEntity.java</span></div><h1>InstrumentMarketParamsEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+
+/**
+ * Simulation settings for one instrument ({@code instrument_market_params}, migration 006).
+ *
+ * &lt;p&gt;Linked to {@code instruments} by a plain id rather than a JPA relationship so the market
+ * feature does not depend on the orders feature's {@code Instrument} entity.
+ */
+@Entity
+@Table(name = &quot;instrument_market_params&quot;)
+public class InstrumentMarketParamsEntity {
+
+    @Id
+    @Column(name = &quot;instrument_id&quot;)
+    private Integer instrumentId;
+
+    @Column(name = &quot;initial_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal initialPrice;
+
+    @Column(nullable = false, precision = 8, scale = 6)
+    private BigDecimal drift;
+
+    @Column(nullable = false, precision = 8, scale = 6)
+    private BigDecimal volatility;
+
+    @Column(name = &quot;market_correlation&quot;, nullable = false, precision = 5, scale = 4)
+    private BigDecimal marketCorrelation;
+
+    @Column(name = &quot;spread_bps&quot;, nullable = false, precision = 8, scale = 4)
+    private BigDecimal spreadBps;
+
+    @Column(name = &quot;shares_outstanding&quot;)
+    private Long sharesOutstanding;
+
+    @Column(name = &quot;avg_daily_volume&quot;, nullable = false)
+    private Long avgDailyVolume;
+
+    @Column(name = &quot;earnings_per_share&quot;, precision = 14, scale = 4)
+    private BigDecimal earningsPerShare;
+
+    @Column(name = &quot;dividend_per_share&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal dividendPerShare;
+
+<span class="nc" id="L51">    public InstrumentMarketParamsEntity() {</span>
+<span class="nc" id="L52">    }</span>
+
+    public Integer getInstrumentId() {
+<span class="nc" id="L55">        return instrumentId;</span>
+    }
+
+    public void setInstrumentId(Integer instrumentId) {
+<span class="nc" id="L59">        this.instrumentId = instrumentId;</span>
+<span class="nc" id="L60">    }</span>
+
+    public BigDecimal getInitialPrice() {
+<span class="nc" id="L63">        return initialPrice;</span>
+    }
+
+    public void setInitialPrice(BigDecimal initialPrice) {
+<span class="nc" id="L67">        this.initialPrice = initialPrice;</span>
+<span class="nc" id="L68">    }</span>
+
+    public BigDecimal getDrift() {
+<span class="nc" id="L71">        return drift;</span>
+    }
+
+    public void setDrift(BigDecimal drift) {
+<span class="nc" id="L75">        this.drift = drift;</span>
+<span class="nc" id="L76">    }</span>
+
+    public BigDecimal getVolatility() {
+<span class="nc" id="L79">        return volatility;</span>
+    }
+
+    public void setVolatility(BigDecimal volatility) {
+<span class="nc" id="L83">        this.volatility = volatility;</span>
+<span class="nc" id="L84">    }</span>
+
+    public BigDecimal getMarketCorrelation() {
+<span class="nc" id="L87">        return marketCorrelation;</span>
+    }
+
+    public void setMarketCorrelation(BigDecimal marketCorrelation) {
+<span class="nc" id="L91">        this.marketCorrelation = marketCorrelation;</span>
+<span class="nc" id="L92">    }</span>
+
+    public BigDecimal getSpreadBps() {
+<span class="nc" id="L95">        return spreadBps;</span>
+    }
+
+    public void setSpreadBps(BigDecimal spreadBps) {
+<span class="nc" id="L99">        this.spreadBps = spreadBps;</span>
+<span class="nc" id="L100">    }</span>
+
+    public Long getSharesOutstanding() {
+<span class="nc" id="L103">        return sharesOutstanding;</span>
+    }
+
+    public void setSharesOutstanding(Long sharesOutstanding) {
+<span class="nc" id="L107">        this.sharesOutstanding = sharesOutstanding;</span>
+<span class="nc" id="L108">    }</span>
+
+    public Long getAvgDailyVolume() {
+<span class="nc" id="L111">        return avgDailyVolume;</span>
+    }
+
+    public void setAvgDailyVolume(Long avgDailyVolume) {
+<span class="nc" id="L115">        this.avgDailyVolume = avgDailyVolume;</span>
+<span class="nc" id="L116">    }</span>
+
+    public BigDecimal getEarningsPerShare() {
+<span class="nc" id="L119">        return earningsPerShare;</span>
+    }
+
+    public void setEarningsPerShare(BigDecimal earningsPerShare) {
+<span class="nc" id="L123">        this.earningsPerShare = earningsPerShare;</span>
+<span class="nc" id="L124">    }</span>
+
+    public BigDecimal getDividendPerShare() {
+<span class="nc" id="L127">        return dividendPerShare;</span>
+    }
+
+    public void setDividendPerShare(BigDecimal dividendPerShare) {
+<span class="nc" id="L131">        this.dividendPerShare = dividendPerShare;</span>
+<span class="nc" id="L132">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

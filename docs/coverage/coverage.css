@@ -1,0 +1,22 @@
+:root { --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dde1e7; --accent: #2f6fdb; --track: #e8ebf0; --row: #f6f7f9; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171c; --fg: #e4e7ec; --muted: #9aa3b2; --line: #2c323c; --accent: #6ea0f5; --track: #2a3039; --row: #1b1f26; }
+}
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+h2 { margin: 36px 0 8px; font-size: 18px; }
+p.meta, p.note { color: var(--muted); margin: 0 0 8px; }
+a { color: var(--accent); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 600; background: var(--row); }
+code { font-size: 13px; word-break: break-all; }
+progress { width: 64px; height: 6px; margin-right: 8px; vertical-align: middle; border: 0; border-radius: 3px;
+  background: var(--track); appearance: none; -webkit-appearance: none; overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--track); }
+progress::-webkit-progress-value { background: var(--accent); }
+progress::-moz-progress-bar { background: var(--accent); }

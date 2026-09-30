@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.config</a> &gt; <span class="el_source">SecurityConfig.java</span></div><h1>SecurityConfig.java</h1><pre class="source lang-java linenums">package com.lemarketjames.config;
+
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import com.lemarketjames.common.security.JwtService;
+import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+/**
+ * Spring Security configuration for the auth service.
+ * Register and login are public; everything else (e.g. /api/auth/me) needs a valid JWT cookie.
+ */
+@Configuration
+@EnableWebSecurity
+<span class="fc" id="L27">public class SecurityConfig {</span>
+
+    @Value(&quot;${app.cors.allowed-origin}&quot;)
+    private String allowedOrigin;
+
+    /**
+     * Configures the security filter chain for HTTP requests.
+     *
+     * @param http the HttpSecurity to configure
+     * @param jwtService the JWT service for token validation
+     * @return the configured SecurityFilterChain
+     * @throws Exception if an error occurs during configuration
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+<span class="fc" id="L42">        http</span>
+<span class="fc" id="L43">            .csrf(AbstractHttpConfigurer::disable)</span>
+<span class="fc" id="L44">            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</span>
+<span class="fc" id="L45">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="fc" id="L46">            .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(</span>
+<span class="fc" id="L47">                    (request, response, authException) -&gt; response.sendError(401)))</span>
+<span class="fc" id="L48">            .authorizeHttpRequests(auth -&gt; auth</span>
+                // Preserve the original failure status during the container's error dispatch.
+<span class="fc" id="L50">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
+<span class="fc" id="L51">                .requestMatchers(&quot;/api/auth/register&quot;, &quot;/api/auth/login&quot;, &quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L52">                .anyRequest().authenticated())</span>
+<span class="fc" id="L53">            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);</span>
+
+<span class="fc" id="L55">        return http.build();</span>
+    }
+
+    /**
+     * CORS for direct calls to this service during local development. Browser traffic normally
+     * arrives through gateway-service, which applies its own CORS policy.
+     *
+     * @return a CorsConfigurationSource with the configured CORS settings
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+<span class="fc" id="L66">        CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L67">        configuration.setAllowedOrigins(List.of(allowedOrigin));</span>
+<span class="fc" id="L68">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L69">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
+<span class="fc" id="L70">        configuration.setAllowCredentials(true);</span>
+
+<span class="fc" id="L72">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc" id="L73">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L74">        return source;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

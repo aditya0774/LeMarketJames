@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderStatusChanged.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.events</a> &gt; <span class="el_source">OrderStatusChanged.java</span></div><h1>OrderStatusChanged.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.events;
+
+import com.lemarketjames.orders.entity.Order.OrderStatus;
+
+import java.time.Instant;
+
+/**
+ * Published inside core-service after every order status transition (contract C6). Creation isn't a
+ * transition: a new order is always SUBMITTED. Listen with {@code @EventListener}, or with
+ * {@code @TransactionalEventListener} to act only once the transition has committed.
+ *
+ * @param orderId    the order
+ * @param accountId  the order's account
+ * @param from       the status before the transition
+ * @param to         the status after it
+ * @param occurredAt when the transition happened (UTC)
+ */
+<span class="fc" id="L18">public record OrderStatusChanged(Integer orderId, Integer accountId, OrderStatus from, OrderStatus to,</span>
+                                 Instant occurredAt) {
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
