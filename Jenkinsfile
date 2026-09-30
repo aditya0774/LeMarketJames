@@ -71,8 +71,16 @@ pipeline {
                     env.CI_TOUCHES_FRONTEND = touchesFrontend.toString()
                     env.CI_TOUCHES_BACKEND = touchesBackend.toString()
                     env.CI_TOUCHES_DB_OR_CONTRACT = touchesDbOrContract.toString()
-                    env.CI_RUN_FRONTEND_PIPELINE = (touchesFrontend || touchesDbOrContract).toString()
-                    env.CI_RUN_BACKEND_PIPELINE = (touchesBackend || touchesDbOrContract).toString()
+                    // Main always runs both unit-test lanes so its coverage report, trend and
+                    // baseline always cover the whole codebase; PRs keep the change-scope gating.
+                    // Commits from the GitHub docs bots (Javadoc and coverage workflows) only add
+                    // generated files under docs/, so they don't force the lanes.
+                    def lastAuthor = sh(script: 'git log -1 --format=%an', returnStdout: true).trim()
+                    def onMain = env.CHANGE_ID == null && lastAuthor != 'github-actions[bot]' &&
+                        (env.BRANCH_NAME == 'main' || env.GIT_BRANCH in ['main', 'origin/main'])
+
+                    env.CI_RUN_FRONTEND_PIPELINE = (onMain || touchesFrontend || touchesDbOrContract).toString()
+                    env.CI_RUN_BACKEND_PIPELINE = (onMain || touchesBackend || touchesDbOrContract).toString()
                     env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
 
                     echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
@@ -86,7 +94,9 @@ pipeline {
             }
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
+                    // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
+                    // old folder is removed first so a stale report is never published.
+                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- --watch=false --coverage && npm run build'
                 }
             }
         }
@@ -116,8 +126,11 @@ pipeline {
             }
             steps {
                 // Build shared libraries once to avoid repeating -am work in parallel lanes.
+                // JaCoCo appends to jacoco.exec and the workspace is kept between builds, so old
+                // execution data is removed first; otherwise a deleted test would not lower coverage.
                 sh '''
                     set -eu
+                    rm -f libs/*/target/jacoco.exec services/*/target/jacoco.exec
                     mvn -B -pl libs/common,libs/market-client -am -DskipTests install
                 '''
             }
@@ -235,6 +248,42 @@ pipeline {
                 always {
                     junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
                 }
+            }
+        }
+
+        // Publishes coverage on the build page and enforces the baseline, using only the HTML
+        // Publisher plugin (no coverage plugin to install). Runs after the integration tests,
+        // whose JaCoCo data is merged into the core, auth and holdings reports. Only the sides
+        // that ran this build are read, so stale reports in the kept workspace are never
+        // published, and a PR that ran one side is gated on that side alone.
+        stage('Publish coverage') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' || env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                script {
+                    def sides = []
+                    if (env.CI_RUN_BACKEND_PIPELINE == 'true') { sides << 'backend' }
+                    if (env.CI_RUN_FRONTEND_PIPELINE == 'true') { sides << 'frontend' }
+                    env.CI_COVERAGE_SIDES = sides.join(',')
+                }
+                // Same site the GitHub coverage workflow publishes to Pages, minus the history.
+                sh '''
+                    set -eu
+                    rm -rf target/coverage-site
+                    node scripts/coverage/build-coverage-site.mjs target/coverage-site --sides "$CI_COVERAGE_SIDES" --no-history
+                '''
+                // Published before the gate runs, so a failing build still shows its coverage.
+                publishHTML(target: [
+                    reportName: 'Coverage',
+                    reportDir: 'target/coverage-site',
+                    reportFiles: 'index.html',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
+                ])
+                // Fails the build when coverage drops below scripts/coverage/coverage-baseline.json.
+                sh 'node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json'
             }
         }
 
