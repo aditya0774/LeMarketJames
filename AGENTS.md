@@ -48,7 +48,7 @@ LeMarketJames/
 │   └── e2e/                 # Playwright end-to-end tests, run against a live stack
 ├── contracts/               # Shared contracts C1–C7 (read before coding)
 ├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)
-├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1
+├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1, stop-all.ps1
 ├── docker-compose.yml
 └── Jenkinsfile
 ```
@@ -68,7 +68,7 @@ Run Maven commands from the repo root.
 | Frontend build | `cd apps/frontend && ng build` |
 | End-to-end tests (stack must be running on :4200) | `cd apps/e2e && npm install && npm test` |
 | Full stack (Docker, Linux/Jenkins) | `docker compose up -d --build` |
-| Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1` |
+| Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1`; stop with `.\scripts\windows\stop-all.ps1` |
 
 ## Adding a New Microservice
 
