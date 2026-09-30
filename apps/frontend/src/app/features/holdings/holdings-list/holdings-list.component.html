@@ -53,9 +53,7 @@
   <ng-container *ngIf="!isLoading() && !error() && (holdings$ | async)?.holdings?.length! > 0">
     <mat-card class="holdings-card">
       <mat-card-header>
-        <mat-card-title>
-          My Holdings
-        </mat-card-title>
+        <h2>My Holdings</h2>
       </mat-card-header>
       
       <mat-card-content>
