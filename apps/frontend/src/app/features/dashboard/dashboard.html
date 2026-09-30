@@ -17,7 +17,7 @@
   </div>
 }
 
-<app-stat-strip [totals]="totals()" [openOrders]="openOrders()" [buyingPower]="balanceData()?.buyingPower ?? null" />
+<app-stat-strip [totals]="totals()" [openOrders]="openOrders()" />
 
 <app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
 
