@@ -6,6 +6,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
+import { provideRouter } from '@angular/router';
 
 import { HoldingsListComponent } from './holdings-list.component';
 import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
@@ -78,7 +79,8 @@ describe('HoldingsListComponent', () => {
       ],
       providers: [
         { provide: HoldingsService, useValue: holdingsServiceMock },
-        { provide: Auth, useValue: authServiceMock }
+        { provide: Auth, useValue: authServiceMock },
+        provideRouter([])
       ]
     }).compileComponents();
 
