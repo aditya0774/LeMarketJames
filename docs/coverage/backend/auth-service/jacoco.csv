@@ -1,0 +1,9 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+LeMarketJames Auth Service,com.lemarketjames.auth,AuthService.AuthResponse,0,15,0,0,0,6,0,3,0,3
+LeMarketJames Auth Service,com.lemarketjames.auth,AuthController,21,134,1,1,4,31,2,8,1,8
+LeMarketJames Auth Service,com.lemarketjames.auth,AuthService.LoginResult,0,27,0,0,0,10,0,5,0,5
+LeMarketJames Auth Service,com.lemarketjames.auth,AuthService,22,566,7,35,3,130,8,31,1,17
+LeMarketJames Auth Service,com.lemarketjames.auth.dto,LoginRequest,0,26,0,0,0,12,0,6,0,6
+LeMarketJames Auth Service,com.lemarketjames.auth.dto,RegisterRequest,7,123,0,0,3,53,2,32,2,32
+LeMarketJames Auth Service,com.lemarketjames,AuthServiceApplication,5,3,0,0,2,1,1,1,1,1
+LeMarketJames Auth Service,com.lemarketjames.config,SecurityConfig,0,113,0,0,0,21,0,8,0,8

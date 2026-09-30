@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SessionDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.sessions.dto</a> &gt; <span class="el_source">SessionDto.java</span></div><h1>SessionDto.java</h1><pre class="source lang-java linenums">package com.lemarketjames.sessions.dto;
+
+import java.time.LocalDateTime;
+
+public class SessionDto {
+  private Integer sessionId;
+  private Integer accountId;
+  private LocalDateTime expiresAt;
+  private Boolean isActive;
+
+<span class="fc" id="L11">  public SessionDto(Integer sessionId, Integer accountId, LocalDateTime expiresAt, Boolean isActive) {</span>
+<span class="fc" id="L12">    this.sessionId = sessionId;</span>
+<span class="fc" id="L13">    this.accountId = accountId;</span>
+<span class="fc" id="L14">    this.expiresAt = expiresAt;</span>
+<span class="fc" id="L15">    this.isActive = isActive;</span>
+<span class="fc" id="L16">  }</span>
+
+  public Integer getSessionId() {
+<span class="fc" id="L19">    return sessionId;</span>
+  }
+
+  public Integer getAccountId() {
+<span class="fc" id="L23">    return accountId;</span>
+  }
+
+  public LocalDateTime getExpiresAt() {
+<span class="fc" id="L27">    return expiresAt;</span>
+  }
+
+  public Boolean getIsActive() {
+<span class="fc" id="L31">    return isActive;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketHours.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.model</a> &gt; <span class="el_source">MarketHours.java</span></div><h1>MarketHours.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.model;
+
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Set;
+
+/**
+ * Trading hours for a market, used to decide when an instrument's price may move and how long
+ * a &quot;trading year&quot; is for the GBM time step.
+ *
+ * &lt;p&gt;Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; market-service
+ * configures them as {@code sim.holidays}). Half days are not modelled.
+ *
+ * @param zone               time zone the exchange operates in
+ * @param open               local opening time
+ * @param close              local closing time
+ * @param weekdaysOnly       whether the market is closed on Saturday and Sunday
+ * @param tradingDaysPerYear trading days per year, used to annualise volatility
+ */
+<span class="fc" id="L25">public record MarketHours(ZoneId zone, LocalTime open, LocalTime close, boolean weekdaysOnly, int tradingDaysPerYear) {</span>
+
+<span class="fc" id="L27">    private static final ZoneId NEW_YORK = ZoneId.of(&quot;America/New_York&quot;);</span>
+
+    /** NYSE / NASDAQ regular session. */
+<span class="fc" id="L30">    public static final MarketHours US_EQUITY =</span>
+<span class="fc" id="L31">            new MarketHours(NEW_YORK, LocalTime.of(9, 30), LocalTime.of(16, 0), true, 252);</span>
+
+    /** London Stock Exchange regular session. */
+<span class="fc" id="L34">    public static final MarketHours UK_EQUITY =</span>
+<span class="fc" id="L35">            new MarketHours(ZoneId.of(&quot;Europe/London&quot;), LocalTime.of(8, 0), LocalTime.of(16, 30), true, 252);</span>
+
+    /** National Stock Exchange of India regular session. */
+<span class="fc" id="L38">    public static final MarketHours INDIA_EQUITY =</span>
+<span class="fc" id="L39">            new MarketHours(ZoneId.of(&quot;Asia/Kolkata&quot;), LocalTime.of(9, 15), LocalTime.of(15, 30), true, 250);</span>
+
+    /** Foreign exchange, approximated as 24 hours on weekdays (New York time). */
+<span class="fc" id="L42">    public static final MarketHours FOREX =</span>
+            new MarketHours(NEW_YORK, LocalTime.MIN, LocalTime.MAX, true, 260);
+
+    /** Crypto trades continuously, every day of the year. */
+<span class="fc" id="L46">    public static final MarketHours CRYPTO =</span>
+            new MarketHours(ZoneOffset.UTC, LocalTime.MIN, LocalTime.MAX, false, 365);
+
+    /**
+     * Picks the trading hours for an instrument.
+     *
+     * @param assetClass value of {@code instruments.asset_class} (EQUITY, FOREX, CRYPTO)
+     * @param location   value of {@code instruments.location} (US, UK, INDIA); may be null
+     * @return matching hours, defaulting to US equity hours for unknown equity locations
+     */
+    public static MarketHours forInstrument(String assetClass, String location) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (&quot;CRYPTO&quot;.equalsIgnoreCase(assetClass)) {</span>
+<span class="fc" id="L58">            return CRYPTO;</span>
+        }
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (&quot;FOREX&quot;.equalsIgnoreCase(assetClass)) {</span>
+<span class="fc" id="L61">            return FOREX;</span>
+        }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (&quot;UK&quot;.equalsIgnoreCase(location)) {</span>
+<span class="fc" id="L64">            return UK_EQUITY;</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (&quot;INDIA&quot;.equalsIgnoreCase(location)) {</span>
+<span class="fc" id="L67">            return INDIA_EQUITY;</span>
+        }
+<span class="fc" id="L69">        return US_EQUITY;</span>
+    }
+
+    /** @return whether the market is open at the given instant, ignoring holidays */
+    public boolean isOpen(Instant instant) {
+<span class="fc" id="L74">        return isOpen(instant, Set.of());</span>
+    }
+
+    /**
+     * @param holidays exchange-local dates the market is closed all day
+     * @return whether the market is open at the given instant
+     */
+    public boolean isOpen(Instant instant, Set&lt;LocalDate&gt; holidays) {
+<span class="fc" id="L82">        ZonedDateTime local = instant.atZone(zone);</span>
+<span class="fc" id="L83">        DayOfWeek day = local.getDayOfWeek();</span>
+<span class="fc bfc" id="L84" title="All 6 branches covered.">        if (weekdaysOnly &amp;&amp; (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)) {</span>
+<span class="fc" id="L85">            return false;</span>
+        }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (holidays.contains(local.toLocalDate())) {</span>
+<span class="fc" id="L88">            return false;</span>
+        }
+<span class="fc" id="L90">        LocalTime time = local.toLocalTime();</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">        return !time.isBefore(open) &amp;&amp; time.isBefore(close);</span>
+    }
+
+    /** @return the exchange-local calendar date, used to detect when a new trading day starts */
+    public LocalDate tradingDate(Instant instant) {
+<span class="fc" id="L96">        return instant.atZone(zone).toLocalDate();</span>
+    }
+
+    /** @return length of one trading session in seconds */
+    public double sessionSeconds() {
+        // LocalTime.MAX is 23:59:59.999..., so treat &quot;open all day&quot; as a full 24 hours.
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">        if (open.equals(LocalTime.MIN) &amp;&amp; close.equals(LocalTime.MAX)) {</span>
+<span class="fc" id="L103">            return 24 * 3600;</span>
+        }
+<span class="fc" id="L105">        return close.toSecondOfDay() - open.toSecondOfDay();</span>
+    }
+
+    /**
+     * Seconds of trading in one year. Volatility and drift are quoted per year, so a tick of
+     * {@code n} seconds is {@code n / tradingSecondsPerYear()} years of GBM time.
+     */
+    public double tradingSecondsPerYear() {
+<span class="fc" id="L113">        return tradingDaysPerYear * sessionSeconds();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

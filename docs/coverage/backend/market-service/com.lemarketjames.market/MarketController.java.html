@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market</a> &gt; <span class="el_source">MarketController.java</span></div><h1>MarketController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market;
+
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.FeedMode;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.market.service.MarketFeedControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+/**
+ * The first HTTP surface for the market feature: server-to-server callers (core-service today)
+ * reach {@link MarketDataService} over the network instead of as an in-process bean. Returns
+ * {@link QuoteSnapshot} directly since callers share this exact record via libs/market-client.
+ *
+ * &lt;p&gt;While the feed is {@link FeedMode#UNAVAILABLE} (contract C4), every endpoint answers 503, which
+ * callers' MarketDataClient already treats as &quot;no quote&quot;.
+ */
+@RestController
+@RequestMapping(&quot;/api/market&quot;)
+public class MarketController {
+
+    private final MarketDataService marketData;
+    private final MarketFeedControl feed;
+
+<span class="fc" id="L33">    public MarketController(MarketDataService marketData, MarketFeedControl feed) {</span>
+<span class="fc" id="L34">        this.marketData = marketData;</span>
+<span class="fc" id="L35">        this.feed = feed;</span>
+<span class="fc" id="L36">    }</span>
+
+    @GetMapping(&quot;/quotes/{ticker}&quot;)
+    public ResponseEntity&lt;QuoteSnapshot&gt; getByTicker(@PathVariable String ticker) {
+<span class="fc" id="L40">        return quote(() -&gt; marketData.findByTicker(ticker));</span>
+    }
+
+    @GetMapping(&quot;/quotes/by-instrument/{instrumentId}&quot;)
+    public ResponseEntity&lt;QuoteSnapshot&gt; getByInstrumentId(@PathVariable int instrumentId) {
+<span class="pc" id="L45">        return quote(() -&gt; marketData.findByInstrumentId(instrumentId));</span>
+    }
+
+    @GetMapping(&quot;/quotes&quot;)
+    public ResponseEntity&lt;Collection&lt;QuoteSnapshot&gt;&gt; getAll() {
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (feed.feedMode() == FeedMode.UNAVAILABLE) {</span>
+<span class="fc" id="L51">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();</span>
+        }
+<span class="nc" id="L53">        return ResponseEntity.ok(marketData.findAll());</span>
+    }
+
+    private ResponseEntity&lt;QuoteSnapshot&gt; quote(Supplier&lt;Optional&lt;QuoteSnapshot&gt;&gt; lookup) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (feed.feedMode() == FeedMode.UNAVAILABLE) {</span>
+<span class="fc" id="L58">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();</span>
+        }
+<span class="fc" id="L60">        return lookup.get()</span>
+<span class="fc" id="L61">                .map(ResponseEntity::ok)</span>
+<span class="pc" id="L62">                .orElseGet(() -&gt; ResponseEntity.notFound().build());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.error</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.error;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Translates exceptions every service can throw into the same structured error responses, so
+ * clients see one error format no matter which microservice answered. Feature-specific
+ * exceptions are mapped by each service's own advice (e.g. core-service's CoreExceptionHandler).
+ */
+@RestControllerAdvice
+<span class="nc" id="L20">public class GlobalExceptionHandler {</span>
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidation(ValidationException ex) {
+<span class="nc" id="L24">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L25">                .body(Map.of(&quot;errors&quot;, ex.getFieldErrors()));</span>
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+<span class="nc" id="L30">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
+
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="nc" id="L33">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="nc" id="L34">        }</span>
+
+<span class="nc" id="L36">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L37">                .body(Map.of(&quot;errors&quot;, errors));</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleIllegalArgument(IllegalArgumentException ex) {
+<span class="nc" id="L42">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L43">                .body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAccessDenied(AccessDeniedException ex) {
+<span class="nc" id="L48">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
+<span class="nc" id="L49">                .body(Map.of(</span>
+<span class="nc" id="L50">                    &quot;success&quot;, false,</span>
+                    &quot;error&quot;, &quot;Access denied&quot;,
+                    &quot;code&quot;, &quot;ACCOUNT_ACCESS_DENIED&quot;
+                ));
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

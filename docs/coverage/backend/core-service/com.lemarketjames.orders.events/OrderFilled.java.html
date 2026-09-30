@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderFilled.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.events</a> &gt; <span class="el_source">OrderFilled.java</span></div><h1>OrderFilled.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.events;
+
+import com.lemarketjames.orders.entity.Order.OrderType;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * Published inside core-service when an order is filled and settled (contract C6), in addition to
+ * its {@link OrderStatusChanged}. Carries what reporting and portfolio consumers need about the fill.
+ *
+ * @param orderId      the order
+ * @param accountId    the order's account
+ * @param instrumentId the stock traded
+ * @param side         BUY or SELL
+ * @param quantity     shares filled
+ * @param price        price per share
+ * @param filledAt     when the fill happened (UTC)
+ */
+<span class="fc" id="L20">public record OrderFilled(Integer orderId, Integer accountId, Integer instrumentId, OrderType side,</span>
+                          BigDecimal quantity, BigDecimal price, Instant filledAt) {
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClientEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.domain</a> &gt; <span class="el_source">ClientEntity.java</span></div><h1>ClientEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.domain;
+
+import com.lemarketjames.common.security.Role;
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Set;
+
+/** Maps to the `clients` table (database/schema/001_core_schema.sql): a registered user's identity and profile. */
+@Entity
+@Table(name = &quot;clients&quot;)
+<span class="nc" id="L14">public class ClientEntity implements LoginAccount {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;client_id&quot;)
+    private Integer clientId;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = &quot;full_name&quot;, nullable = false)
+    private String fullName;
+
+    @Column(name = &quot;date_of_birth&quot;, nullable = false)
+    private LocalDate dateOfBirth;
+
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(name = &quot;registered_date&quot;, nullable = false)
+    private LocalDateTime registeredDate;
+
+    @Column(name = &quot;last_login&quot;)
+    private LocalDateTime lastLogin;
+
+    /** Bcrypt hash; SSN is never used for lookups or validation. */
+    @Column(nullable = false, length = 60)
+    private String ssn;
+
+    @Column(name = &quot;employment_status&quot;, nullable = false)
+    private String employmentStatus;
+
+    @Column(name = &quot;employer_name&quot;)
+    private String employerName;
+
+    private String occupation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;account_status&quot;, nullable = false)
+    private AccountStatus accountStatus;
+
+    @Column(name = &quot;investment_experience&quot;, nullable = false)
+    private String investmentExperience;
+
+    // Initialised here because Hibernate inserts every mapped column, bypassing the DB defaults.
+<span class="nc" id="L65">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false, length = 20)
+    private ClientSegment segment = ClientSegment.RETAIL;
+
+    @Column(name = &quot;failed_login_attempts&quot;, nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = &quot;locked_until&quot;)
+    private Instant lockedUntil;
+
+    @Override
+    public Set&lt;Role&gt; roles() {
+<span class="nc" id="L77">        return Set.of(Role.CLIENT);</span>
+    }
+
+    @Override
+    public boolean canLogIn() {
+<span class="nc bnc" id="L82" title="All 4 branches missed.">        return accountStatus == null || accountStatus.canLogIn();</span>
+    }
+
+    public ClientSegment getSegment() {
+<span class="nc" id="L86">        return segment;</span>
+    }
+
+    public void setSegment(ClientSegment segment) {
+<span class="nc" id="L90">        this.segment = segment;</span>
+<span class="nc" id="L91">    }</span>
+
+    @Override
+    public int getFailedLoginAttempts() {
+<span class="nc" id="L95">        return failedLoginAttempts;</span>
+    }
+
+    @Override
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+<span class="nc" id="L100">        this.failedLoginAttempts = failedLoginAttempts;</span>
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public Instant getLockedUntil() {
+<span class="nc" id="L105">        return lockedUntil;</span>
+    }
+
+    @Override
+    public void setLockedUntil(Instant lockedUntil) {
+<span class="nc" id="L110">        this.lockedUntil = lockedUntil;</span>
+<span class="nc" id="L111">    }</span>
+
+    public Integer getClientId() {
+<span class="nc" id="L114">        return clientId;</span>
+    }
+
+    public String getUsername() {
+<span class="nc" id="L118">        return username;</span>
+    }
+
+    public void setUsername(String username) {
+<span class="nc" id="L122">        this.username = username;</span>
+<span class="nc" id="L123">    }</span>
+
+    public String getPassword() {
+<span class="nc" id="L126">        return password;</span>
+    }
+
+    public void setPassword(String password) {
+<span class="nc" id="L130">        this.password = password;</span>
+<span class="nc" id="L131">    }</span>
+
+    public String getEmail() {
+<span class="nc" id="L134">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="nc" id="L138">        this.email = email;</span>
+<span class="nc" id="L139">    }</span>
+
+    public String getFullName() {
+<span class="nc" id="L142">        return fullName;</span>
+    }
+
+    public void setFullName(String fullName) {
+<span class="nc" id="L146">        this.fullName = fullName;</span>
+<span class="nc" id="L147">    }</span>
+
+    public LocalDate getDateOfBirth() {
+<span class="nc" id="L150">        return dateOfBirth;</span>
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+<span class="nc" id="L154">        this.dateOfBirth = dateOfBirth;</span>
+<span class="nc" id="L155">    }</span>
+
+    public String getPhone() {
+<span class="nc" id="L158">        return phone;</span>
+    }
+
+    public void setPhone(String phone) {
+<span class="nc" id="L162">        this.phone = phone;</span>
+<span class="nc" id="L163">    }</span>
+
+    public LocalDateTime getRegisteredDate() {
+<span class="nc" id="L166">        return registeredDate;</span>
+    }
+
+    public void setRegisteredDate(LocalDateTime registeredDate) {
+<span class="nc" id="L170">        this.registeredDate = registeredDate;</span>
+<span class="nc" id="L171">    }</span>
+
+    public LocalDateTime getLastLogin() {
+<span class="nc" id="L174">        return lastLogin;</span>
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+<span class="nc" id="L178">        this.lastLogin = lastLogin;</span>
+<span class="nc" id="L179">    }</span>
+
+    public String getSsn() {
+<span class="nc" id="L182">        return ssn;</span>
+    }
+
+    public void setSsn(String ssn) {
+<span class="nc" id="L186">        this.ssn = ssn;</span>
+<span class="nc" id="L187">    }</span>
+
+    public String getEmploymentStatus() {
+<span class="nc" id="L190">        return employmentStatus;</span>
+    }
+
+    public void setEmploymentStatus(String employmentStatus) {
+<span class="nc" id="L194">        this.employmentStatus = employmentStatus;</span>
+<span class="nc" id="L195">    }</span>
+
+    public String getEmployerName() {
+<span class="nc" id="L198">        return employerName;</span>
+    }
+
+    public void setEmployerName(String employerName) {
+<span class="nc" id="L202">        this.employerName = employerName;</span>
+<span class="nc" id="L203">    }</span>
+
+    public String getOccupation() {
+<span class="nc" id="L206">        return occupation;</span>
+    }
+
+    public void setOccupation(String occupation) {
+<span class="nc" id="L210">        this.occupation = occupation;</span>
+<span class="nc" id="L211">    }</span>
+
+    public AccountStatus getAccountStatus() {
+<span class="nc" id="L214">        return accountStatus;</span>
+    }
+
+    public void setAccountStatus(AccountStatus accountStatus) {
+<span class="nc" id="L218">        this.accountStatus = accountStatus;</span>
+<span class="nc" id="L219">    }</span>
+
+    public String getInvestmentExperience() {
+<span class="nc" id="L222">        return investmentExperience;</span>
+    }
+
+    public void setInvestmentExperience(String investmentExperience) {
+<span class="nc" id="L226">        this.investmentExperience = investmentExperience;</span>
+<span class="nc" id="L227">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

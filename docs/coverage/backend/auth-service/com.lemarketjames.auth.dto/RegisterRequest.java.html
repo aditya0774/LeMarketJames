@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegisterRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.auth.dto</a> &gt; <span class="el_source">RegisterRequest.java</span></div><h1>RegisterRequest.java</h1><pre class="source lang-java linenums">package com.lemarketjames.auth.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/**
+ * Data transfer object for user registration requests.
+ * Contains comprehensive user information needed for account creation.
+ */
+public class RegisterRequest {
+    private String username;
+    private String password;
+    private String email;
+    private String fullName;
+    private String streetAddress;
+    private String apartment;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String country;
+    private String ssn;
+    private BigDecimal initialDeposit;
+    private String investmentExperience;
+    private String employmentStatus;
+    private LocalDate dateOfBirth;
+    private String phoneNumber;
+
+    /**
+     * Default constructor for deserialization.
+     */
+<span class="fc" id="L31">    public RegisterRequest() {</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Constructs a RegisterRequest with basic user information.
+     *
+     * @param username the desired username
+     * @param password the user's password
+     * @param email the user's email address
+     * @param fullName the user's full name
+     */
+<span class="fc" id="L42">    public RegisterRequest(String username, String password, String email, String fullName) {</span>
+<span class="fc" id="L43">        this.username = username;</span>
+<span class="fc" id="L44">        this.password = password;</span>
+<span class="fc" id="L45">        this.email = email;</span>
+<span class="fc" id="L46">        this.fullName = fullName;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Gets the username.
+     *
+     * @return the username
+     */
+    public String getUsername() {
+<span class="fc" id="L55">        return username;</span>
+    }
+
+    /**
+     * Sets the username.
+     *
+     * @param username the username to set
+     */
+    public void setUsername(String username) {
+<span class="fc" id="L64">        this.username = username;</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     * Gets the password.
+     *
+     * @return the password
+     */
+    public String getPassword() {
+<span class="fc" id="L73">        return password;</span>
+    }
+
+    /**
+     * Sets the password.
+     *
+     * @param password the password to set
+     */
+    public void setPassword(String password) {
+<span class="fc" id="L82">        this.password = password;</span>
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * Gets the email address.
+     *
+     * @return the email
+     */
+    public String getEmail() {
+<span class="fc" id="L91">        return email;</span>
+    }
+
+    /**
+     * Sets the email address.
+     *
+     * @param email the email to set
+     */
+    public void setEmail(String email) {
+<span class="fc" id="L100">        this.email = email;</span>
+<span class="fc" id="L101">    }</span>
+
+    /**
+     * Gets the full name.
+     *
+     * @return the full name
+     */
+    public String getFullName() {
+<span class="fc" id="L109">        return fullName;</span>
+    }
+
+    /**
+     * Sets the full name.
+     *
+     * @param fullName the full name to set
+     */
+    public void setFullName(String fullName) {
+<span class="fc" id="L118">        this.fullName = fullName;</span>
+<span class="fc" id="L119">    }</span>
+
+    /**
+     * Gets the street address.
+     *
+     * @return the street address
+     */
+    public String getStreetAddress() {
+<span class="fc" id="L127">        return streetAddress;</span>
+    }
+
+    /**
+     * Sets the street address.
+     *
+     * @param streetAddress the street address to set
+     */
+    public void setStreetAddress(String streetAddress) {
+<span class="fc" id="L136">        this.streetAddress = streetAddress;</span>
+<span class="fc" id="L137">    }</span>
+
+    /**
+     * Gets the apartment number.
+     *
+     * @return the apartment
+     */
+    public String getApartment() {
+<span class="nc" id="L145">        return apartment;</span>
+    }
+
+    /**
+     * Sets the apartment number.
+     *
+     * @param apartment the apartment to set
+     */
+    public void setApartment(String apartment) {
+<span class="nc" id="L154">        this.apartment = apartment;</span>
+<span class="nc" id="L155">    }</span>
+
+    /**
+     * Gets the city.
+     *
+     * @return the city
+     */
+    public String getCity() {
+<span class="fc" id="L163">        return city;</span>
+    }
+
+    /**
+     * Sets the city.
+     *
+     * @param city the city to set
+     */
+    public void setCity(String city) {
+<span class="fc" id="L172">        this.city = city;</span>
+<span class="fc" id="L173">    }</span>
+
+    /**
+     * Gets the state.
+     *
+     * @return the state
+     */
+    public String getState() {
+<span class="fc" id="L181">        return state;</span>
+    }
+
+    /**
+     * Sets the state.
+     *
+     * @param state the state to set
+     */
+    public void setState(String state) {
+<span class="fc" id="L190">        this.state = state;</span>
+<span class="fc" id="L191">    }</span>
+
+    /**
+     * Gets the ZIP code.
+     *
+     * @return the ZIP code
+     */
+    public String getZipCode() {
+<span class="fc" id="L199">        return zipCode;</span>
+    }
+
+    /**
+     * Sets the ZIP code.
+     *
+     * @param zipCode the ZIP code to set
+     */
+    public void setZipCode(String zipCode) {
+<span class="fc" id="L208">        this.zipCode = zipCode;</span>
+<span class="fc" id="L209">    }</span>
+
+    /**
+     * Gets the country.
+     *
+     * @return the country
+     */
+    public String getCountry() {
+<span class="fc" id="L217">        return country;</span>
+    }
+
+    /**
+     * Sets the country.
+     *
+     * @param country the country to set
+     */
+    public void setCountry(String country) {
+<span class="fc" id="L226">        this.country = country;</span>
+<span class="fc" id="L227">    }</span>
+
+    /**
+     * Gets the social security number.
+     *
+     * @return the SSN
+     */
+    public String getSsn() {
+<span class="fc" id="L235">        return ssn;</span>
+    }
+
+    /**
+     * Sets the social security number.
+     *
+     * @param ssn the SSN to set
+     */
+    public void setSsn(String ssn) {
+<span class="fc" id="L244">        this.ssn = ssn;</span>
+<span class="fc" id="L245">    }</span>
+
+    /**
+     * Gets the initial deposit amount.
+     *
+     * @return the initial deposit
+     */
+    public BigDecimal getInitialDeposit() {
+<span class="fc" id="L253">        return initialDeposit;</span>
+    }
+
+    /**
+     * Sets the initial deposit amount.
+     *
+     * @param initialDeposit the initial deposit to set
+     */
+    public void setInitialDeposit(BigDecimal initialDeposit) {
+<span class="fc" id="L262">        this.initialDeposit = initialDeposit;</span>
+<span class="fc" id="L263">    }</span>
+
+    /**
+     * Gets the investment experience level.
+     *
+     * @return the investment experience
+     */
+    public String getInvestmentExperience() {
+<span class="fc" id="L271">        return investmentExperience;</span>
+    }
+
+    /**
+     * Sets the investment experience level.
+     *
+     * @param investmentExperience the investment experience to set
+     */
+    public void setInvestmentExperience(String investmentExperience) {
+<span class="fc" id="L280">        this.investmentExperience = investmentExperience;</span>
+<span class="fc" id="L281">    }</span>
+
+    public String getEmploymentStatus() {
+<span class="fc" id="L284">        return employmentStatus;</span>
+    }
+
+    public void setEmploymentStatus(String employmentStatus) {
+<span class="fc" id="L288">        this.employmentStatus = employmentStatus;</span>
+<span class="fc" id="L289">    }</span>
+
+    public LocalDate getDateOfBirth() {
+<span class="fc" id="L292">        return dateOfBirth;</span>
+    }
+
+    /**
+     * Sets the date of birth.
+     *
+     * @param dateOfBirth the date of birth to set
+     */
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+<span class="fc" id="L301">        this.dateOfBirth = dateOfBirth;</span>
+<span class="fc" id="L302">    }</span>
+
+    /**
+     * Gets the phone number.
+     *
+     * @return the phone number
+     */
+    public String getPhoneNumber() {
+<span class="fc" id="L310">        return phoneNumber;</span>
+    }
+
+    /**
+     * Sets the phone number.
+     *
+     * @param phoneNumber the phone number to set
+     */
+    public void setPhoneNumber(String phoneNumber) {
+<span class="fc" id="L319">        this.phoneNumber = phoneNumber;</span>
+<span class="fc" id="L320">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

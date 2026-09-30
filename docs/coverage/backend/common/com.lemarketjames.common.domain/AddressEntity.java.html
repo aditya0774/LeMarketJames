@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AddressEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.domain</a> &gt; <span class="el_source">AddressEntity.java</span></div><h1>AddressEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.domain;
+
+import jakarta.persistence.*;
+
+/** Maps to the `addresses` table; AuthService writes one RESIDENTIAL row per client at registration. */
+@Entity
+@Table(name = &quot;addresses&quot;)
+<span class="nc" id="L8">public class AddressEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;address_id&quot;)
+    private Integer addressId;
+
+    @Column(name = &quot;client_id&quot;, nullable = false)
+    private Integer clientId;
+
+    @Column(name = &quot;address_type&quot;, nullable = false, length = 20)
+    private String addressType;
+
+    @Column(name = &quot;street_address&quot;, nullable = false)
+    private String streetAddress;
+
+    @Column(nullable = false)
+    private String city;
+
+    @Column(nullable = false)
+    private String state;
+
+    @Column(name = &quot;postal_code&quot;, nullable = false)
+    private String postalCode;
+
+    @Column(nullable = false, length = 2)
+    private String country;
+
+    public Integer getAddressId() {
+<span class="nc" id="L37">        return addressId;</span>
+    }
+
+    public Integer getClientId() {
+<span class="nc" id="L41">        return clientId;</span>
+    }
+
+    public void setClientId(Integer clientId) {
+<span class="nc" id="L45">        this.clientId = clientId;</span>
+<span class="nc" id="L46">    }</span>
+
+    public String getAddressType() {
+<span class="nc" id="L49">        return addressType;</span>
+    }
+
+    public void setAddressType(String addressType) {
+<span class="nc" id="L53">        this.addressType = addressType;</span>
+<span class="nc" id="L54">    }</span>
+
+    public String getStreetAddress() {
+<span class="nc" id="L57">        return streetAddress;</span>
+    }
+
+    public void setStreetAddress(String streetAddress) {
+<span class="nc" id="L61">        this.streetAddress = streetAddress;</span>
+<span class="nc" id="L62">    }</span>
+
+    public String getCity() {
+<span class="nc" id="L65">        return city;</span>
+    }
+
+    public void setCity(String city) {
+<span class="nc" id="L69">        this.city = city;</span>
+<span class="nc" id="L70">    }</span>
+
+    public String getState() {
+<span class="nc" id="L73">        return state;</span>
+    }
+
+    public void setState(String state) {
+<span class="nc" id="L77">        this.state = state;</span>
+<span class="nc" id="L78">    }</span>
+
+    public String getPostalCode() {
+<span class="nc" id="L81">        return postalCode;</span>
+    }
+
+    public void setPostalCode(String postalCode) {
+<span class="nc" id="L85">        this.postalCode = postalCode;</span>
+<span class="nc" id="L86">    }</span>
+
+    public String getCountry() {
+<span class="nc" id="L89">        return country;</span>
+    }
+
+    public void setCountry(String country) {
+<span class="nc" id="L93">        this.country = country;</span>
+<span class="nc" id="L94">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

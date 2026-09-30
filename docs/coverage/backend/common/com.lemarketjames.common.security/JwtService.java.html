@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.security</a> &gt; <span class="el_source">JwtService.java</span></div><h1>JwtService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.security;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Service class for JWT token generation and validation.
+ * Handles creating tokens with user information and verifying token validity.
+ */
+@Service
+public class JwtService {
+
+    /** The claim holding the token holder's {@link Role} names. */
+    public static final String ROLES_CLAIM = &quot;roles&quot;;
+
+    private final SecretKey signingKey;
+    private final long expirationMs;
+
+    /**
+     * Constructs a JwtService with the provided secret key and expiration time.
+     *
+     * @param secret the secret key string for signing tokens
+     * @param expirationMs the token expiration time in milliseconds
+     */
+    public JwtService(@Value(&quot;${jwt.secret}&quot;) String secret,
+<span class="fc" id="L38">                       @Value(&quot;${jwt.expiration-ms}&quot;) long expirationMs) {</span>
+<span class="fc" id="L39">        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L40">        this.expirationMs = expirationMs;</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Generates a JWT token for a client (the {@link Role#CLIENT} role).
+     *
+     * @param username the username to include in the token subject
+     * @return a signed JWT token string
+     */
+    public String generateToken(String username) {
+<span class="fc" id="L50">        return generateToken(username, Set.of(Role.CLIENT));</span>
+    }
+
+    /**
+     * Generates a JWT token carrying the holder's roles, so every service can authorize the
+     * request from the token alone (contract C7).
+     * The token is signed with the secret key and includes an expiration time.
+     *
+     * @param username the username to include in the token subject
+     * @param roles    the holder's roles, stored in the {@value #ROLES_CLAIM} claim
+     * @return a signed JWT token string
+     */
+    public String generateToken(String username, Set&lt;Role&gt; roles) {
+<span class="fc" id="L63">        Date now = new Date();</span>
+<span class="fc" id="L64">        Date expiry = new Date(now.getTime() + expirationMs);</span>
+
+<span class="fc" id="L66">        return Jwts.builder()</span>
+<span class="fc" id="L67">                .subject(username)</span>
+<span class="fc" id="L68">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
+<span class="fc" id="L69">                .issuedAt(now)</span>
+<span class="fc" id="L70">                .expiration(expiry)</span>
+<span class="fc" id="L71">                .signWith(signingKey)</span>
+<span class="fc" id="L72">                .compact();</span>
+    }
+
+    /**
+     * Gets the token expiration time in seconds.
+     *
+     * @return the expiration time in seconds
+     */
+    public long getExpirationSeconds() {
+<span class="fc" id="L81">        return expirationMs / 1000;</span>
+    }
+
+    /**
+     * Extracts the username from a JWT token if the token is valid and unexpired.
+     *
+     * @param token the JWT token to parse
+     * @return an Optional containing the username if valid, or empty if the token is invalid or expired
+     */
+    public java.util.Optional&lt;String&gt; extractUsername(String token) {
+<span class="fc" id="L91">        return extractClaims(token).map(TokenClaims::username);</span>
+    }
+
+    /**
+     * Extracts the username and roles from a JWT token if the token is valid and unexpired.
+     * Tokens issued before roles existed carry no {@value #ROLES_CLAIM} claim and count as
+     * {@link Role#CLIENT}, since only clients could log in then.
+     *
+     * @param token the JWT token to parse
+     * @return the token's claims, or empty if the token is invalid, expired, or names an unknown role
+     */
+    public java.util.Optional&lt;TokenClaims&gt; extractClaims(String token) {
+        try {
+<span class="fc" id="L104">            Claims claims = Jwts.parser()</span>
+<span class="fc" id="L105">                    .verifyWith(signingKey)</span>
+<span class="fc" id="L106">                    .build()</span>
+<span class="fc" id="L107">                    .parseSignedClaims(token)</span>
+<span class="fc" id="L108">                    .getPayload();</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (claims.getSubject() == null) {</span>
+<span class="nc" id="L110">                return java.util.Optional.empty();</span>
+            }
+<span class="fc" id="L112">            List&lt;?&gt; names = claims.get(ROLES_CLAIM, List.class);</span>
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">            Set&lt;Role&gt; roles = names == null || names.isEmpty()</span>
+<span class="fc" id="L114">                    ? EnumSet.of(Role.CLIENT)</span>
+<span class="fc" id="L115">                    : names.stream().map(name -&gt; Role.valueOf(String.valueOf(name)))</span>
+<span class="fc" id="L116">                            .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
+<span class="fc" id="L117">            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles));</span>
+<span class="fc" id="L118">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="fc" id="L119">            return java.util.Optional.empty();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

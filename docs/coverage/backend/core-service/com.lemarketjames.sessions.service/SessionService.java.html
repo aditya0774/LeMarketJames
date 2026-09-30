@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SessionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.sessions.service</a> &gt; <span class="el_source">SessionService.java</span></div><h1>SessionService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.sessions.service;
+
+import com.lemarketjames.sessions.dto.SessionDto;
+import com.lemarketjames.common.domain.AccountRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.lemarketjames.sessions.exception.SessionExpiredException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+
+/**
+ * Session validation using JWT token claims.
+ */
+@Service
+public class SessionService {
+
+  private final SecretKey signingKey;
+  private final AccountRepository accounts;
+
+<span class="fc" id="L28">  public SessionService(@Value(&quot;${jwt.secret}&quot;) String secret, AccountRepository accounts) {</span>
+<span class="fc" id="L29">    this.accounts = accounts;</span>
+<span class="fc" id="L30">    this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L31">  }</span>
+
+  /**
+   * AC1: Validate session (JWT token) is not expired.
+   * Parses JWT claims and verifies token signature and expiration time.
+   * 
+   * @param accountId the account ID associated with the token
+   * @param token the JWT token string to validate
+   * @return SessionDto containing session details if valid
+   * @throws SessionExpiredException if token is expired, invalid, or signature verification fails
+   */
+  public SessionDto validateSession(Integer accountId, String token) {
+    try {
+      // Parse and validate JWT token
+<span class="fc" id="L45">      var claims = Jwts.parser()</span>
+<span class="fc" id="L46">          .verifyWith(signingKey)</span>
+<span class="fc" id="L47">          .build()</span>
+<span class="fc" id="L48">          .parseSignedClaims(token)</span>
+<span class="fc" id="L49">          .getPayload();</span>
+
+<span class="fc" id="L51">      var authentication = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L52" title="2 of 4 branches missed.">      if (authentication == null || !authentication.isAuthenticated()</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">          || !authentication.getName().equals(claims.getSubject())</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">          || !accounts.existsByAccountIdAndUsername(accountId, authentication.getName())) {</span>
+<span class="fc" id="L55">        throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
+      }
+
+      // Check expiration
+<span class="fc" id="L59">      Date expiresAt = claims.getExpiration();</span>
+<span class="pc bpc" id="L60" title="2 of 4 branches missed.">      if (expiresAt != null &amp;&amp; expiresAt.before(new Date())) {</span>
+<span class="nc" id="L61">        throw new SessionExpiredException(&quot;Session token has expired&quot;);</span>
+      }
+
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">      LocalDateTime expiresAtLocal = expiresAt != null </span>
+<span class="fc" id="L65">          ? expiresAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()</span>
+<span class="pc" id="L66">          : null;</span>
+
+<span class="fc" id="L68">      return new SessionDto(</span>
+          accountId,
+          accountId,
+          expiresAtLocal,
+<span class="fc" id="L72">          true</span>
+      );
+<span class="fc" id="L74">    } catch (AccessDeniedException e) {</span>
+<span class="fc" id="L75">      throw e;</span>
+<span class="nc" id="L76">    } catch (SessionExpiredException e) {</span>
+<span class="nc" id="L77">      throw e;</span>
+<span class="fc" id="L78">    } catch (Exception e) {</span>
+<span class="fc" id="L79">      throw new SessionExpiredException(&quot;Invalid or expired session token&quot;);</span>
+    }
+  }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

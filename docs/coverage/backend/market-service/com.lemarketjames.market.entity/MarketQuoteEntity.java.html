@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketQuoteEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.entity</a> &gt; <span class="el_source">MarketQuoteEntity.java</span></div><h1>MarketQuoteEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * Latest persisted price for one instrument ({@code market_quotes}, one row per instrument).
+ *
+ * &lt;p&gt;Live prices are held in memory by the simulator; this row is refreshed every few seconds
+ * so the market resumes from where it left off after a restart.
+ *
+ * &lt;p&gt;{@code lastUpdated} is stored as a UTC {@link LocalDateTime} because the existing column is
+ * {@code TIMESTAMP} (without time zone).
+ */
+@Entity
+@Table(name = &quot;market_quotes&quot;)
+public class MarketQuoteEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;quote_id&quot;)
+    private Integer quoteId;
+
+    @Column(name = &quot;instrument_id&quot;, nullable = false, unique = true)
+    private Integer instrumentId;
+
+    @Column(name = &quot;bid_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal bidPrice;
+
+    @Column(name = &quot;ask_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal askPrice;
+
+    @Column(name = &quot;last_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal lastPrice;
+
+    @Column(name = &quot;open_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal openPrice;
+
+    @Column(name = &quot;high_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal highPrice;
+
+    @Column(name = &quot;low_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal lowPrice;
+
+    @Column(name = &quot;previous_close&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal previousClose;
+
+    @Column(nullable = false)
+    private Long volume;
+
+    @Column(name = &quot;last_updated&quot;, nullable = false)
+    private LocalDateTime lastUpdated;
+
+<span class="fc" id="L61">    public MarketQuoteEntity() {</span>
+<span class="fc" id="L62">    }</span>
+
+    public Integer getQuoteId() {
+<span class="nc" id="L65">        return quoteId;</span>
+    }
+
+    public Integer getInstrumentId() {
+<span class="nc" id="L69">        return instrumentId;</span>
+    }
+
+    public void setInstrumentId(Integer instrumentId) {
+<span class="nc" id="L73">        this.instrumentId = instrumentId;</span>
+<span class="nc" id="L74">    }</span>
+
+    public BigDecimal getBidPrice() {
+<span class="nc" id="L77">        return bidPrice;</span>
+    }
+
+    public void setBidPrice(BigDecimal bidPrice) {
+<span class="nc" id="L81">        this.bidPrice = bidPrice;</span>
+<span class="nc" id="L82">    }</span>
+
+    public BigDecimal getAskPrice() {
+<span class="nc" id="L85">        return askPrice;</span>
+    }
+
+    public void setAskPrice(BigDecimal askPrice) {
+<span class="nc" id="L89">        this.askPrice = askPrice;</span>
+<span class="nc" id="L90">    }</span>
+
+    public BigDecimal getLastPrice() {
+<span class="nc" id="L93">        return lastPrice;</span>
+    }
+
+    public void setLastPrice(BigDecimal lastPrice) {
+<span class="nc" id="L97">        this.lastPrice = lastPrice;</span>
+<span class="nc" id="L98">    }</span>
+
+    public BigDecimal getOpenPrice() {
+<span class="nc" id="L101">        return openPrice;</span>
+    }
+
+    public void setOpenPrice(BigDecimal openPrice) {
+<span class="nc" id="L105">        this.openPrice = openPrice;</span>
+<span class="nc" id="L106">    }</span>
+
+    public BigDecimal getHighPrice() {
+<span class="nc" id="L109">        return highPrice;</span>
+    }
+
+    public void setHighPrice(BigDecimal highPrice) {
+<span class="nc" id="L113">        this.highPrice = highPrice;</span>
+<span class="nc" id="L114">    }</span>
+
+    public BigDecimal getLowPrice() {
+<span class="nc" id="L117">        return lowPrice;</span>
+    }
+
+    public void setLowPrice(BigDecimal lowPrice) {
+<span class="nc" id="L121">        this.lowPrice = lowPrice;</span>
+<span class="nc" id="L122">    }</span>
+
+    public BigDecimal getPreviousClose() {
+<span class="nc" id="L125">        return previousClose;</span>
+    }
+
+    public void setPreviousClose(BigDecimal previousClose) {
+<span class="nc" id="L129">        this.previousClose = previousClose;</span>
+<span class="nc" id="L130">    }</span>
+
+    public Long getVolume() {
+<span class="nc" id="L133">        return volume;</span>
+    }
+
+    public void setVolume(Long volume) {
+<span class="nc" id="L137">        this.volume = volume;</span>
+<span class="nc" id="L138">    }</span>
+
+    public LocalDateTime getLastUpdated() {
+<span class="nc" id="L141">        return lastUpdated;</span>
+    }
+
+    public void setLastUpdated(LocalDateTime lastUpdated) {
+<span class="nc" id="L145">        this.lastUpdated = lastUpdated;</span>
+<span class="nc" id="L146">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

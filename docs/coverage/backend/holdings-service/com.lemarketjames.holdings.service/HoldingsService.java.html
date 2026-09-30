@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.service</a> &gt; <span class="el_source">HoldingsService.java</span></div><h1>HoldingsService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.service;
+
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.holdings.dto.HoldingDto;
+import com.lemarketjames.holdings.dto.HoldingsResponse;
+import com.lemarketjames.holdings.entity.HoldingsEntity;
+import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
+import com.lemarketjames.holdings.exception.UnauthorizedException;
+import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
+import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/**
+ * Service layer for holdings management.
+ * Manages user stock holdings and validates sell orders to prevent overselling.
+ * 
+ * AC1: Retrieve all holdings for an authenticated user
+ * AC2: Validate user has sufficient holdings to sell a given quantity
+ */
+@Service
+public class HoldingsService {
+
+<span class="fc" id="L32">    private static final Logger log = LoggerFactory.getLogger(HoldingsService.class);</span>
+
+    private final HoldingsRepository holdingsRepository;
+    private final MarketDataService marketData;
+    private final AccountRepository accountRepository;
+
+    public HoldingsService(HoldingsRepository holdingsRepository,
+                           MarketDataService marketData,
+<span class="fc" id="L40">                           AccountRepository accountRepository) {</span>
+<span class="fc" id="L41">        this.holdingsRepository = holdingsRepository;</span>
+<span class="fc" id="L42">        this.marketData = marketData;</span>
+<span class="fc" id="L43">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * AC1: Unauthorized data access prevented
+     *
+     * Validates that the authenticated user owns the given account.
+     * Throws UnauthorizedException if they don't own it.
+     *
+     * This is called before any data operation to prevent users from viewing
+     * or modifying accounts that don't belong to them.
+     *
+     * @param accountId the account ID to validate ownership of
+     * @param username the authenticated user's username from JWT
+     * @throws UnauthorizedException if user doesn't own the account
+     */
+    private void validateAccountOwnership(Integer accountId, String username) {
+<span class="fc" id="L60">        boolean ownsAccount = accountRepository.existsByAccountIdAndUsername(accountId, username);</span>
+
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (!ownsAccount) {</span>
+<span class="fc" id="L63">            log.warn(&quot;Holdings access denied for username={} accountId={}&quot;, username, accountId);</span>
+<span class="fc" id="L64">            throw new UnauthorizedException(</span>
+                &quot;User is not authorized to access this account&quot;);
+        }
+<span class="fc" id="L67">    }</span>
+
+    /**
+     * AC1: Retrieve all holdings for an authenticated user, resolved from JWT username.
+     *
+     * &lt;p&gt;Symbol, current price and current value come from the simulated market. A holding whose
+     * instrument is not simulated keeps a null symbol and zero price/value rather than failing
+     * the whole response.
+     *
+     * AC2: Requests scoped to authenticated user (no accountId parameter)
+     * AC3: Holdings persist exactly as seeded; platform restarts maintain the same data
+     *
+     * @param username the authenticated user's username from JWT
+     * @return HoldingsResponse containing success flag and list of holdings DTOs (empty if no holdings)
+     * @throws IllegalArgumentException if no account found for username
+     */
+    public HoldingsResponse getHoldingsForAccount(String username) {
+        // Resolve accountId from username
+<span class="fc" id="L85">        Integer accountId = accountRepository.findAccountIdByUsername(username)</span>
+<span class="fc" id="L86">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No account found for username: &quot; + username));</span>
+        
+<span class="fc" id="L88">        List&lt;HoldingsEntity&gt; holdings = holdingsRepository.findByAccountId(accountId);</span>
+
+<span class="fc" id="L90">        List&lt;HoldingDto&gt; holdingDtos = holdings.stream()</span>
+<span class="fc" id="L91">            .map(this::toDto)</span>
+<span class="fc" id="L92">            .collect(Collectors.toList());</span>
+
+<span class="fc" id="L94">        return new HoldingsResponse(true, holdingDtos);</span>
+    }
+
+    private HoldingDto toDto(HoldingsEntity holding) {
+<span class="fc" id="L98">        Optional&lt;QuoteSnapshot&gt; quote = marketData.findByInstrumentId(holding.getInstrumentId());</span>
+<span class="fc" id="L99">        BigDecimal currentPrice = quote</span>
+<span class="fc" id="L100">            .map(q -&gt; BigDecimal.valueOf(q.lastPrice()).setScale(2, RoundingMode.HALF_UP))</span>
+<span class="fc" id="L101">            .orElse(BigDecimal.ZERO);</span>
+<span class="fc" id="L102">        BigDecimal currentValue = holding.getQuantity().multiply(currentPrice).setScale(2, RoundingMode.HALF_UP);</span>
+
+<span class="fc" id="L104">        BigDecimal averageCost = holding.getAverageCost().setScale(2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L105">        BigDecimal totalCost = holding.getQuantity().multiply(holding.getAverageCost()).setScale(2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L106">        BigDecimal gainLoss = currentValue.subtract(totalCost).setScale(2, RoundingMode.HALF_UP);</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        BigDecimal gainLossPercent = totalCost.compareTo(BigDecimal.ZERO) == 0</span>
+<span class="fc" id="L108">            ? BigDecimal.ZERO</span>
+<span class="nc" id="L109">            : gainLoss.divide(totalCost, 4, RoundingMode.HALF_UP)</span>
+<span class="nc" id="L110">                .multiply(BigDecimal.valueOf(100))</span>
+<span class="pc" id="L111">                .setScale(2, RoundingMode.HALF_UP);</span>
+
+<span class="fc" id="L113">        return new HoldingDto(</span>
+<span class="fc" id="L114">            quote.map(q -&gt; q.instrument().ticker()).orElse(null),</span>
+<span class="fc" id="L115">            holding.getQuantity(),</span>
+            averageCost,
+            currentPrice,
+            totalCost,
+            currentValue,
+            gainLoss,
+            gainLossPercent
+        );
+    }
+
+    /**
+     * AC2: Validate that user has sufficient holdings to sell a given quantity.
+     * AC1: Unauthorized data access prevented - validates ownership first
+     * 
+     * Throws UnauthorizedException if user doesn't own the account.
+     * Throws InsufficientHoldingsException if validation fails.
+     * 
+     * @param accountId the account ID
+     * @param username the authenticated user's username from JWT
+     * @param instrumentId the instrument ID to validate holdings for
+     * @param sellQuantity the quantity attempting to be sold
+     * @throws UnauthorizedException if user doesn't own the account
+     * @throws InsufficientHoldingsException if holding does not exist or quantity insufficient
+     */
+    public void validateSufficientHoldings(Integer accountId, String username,
+                                          Integer instrumentId, BigDecimal sellQuantity) {
+        // AC1: Validate user owns this account before proceeding
+<span class="fc" id="L142">        validateAccountOwnership(accountId, username);</span>
+        
+<span class="fc" id="L144">        HoldingsEntity holding = holdingsRepository</span>
+<span class="fc" id="L145">            .findByAccountIdAndInstrumentId(accountId, instrumentId)</span>
+<span class="fc" id="L146">            .orElseThrow(() -&gt; new InsufficientHoldingsException(</span>
+                &quot;No holdings found for this instrument&quot;));
+
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (!holding.canSell(sellQuantity)) {</span>
+<span class="fc" id="L150">            throw new InsufficientHoldingsException(</span>
+<span class="fc" id="L151">                String.format(&quot;Insufficient holdings. Available: %s, Requested: %s&quot;,</span>
+<span class="fc" id="L152">                    holding.getQuantity(), sellQuantity));</span>
+        }
+<span class="fc" id="L154">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

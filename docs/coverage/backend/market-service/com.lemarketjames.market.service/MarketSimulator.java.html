@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketSimulator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.service</a> &gt; <span class="el_source">MarketSimulator.java</span></div><h1>MarketSimulator.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.service;
+
+import com.lemarketjames.market.config.MarketSimulationProperties;
+import com.lemarketjames.market.model.GbmModel;
+import com.lemarketjames.market.model.MarketInstrument;
+import com.lemarketjames.market.model.PriceCandle;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.SplittableRandom;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
+
+/**
+ * In-memory stock market driven by Geometric Brownian Motion.
+ *
+ * &lt;p&gt;Prices move on a clock ({@link #tick()}, called by {@link MarketScheduler}), never as a side
+ * effect of someone reading a quote. Each tick draws one market-wide shock plus one shock per
+ * instrument and blends them ({@link GbmModel#correlatedShock}) so stocks tend to move together.
+ *
+ * &lt;p&gt;Threading: {@code tick} and {@code load} are synchronized and are the only writers. Readers
+ * get immutable {@link QuoteSnapshot}s from concurrent maps and never block.
+ */
+@Service
+public class MarketSimulator implements MarketDataService, MarketFeedControl {
+
+<span class="fc" id="L47">    private static final Logger log = LoggerFactory.getLogger(MarketSimulator.class);</span>
+
+    /**
+     * Cap on how much simulated time one tick may cover. Protects against a single huge price
+     * jump if the scheduler stalls (e.g. a long GC pause or a laptop waking from sleep).
+     */
+    private static final int MAX_TICKS_PER_STEP = 5;
+
+    private final MarketSimulationProperties properties;
+    private final Clock clock;
+    private final RandomGenerator random;
+
+    /**
+     * Mutable state, only accessed while holding this object's lock. Insertion-ordered so a fixed
+     * seed always applies random draws to instruments in the same order.
+     */
+<span class="fc" id="L63">    private final Map&lt;Integer, SimulatedInstrument&gt; instruments = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L65">    private final Map&lt;Integer, QuoteSnapshot&gt; snapshotsById = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L66">    private final Map&lt;String, QuoteSnapshot&gt; snapshotsByTicker = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L67">    private final Queue&lt;PriceCandle&gt; completedCandles = new ConcurrentLinkedQueue&lt;&gt;();</span>
+
+    /** Test controls (contract C4). Pinned instruments are skipped by tick; guarded by this object's lock. */
+<span class="fc" id="L70">    private final Set&lt;Integer&gt; pinned = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L71">    private volatile FeedMode feedMode = FeedMode.LIVE;</span>
+    /** What readers see while STALE: the quotes at the moment the feed went stale, backdated. */
+<span class="fc" id="L73">    private volatile Map&lt;Integer, QuoteSnapshot&gt; staleSnapshotsById = Map.of();</span>
+
+    private final Set&lt;LocalDate&gt; holidays;
+    private Instant lastTickAt;
+
+<span class="fc" id="L78">    public MarketSimulator(MarketSimulationProperties properties, Clock clock) {</span>
+<span class="fc" id="L79">        this.properties = properties;</span>
+<span class="fc" id="L80">        this.clock = clock;</span>
+<span class="fc" id="L81">        this.holidays = properties.holidaySet();</span>
+        // A fixed seed replays exactly the same market, which is useful for demos and bug reports.
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        this.random = properties.getSeed() != null</span>
+<span class="fc" id="L84">                ? new SplittableRandom(properties.getSeed())</span>
+<span class="fc" id="L85">                : new SplittableRandom();</span>
+<span class="fc" id="L86">    }</span>
+
+    /**
+     * Replaces the simulated universe.
+     *
+     * @param definitions instruments to simulate
+     * @param stored      last persisted quotes by instrument id; instruments without one start
+     *                    from their configured initial price
+     */
+    public synchronized void load(List&lt;MarketInstrument&gt; definitions, Map&lt;Integer, StoredQuote&gt; stored) {
+<span class="fc" id="L96">        Instant now = clock.instant();</span>
+<span class="fc" id="L97">        instruments.clear();</span>
+<span class="fc" id="L98">        snapshotsById.clear();</span>
+<span class="fc" id="L99">        snapshotsByTicker.clear();</span>
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (MarketInstrument definition : definitions) {</span>
+<span class="fc" id="L102">            StoredQuote saved = stored.get(definition.instrumentId());</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            SimulatedInstrument simulated = saved == null</span>
+<span class="fc" id="L104">                    ? new SimulatedInstrument(definition, now)</span>
+<span class="fc" id="L105">                    : new SimulatedInstrument(definition, saved.lastPrice(), saved.openPrice(), saved.highPrice(),</span>
+<span class="fc" id="L106">                            saved.lowPrice(), saved.previousClose(), saved.volume(), saved.lastUpdated());</span>
+<span class="fc" id="L107">            instruments.put(definition.instrumentId(), simulated);</span>
+<span class="fc" id="L108">            publish(simulated);</span>
+<span class="fc" id="L109">        }</span>
+<span class="fc" id="L110">        lastTickAt = now;</span>
+<span class="fc" id="L111">        log.info(&quot;Market simulator loaded {} instruments ({} resumed from stored quotes)&quot;,</span>
+<span class="fc" id="L112">                definitions.size(), stored.size());</span>
+<span class="fc" id="L113">    }</span>
+
+    /** Advances every open instrument to the current clock time. */
+    public void tick() {
+<span class="nc" id="L117">        tick(clock.instant());</span>
+<span class="nc" id="L118">    }</span>
+
+    /**
+     * Advances every open instrument to {@code now}. Exposed with an explicit time so tests can
+     * drive the market deterministically.
+     */
+    public synchronized void tick(Instant now) {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (instruments.isEmpty()) {</span>
+<span class="nc" id="L126">            return;</span>
+        }
+<span class="fc" id="L128">        double elapsedSeconds = elapsedSimulatedSeconds(now);</span>
+<span class="fc" id="L129">        lastTickAt = now;</span>
+
+        // One shared draw per tick is what makes instruments move together.
+<span class="fc" id="L132">        double marketShock = random.nextGaussian();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (SimulatedInstrument instrument : instruments.values()) {</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            if (pinned.contains(instrument.instrument().instrumentId())) {</span>
+<span class="fc" id="L135">                continue; // held at the price a test set</span>
+            }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {</span>
+<span class="fc" id="L138">                double shock = GbmModel.correlatedShock(</span>
+<span class="fc" id="L139">                        marketShock, random.nextGaussian(), instrument.instrument().marketCorrelation());</span>
+<span class="fc" id="L140">                instrument.advance(now, elapsedSeconds, shock, random.nextGaussian())</span>
+<span class="fc" id="L141">                        .ifPresent(completedCandles::add);</span>
+<span class="fc" id="L142">                publish(instrument);</span>
+<span class="fc" id="L143">            } else {</span>
+<span class="fc" id="L144">                instrument.completeCandleIfMinuteChanged(now).ifPresent(completedCandles::add);</span>
+            }
+<span class="fc" id="L146">        }</span>
+<span class="fc" id="L147">    }</span>
+
+    /**
+     * Removes and returns candles completed since the last call, for persistence.
+     */
+    public List&lt;PriceCandle&gt; drainCompletedCandles() {
+<span class="fc" id="L153">        List&lt;PriceCandle&gt; drained = new ArrayList&lt;&gt;();</span>
+        PriceCandle candle;
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        while ((candle = completedCandles.poll()) != null) {</span>
+<span class="fc" id="L156">            drained.add(candle);</span>
+        }
+<span class="fc" id="L158">        return drained;</span>
+    }
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByTicker(String ticker) {
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (ticker == null) {</span>
+<span class="nc" id="L164">            return Optional.empty();</span>
+        }
+<span class="fc" id="L166">        return Optional.ofNullable(snapshotsByTicker.get(ticker.trim().toUpperCase(Locale.ROOT)))</span>
+<span class="fc" id="L167">                .map(live -&gt; visible(live.instrument().instrumentId(), live));</span>
+    }
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByInstrumentId(int instrumentId) {
+<span class="fc" id="L172">        return Optional.ofNullable(snapshotsById.get(instrumentId)).map(live -&gt; visible(instrumentId, live));</span>
+    }
+
+    /** What quote readers see: the live quotes, or the frozen stale ones while the feed is STALE. */
+    @Override
+    public Collection&lt;QuoteSnapshot&gt; findAll() {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        return feedMode == FeedMode.STALE</span>
+<span class="nc" id="L179">                ? List.copyOf(staleSnapshotsById.values())</span>
+<span class="nc" id="L180">                : List.copyOf(snapshotsById.values());</span>
+    }
+
+    /**
+     * The real current prices whatever the feed mode, for persistence: a STALE feed must never
+     * overwrite the stored prices with its backdated copies.
+     */
+    public Collection&lt;QuoteSnapshot&gt; latestSnapshots() {
+<span class="fc" id="L188">        return List.copyOf(snapshotsById.values());</span>
+    }
+
+    private QuoteSnapshot visible(int instrumentId, QuoteSnapshot live) {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        return feedMode == FeedMode.STALE ? staleSnapshotsById.getOrDefault(instrumentId, live) : live;</span>
+    }
+
+    @Override
+    public FeedMode feedMode() {
+<span class="fc" id="L197">        return feedMode;</span>
+    }
+
+    @Override
+    public synchronized void setFeedMode(FeedMode mode) {
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">        if (mode == FeedMode.STALE &amp;&amp; feedMode != FeedMode.STALE) {</span>
+<span class="fc" id="L203">            Duration age = properties.getControl().getStaleAge();</span>
+<span class="fc" id="L204">            Map&lt;Integer, QuoteSnapshot&gt; frozen = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L205">            snapshotsById.forEach((id, quote) -&gt; frozen.put(id, backdated(quote, age)));</span>
+<span class="fc" id="L206">            staleSnapshotsById = Map.copyOf(frozen);</span>
+        }
+<span class="fc" id="L208">        feedMode = mode;</span>
+<span class="fc" id="L209">        log.info(&quot;Quote feed mode set to {}&quot;, mode);</span>
+<span class="fc" id="L210">    }</span>
+
+    @Override
+    public synchronized void setPrice(String ticker, double price, boolean pin) {
+<span class="pc bpc" id="L214" title="1 of 4 branches missed.">        if (!(price &gt; 0) || !Double.isFinite(price)) {</span>
+<span class="fc" id="L215">            throw new IllegalArgumentException(&quot;Price must be a positive number&quot;);</span>
+        }
+<span class="fc" id="L217">        SimulatedInstrument instrument = simulated(ticker);</span>
+<span class="fc" id="L218">        instrument.overridePrice(price, clock.instant());</span>
+<span class="fc" id="L219">        int id = instrument.instrument().instrumentId();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (pin) {</span>
+<span class="fc" id="L221">            pinned.add(id);</span>
+        } else {
+<span class="fc" id="L223">            pinned.remove(id);</span>
+        }
+<span class="fc" id="L225">        publish(instrument);</span>
+<span class="fc" id="L226">        log.info(&quot;Price of {} set to {} (pinned={})&quot;, instrument.instrument().ticker(), price, pin);</span>
+<span class="fc" id="L227">    }</span>
+
+    @Override
+    public synchronized void releasePrice(String ticker) {
+<span class="fc" id="L231">        pinned.remove(simulated(ticker).instrument().instrumentId());</span>
+<span class="fc" id="L232">    }</span>
+
+    @Override
+    public synchronized Set&lt;String&gt; pinnedTickers() {
+<span class="fc" id="L236">        return pinned.stream().map(id -&gt; instruments.get(id).instrument().ticker())</span>
+<span class="fc" id="L237">                .collect(Collectors.toCollection(TreeSet::new));</span>
+    }
+
+    @Override
+    public synchronized void reset() {
+<span class="fc" id="L242">        pinned.clear();</span>
+<span class="fc" id="L243">        setFeedMode(FeedMode.LIVE);</span>
+<span class="fc" id="L244">    }</span>
+
+    private SimulatedInstrument simulated(String ticker) {
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        String wanted = ticker == null ? &quot;&quot; : ticker.trim().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L248">        return instruments.values().stream()</span>
+<span class="fc" id="L249">                .filter(instrument -&gt; instrument.instrument().ticker().equalsIgnoreCase(wanted))</span>
+<span class="fc" id="L250">                .findFirst()</span>
+<span class="fc" id="L251">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Unknown ticker: &quot; + ticker));</span>
+    }
+
+    private static QuoteSnapshot backdated(QuoteSnapshot q, Duration age) {
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        Instant updated = q.lastUpdated() == null ? null : q.lastUpdated().minus(age);</span>
+<span class="fc" id="L256">        return new QuoteSnapshot(q.instrument(), q.lastPrice(), q.bidPrice(), q.askPrice(), q.openPrice(),</span>
+<span class="fc" id="L257">                q.highPrice(), q.lowPrice(), q.previousClose(), q.volume(), updated, q.tradingDate());</span>
+    }
+
+    private void publish(SimulatedInstrument instrument) {
+<span class="fc" id="L261">        QuoteSnapshot snapshot = instrument.snapshot();</span>
+<span class="fc" id="L262">        snapshotsById.put(snapshot.instrument().instrumentId(), snapshot);</span>
+<span class="fc" id="L263">        snapshotsByTicker.put(snapshot.instrument().ticker().toUpperCase(Locale.ROOT), snapshot);</span>
+<span class="fc" id="L264">    }</span>
+
+    private double elapsedSimulatedSeconds(Instant now) {
+<span class="fc" id="L267">        double tickSeconds = properties.getTickMs() / 1000.0;</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        double realSeconds = lastTickAt == null ? tickSeconds : (now.toEpochMilli() - lastTickAt.toEpochMilli()) / 1000.0;</span>
+<span class="fc" id="L269">        double bounded = Math.max(0, Math.min(realSeconds, tickSeconds * MAX_TICKS_PER_STEP));</span>
+<span class="fc" id="L270">        return bounded * properties.getSpeedMultiplier();</span>
+    }
+
+    /**
+     * Previously persisted price state used to resume the market after a restart.
+     *
+     * @param lastPrice     last price
+     * @param openPrice     open of the stored trading day
+     * @param highPrice     high of the stored trading day
+     * @param lowPrice      low of the stored trading day
+     * @param previousClose close of the day before the stored trading day
+     * @param volume        volume of the stored trading day
+     * @param lastUpdated   when the stored price was produced
+     */
+<span class="fc" id="L284">    public record StoredQuote(double lastPrice, double openPrice, double highPrice, double lowPrice,</span>
+                              double previousClose, long volume, Instant lastUpdated) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

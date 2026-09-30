@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortfolioBalance.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.portfolio.dto</a> &gt; <span class="el_source">PortfolioBalance.java</span></div><h1>PortfolioBalance.java</h1><pre class="source lang-java linenums">package com.lemarketjames.portfolio.dto;
+
+import java.math.BigDecimal;
+
+/** Matches the balance shape documented for GET /api/v1/portfolio in contracts/C6-api.md. */
+public class PortfolioBalance {
+
+    private final BigDecimal cash;
+    private final BigDecimal invested;
+    private final BigDecimal totalValue;
+    private final BigDecimal buyingPower;
+    private final BigDecimal dayGainLoss;
+    private final BigDecimal dayGainLossPercent;
+    private final BigDecimal totalGainLoss;
+    private final BigDecimal totalGainLossPercent;
+    private final String currency;
+
+    public PortfolioBalance(BigDecimal cash, BigDecimal invested, BigDecimal totalValue, BigDecimal buyingPower,
+                             BigDecimal dayGainLoss, BigDecimal dayGainLossPercent,
+<span class="fc" id="L20">                             BigDecimal totalGainLoss, BigDecimal totalGainLossPercent, String currency) {</span>
+<span class="fc" id="L21">        this.cash = cash;</span>
+<span class="fc" id="L22">        this.invested = invested;</span>
+<span class="fc" id="L23">        this.totalValue = totalValue;</span>
+<span class="fc" id="L24">        this.buyingPower = buyingPower;</span>
+<span class="fc" id="L25">        this.dayGainLoss = dayGainLoss;</span>
+<span class="fc" id="L26">        this.dayGainLossPercent = dayGainLossPercent;</span>
+<span class="fc" id="L27">        this.totalGainLoss = totalGainLoss;</span>
+<span class="fc" id="L28">        this.totalGainLossPercent = totalGainLossPercent;</span>
+<span class="fc" id="L29">        this.currency = currency;</span>
+<span class="fc" id="L30">    }</span>
+
+    public BigDecimal getCash() {
+<span class="fc" id="L33">        return cash;</span>
+    }
+
+    public BigDecimal getInvested() {
+<span class="fc" id="L37">        return invested;</span>
+    }
+
+    public BigDecimal getTotalValue() {
+<span class="fc" id="L41">        return totalValue;</span>
+    }
+
+    public BigDecimal getBuyingPower() {
+<span class="fc" id="L45">        return buyingPower;</span>
+    }
+
+    public BigDecimal getDayGainLoss() {
+<span class="fc" id="L49">        return dayGainLoss;</span>
+    }
+
+    public BigDecimal getDayGainLossPercent() {
+<span class="fc" id="L53">        return dayGainLossPercent;</span>
+    }
+
+    public BigDecimal getTotalGainLoss() {
+<span class="fc" id="L57">        return totalGainLoss;</span>
+    }
+
+    public BigDecimal getTotalGainLossPercent() {
+<span class="fc" id="L61">        return totalGainLossPercent;</span>
+    }
+
+    public String getCurrency() {
+<span class="fc" id="L65">        return currency;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
