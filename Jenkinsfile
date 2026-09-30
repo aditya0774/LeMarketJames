@@ -36,9 +36,20 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    base_ref="${CHANGE_TARGET:-main}"
-                    if git show-ref --verify --quiet "refs/remotes/origin/${base_ref}"; then
-                        git diff --name-only "origin/${base_ref}...HEAD" > .ci-changed-files.txt
+                    if [ -n "${CHANGE_TARGET:-}" ] && git show-ref --verify --quiet "refs/remotes/origin/${CHANGE_TARGET}"; then
+                        # PR build: compare to target branch tip.
+                        git diff --name-only "origin/${CHANGE_TARGET}...HEAD" > .ci-changed-files.txt
+                    elif [ "${BRANCH_NAME:-}" = "main" ] || [ "${GIT_BRANCH:-}" = "origin/main" ] || [ "${GIT_BRANCH:-}" = "main" ]; then
+                        # Main-branch build: origin/main and HEAD usually point to the same commit.
+                        # Compare against previous commit so gating reflects what just landed.
+                        if git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
+                            git diff --name-only "HEAD~1...HEAD" > .ci-changed-files.txt
+                        else
+                            git ls-files > .ci-changed-files.txt
+                        fi
+                    elif git show-ref --verify --quiet "refs/remotes/origin/main"; then
+                        # Feature branch build: compare to mainline.
+                        git diff --name-only "origin/main...HEAD" > .ci-changed-files.txt
                     elif git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
                         git diff --name-only "HEAD~1...HEAD" > .ci-changed-files.txt
                     else
