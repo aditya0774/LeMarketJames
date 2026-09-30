@@ -260,6 +260,28 @@ Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"statu
    ```
    The frontend will be available at `http://localhost:4200`
 
+**Running the Frontend Against a Remote Backend (VM/Linux):**
+
+If the backend is running on a remote machine (e.g., Linux VM, Docker Compose on `PRIVATE_IP:8089`), use the `start:vm` script instead:
+
+```bash
+cd apps/frontend
+npm run start:vm
+```
+
+This uses [proxy.vm.json](apps/frontend/proxy.vm.json), which routes all `/api/**` calls to the remote backend instead of `localhost:8089`. Edit `proxy.vm.json` to change the backend host if needed:
+
+```json
+{
+  "/api/**": {
+    "target": "http://PRIVATE_IP:8089",
+    "secure": false
+  }
+}
+```
+
+Replace `PRIVATE_IP` with your backend's IP or hostname. The frontend dev server will still run on your local machine (e.g., Windows), and your browser will proxy API calls to the remote backend.
+
 4. Access the application:
    - **Registration Form:** `http://localhost:4200/register`
    - **Login:** `http://localhost:4200/login`
