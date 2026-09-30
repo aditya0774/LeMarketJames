@@ -19,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +43,7 @@ class AuthServiceTest {
     private AddressRepository addressRepository;
     private AccountRepository accountRepository;
     private StaffUserRepository staffUserRepository;
+    private final MutableClock clock = new MutableClock();
     // Stand in for the clients and staff_users tables: keyed by email, as login looks both up by email.
     private Map<String, ClientEntity> clientsByEmail;
     private Map<String, StaffUserEntity> staffByEmail;
@@ -85,6 +85,7 @@ class AuthServiceTest {
         return newAuthService(settings);
     }
 
+    // Every service in a test shares one clock, as restarted instances share real time.
     private AuthService newAuthService(PlatformSettings settings) {
         return new AuthService(
                 new JwtService(JWT_KEY, 3600000),
@@ -92,7 +93,8 @@ class AuthServiceTest {
                 addressRepository,
                 accountRepository,
                 staffUserRepository,
-                settings
+                settings,
+                clock
         );
     }
 
@@ -231,7 +233,7 @@ class AuthServiceTest {
                     () -> service.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
-        Thread.sleep(250);
+        clock.advance(new PlatformSettings().getAuth().getLockout().getDuration().plusMillis(1));
 
         AuthService.LoginResult result = service.login(new LoginRequest("alice@example.com", "Pass123!"));
         assertEquals("alice", result.getUsername());

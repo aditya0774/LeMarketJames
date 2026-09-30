@@ -78,6 +78,8 @@ describe('HoldingsListComponent', () => {
         MatCardModule
       ],
       providers: [
+        // The empty state's "Place an Order" button uses routerLink, which needs a router.
+        provideRouter([]),
         { provide: HoldingsService, useValue: holdingsServiceMock },
         { provide: Auth, useValue: authServiceMock },
         provideRouter([])
