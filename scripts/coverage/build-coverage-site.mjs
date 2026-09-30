@@ -1,21 +1,34 @@
 #!/usr/bin/env node
-// Builds the coverage site published at docs/coverage/ (GitHub Pages), so the PO can read
-// coverage from the repo without running anything (LMKT-135). Run from the repo root after
-// `mvn -B test` and `cd apps/frontend && npx ng test --watch=false --coverage`:
+// Builds the combined coverage site, so coverage can be read without running anything
+// (LMKT-135). The GitHub coverage workflow publishes it to docs/coverage/ (GitHub Pages) and
+// Jenkins attaches it to each build. Run from the repo root after `mvn -B test` and
+// `cd apps/frontend && npx ng test --watch=false --coverage`:
 //
-//   node scripts/coverage/build-coverage-site.mjs [outDir]    (default: docs/coverage)
+//   node scripts/coverage/build-coverage-site.mjs [outDir] [--sides backend,frontend] [--no-history]
+//
+//   outDir        default docs/coverage
+//   --sides       which reports to read (default both). Jenkins passes only the sides that ran
+//                 this build, so stale reports left in its workspace are never read.
+//   --no-history  skip the history (Jenkins builds are one-offs; the history lives on Pages)
 //
 // It copies every module's JaCoCo HTML report and the front-end report, then writes:
-//   index.html   landing page on GitHub Pages: summary, lowest-covered classes, history
-//   README.md    the same summary, rendered by github.com when browsing docs/coverage/
-//   history.csv  one row per run; kept between runs so coverage can be shown over time
+//   index.html    landing page: summary, lowest-covered classes, history
+//   coverage.css  its styles, kept out of the HTML because Jenkins' Content-Security-Policy
+//                 blocks inline styles on published reports
+//   README.md     the same summary, rendered by github.com when browsing docs/coverage/
+//   summary.json  the totals, read by check-coverage-gate.mjs
+//   history.csv   one row per run; kept between runs so coverage can be shown over time
 // Inputs are the plain-text reports (jacoco.csv, lcov.info), so no XML parsing is needed.
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 
-const outDir = process.argv[2] ?? 'docs/coverage';
+const args = process.argv.slice(2);
+const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
+const outDir = args[0] && !args[0].startsWith('--') ? args[0] : 'docs/coverage';
+const sides = (option('--sides') ?? 'backend,frontend').split(',').filter(Boolean);
+const withHistory = !args.includes('--no-history');
 const frontendReportDir = 'apps/frontend/coverage/lemarket-ui';
 const lowestCount = 10;
 
@@ -98,57 +111,76 @@ function currentCommit() {
 }
 
 // --- Build ---------------------------------------------------------------------------------
-const backend = readBackendModules();
-const frontend = readFrontend();
-if (backend.length === 0 || !frontend) {
-  console.error('Missing coverage input: run `mvn -B test` and the front-end tests with --coverage first.');
+// A side left out of --sides is null and simply doesn't appear in the site.
+const backend = sides.includes('backend') ? readBackendModules() : null;
+const frontend = sides.includes('frontend') ? readFrontend() : null;
+if ((backend && backend.length === 0) || (sides.includes('frontend') && !frontend) || (!backend && !frontend)) {
+  console.error(`Missing coverage input for --sides ${sides.join(',')}: run \`mvn -B test\` and/or ` +
+    'the front-end tests with --coverage first.');
   process.exit(1);
 }
 
-const backendTotal = counts();
-backend.forEach((m) => add(backendTotal, m.total));
+let backendTotal = null;
+if (backend) {
+  backendTotal = counts();
+  backend.forEach((m) => add(backendTotal, m.total));
+}
 const allTotal = counts();
-add(allTotal, backendTotal);
-add(allTotal, frontend.total);
+if (backendTotal) add(allTotal, backendTotal);
+if (frontend) add(allTotal, frontend.total);
 
-const history = readHistory();
 const run = {
   date: new Date().toISOString().slice(0, 10),
   commit: currentCommit(),
-  backendLine: fmt(linePct(backendTotal)), backendBranch: fmt(branchPct(backendTotal)),
-  frontendLine: fmt(linePct(frontend.total)), frontendBranch: fmt(branchPct(frontend.total)),
+  backendLine: backendTotal ? fmt(linePct(backendTotal)) : '',
+  backendBranch: backendTotal ? fmt(branchPct(backendTotal)) : '',
+  frontendLine: frontend ? fmt(linePct(frontend.total)) : '',
+  frontendBranch: frontend ? fmt(branchPct(frontend.total)) : '',
 };
-if (history.at(-1)?.commit === run.commit) history.pop();
-history.push(run);
+const history = withHistory ? readHistory() : [];
+if (withHistory) {
+  if (history.at(-1)?.commit === run.commit) history.pop();
+  history.push(run);
+}
 
 const lowest = (items) => items.filter((i) => i.linesMissed > 0)
   .sort((a, b) => b.linesMissed - a.linesMissed).slice(0, lowestCount);
-const lowestBackend = lowest(backend.flatMap((m) => m.classes));
-const lowestFrontend = lowest(frontend.files);
+const lowestBackend = backend ? lowest(backend.flatMap((m) => m.classes)) : [];
+const lowestFrontend = frontend ? lowest(frontend.files) : [];
 
 // Copy the full reports fresh, so classes that no longer exist never linger in the site.
 mkdirSync(outDir, { recursive: true });
 rmSync(join(outDir, 'backend'), { recursive: true, force: true });
 rmSync(join(outDir, 'frontend'), { recursive: true, force: true });
-for (const m of backend) cpSync(m.reportDir, join(outDir, 'backend', m.name), { recursive: true });
-cpSync(frontendReportDir, join(outDir, 'frontend'), { recursive: true });
+for (const m of backend ?? []) cpSync(m.reportDir, join(outDir, 'backend', m.name), { recursive: true });
+if (frontend) cpSync(frontendReportDir, join(outDir, 'frontend'), { recursive: true });
 
 const summaryRows = [
-  ...backend.map((m) => ({ label: m.name, href: `backend/${m.name}/index.html`, c: m.total })),
-  { label: 'Back end (all modules)', c: backendTotal, strong: true },
-  { label: 'Front end (Angular)', href: 'frontend/index.html', c: frontend.total, strong: true },
-  { label: 'Everything', c: allTotal, strong: true },
+  ...(backend ?? []).map((m) => ({ label: m.name, href: `backend/${m.name}/index.html`, c: m.total })),
+  ...(backendTotal ? [{ label: 'Back end (all modules)', c: backendTotal, strong: true }] : []),
+  ...(frontend ? [{ label: 'Front end (Angular)', href: 'frontend/index.html', c: frontend.total, strong: true }] : []),
+  ...(backend && frontend ? [{ label: 'Everything', c: allTotal, strong: true }] : []),
 ];
 const newestFirst = [...history].reverse();
 const commonNote = 'JaCoCo credits a module only for its own tests, so shared code in libs/ that the ' +
   'services’ tests exercise is under-reported.';
 
-writeFileSync(join(outDir, 'history.csv'), [historyHeader,
-  ...history.map((h) => [h.date, h.commit, h.backendLine, h.backendBranch, h.frontendLine, h.frontendBranch].join(','))]
-  .join('\n') + '\n');
+const totalsJson = (c) => (c ? { line: +fmt(linePct(c)), branch: +fmt(branchPct(c)) } : null);
+writeFileSync(join(outDir, 'summary.json'), JSON.stringify({
+  commit: run.commit, date: run.date,
+  backend: totalsJson(backendTotal), frontend: totalsJson(frontend?.total),
+}, null, 2) + '\n');
+if (withHistory) {
+  writeFileSync(join(outDir, 'history.csv'), [historyHeader,
+    ...history.map((h) => [h.date, h.commit, h.backendLine, h.backendBranch, h.frontendLine, h.frontendBranch].join(','))]
+    .join('\n') + '\n');
+}
 writeFileSync(join(outDir, 'README.md'), renderMarkdown());
 writeFileSync(join(outDir, 'index.html'), renderHtml());
-console.log(`Coverage site written to ${outDir}: back end ${run.backendLine}% lines, front end ${run.frontendLine}% lines`);
+writeFileSync(join(outDir, 'coverage.css'), css());
+console.log(`Coverage site written to ${outDir}:` +
+  (backendTotal ? ` back end ${run.backendLine}% lines, ${run.backendBranch}% branches;` : '') +
+  (frontend ? ` front end ${run.frontendLine}% lines, ${run.frontendBranch}% branches` : ''));
 
 // --- Rendering -------------------------------------------------------------------------------
 function renderMarkdown() {
@@ -157,7 +189,7 @@ function renderMarkdown() {
   const lines = [
     '# Code coverage',
     '',
-    `Generated from \`main\` at commit \`${run.commit}\` on ${run.date} by the coverage workflow. Do not edit by hand.`,
+    `Generated at commit \`${run.commit}\` on ${run.date} by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.`,
     '',
     siteUrl ? `Full clickable reports: ${siteUrl}` : 'Full reports: open `index.html` in this folder.',
     '',
@@ -168,46 +200,62 @@ function renderMarkdown() {
     ...summaryRows.map((r) => `| ${bold(link(r.label, r.href), r.strong)} | ${fmt(linePct(r.c))} | ${fmt(branchPct(r.c))} | ` +
       `${r.c.linesMissed} / ${r.c.linesMissed + r.c.linesCovered} |`),
     '',
-    `_${commonNote}_`,
-    '',
-    '## Lowest-covered back-end classes (most missed lines)',
-    '',
-    '| Module | Class | Lines missed | Line % |',
-    '|---|---|---:|---:|',
-    ...lowestBackend.map((c) => `| ${c.module} | \`${c.name}\` | ${c.linesMissed} | ${fmt(linePct(c))} |`),
-    '',
-    '## Lowest-covered front-end files (most missed lines)',
-    '',
-    '| File | Lines missed | Line % |',
-    '|---|---:|---:|',
-    ...lowestFrontend.map((f) => `| \`${f.name}\` | ${f.linesMissed} | ${fmt(linePct(f))} |`),
-    '',
-    '## History (newest first)',
-    '',
-    '| Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |',
-    '|---|---|---:|---:|---:|---:|',
-    ...newestFirst.map((h) => `| ${h.date} | \`${h.commit}\` | ${h.backendLine} | ${h.backendBranch} | ${h.frontendLine} | ${h.frontendBranch} |`),
-    '',
   ];
+  if (backend) {
+    lines.push(`_${commonNote}_`, '',
+      '## Lowest-covered back-end classes (most missed lines)', '',
+      '| Module | Class | Lines missed | Line % |', '|---|---|---:|---:|',
+      ...lowestBackend.map((c) => `| ${c.module} | \`${c.name}\` | ${c.linesMissed} | ${fmt(linePct(c))} |`), '');
+  }
+  if (frontend) {
+    lines.push('## Lowest-covered front-end files (most missed lines)', '',
+      '| File | Lines missed | Line % |', '|---|---:|---:|',
+      ...lowestFrontend.map((f) => `| \`${f.name}\` | ${f.linesMissed} | ${fmt(linePct(f))} |`), '');
+  }
+  if (withHistory) {
+    lines.push('## History (newest first)', '',
+      '| Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |',
+      '|---|---|---:|---:|---:|---:|',
+      ...newestFirst.map((h) => `| ${h.date} | \`${h.commit}\` | ${h.backendLine} | ${h.backendBranch} | ${h.frontendLine} | ${h.frontendBranch} |`), '');
+  }
   return lines.join('\n');
 }
 
 function renderHtml() {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const bar = (value) => `<span class="bar"><span style="width:${value.toFixed(1)}%"></span></span>`;
-  const cell = (value) => `<td class="num">${bar(value)}${fmt(value)}</td>`;
+  // <progress> draws the bar without inline style attributes, which Jenkins' CSP would block.
+  const cell = (value) => `<td class="num"><progress max="100" value="${value.toFixed(1)}"></progress>${fmt(value)}</td>`;
+  const table = (head, rows) => `<div class="scroll"><table>\n<thead><tr>${head}</tr></thead>\n<tbody>\n${rows}\n</tbody>\n</table></div>`;
+  const th = (label, num) => `<th${num ? ' class="num"' : ''}>${label}</th>`;
+  const td = (value, num) => `<td${num ? ' class="num"' : ''}>${value}</td>`;
+
   const summary = summaryRows.map((r) => {
     const label = r.href ? `<a href="${r.href}">${esc(r.label)}</a>` : esc(r.label);
-    return `<tr${r.strong ? ' class="total"' : ''}><td>${label}</td>${cell(linePct(r.c))}${cell(branchPct(r.c))}` +
-      `<td class="num">${r.c.linesMissed} / ${r.c.linesMissed + r.c.linesCovered}</td></tr>`;
+    return `<tr${r.strong ? ' class="total"' : ''}>${td(label)}${cell(linePct(r.c))}${cell(branchPct(r.c))}` +
+      `${td(`${r.c.linesMissed} / ${r.c.linesMissed + r.c.linesCovered}`, true)}</tr>`;
   }).join('\n');
-  const backendGaps = lowestBackend.map((c) =>
-    `<tr><td>${esc(c.module)}</td><td><code>${esc(c.name)}</code></td><td class="num">${c.linesMissed}</td><td class="num">${fmt(linePct(c))}</td></tr>`).join('\n');
-  const frontendGaps = lowestFrontend.map((f) =>
-    `<tr><td><code>${esc(f.name)}</code></td><td class="num">${f.linesMissed}</td><td class="num">${fmt(linePct(f))}</td></tr>`).join('\n');
-  const historyRows = newestFirst.map((h) =>
-    `<tr><td>${esc(h.date)}</td><td><code>${esc(h.commit)}</code></td><td class="num">${h.backendLine}</td><td class="num">${h.backendBranch}</td>` +
-    `<td class="num">${h.frontendLine}</td><td class="num">${h.frontendBranch}</td></tr>`).join('\n');
+
+  const sections = [
+    '<h2>Summary</h2>',
+    table(th('Area') + th('Line %', true) + th('Branch %', true) + th('Lines missed / total', true), summary),
+  ];
+  if (backend) {
+    sections.push(`<p class="note">${esc(commonNote)}</p>`, '<h2>Lowest-covered back-end classes</h2>',
+      table(th('Module') + th('Class') + th('Lines missed', true) + th('Line %', true), lowestBackend.map((c) =>
+        `<tr>${td(esc(c.module))}${td(`<code>${esc(c.name)}</code>`)}${td(c.linesMissed, true)}${td(fmt(linePct(c)), true)}</tr>`).join('\n')));
+  }
+  if (frontend) {
+    sections.push('<h2>Lowest-covered front-end files</h2>',
+      table(th('File') + th('Lines missed', true) + th('Line %', true), lowestFrontend.map((f) =>
+        `<tr>${td(`<code>${esc(f.name)}</code>`)}${td(f.linesMissed, true)}${td(fmt(linePct(f)), true)}</tr>`).join('\n')));
+  }
+  if (withHistory) {
+    sections.push('<h2>History</h2>',
+      table(th('Date') + th('Commit') + th('Back-end line %', true) + th('Back-end branch %', true) +
+        th('Front-end line %', true) + th('Front-end branch %', true), newestFirst.map((h) =>
+        `<tr>${td(esc(h.date))}${td(`<code>${esc(h.commit)}</code>`)}${td(h.backendLine, true)}${td(h.backendBranch, true)}` +
+        `${td(h.frontendLine, true)}${td(h.frontendBranch, true)}</tr>`).join('\n')));
+  }
 
   return `<!doctype html>
 <html lang="en">
@@ -215,67 +263,41 @@ function renderHtml() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LeMarketJames Coverage</title>
-<style>
-  :root { --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dde1e7; --accent: #2f6fdb; --track: #e8ebf0; --row: #f6f7f9; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #14171c; --fg: #e4e7ec; --muted: #9aa3b2; --line: #2c323c; --accent: #6ea0f5; --track: #2a3039; --row: #1b1f26; }
-  }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
-  h1 { margin: 0 0 4px; font-size: 26px; }
-  h2 { margin: 36px 0 8px; font-size: 18px; }
-  p.meta, p.note { color: var(--muted); margin: 0 0 8px; }
-  a { color: var(--accent); }
-  .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-  th { font-size: 13px; color: var(--muted); font-weight: 600; }
-  td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  tr.total td { font-weight: 600; background: var(--row); }
-  code { font-size: 13px; word-break: break-all; }
-  .bar { display: inline-block; width: 64px; height: 6px; margin-right: 8px; border-radius: 3px; background: var(--track); vertical-align: middle; overflow: hidden; }
-  .bar span { display: block; height: 100%; background: var(--accent); }
-</style>
+<link rel="stylesheet" href="coverage.css">
 </head>
 <body>
 <main>
-  <h1>Code coverage</h1>
-  <p class="meta">Generated from <code>main</code> at commit <code>${esc(run.commit)}</code> on ${esc(run.date)}. Click an area to open its full report.</p>
-
-  <h2>Summary</h2>
-  <div class="scroll"><table>
-    <thead><tr><th>Area</th><th class="num">Line %</th><th class="num">Branch %</th><th class="num">Lines missed / total</th></tr></thead>
-    <tbody>
-${summary}
-    </tbody>
-  </table></div>
-  <p class="note">${esc(commonNote)}</p>
-
-  <h2>Lowest-covered back-end classes</h2>
-  <div class="scroll"><table>
-    <thead><tr><th>Module</th><th>Class</th><th class="num">Lines missed</th><th class="num">Line %</th></tr></thead>
-    <tbody>
-${backendGaps}
-    </tbody>
-  </table></div>
-
-  <h2>Lowest-covered front-end files</h2>
-  <div class="scroll"><table>
-    <thead><tr><th>File</th><th class="num">Lines missed</th><th class="num">Line %</th></tr></thead>
-    <tbody>
-${frontendGaps}
-    </tbody>
-  </table></div>
-
-  <h2>History</h2>
-  <div class="scroll"><table>
-    <thead><tr><th>Date</th><th>Commit</th><th class="num">Back-end line %</th><th class="num">Back-end branch %</th><th class="num">Front-end line %</th><th class="num">Front-end branch %</th></tr></thead>
-    <tbody>
-${historyRows}
-    </tbody>
-  </table></div>
+<h1>Code coverage</h1>
+<p class="meta">Generated at commit <code>${esc(run.commit)}</code> on ${esc(run.date)}. Click an area to open its full report.</p>
+${sections.join('\n')}
 </main>
 </body>
 </html>
+`;
+}
+
+function css() {
+  return `:root { --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dde1e7; --accent: #2f6fdb; --track: #e8ebf0; --row: #f6f7f9; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171c; --fg: #e4e7ec; --muted: #9aa3b2; --line: #2c323c; --accent: #6ea0f5; --track: #2a3039; --row: #1b1f26; }
+}
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+h2 { margin: 36px 0 8px; font-size: 18px; }
+p.meta, p.note { color: var(--muted); margin: 0 0 8px; }
+a { color: var(--accent); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 600; background: var(--row); }
+code { font-size: 13px; word-break: break-all; }
+progress { width: 64px; height: 6px; margin-right: 8px; vertical-align: middle; border: 0; border-radius: 3px;
+  background: var(--track); appearance: none; -webkit-appearance: none; overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--track); }
+progress::-webkit-progress-value { background: var(--accent); }
+progress::-moz-progress-bar { background: var(--accent); }
 `;
 }

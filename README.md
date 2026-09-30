@@ -591,8 +591,6 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 5. Verifies the output
 6. Cleans up resources
 
-The Jenkins controller also needs the [Coverage](https://plugins.jenkins.io/coverage/) plugin to publish the coverage reports.
-
 The Jenkins agent requires:
 - Java 21
 - Maven 3.9.9+
@@ -802,17 +800,11 @@ The [coverage workflow](.github/workflows/coverage.yml) regenerates both on ever
 
 ### In Jenkins
 
-Every build of `main` and every pull request publishes coverage for the back end (JaCoCo, every module in `libs/` and `services/`) and the front end (Angular unit tests):
+Every build of `main` and every pull request attaches the same combined report (without the history) to the build: open a build and click **Coverage** in the left sidebar. On `main` both sides always run. A pull request runs only the side(s) it touches, so its report covers just those. It uses the HTML Publisher plugin, which the pipeline already relies on, so there is nothing extra to install.
 
-- **Trend:** the **Coverage** chart on the job's (or branch's) main page shows coverage across builds.
-- **Report:** open a build and click **Coverage (all)** in the left sidebar. It has the combined summary for every service plus the front end, then a table of packages and files you can sort by coverage (lowest first shows the gaps) and click through to highlighted source lines.
-- **Per side:** **Coverage (back end)** and **Coverage (front end)** show each side on its own, with its quality-gate result.
+Jenkins' security policy blocks scripts in published reports, so there the front-end report's bars and column sorting don't work; the numbers do. The GitHub Pages copy is fully interactive.
 
-On `main` both sides always run. A pull request runs only the side(s) it touches, so its reports cover just those.
-
-**Quality gate:** the build fails when line or branch coverage drops below the floors in `COVERAGE_BASELINE` at the top of the [Jenkinsfile](Jenkinsfile). The floors only ever go up: when `main` improves, raise them to the new figures (rounded down) in the same change. Never lower them to get a build through.
-
-Publishing needs the Jenkins [Coverage](https://plugins.jenkins.io/coverage/) plugin on the controller.
+**Quality gate:** the build fails when line or branch coverage drops below the floors in [scripts/coverage/coverage-baseline.json](scripts/coverage/coverage-baseline.json), checked by [check-coverage-gate.mjs](scripts/coverage/check-coverage-gate.mjs). The floors only ever go up: when `main` improves, raise them to the new figures (rounded down) in the same change. Never lower them to get a build through.
 
 ### Locally
 
@@ -828,7 +820,12 @@ Front end (writes `apps/frontend/coverage/lemarket-ui/index.html`):
 cd apps/frontend && npx ng test --watch=false --coverage
 ```
 
-After both, `node scripts/coverage/build-coverage-site.mjs <folder>` builds the same combined site the workflow publishes (don't point it at `docs/coverage` locally; the workflow owns that folder).
+After both, build the combined site and run the same gate Jenkins runs (don't point the site at `docs/coverage` locally; the workflow owns that folder):
+
+```bash
+node scripts/coverage/build-coverage-site.mjs target/coverage-site --no-history
+node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json
+```
 
 Open a back-end module's report in your browser, e.g. core-service, using one of the following commands depending on your OS:
 

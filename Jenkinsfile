@@ -1,13 +1,3 @@
-// Coverage floors (percent) for the quality gate in the 'Publish coverage' stage. A build whose
-// line or branch coverage falls below these fails, so coverage on main can only hold or improve.
-// Only ever raise these numbers (to the latest main build's figures, rounded down); never lower
-// them to get a build through. Back end = every JaCoCo module in libs/ and services/, front end =
-// the Angular unit tests.
-def COVERAGE_BASELINE = [
-    backend : [line: 72.1, branch: 72.5],
-    frontend: [line: 87.9, branch: 76.9],
-]
-
 pipeline {
     agent any
     tools {
@@ -250,54 +240,39 @@ pipeline {
             }
         }
 
-        // Publishes coverage on the build page so the PO can review it in Jenkins (Coverage plugin).
-        // Runs after the integration tests, whose JaCoCo data is merged into the core, auth and
-        // holdings reports. "Coverage (all)" is the combined view with the trend; the back-end and
-        // front-end reports carry the quality gates, so a PR that ran only one side is judged only
-        // on that side. Only lanes that ran this build are read, so stale reports in the kept
-        // workspace are never published.
+        // Publishes coverage on the build page and enforces the baseline, using only the HTML
+        // Publisher plugin (no coverage plugin to install). Runs after the integration tests,
+        // whose JaCoCo data is merged into the core, auth and holdings reports. Only the sides
+        // that ran this build are read, so stale reports in the kept workspace are never
+        // published, and a PR that ran one side is gated on that side alone.
         stage('Publish coverage') {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' || env.CI_RUN_FRONTEND_PIPELINE == 'true' }
             }
             steps {
                 script {
-                    def backendTool = [parser: 'JACOCO', pattern: 'libs/*/target/site/jacoco/jacoco.xml, services/*/target/site/jacoco/jacoco.xml']
-                    def frontendTool = [parser: 'COBERTURA', pattern: 'apps/frontend/coverage/lemarket-ui/cobertura-coverage.xml']
-                    // JaCoCo paths are package-relative, so each module's source root is listed;
-                    // Cobertura paths are relative to apps/frontend.
-                    def backendSources = ['libs/common', 'libs/market-client', 'services/core-service',
-                                          'services/auth-service', 'services/market-service',
-                                          'services/holdings-service', 'services/gateway-service']
-                        .collect { [path: "${it}/src/main/java"] }
-                    def frontendSources = [[path: 'apps/frontend']]
-                    def gates = { floor ->
-                        [[metric: 'LINE', baseline: 'PROJECT', threshold: floor.line as double, criticality: 'FAILURE'],
-                         [metric: 'BRANCH', baseline: 'PROJECT', threshold: floor.branch as double, criticality: 'FAILURE']]
-                    }
-
-                    def ranBackend = env.CI_RUN_BACKEND_PIPELINE == 'true'
-                    def ranFrontend = env.CI_RUN_FRONTEND_PIPELINE == 'true'
-
-                    recordCoverage(
-                        id: 'coverage', name: 'Coverage (all)',
-                        tools: (ranBackend ? [backendTool] : []) + (ranFrontend ? [frontendTool] : []),
-                        sourceDirectories: (ranBackend ? backendSources : []) + (ranFrontend ? frontendSources : []),
-                        sourceCodeRetention: 'EVERY_BUILD')
-
-                    if (ranBackend) {
-                        recordCoverage(
-                            id: 'backend', name: 'Coverage (back end)',
-                            tools: [backendTool], sourceDirectories: backendSources,
-                            qualityGates: gates(COVERAGE_BASELINE.backend))
-                    }
-                    if (ranFrontend) {
-                        recordCoverage(
-                            id: 'frontend', name: 'Coverage (front end)',
-                            tools: [frontendTool], sourceDirectories: frontendSources,
-                            qualityGates: gates(COVERAGE_BASELINE.frontend))
-                    }
+                    def sides = []
+                    if (env.CI_RUN_BACKEND_PIPELINE == 'true') { sides << 'backend' }
+                    if (env.CI_RUN_FRONTEND_PIPELINE == 'true') { sides << 'frontend' }
+                    env.CI_COVERAGE_SIDES = sides.join(',')
                 }
+                // Same site the GitHub coverage workflow publishes to Pages, minus the history.
+                sh '''
+                    set -eu
+                    rm -rf target/coverage-site
+                    node scripts/coverage/build-coverage-site.mjs target/coverage-site --sides "$CI_COVERAGE_SIDES" --no-history
+                '''
+                // Published before the gate runs, so a failing build still shows its coverage.
+                publishHTML(target: [
+                    reportName: 'Coverage',
+                    reportDir: 'target/coverage-site',
+                    reportFiles: 'index.html',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: false
+                ])
+                // Fails the build when coverage drops below scripts/coverage/coverage-baseline.json.
+                sh 'node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json'
             }
         }
 
