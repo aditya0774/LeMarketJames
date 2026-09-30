@@ -225,7 +225,7 @@ On Windows, from the repo root:
 ```powershell
 .\scripts\windows\start-all.ps1          # add -SkipBuild if the backend hasn't changed
 ```
-It runs `mvn install -DskipTests` once, then opens one PowerShell window per process. Close a window to stop that process. To do the same by hand, run each of these in its own terminal from the repo root, after `mvn install -DskipTests`:
+It runs `mvn install -DskipTests` once, then opens one PowerShell window per process. Close a window to stop that process, or run `.\scripts\windows\stop-all.ps1` to stop them all (it also stops services started by hand on the usual ports). To do the same by hand, run each of these in its own terminal from the repo root, after `mvn install -DskipTests`:
 ```bash
 mvn -pl services/market-service spring-boot:run     # http://localhost:8083
 mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
