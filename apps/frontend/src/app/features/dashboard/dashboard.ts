@@ -7,9 +7,11 @@ import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { InstrumentCatalog } from '../../core/market/instrument-catalog';
 import { OrderResponse, OrderService } from '../../core/orders/order.service';
+import { OrdersService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { HoldingDto } from '../../shared/models/holdings.model';
 import { Quote } from '../../shared/models/quote.model';
+import { BalanceInfo } from '../../shared/models/order.model';
 import { StatStrip } from './stat-strip/stat-strip';
 import { MarketList, MarketRow } from './market-list/market-list';
 import { appendQuotes } from './market-list/market-history';
@@ -37,6 +39,7 @@ export class Dashboard implements OnInit {
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
+  private readonly ordersService = inject(OrdersService);
   private readonly catalog = inject(InstrumentCatalog);
   private readonly quotes = inject(Quotes);
   private readonly router = inject(Router);
@@ -52,6 +55,10 @@ export class Dashboard implements OnInit {
   private historyRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
+
+  protected readonly balanceData = signal<BalanceInfo | null>(null);
+  protected readonly balanceLoading = signal(true);
+  protected readonly balanceError = signal<string | null>(null);
 
   private readonly marketQuotes = signal<Record<string, Quote | null>>({});
   protected readonly marketHistory = signal<Record<string, number[]>>({});
@@ -80,6 +87,7 @@ export class Dashboard implements OnInit {
     );
     this.loadHoldings();
     this.loadOrders();
+    this.loadBalance();
     this.loadHistory();
   }
 
@@ -192,6 +200,25 @@ export class Dashboard implements OnInit {
           this.flagExpiredSession(err);
         },
       });
+  }
+
+  private loadBalance(): void {
+    this.ordersService.getBalance().then(
+      (response) => {
+        if (response.success && response.balance) {
+          this.balanceData.set(response.balance);
+          this.balanceError.set(null);
+        } else {
+          this.balanceError.set(response.error ?? 'Unable to load balance.');
+        }
+        this.balanceLoading.set(false);
+      },
+      (err) => {
+        this.balanceError.set('Unable to load balance. Please try again.');
+        this.balanceLoading.set(false);
+        this.flagExpiredSession(err);
+      }
+    );
   }
 
   private flagExpiredSession(err: unknown): void {
