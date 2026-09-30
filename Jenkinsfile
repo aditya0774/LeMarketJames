@@ -73,7 +73,7 @@ pipeline {
             }
             steps {
                 dir('apps/frontend') {
-                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false --coverage && npm run build'
+                    sh 'npm ci --no-audit --no-fund && npm test -- --watch=false && npm run build'
                 }
             }
         }
