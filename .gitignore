@@ -26,3 +26,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+# Browser test artifacts
+apps/frontend/test-results/
+apps/frontend/playwright-report/
