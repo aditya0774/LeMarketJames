@@ -217,8 +217,13 @@ non-UTC server time zone must be converted using its known source zone before us
 this filter. No automatic conversion can recover that missing information.
 Response fields and offset-free timestamp serialization remain unchanged.
 
-The dashboard currently filters locally; sending these parameters and aligning the
-UI's UTC timestamp interpretation belong to LMKT-92 (end-to-end wiring).
+The dashboard sends `date` and the browser's IANA `timeZone` on each complete
+selection (LMKT-92). Clearing or switching period type reloads unfiltered history.
+Status chips and pagination apply to the returned period; open-order dashboard totals
+remain account-wide. The frontend interprets offset-free placement timestamps as UTC
+before sorting and displaying them in the client's local time zone. Older in-flight
+history requests are cancelled when the selection changes. Empty, loading, and failed
+requests have distinct UI states.
 
 ### GET /api/v1/orders/account/{accountId}/status/{status}
 
