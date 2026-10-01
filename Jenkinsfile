@@ -89,9 +89,9 @@ pipeline {
                     def onMain = env.CHANGE_ID == null &&
                         (env.BRANCH_NAME == 'main' || env.GIT_BRANCH in ['main', 'origin/main'])
 
-                    env.CI_RUN_FRONTEND_PIPELINE = (onMain || touchesFrontend || touchesDbOrContract).toString()
-                    env.CI_RUN_BACKEND_PIPELINE = (onMain || touchesBackend || touchesDbOrContract).toString()
-                    env.CI_RUN_FULL_STACK = (touchesFrontend || touchesBackend || touchesDbOrContract).toString()
+                    env.CI_RUN_FRONTEND_PIPELINE = 'true'
+                    env.CI_RUN_BACKEND_PIPELINE = 'true'
+                    env.CI_RUN_FULL_STACK = 'true'
 
                     echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
                 }

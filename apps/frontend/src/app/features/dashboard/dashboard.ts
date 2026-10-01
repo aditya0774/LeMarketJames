@@ -7,7 +7,7 @@ import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { InstrumentCatalog } from '../../core/market/instrument-catalog';
 import { OrderResponse, OrderService } from '../../core/orders/order.service';
-import { OrdersService } from '../../core/orders/orders.service';
+import { BalanceService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { HoldingDto } from '../../shared/models/holdings.model';
 import { Quote } from '../../shared/models/quote.model';
@@ -39,7 +39,7 @@ export class Dashboard implements OnInit {
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
-  private readonly ordersService = inject(OrdersService);
+  private readonly ordersService = inject(BalanceService);
   private readonly catalog = inject(InstrumentCatalog);
   private readonly quotes = inject(Quotes);
   private readonly router = inject(Router);

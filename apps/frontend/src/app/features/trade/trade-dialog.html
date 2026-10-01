@@ -14,6 +14,11 @@
       </div>
     } @else {
       @let stock = instrument()!;
+      @if (quoteError()) {
+        <div class="alert err" role="alert">
+          <div><b>Prices are temporarily unavailable</b></div>
+        </div>
+      }
       <div class="order-grid">
         <form class="order-form-card" (submit)="$event.preventDefault(); submit()">
           <div class="type-toggle" role="group" aria-label="Order side">
