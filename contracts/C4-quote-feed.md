@@ -12,6 +12,7 @@ Pricing, failure handling and the indicative price can be tested without a live 
 | Feed modes, and what each one means | [FeedMode.java](../services/market-service/src/main/java/com/lemarketjames/market/service/FeedMode.java) |
 | The controls | [MarketFeedControl.java](../services/market-service/src/main/java/com/lemarketjames/market/service/MarketFeedControl.java), exposed by [MarketControlController.java](../services/market-service/src/main/java/com/lemarketjames/market/MarketControlController.java) |
 | Is a quote too old? | [QuoteFreshness.java](../libs/market-client/src/main/java/com/lemarketjames/market/model/QuoteFreshness.java), with the limit from [C5](C5-config.md) |
+| Is the feed currently down, from a consumer's point of view? | [MarketFeedStatus.java](../libs/market-client/src/main/java/com/lemarketjames/market/client/MarketFeedStatus.java), updated by every [MarketDataClient.java](../libs/market-client/src/main/java/com/lemarketjames/market/client/MarketDataClient.java) call |
 
 ## Controlling the feed
 
@@ -33,8 +34,8 @@ An unknown ticker or a non-positive price gets `400 { message }`.
 
 ## What consumers see
 
-- **UNAVAILABLE:** every market-service quote endpoint answers `503`. `MarketDataClient` treats that as "no quote", so a BUY is refused with `PRICE_UNAVAILABLE`, and `GET /api/quotes` returns an empty list.
-- **STALE:** quotes stop changing, and their `lastUpdated` is pushed into the past, so `QuoteFreshness.isStale` is true straight away. Buy-sell refuses stale BUY placement and rejects execution with `STALE_QUOTE`. The stored prices are never overwritten with the backdated copies.
+- **UNAVAILABLE:** every market-service quote endpoint answers `503`. `MarketDataClient` treats that as "no quote" (`Optional.empty()`/`[]`, unchanged for existing callers), so a BUY is refused with `PRICE_UNAVAILABLE`. It also records the failure on `MarketFeedStatus`; once that flags the feed down, core-service's `GET /api/quotes` and `GET /api/quotes/{symbol}` answer `503 { success: false, error: "Price unavailable" }` instead of degrading to an empty `200` list ([C6](C6-api.md)). The feed resumes automatically the moment a call succeeds again — there is no separate reset step — and `MarketFeedStatus` logs the outage's start and end (with its duration). `MarketDataClient` also applies a connect/read timeout (`market.service.connect-timeout-ms` / `read-timeout-ms`, default 3s/5s) so a hung market-service is detected the same way as an explicit `503` rather than blocking the caller.
+- **STALE:** quotes stop changing, and their `lastUpdated` is pushed into the past, so `QuoteFreshness.isStale` is true straight away. Buy-sell refuses stale BUY placement and rejects execution with `STALE_QUOTE`. The stored prices are never overwritten with the backdated copies. (Core-service's quotes endpoints do not yet treat a STALE feed as unavailable — only UNAVAILABLE/timeout is, see above.)
 - **A set price** shows up in every quote at once. Day high and low stretch to include it.
 
 ## Market hours

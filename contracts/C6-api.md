@@ -169,10 +169,12 @@ How the balance fields are computed:
 
 | Method & path | Returns |
 |---|---|
-| `GET /api/quotes/{symbol}` | `{ success: true, quote }`, or `404 { success: false, error: "Symbol not found" }` |
-| `GET /api/quotes` | `{ success: true, quotes: [quote…] }` sorted by symbol. If market-service is unavailable, it returns `quotes: []` with `200`. |
+| `GET /api/quotes/{symbol}` | `{ success: true, quote }`, `404 { success: false, error: "Symbol not found" }`, or `503 { success: false, error: "Price unavailable" }` while the feed is down ([C4](C4-quote-feed.md)) |
+| `GET /api/quotes` | `{ success: true, quotes: [quote…] }` sorted by symbol, or `503 { success: false, error: "Price unavailable" }` while the feed is down |
 
 `quote` = `{ symbol, name, price, priceChange, priceChangePercent, highPrice, lowPrice, openPrice, volume, marketCap, peRatio, dividendYield, lastUpdate }`.
+
+Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDataClient` call); the feed resumes automatically on the next successful call, with the outage's start and end logged ([C4](C4-quote-feed.md)).
 
 ## Sessions (core-service)
 

@@ -1,5 +1,6 @@
 package com.lemarketjames.quotes;
 
+import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.service.MarketDataService;
@@ -30,12 +31,14 @@ class QuoteServiceTest {
     @Mock
     private MarketDataService marketData;
 
+    private MarketFeedStatus feedStatus;
     private QuoteService quoteService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        quoteService = new QuoteService(marketData);
+        feedStatus = new MarketFeedStatus();
+        quoteService = new QuoteService(marketData, feedStatus);
         when(marketData.findByTicker(anyString())).thenReturn(Optional.empty());
         when(marketData.findByTicker("AAPL")).thenReturn(Optional.of(quoteFor(instrument(1, "AAPL", "Apple Inc", 227.55))));
         when(marketData.findByTicker("MSFT")).thenReturn(Optional.of(quoteFor(instrument(2, "MSFT", "Microsoft Corp", 429.85))));
@@ -104,10 +107,44 @@ class QuoteServiceTest {
     }
 
     @Test
-    void returnsNoQuotesWhenTheMarketIsUnavailable() {
+    void returnsNoQuotesWhenTheresSimplyNothingToReturn() {
         when(marketData.findAll()).thenReturn(List.of());
 
         assertTrue(quoteService.getAllQuotes().isEmpty());
+    }
+
+    @Test
+    void getQuoteRejectsAsFeedUnavailableRatherThanUnknownSymbolDuringAnOutage() {
+        // findByTicker("UNKNOWN") is stubbed empty regardless of outage (see setUp); a quote that
+        // genuinely does resolve should still succeed even mid-outage (see the next test).
+        feedStatus.recordFailure();
+
+        assertThrows(QuoteService.QuoteFeedUnavailableException.class, () -> quoteService.getQuote("UNKNOWN"));
+    }
+
+    @Test
+    void getQuoteStillSucceedsDuringAnOutageIfTheSymbolActuallyResolves() {
+        feedStatus.recordFailure();
+
+        assertEquals("AAPL", quoteService.getQuote("AAPL").getSymbol());
+    }
+
+    @Test
+    void getAllQuotesRejectsAsFeedUnavailableDuringAnOutage() {
+        feedStatus.recordFailure();
+
+        assertThrows(QuoteService.QuoteFeedUnavailableException.class, () -> quoteService.getAllQuotes());
+    }
+
+    @Test
+    void getAllQuotesResumesAutomaticallyOnceTheFeedRecovers() {
+        feedStatus.recordFailure();
+        assertThrows(QuoteService.QuoteFeedUnavailableException.class, () -> quoteService.getAllQuotes());
+
+        feedStatus.recordSuccess();
+        when(marketData.findAll()).thenReturn(List.of(quoteFor(instrument(1, "AAPL", "BronApple", 227.55))));
+
+        assertEquals(List.of("AAPL"), quoteService.getAllQuotes().stream().map(QuoteDto::getSymbol).toList());
     }
 
     private static MarketInstrument instrument(int id, String ticker, String name, double price) {

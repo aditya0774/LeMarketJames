@@ -1,5 +1,6 @@
 package com.lemarketjames.quotes;
 
+import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.quotes.dto.QuoteDto;
@@ -10,6 +11,7 @@ import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Serves quotes from the simulated market.
@@ -25,9 +27,11 @@ public class QuoteService {
     private static final int DISPLAY_SCALE = 2;
 
     private final MarketDataService marketData;
+    private final MarketFeedStatus feedStatus;
 
-    public QuoteService(MarketDataService marketData) {
+    public QuoteService(MarketDataService marketData, MarketFeedStatus feedStatus) {
         this.marketData = marketData;
+        this.feedStatus = feedStatus;
     }
 
     /**
@@ -37,23 +41,33 @@ public class QuoteService {
      *
      * @param rawSymbol ticker symbol; surrounding whitespace and case are ignored
      * @return the contract-shaped quote payload
-     * @throws IllegalArgumentException if the symbol is null or blank
-     * @throws SymbolNotFoundException  if no simulated instrument has that ticker
+     * @throws IllegalArgumentException     if the symbol is null or blank
+     * @throws QuoteFeedUnavailableException if the feed is currently down (see {@link MarketFeedStatus})
+     * @throws SymbolNotFoundException       if no simulated instrument has that ticker
      */
     public QuoteDto getQuote(String rawSymbol) {
         String symbol = normalize(rawSymbol);
-        return marketData.findByTicker(symbol)
-                .map(QuoteService::toDto)
-                .orElseThrow(() -> new SymbolNotFoundException("Symbol not found"));
+        Optional<QuoteDto> quote = marketData.findByTicker(symbol).map(QuoteService::toDto);
+        if (quote.isPresent()) {
+            return quote.get();
+        }
+        if (!feedStatus.isAvailable()) {
+            throw new QuoteFeedUnavailableException("Price unavailable");
+        }
+        throw new SymbolNotFoundException("Symbol not found");
     }
 
     /**
      * Returns the current quote for every simulated instrument in one call, so a screen showing the
      * whole market (the dashboard) makes one request per refresh instead of one per stock.
      *
-     * @return contract-shaped quotes sorted by symbol; empty if market-service is unavailable
+     * @return contract-shaped quotes sorted by symbol
+     * @throws QuoteFeedUnavailableException if the feed is currently down (see {@link MarketFeedStatus})
      */
     public List<QuoteDto> getAllQuotes() {
+        if (!feedStatus.isAvailable()) {
+            throw new QuoteFeedUnavailableException("Price unavailable");
+        }
         return marketData.findAll().stream()
                 .map(QuoteService::toDto)
                 .sorted(Comparator.comparing(QuoteDto::getSymbol))
@@ -92,6 +106,13 @@ public class QuoteService {
     /** Raised for an unknown ticker; mapped to the contract's 404 response by the controller. */
     public static class SymbolNotFoundException extends RuntimeException {
         public SymbolNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    /** Raised while the quote feed is down; mapped to the contract's 503 response by the controller. */
+    public static class QuoteFeedUnavailableException extends RuntimeException {
+        public QuoteFeedUnavailableException(String message) {
             super(message);
         }
     }

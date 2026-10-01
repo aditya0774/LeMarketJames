@@ -2,10 +2,12 @@ package com.lemarketjames.quotes;
 
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.service.MarketDataService;
 import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,6 +40,16 @@ class QuotesControllerTest {
 
     @MockBean
     private MarketDataService marketData;
+
+    @Autowired
+    private MarketFeedStatus feedStatus;
+
+    @AfterEach
+    void feedResumes() {
+        // MarketFeedStatus is a real singleton shared across this class's tests; make sure an
+        // outage test never leaks an "unavailable" status into the next test.
+        feedStatus.recordSuccess();
+    }
 
     @Test
     void quoteEndpointRequiresAuthentication() throws Exception {
@@ -80,6 +92,17 @@ class QuotesControllerTest {
     }
 
     @Test
+    void authenticatedRequestDuringAnOutageReturns503PriceUnavailable() throws Exception {
+        Cookie jwtCookie = loginAs("quotesuser4");
+        feedStatus.recordFailure();
+
+        mockMvc.perform(get("/api/quotes/AAPL").cookie(jwtCookie))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error").value("Price unavailable"));
+    }
+
+    @Test
     void allQuotesEndpointRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/quotes"))
                 .andExpect(status().isUnauthorized());
@@ -97,6 +120,32 @@ class QuotesControllerTest {
                 .andExpect(jsonPath("$.quotes[0].symbol").value("AAPL"))
                 .andExpect(jsonPath("$.quotes[0].price").isNumber())
                 .andExpect(jsonPath("$.quotes[0].lastUpdate").isString());
+    }
+
+    @Test
+    void allQuotesEndpointDuringAnOutageReturns503PriceUnavailable() throws Exception {
+        Cookie jwtCookie = loginAs("quotesuser5");
+        feedStatus.recordFailure();
+
+        mockMvc.perform(get("/api/quotes").cookie(jwtCookie))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error").value("Price unavailable"));
+    }
+
+    @Test
+    void allQuotesEndpointResumesAutomaticallyOnceTheFeedRecovers() throws Exception {
+        Cookie jwtCookie = loginAs("quotesuser6");
+        feedStatus.recordFailure();
+        mockMvc.perform(get("/api/quotes").cookie(jwtCookie)).andExpect(status().isServiceUnavailable());
+
+        feedStatus.recordSuccess();
+        when(marketData.findAll()).thenReturn(List.of(sampleAaplQuote()));
+
+        mockMvc.perform(get("/api/quotes").cookie(jwtCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.quotes[0].symbol").value("AAPL"));
     }
 
     // auth-service issues the jwt cookie in production; here the shared JwtService mints an

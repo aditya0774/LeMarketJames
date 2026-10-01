@@ -25,8 +25,13 @@ public class QuotesController {
 
     /** Every quote in one response, so the dashboard polls once per refresh rather than once per stock. */
     @GetMapping
-    public QuotesListResponse getAllQuotes() {
-        return new QuotesListResponse(true, quoteService.getAllQuotes());
+    public ResponseEntity<?> getAllQuotes() {
+        try {
+            return ResponseEntity.ok(new QuotesListResponse(true, quoteService.getAllQuotes()));
+        } catch (QuoteService.QuoteFeedUnavailableException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new QuoteErrorResponse(false, ex.getMessage()));
+        }
     }
 
     @GetMapping("/{symbol}")
@@ -35,6 +40,9 @@ public class QuotesController {
             return ResponseEntity.ok(new QuoteSuccessResponse(true, quoteService.getQuote(symbol)));
         } catch (QuoteService.SymbolNotFoundException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new QuoteErrorResponse(false, ex.getMessage()));
+        } catch (QuoteService.QuoteFeedUnavailableException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(new QuoteErrorResponse(false, ex.getMessage()));
         }
     }
