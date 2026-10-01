@@ -42,10 +42,16 @@ pipeline {
                         # PR build: compare to target branch tip.
                         git diff --name-only "origin/${CHANGE_TARGET}...HEAD" > .ci-changed-files.txt
                     elif [ "${BRANCH_NAME:-}" = "main" ] || [ "${GIT_BRANCH:-}" = "origin/main" ] || [ "${GIT_BRANCH:-}" = "main" ]; then
-                        # Main-branch build: origin/main and HEAD usually point to the same commit.
-                        # Compare against previous commit so gating reflects what just landed.
-                        if git rev-parse --verify "HEAD~1" >/dev/null 2>&1; then
-                            git diff --name-only "HEAD~1...HEAD" > .ci-changed-files.txt
+                        # Main-branch build: compare against the last green build, so gating reflects
+                        # everything that landed since. The docs bots push right behind a merge, so the
+                        # newest commit alone is often only generated files under docs/.
+                        # Falls back to the previous commit on a first build or a rebuild of the same commit.
+                        base="${GIT_PREVIOUS_SUCCESSFUL_COMMIT:-}"
+                        if [ -z "$base" ] || [ "$base" = "$(git rev-parse HEAD)" ] || ! git merge-base --is-ancestor "$base" HEAD 2>/dev/null; then
+                            base="HEAD~1"
+                        fi
+                        if git rev-parse --verify "$base" >/dev/null 2>&1; then
+                            git diff --name-only "$base" HEAD > .ci-changed-files.txt
                         else
                             git ls-files > .ci-changed-files.txt
                         fi
@@ -65,9 +71,12 @@ pipeline {
 
                     def touchesFrontend = changedFiles.any { it.startsWith('apps/frontend/') || it.startsWith('apps/e2e/') }
                     def touchesBackend = changedFiles.any { it.startsWith('services/') || it.startsWith('libs/') || it == 'pom.xml' }
+                    // scripts/ counts too: the coverage gate, its baseline and the verify-*.sh checks
+                    // run in this pipeline. scripts/windows is local-only tooling.
                     def touchesDbOrContract = changedFiles.any {
                         it.startsWith('database/schema/') || it.startsWith('contracts/') ||
-                            it == 'API-CONTRACTS.md' || it == 'docker-compose.yml' || it == 'Jenkinsfile'
+                            it == 'API-CONTRACTS.md' || it == 'docker-compose.yml' || it == 'Jenkinsfile' ||
+                            (it.startsWith('scripts/') && !it.startsWith('scripts/windows/'))
                     }
 
                     env.CI_TOUCHES_FRONTEND = touchesFrontend.toString()
@@ -75,10 +84,9 @@ pipeline {
                     env.CI_TOUCHES_DB_OR_CONTRACT = touchesDbOrContract.toString()
                     // Main always runs both unit-test lanes so its coverage report, trend and
                     // baseline always cover the whole codebase; PRs keep the change-scope gating.
-                    // Commits from the GitHub docs bots (Javadoc and coverage workflows) only add
-                    // generated files under docs/, so they don't force the lanes.
-                    def lastAuthor = sh(script: 'git log -1 --format=%an', returnStdout: true).trim()
-                    def onMain = env.CHANGE_ID == null && lastAuthor != 'github-actions[bot]' &&
+                    // This holds for the GitHub docs bots' commits too (Javadoc and coverage
+                    // workflows): a main build never ends green without running a test.
+                    def onMain = env.CHANGE_ID == null &&
                         (env.BRANCH_NAME == 'main' || env.GIT_BRANCH in ['main', 'origin/main'])
 
                     env.CI_RUN_FRONTEND_PIPELINE = (onMain || touchesFrontend || touchesDbOrContract).toString()
