@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
@@ -50,6 +50,7 @@ export class Dashboard implements OnInit {
   protected readonly historyOrders = signal<OrderResponse[]>([]);
   private historyDate = '';
   private historyRequest?: Subscription;
+  private ordersRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
 
@@ -81,6 +82,10 @@ export class Dashboard implements OnInit {
     this.loadHoldings();
     this.loadOrders();
     this.loadHistory();
+    // Placement is asynchronous: keep watching open orders until execution finishes.
+    interval(MARKET_REFRESH_MS).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (!this.sessionExpired() && this.openOrders() > 0) this.loadOrders();
+    });
   }
 
   protected openTrade(symbol: string): void {
@@ -143,18 +148,25 @@ export class Dashboard implements OnInit {
   }
 
   private loadOrders(): void {
+    if (this.ordersRequest && !this.ordersRequest.closed) return;
     const accountId = this.auth.currentAccountId();
     if (!accountId) {
       this.ordersError.set('No trading account is linked to this login.');
       this.ordersLoading.set(false);
       return;
     }
-    this.orderService
+    this.ordersRequest = this.orderService
       .getOrdersByAccountId(accountId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (orders) => {
+          const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
           this.orders.set(orders ?? []);
+          if ((orders ?? []).some(order => previous.has(order.orderId)
+              && previous.get(order.orderId) !== order.orderStatus)) {
+            this.loadHoldings();
+            this.loadHistory();
+          }
         },
         error: (err) => {
           this.flagExpiredSession(err);

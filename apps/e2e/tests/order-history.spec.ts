@@ -35,7 +35,7 @@ const test = base.extend<{ seededAccount: number }>({
           SELECT $1,instrument_id,'BUY',$2,100,$3,$4::timestamp,
             '2027-01-01'::timestamp,$4::timestamp,$4::timestamp
           FROM instruments WHERE ticker='AAPL'`,
-          [accountId, index + 1, index === 0 ? 'SUBMITTED' : 'FILLED', timestamp]);
+          [accountId, index + 1, index === 0 ? 'REJECTED' : 'FILLED', timestamp]);
       }
       await loginViaUi(page, user);
       await expect(page).toHaveURL(/dashboard/);
@@ -87,7 +87,7 @@ for (const scenario of [
       await expect(rows.locator('td:last-child')).toHaveText(scenario.quantities.map(() => scenario.display!));
     }
     // Filtering history must not change the account-wide open-order count.
-    await expect(page.locator('.stat-card .val').last()).toHaveText('1');
+    await expect(page.locator('.stat-card .val').last()).toHaveText('0');
   });
 }
 

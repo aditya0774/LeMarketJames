@@ -15,9 +15,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Reads order data from core-service for trade history and buying power. core-service's
+ * Reads order data from buy-sell-service for trade history and buying power. buy-sell-service's
  * /api/v1/orders/** endpoints are JWT-ownership-checked, so this relays the incoming request's own
- * jwt cookie rather than bypassing that check — core-service's authorization is unchanged.
+ * jwt cookie rather than bypassing that check — buy-sell-service's authorization is unchanged.
  */
 @Service
 public class OrdersClient {
@@ -41,7 +41,7 @@ public class OrdersClient {
                     .body(OrderSummary[].class);
             return orders == null ? List.of() : List.of(orders);
         } catch (RestClientException e) {
-            log.warn("core-service call failed for account {} orders: {}", accountId, e.getMessage());
+            log.warn("buy-sell-service call failed for account {} orders: {}", accountId, e.getMessage());
             return List.of();
         }
     }
@@ -54,7 +54,7 @@ public class OrdersClient {
                 .map(Cookie::getValue)
                 .orElse(null);
         if (token == null) {
-            throw new IllegalStateException("No jwt cookie on the current request to relay to core-service");
+            throw new IllegalStateException("No jwt cookie on the current request to relay to buy-sell-service");
         }
         return JwtAuthenticationFilter.COOKIE_NAME + "=" + token;
     }

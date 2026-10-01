@@ -20,11 +20,15 @@ Each event records the order, its account, the client (resolved from the account
 
   | Where | Event types |
   |---|---|
-  | core-service, order placement | `SUBMITTED`, then `VALIDATED` |
-  | core-service, status changes | `ACCEPTED`, `FILLED`, `REJECTED` |
+  | buy-sell-service, order placement | `SUBMITTED`, then `VALIDATED` |
+  | buy-sell-service, status changes | `ACCEPTED`, `FILLED`, `REJECTED` |
   | holdings-service, settlement | `SETTLED` |
 
-  A fill writes `FILLED` in core-service's transaction just before calling settlement, so the trail reads FILLED then SETTLED. If settlement fails, core-service rolls back and the `FILLED` event goes with it. The two services use separate transactions, so a core-service failure *after* a successful settlement would leave `SETTLED` without `FILLED`. That gap belongs to the settlement design, not to the audit format.
+  Holdings commits `SETTLED` with the cash/share changes and its idempotency receipt. Buy-sell
+  then commits `FILLED` and the final order status. These are separate transactions: after a lost
+  response, `SETTLED` can temporarily exist without `FILLED`. The persisted execution intent is
+  retried with the same price; holdings returns its original receipt without moving funds again,
+  and buy-sell records `FILLED` once. Thus `SETTLED` precedes `FILLED` in the completed audit trail.
 - **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) are marked `archived` rather than removed. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
 
 ## Mirrors (change together with `AuditEventType`)

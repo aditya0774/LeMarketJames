@@ -7,6 +7,10 @@ import java.util.Optional;
 
 /** Account ownership is resolved from persisted client identities. */
 public interface AccountRepository extends JpaRepository<AccountEntity, Integer> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM AccountEntity a WHERE a.accountId = :id")
+    Optional<AccountEntity> findLockedById(@Param("id") Integer id);
+
 		@Query("""
 				SELECT COUNT(a) > 0
 				FROM AccountEntity a

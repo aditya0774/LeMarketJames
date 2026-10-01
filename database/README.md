@@ -11,10 +11,11 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `clients`, `addresses` | auth-service (registration, last login, lockout) | holdings-service (profile), core-service (client status) |
 | `staff_users` | seed data only (no staff admin yet) | auth-service (staff login) |
 | `accounts` | auth-service (created at registration), holdings-service (cash on settlement) | every servlet service |
-| `instruments` | migrations only | core-service (orders, `GET /api/v1/instruments`), market-service |
-| `orders` | core-service | core-service, holdings-service (through core-service's API) |
+| `instruments` | migrations only | buy-sell-service (orders), core-service (`GET /api/v1/instruments`), market-service |
+| `orders` | buy-sell-service | buy-sell-service, holdings-service (through buy-sell's API) |
+| `settlement_receipts` | holdings-service | holdings-service (idempotent execution outcomes) |
 | `holdings` | holdings-service (settlement) | holdings-service |
-| `audit_log` | core-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)) | — (audit views are planned) |
+| `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)) | — (audit views are planned) |
 | `market_quotes`, `price_candles` | market-service | market-service |
 | `instrument_market_params` | migrations only | market-service |
 | `reporting_trades` (view) | — | reports and insights ([C6](../contracts/C6-api.md#internal-events-and-the-execution-interface-core-service)) |
@@ -241,3 +242,19 @@ docker compose restart market-service
 
 With a native Windows PostgreSQL install, `.\scripts\windows\setup-db.ps1 -Reset` rebuilds
 everything including both.
+
+## 012 — Durable order execution
+
+Apply `schema/012_order_execution.sql` before starting the updated buy-sell and holdings services.
+It adds the order's durable settlement flag and the settlement receipt table. Existing orders
+start with no intent; open orders are picked up by the execution worker. Final orders are untouched.
+Back up an existing database and stop the old order writer before switching to buy-sell.
+
+```powershell
+Get-Content database/schema/012_order_execution.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Receipts deliberately
+have no order foreign key, preserving idempotency even after order cleanup. Never delete receipts
+while their order IDs could be retried or reused. Cash updates and receipts commit together;
+all settlements acquire the account lock first to serialize concurrent buys and sells.
