@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { TestUser, loginViaUi, newUser, registerViaApi } from './support/users';
+import { pinMarketPrices, unpinMarketPrices } from './support/market-control';
 
 /**
  * LMKT-29: View my holdings
@@ -85,7 +86,7 @@ test.describe('Holdings View (LMKT-29)', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
   });
 
-  test('AC3: Holdings persist after page reload', async ({ page }) => {
+  test('AC3: Holdings persist after page reload', async ({ page, request }) => {
     // Seed data user with holdings
     await loginViaUi(page, seed('seed_active'));
     await page.click('a:has-text("Holdings")');
@@ -97,17 +98,28 @@ test.describe('Holdings View (LMKT-29)', () => {
     const initialHoldings = await initialRows.count();
     const initialContent = await page.locator('.holdings-table').textContent();
 
-    // AC3: Reload the page
-    await page.reload();
+    // Pin market prices to prevent drift during page reload.
+    // Without this, market simulator generates new random prices between page loads,
+    // causing currentPrice, currentValue, and gainLoss to differ slightly.
+    // (See C4-quote-feed.md for market control contract)
+    await pinMarketPrices(request);
 
-    // Verify holdings are exactly the same after reload
-    await expect(page).toHaveURL(/\/holdings$/);
-    const reloadedRows = page.locator('.holdings-table tr');
-    await reloadedRows.first().waitFor({ state: 'visible' });
-    const reloadedHoldings = await reloadedRows.count();
-    const reloadedContent = await page.locator('.holdings-table').textContent();
+    try {
+      // AC3: Reload the page
+      await page.reload();
 
-    expect(reloadedHoldings).toBe(initialHoldings);
-    expect(reloadedContent).toBe(initialContent);
+      // Verify holdings are exactly the same after reload
+      await expect(page).toHaveURL(/\/holdings$/);
+      const reloadedRows = page.locator('.holdings-table tr');
+      await reloadedRows.first().waitFor({ state: 'visible' });
+      const reloadedHoldings = await reloadedRows.count();
+      const reloadedContent = await page.locator('.holdings-table').textContent();
+
+      expect(reloadedHoldings).toBe(initialHoldings);
+      expect(reloadedContent).toBe(initialContent);
+    } finally {
+      // Cleanup: unpin market prices so other tests run with live market
+      await unpinMarketPrices(request);
+    }
   });
 });
