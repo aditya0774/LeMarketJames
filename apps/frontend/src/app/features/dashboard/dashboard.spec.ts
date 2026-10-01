@@ -5,6 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { vi } from 'vitest';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderService } from '../../core/orders/order.service';
@@ -67,6 +68,27 @@ describe('Dashboard', () => {
   }
 
   const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+  it('refreshes history after an open order fills and then stops polling', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      ordersResult = of([order(1, 'SUBMITTED')]);
+      await setup();
+      ordersResult = of([order(1, 'FILLED')]);
+      const before = requestedFilters.length;
+      await vi.advanceTimersByTimeAsync(2000);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(requestedFilters.length).toBe(before + 2); // Account-wide status plus the selected history.
+      expect(text()).toContain('Filled');
+      const after = requestedFilters.length;
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(requestedFilters.length).toBe(after);
+    } finally {
+      fixture?.destroy();
+      vi.useRealTimers();
+    }
+  });
 
   it('shows portfolio totals and open order count', async () => {
     ordersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);

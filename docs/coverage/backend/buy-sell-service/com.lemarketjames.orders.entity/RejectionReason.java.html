@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RejectionReason.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.entity</a> &gt; <span class="el_source">RejectionReason.java</span></div><h1>RejectionReason.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.entity;
+
+/**
+ * Why an order was refused (contract C1). Used both as the {@code code} in a failed placement
+ * response and as the value stored in {@code orders.rejection_reason} when an order is rejected.
+ */
+<span class="fc" id="L7">public enum RejectionReason {</span>
+    /** A BUY costs more than the account's cash. */
+<span class="fc" id="L9">    INSUFFICIENT_CASH,</span>
+    /** A SELL is for more shares than the account holds. */
+<span class="fc" id="L11">    INSUFFICIENT_HOLDINGS,</span>
+    /** The stock is suspended (instruments.tradable = false). */
+<span class="fc" id="L13">    NOT_TRADABLE,</span>
+    /** No usable quote: the feed is down or returned no price. */
+<span class="fc" id="L15">    PRICE_UNAVAILABLE,</span>
+    /** The quote is older than the staleness limit (lmj.market.staleness-limit). */
+<span class="fc" id="L17">    STALE_QUOTE,</span>
+    /** The market is closed and the order can't wait for the open. */
+<span class="fc" id="L19">    MARKET_CLOSED,</span>
+    /** The client or account may not trade: status isn't ACTIVE, or trading is disabled on the account. */
+<span class="fc" id="L21">    ACCOUNT_RESTRICTED,</span>
+    /** The client lives somewhere trading isn't allowed (lmj.orders.restricted-locations). */
+<span class="fc" id="L23">    LOCATION_RESTRICTED,</span>
+    /** Operations rejected the order by hand. */
+<span class="fc" id="L25">    REJECTED_BY_OPERATIONS</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

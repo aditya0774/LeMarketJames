@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Order.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.entity</a> &gt; <span class="el_source">Order.java</span></div><h1>Order.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.entity;
+
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.EnumSet;
+import java.util.Set;
+
+@Entity
+@Table(name = &quot;orders&quot;)
+public class Order {
+    
+<span class="fc" id="L15">    public enum OrderType {</span>
+<span class="fc" id="L16">        BUY, SELL</span>
+    }
+    
+    /**
+     * Where an order is in its life (contract C1). The allowed moves are defined here, in
+     * {@link #allowedNext()}, and enforced by {@link Order#transitionTo}; nothing else may set a status.
+     *
+     * &lt;p&gt;Mirrors: the {@code orders.order_status} CHECK constraint (database/schema/001), the
+     * frontend's {@code OrderStatus} type (apps/frontend/src/app/core/orders/order.service.ts) and
+     * holdings-service's OrderSummary open-status list.
+     */
+<span class="fc" id="L27">    public enum OrderStatus {</span>
+        /** Saved after passing placement checks; waiting to be accepted for execution. */
+<span class="fc" id="L29">        SUBMITTED,</span>
+        /** Accepted for execution; waiting for the execution engine. */
+<span class="fc" id="L31">        ACCEPTED,</span>
+        /** Sent for execution; waiting for the fill. */
+<span class="fc" id="L33">        PENDING,</span>
+        /** Executed; cash and holdings are settled. Final. */
+<span class="fc" id="L35">        FILLED,</span>
+        /** Refused, with a {@link RejectionReason} in rejection_reason. Final. */
+<span class="fc" id="L37">        REJECTED,</span>
+        /** Accepted while the market is closed; waits for the open before being sent for execution. */
+<span class="fc" id="L39">        DELAYED;</span>
+
+        /** The statuses an order in this status may move to next; empty for final statuses. */
+        public Set&lt;OrderStatus&gt; allowedNext() {
+<span class="fc bfc" id="L43" title="All 5 branches covered.">            return switch (this) {</span>
+<span class="fc" id="L44">                case SUBMITTED -&gt; EnumSet.of(ACCEPTED, REJECTED);</span>
+<span class="fc" id="L45">                case ACCEPTED -&gt; EnumSet.of(PENDING, DELAYED, FILLED, REJECTED);</span>
+<span class="fc" id="L46">                case DELAYED -&gt; EnumSet.of(PENDING, REJECTED);</span>
+<span class="fc" id="L47">                case PENDING -&gt; EnumSet.of(FILLED, REJECTED);</span>
+<span class="fc" id="L48">                case FILLED, REJECTED -&gt; EnumSet.noneOf(OrderStatus.class);</span>
+            };
+        }
+
+        public boolean canMoveTo(OrderStatus next) {
+<span class="fc" id="L53">            return allowedNext().contains(next);</span>
+        }
+
+        /** Still in progress, i.e. not FILLED or REJECTED. */
+        public boolean isOpen() {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            return !allowedNext().isEmpty();</span>
+        }
+    }
+
+    /**
+     * Moves the order to {@code next}, stamping the matching timestamp.
+     *
+     * @throws InvalidStatusTransitionException if the lifecycle doesn't allow the move
+     */
+    public void transitionTo(OrderStatus next) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (!orderStatus.canMoveTo(next)) {</span>
+<span class="fc" id="L69">            throw new InvalidStatusTransitionException(orderStatus, next);</span>
+        }
+        // Order timestamps are stored as offset-free UTC values; keep lifecycle stamps consistent.
+<span class="fc" id="L72">        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (next == OrderStatus.ACCEPTED) {</span>
+<span class="fc" id="L74">            acceptedAt = now;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        } else if (next == OrderStatus.FILLED) {</span>
+<span class="fc" id="L76">            filledAt = now;</span>
+        }
+<span class="fc" id="L78">        orderStatus = next;</span>
+<span class="fc" id="L79">    }</span>
+
+    /**
+     * Rejects the order with a reason code.
+     *
+     * @throws InvalidStatusTransitionException if the order is already final
+     */
+    public void reject(RejectionReason reason) {
+<span class="fc" id="L87">        transitionTo(OrderStatus.REJECTED);</span>
+<span class="fc" id="L88">        rejectionReason = reason.name();</span>
+<span class="fc" id="L89">    }</span>
+    
+    @Column(name = &quot;settlement_pending&quot;, nullable = false)
+    private boolean settlementPending;
+<span class="fc" id="L93">    public boolean isSettlementPending() { return settlementPending; }</span>
+<span class="fc" id="L94">    public void setSettlementPending(boolean value) { settlementPending = value; }</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer orderId;
+    
+    @Column(name = &quot;account_id&quot;, nullable = false)
+    private Integer accountId;
+    
+    @Column(name = &quot;instrument_id&quot;, nullable = false)
+    private Integer instrumentId;
+    
+    @Column(name = &quot;order_type&quot;, nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
+    private OrderType orderType;
+    
+    @Column(nullable = false, precision = 14, scale = 4)
+    private BigDecimal quantity;
+    
+    @Column(name = &quot;price_per_unit&quot;, precision = 14, scale = 4)
+    private BigDecimal pricePerUnit;
+    
+    @Column(name = &quot;order_status&quot;, nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
+    
+    @Column(name = &quot;rejection_reason&quot;, length = 255)
+    private String rejectionReason;
+    
+    @Column(name = &quot;submitted_at&quot;, nullable = false)
+    private LocalDateTime submittedAt;
+    
+    @Column(name = &quot;accepted_at&quot;)
+    private LocalDateTime acceptedAt;
+    
+    @Column(name = &quot;filled_at&quot;)
+    private LocalDateTime filledAt;
+    
+    @Column(name = &quot;created_at&quot;, nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = &quot;updated_at&quot;, nullable = false)
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+<span class="fc" id="L140">        createdAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L141">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (submittedAt == null) {</span>
+<span class="fc" id="L143">            submittedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+        }
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (orderStatus == null) {</span>
+<span class="nc" id="L146">            orderStatus = OrderStatus.SUBMITTED;</span>
+        }
+<span class="fc" id="L148">    }</span>
+    
+    @PreUpdate
+    protected void onUpdate() {
+<span class="fc" id="L152">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L153">    }</span>
+    
+    // Constructors
+<span class="fc" id="L156">    public Order() {}</span>
+    
+<span class="fc" id="L158">    public Order(Integer accountId, Integer instrumentId, OrderType orderType, BigDecimal quantity) {</span>
+<span class="fc" id="L159">        this.accountId = accountId;</span>
+<span class="fc" id="L160">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L161">        this.orderType = orderType;</span>
+<span class="fc" id="L162">        this.quantity = quantity;</span>
+        // Every new order starts its lifecycle here (contract C1).
+<span class="fc" id="L164">        this.orderStatus = OrderStatus.SUBMITTED;</span>
+<span class="fc" id="L165">    }</span>
+    
+    // Getters and Setters
+    public Integer getOrderId() {
+<span class="fc" id="L169">        return orderId;</span>
+    }
+    
+    public void setOrderId(Integer orderId) {
+<span class="fc" id="L173">        this.orderId = orderId;</span>
+<span class="fc" id="L174">    }</span>
+    
+    public Integer getAccountId() {
+<span class="fc" id="L177">        return accountId;</span>
+    }
+    
+    public void setAccountId(Integer accountId) {
+<span class="nc" id="L181">        this.accountId = accountId;</span>
+<span class="nc" id="L182">    }</span>
+    
+    public Integer getInstrumentId() {
+<span class="fc" id="L185">        return instrumentId;</span>
+    }
+    
+    public void setInstrumentId(Integer instrumentId) {
+<span class="nc" id="L189">        this.instrumentId = instrumentId;</span>
+<span class="nc" id="L190">    }</span>
+    
+    public OrderType getOrderType() {
+<span class="fc" id="L193">        return orderType;</span>
+    }
+    
+    public void setOrderType(OrderType orderType) {
+<span class="fc" id="L197">        this.orderType = orderType;</span>
+<span class="fc" id="L198">    }</span>
+    
+    public BigDecimal getQuantity() {
+<span class="fc" id="L201">        return quantity;</span>
+    }
+    
+    public void setQuantity(BigDecimal quantity) {
+<span class="nc" id="L205">        this.quantity = quantity;</span>
+<span class="nc" id="L206">    }</span>
+    
+    public BigDecimal getPricePerUnit() {
+<span class="fc" id="L209">        return pricePerUnit;</span>
+    }
+    
+    public void setPricePerUnit(BigDecimal pricePerUnit) {
+<span class="fc" id="L213">        this.pricePerUnit = pricePerUnit;</span>
+<span class="fc" id="L214">    }</span>
+    
+    public OrderStatus getOrderStatus() {
+<span class="fc" id="L217">        return orderStatus;</span>
+    }
+    
+    /**
+     * Sets the status without lifecycle checks. Only for putting an order into a known state
+     * (tests, fixtures); every real status change goes through {@link #transitionTo}.
+     */
+    public void setOrderStatus(OrderStatus orderStatus) {
+<span class="fc" id="L225">        this.orderStatus = orderStatus;</span>
+<span class="fc" id="L226">    }</span>
+    
+    public String getRejectionReason() {
+<span class="fc" id="L229">        return rejectionReason;</span>
+    }
+    
+    public void setRejectionReason(String rejectionReason) {
+<span class="nc" id="L233">        this.rejectionReason = rejectionReason;</span>
+<span class="nc" id="L234">    }</span>
+    
+    public LocalDateTime getSubmittedAt() {
+<span class="fc" id="L237">        return submittedAt;</span>
+    }
+    
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+<span class="fc" id="L241">        this.submittedAt = submittedAt;</span>
+<span class="fc" id="L242">    }</span>
+    
+    public LocalDateTime getAcceptedAt() {
+<span class="fc" id="L245">        return acceptedAt;</span>
+    }
+    
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
+<span class="nc" id="L249">        this.acceptedAt = acceptedAt;</span>
+<span class="nc" id="L250">    }</span>
+    
+    public LocalDateTime getFilledAt() {
+<span class="fc" id="L253">        return filledAt;</span>
+    }
+    
+    public void setFilledAt(LocalDateTime filledAt) {
+<span class="fc" id="L257">        this.filledAt = filledAt;</span>
+<span class="fc" id="L258">    }</span>
+    
+    public LocalDateTime getCreatedAt() {
+<span class="fc" id="L261">        return createdAt;</span>
+    }
+    
+    public void setCreatedAt(LocalDateTime createdAt) {
+<span class="nc" id="L265">        this.createdAt = createdAt;</span>
+<span class="nc" id="L266">    }</span>
+    
+    public LocalDateTime getUpdatedAt() {
+<span class="fc" id="L269">        return updatedAt;</span>
+    }
+    
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+<span class="nc" id="L273">        this.updatedAt = updatedAt;</span>
+<span class="nc" id="L274">    }</span>
+    
+    @Override
+    public String toString() {
+<span class="nc" id="L278">        return &quot;Order{&quot; +</span>
+                &quot;orderId=&quot; + orderId +
+                &quot;, accountId=&quot; + accountId +
+                &quot;, instrumentId=&quot; + instrumentId +
+                &quot;, orderType=&quot; + orderType +
+                &quot;, quantity=&quot; + quantity +
+                &quot;, pricePerUnit=&quot; + pricePerUnit +
+                &quot;, orderStatus=&quot; + orderStatus +
+                &quot;, submittedAt=&quot; + submittedAt +
+                &quot;, acceptedAt=&quot; + acceptedAt +
+                &quot;, filledAt=&quot; + filledAt +
+                '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

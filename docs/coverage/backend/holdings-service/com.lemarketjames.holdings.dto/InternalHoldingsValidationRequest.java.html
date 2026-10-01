@@ -3,7 +3,7 @@
 import java.math.BigDecimal;
 
 /**
- * Body for {@code POST /internal/holdings/validate}: core-service re-checking a SELL order's
+ * Body for {@code POST /internal/holdings/validate}: buy-sell-service re-checking a SELL order's
  * holdings before persisting it. Unlike {@link ValidateHoldingRequest} (the browser-facing,
  * JWT-authenticated {@code /api/v1/holdings/validate}), this call has no security context of its
  * own, so the username is carried explicitly. Called server-to-server, never by a browser.

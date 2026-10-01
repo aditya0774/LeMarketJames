@@ -3,68 +3,81 @@
 import java.math.BigDecimal;
 
 /**
- * Body for {@code POST /internal/holdings/settle}: the fill core-service just recorded, sent so
+ * Body for {@code POST /internal/holdings/settle}: the fill buy-sell-service just recorded, sent so
  * this service can apply its cash/holdings side effects. Called server-to-server, never by a browser.
  */
 public class SettlementRequest {
 
 <span class="fc" id="L11">    public enum OrderType { BUY, SELL }</span>
 
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer orderId;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer accountId;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer instrumentId;
+    @jakarta.validation.constraints.NotNull
     private OrderType orderType;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
     private BigDecimal quantity;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
     private BigDecimal pricePerUnit;
 
-<span class="fc" id="L20">    public SettlementRequest() {}</span>
+<span class="fc" id="L33">    public SettlementRequest() {}</span>
 
     public Integer getOrderId() {
-<span class="fc" id="L23">        return orderId;</span>
+<span class="fc" id="L36">        return orderId;</span>
     }
 
     public void setOrderId(Integer orderId) {
-<span class="fc" id="L27">        this.orderId = orderId;</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L40">        this.orderId = orderId;</span>
+<span class="fc" id="L41">    }</span>
 
     public Integer getAccountId() {
-<span class="fc" id="L31">        return accountId;</span>
+<span class="fc" id="L44">        return accountId;</span>
     }
 
     public void setAccountId(Integer accountId) {
-<span class="fc" id="L35">        this.accountId = accountId;</span>
-<span class="fc" id="L36">    }</span>
+<span class="fc" id="L48">        this.accountId = accountId;</span>
+<span class="fc" id="L49">    }</span>
 
     public Integer getInstrumentId() {
-<span class="fc" id="L39">        return instrumentId;</span>
+<span class="fc" id="L52">        return instrumentId;</span>
     }
 
     public void setInstrumentId(Integer instrumentId) {
-<span class="fc" id="L43">        this.instrumentId = instrumentId;</span>
-<span class="fc" id="L44">    }</span>
+<span class="fc" id="L56">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L57">    }</span>
 
     public OrderType getOrderType() {
-<span class="fc" id="L47">        return orderType;</span>
+<span class="fc" id="L60">        return orderType;</span>
     }
 
     public void setOrderType(OrderType orderType) {
-<span class="fc" id="L51">        this.orderType = orderType;</span>
-<span class="fc" id="L52">    }</span>
+<span class="fc" id="L64">        this.orderType = orderType;</span>
+<span class="fc" id="L65">    }</span>
 
     public BigDecimal getQuantity() {
-<span class="fc" id="L55">        return quantity;</span>
+<span class="fc" id="L68">        return quantity;</span>
     }
 
     public void setQuantity(BigDecimal quantity) {
-<span class="fc" id="L59">        this.quantity = quantity;</span>
-<span class="fc" id="L60">    }</span>
+<span class="fc" id="L72">        this.quantity = quantity;</span>
+<span class="fc" id="L73">    }</span>
 
     public BigDecimal getPricePerUnit() {
-<span class="fc" id="L63">        return pricePerUnit;</span>
+<span class="fc" id="L76">        return pricePerUnit;</span>
     }
 
     public void setPricePerUnit(BigDecimal pricePerUnit) {
-<span class="fc" id="L67">        this.pricePerUnit = pricePerUnit;</span>
-<span class="fc" id="L68">    }</span>
+<span class="fc" id="L80">        this.pricePerUnit = pricePerUnit;</span>
+<span class="fc" id="L81">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

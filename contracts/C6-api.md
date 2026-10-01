@@ -40,9 +40,9 @@ The supported stock list: the `instruments` table, in id order, suspended stocks
 
 Prices aren't included; they come from `GET /api/quotes`.
 
-## Orders (core-service)
+## Orders (buy-sell-service)
 
-Order statuses and allowed moves: [contract C1](C1-orders.md). Rejection codes: [RejectionReason](../services/core-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java).
+Order statuses and allowed moves: [contract C1](C1-orders.md). Rejection codes: [RejectionReason](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java).
 
 ### POST /api/v1/orders
 
@@ -54,8 +54,8 @@ Places a market order for one of the caller's accounts.
 
 - `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
-- For a SELL, holdings-service checks the holding before anything is saved. No price is saved until the order fills.
-- Placing an order saves it as `SUBMITTED` and writes its `SUBMITTED` and `VALIDATED` audit events ([C2](C2-audit.md)). It doesn't reserve cash, fill the order or change holdings.
+- For a SELL, holdings-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
+- Placing an order saves it as `SUBMITTED` and writes its `SUBMITTED` and `VALIDATED` audit events ([C2](C2-audit.md)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
 
 **Response `201`** (the order DTO, also returned by every read below):
 
@@ -78,6 +78,8 @@ Places a market order for one of the caller's accounts.
 | 400 | Not enough shares (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
 | 400 | Not enough cash (BUY) | `success: false, code: INSUFFICIENT_CASH, reason` |
 | 400 | No usable quote (BUY) | `success: false, code: PRICE_UNAVAILABLE, reason` |
+| 400 | Stale quote (BUY) | `success: false, code: STALE_QUOTE, reason` |
+| 400 | Residence restricted by platform settings | `success: false, code: LOCATION_RESTRICTED, reason` |
 | 400 | Invalid fields / unknown instrument | `errors` / `message` |
 | 401 / 403 | Not logged in / not the caller's account | see rules above |
 
@@ -109,12 +111,34 @@ The dashboard sends the browser's IANA time zone with every complete selection, 
 
 | Method & path | Effect |
 |---|---|
-| `PUT /api/v1/orders/{orderId}/status/{status}` | Moves the order to `status` if its lifecycle allows it. Moving to `FILLED` needs a price and settles the order through holdings-service first. |
+| `PUT /api/v1/orders/{orderId}/status/{status}` | Moves the order to `status` if its lifecycle allows it. Requesting `FILLED` uses the same live-pricing and durable settlement coordinator as automatic execution; the response reflects its outcome (FILLED, REJECTED, or waiting for market open). SUBMITTED cannot skip acceptance. |
 | `POST /api/v1/orders/{orderId}/reject?reason=CODE` | Rejects an open order. `reason` is a RejectionReason code; the default is `REJECTED_BY_OPERATIONS`. |
 
 - Clients get `403` from both endpoints, even for their own orders.
 - A move the lifecycle doesn't allow gets `409 { "success": false, "code": "INVALID_STATUS_TRANSITION", "error" }`.
 - An unknown reason code gets `400`.
+
+### Automatic execution and recovery
+
+The worker processes persisted open orders after startup and on each poll. It accepts SUBMITTED
+orders, delays accepted orders while their exchange is closed, and executes eligible orders at
+the fresh ask (BUY) or bid (SELL), rounded to four decimals. Unavailable/invalid quotes reject
+with `PRICE_UNAVAILABLE`; stale quotes reject with `STALE_QUOTE`. Tradability, account status,
+and configured residence restrictions are rechecked at execution. BUY placement also refuses
+stale quotes; residence restrictions apply to both sides at placement.
+
+Before sending a fill, buy-sell commits `PENDING`, its execution price, and `settlement_pending`.
+That flag prevents operations from changing/rejecting an order with an uncertain settlement.
+Holdings locks the account and persists one outcome per order in `settlement_receipts`, atomically
+with any cash/share changes. `POST /internal/holdings/settle` returns `200 { rejectionReason }`:
+null for success, otherwise `INSUFFICIENT_CASH` or `INSUFFICIENT_HOLDINGS`. Repeating an identical
+request returns that original outcome; changed payloads get 409. Malformed requests get 400.
+Network errors and unknown failures retain the intent for retry without repricing. A confirmed
+outcome becomes FILLED or REJECTED; a subsequent worker sees the final status and does nothing.
+
+Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
+The dashboard polls while orders are open and refreshes holdings/history when statuses change.
+Holdings reads order history and buying-power data from buy-sell, never core.
 
 ## Holdings, balance, profile, trades (holdings-service)
 
@@ -135,7 +159,7 @@ How the balance fields are computed:
 | Field | Rule |
 |---|---|
 | `cash` | `accounts.cash_balance` |
-| `buyingPower` | `cash` minus the cost of the account's open BUY orders (open = not final, see `OrderStatus.isOpen` in [Order.java](../services/core-service/src/main/java/com/lemarketjames/orders/entity/Order.java)) |
+| `buyingPower` | `cash` minus the cost of the account's open BUY orders (open = not final, see `OrderStatus.isOpen` in [Order.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/Order.java)) |
 | `invested` | Σ holding quantity × current price |
 | `totalValue` | `cash + invested` |
 | `dayGainLoss(%)` | Σ quantity × (price − today's open); % relative to Σ quantity × open |
@@ -158,15 +182,15 @@ How the balance fields are computed:
 
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
-| `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | core, holdings → market-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). |
-| `POST /internal/holdings/settle` | core → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
-| `POST /internal/holdings/validate` | core → holdings-service | SELL holdings check at placement |
+| `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | core, buy-sell, holdings → market-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). |
+| `POST /internal/holdings/settle` | buy-sell → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
+| `POST /internal/holdings/validate` | buy-sell → holdings-service | SELL holdings check at placement |
 | `/internal/market/control/**` | tests → market-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
 
-## Internal events and the execution interface (core-service)
+## Internal events and the execution interface (buy-sell-service)
 
-- **Events.** [OrderStatusChanged](../services/core-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/core-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits. They are not sent to other services.
-- **Execution interface.** [OrderExecutor](../services/core-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/core-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a price, reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
+- **Events.** [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits. They are not sent to other services.
+- **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a price, reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
 - **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves.
 
 ## Planned (agreed, not built)

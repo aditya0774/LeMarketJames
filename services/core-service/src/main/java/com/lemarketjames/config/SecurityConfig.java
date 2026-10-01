@@ -52,9 +52,6 @@ public class SecurityConfig {
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/actuator/health").permitAll()
-                // Moving orders through their lifecycle is an operations task (contract C7).
-                .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status/*").hasRole(Role.TRADING_OPS.name())
-                .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/reject").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers("/api/sessions/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);

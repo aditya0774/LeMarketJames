@@ -22,7 +22,7 @@ Internal views (audit, reports, insights) can enforce access now, without waitin
 | View or action | Roles | Status |
 |---|---|---|
 | Place orders; own dashboard, holdings, balance, profile, trades | `CLIENT` (own data only) | Enforced: needs the caller's own account |
-| Move an order through its lifecycle, reject orders | `TRADING_OPS` (any client's orders) | Enforced in core-service `SecurityConfig` |
+| Move an order through its lifecycle, reject orders | `TRADING_OPS` (any client's orders) | Enforced in buy-sell-service `SecurityConfig` |
 | Audit trail | `COMPLIANCE` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
 | Reports | `ANALYST`, `COMPLIANCE` | Planned; guard with these roles |
 | Insights | `ANALYST` | Planned; guard with this role |

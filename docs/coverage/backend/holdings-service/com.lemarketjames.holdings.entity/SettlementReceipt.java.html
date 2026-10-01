@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettlementReceipt.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.entity</a> &gt; <span class="el_source">SettlementReceipt.java</span></div><h1>SettlementReceipt.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.entity;
+
+import com.lemarketjames.holdings.dto.SettlementRequest;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+
+/** One durable result per order, committed atomically with its cash and share changes. */
+@Entity
+@Table(name = &quot;settlement_receipts&quot;)
+public class SettlementReceipt {
+    @Id private Integer orderId;
+    @Column(nullable = false) private Integer accountId;
+    @Column(nullable = false) private Integer instrumentId;
+    @Column(nullable = false, length = 10) private String orderType;
+    @Column(nullable = false, precision = 14, scale = 4) private BigDecimal quantity;
+    @Column(nullable = false, precision = 14, scale = 4) private BigDecimal pricePerUnit;
+    @Column(length = 255) private String rejectionReason;
+<span class="fc" id="L18">    protected SettlementReceipt() {}</span>
+<span class="fc" id="L19">    public SettlementReceipt(SettlementRequest request, String rejectionReason) {</span>
+<span class="fc" id="L20">        orderId = request.getOrderId(); accountId = request.getAccountId(); instrumentId = request.getInstrumentId();</span>
+<span class="fc" id="L21">        orderType = request.getOrderType().name(); quantity = request.getQuantity();</span>
+<span class="fc" id="L22">        pricePerUnit = request.getPricePerUnit(); this.rejectionReason = rejectionReason;</span>
+<span class="fc" id="L23">    }</span>
+<span class="fc" id="L24">    public String getRejectionReason() { return rejectionReason; }</span>
+    public boolean matches(SettlementRequest request) {
+<span class="pc bpc" id="L26" title="2 of 4 branches missed.">        return accountId.equals(request.getAccountId()) &amp;&amp; instrumentId.equals(request.getInstrumentId())</span>
+<span class="pc bpc" id="L27" title="2 of 4 branches missed.">            &amp;&amp; orderType.equals(request.getOrderType().name()) &amp;&amp; quantity.compareTo(request.getQuantity()) == 0</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            &amp;&amp; pricePerUnit.compareTo(request.getPricePerUnit()) == 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

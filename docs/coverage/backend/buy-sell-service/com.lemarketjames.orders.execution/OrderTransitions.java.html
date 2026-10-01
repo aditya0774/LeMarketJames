@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderTransitions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.execution</a> &gt; <span class="el_source">OrderTransitions.java</span></div><h1>OrderTransitions.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.execution;
+
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.events.OrderFilled;
+import com.lemarketjames.orders.events.OrderStatusChanged;
+import java.time.Instant;
+import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
+/** Used inside the caller's order transaction, including recovery after a lost settlement response. */
+@Component
+public class OrderTransitions {
+    private final AuditRecorder audit;
+    private final ApplicationEventPublisher events;
+<span class="fc" id="L19">    public OrderTransitions(AuditRecorder audit, ApplicationEventPublisher events) {</span>
+<span class="fc" id="L20">        this.audit = audit; this.events = events;</span>
+<span class="fc" id="L21">    }</span>
+    public void move(Order order, Order.OrderStatus next, RejectionReason reason) {
+<span class="fc" id="L23">        var previous = order.getOrderStatus();</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (next == Order.OrderStatus.REJECTED) order.reject(reason); else order.transitionTo(next);</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (next == Order.OrderStatus.ACCEPTED) record(order, AuditEventType.ACCEPTED, Map.of());</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (next == Order.OrderStatus.REJECTED) record(order, AuditEventType.REJECTED, Map.of(&quot;reason&quot;, reason.name()));</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (next == Order.OrderStatus.FILLED) record(order, AuditEventType.FILLED,</span>
+<span class="fc" id="L28">            Map.of(&quot;quantity&quot;, order.getQuantity(), &quot;price&quot;, order.getPricePerUnit()));</span>
+<span class="fc" id="L29">        Instant now = Instant.now();</span>
+<span class="fc" id="L30">        events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now));</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (next == Order.OrderStatus.FILLED) events.publishEvent(new OrderFilled(order.getOrderId(),</span>
+<span class="fc" id="L32">            order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now));</span>
+<span class="fc" id="L33">    }</span>
+    private void record(Order order, AuditEventType type, Map&lt;String, Object&gt; details) {
+<span class="fc" id="L35">        audit.record(type, order.getOrderId(), order.getAccountId(), details);</span>
+<span class="fc" id="L36">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

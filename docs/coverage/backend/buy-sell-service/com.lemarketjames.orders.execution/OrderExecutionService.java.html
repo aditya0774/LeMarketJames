@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderExecutionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.execution</a> &gt; <span class="el_source">OrderExecutionService.java</span></div><h1>OrderExecutionService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.execution;
+
+import com.lemarketjames.holdings.client.HoldingsSettlementClient;
+import com.lemarketjames.holdings.client.SettlementRejectedException;
+import org.springframework.stereotype.Service;
+
+/** No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock. */
+@Service
+public class OrderExecutionService {
+    private final OrderExecutionTransactions transactions;
+    private final HoldingsSettlementClient settlement;
+<span class="fc" id="L12">    public OrderExecutionService(OrderExecutionTransactions transactions, HoldingsSettlementClient settlement) {</span>
+<span class="fc" id="L13">        this.transactions = transactions; this.settlement = settlement;</span>
+<span class="fc" id="L14">    }</span>
+    public void execute(int id, boolean manual) {
+<span class="fc" id="L16">        var intent = transactions.prepare(id, manual);</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">        if (intent == null) return;</span>
+        try {
+<span class="fc" id="L19">            settlement.settle(intent);</span>
+<span class="fc" id="L20">        } catch (SettlementRejectedException rejected) {</span>
+<span class="fc" id="L21">            transactions.finish(id, rejected.getReason());</span>
+<span class="fc" id="L22">            return;</span>
+<span class="fc" id="L23">        }</span>
+        // Unknown/network failures leave the immutable intent pending for the next poll/restart.
+<span class="fc" id="L25">        transactions.finish(id, null);</span>
+<span class="fc" id="L26">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

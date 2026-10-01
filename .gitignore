@@ -29,3 +29,4 @@ Thumbs.db
 # Browser test artifacts
 apps/frontend/test-results/
 apps/frontend/playwright-report/
+error.txt

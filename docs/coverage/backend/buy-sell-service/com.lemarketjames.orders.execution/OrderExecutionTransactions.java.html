@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderExecutionTransactions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.execution</a> &gt; <span class="el_source">OrderExecutionTransactions.java</span></div><h1>OrderExecutionTransactions.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.execution;
+
+import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.Order.OrderStatus;
+import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
+import com.lemarketjames.orders.repository.OrderRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Separate bean ensures the durable intent commits BEFORE any remote settlement call. */
+@Service
+public class OrderExecutionTransactions {
+    private final OrderRepository orders;
+    private final OrderExecutor executor;
+    private final OrderTransitions transitions;
+<span class="fc" id="L17">    public OrderExecutionTransactions(OrderRepository orders, OrderExecutor executor, OrderTransitions transitions) {</span>
+<span class="fc" id="L18">        this.orders = orders; this.executor = executor; this.transitions = transitions;</span>
+<span class="fc" id="L19">    }</span>
+    @Transactional
+    public Order prepare(int id, boolean manual) {
+<span class="fc" id="L22">        Order order = orders.findLockedById(id).orElseThrow();</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (order.isSettlementPending()) return order;</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (!order.getOrderStatus().isOpen()) {</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">            if (manual) throw new InvalidStatusTransitionException(order.getOrderStatus(), OrderStatus.FILLED);</span>
+<span class="fc" id="L26">            return null;</span>
+        }
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (order.getOrderStatus() == OrderStatus.SUBMITTED) {</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">            if (manual) throw new InvalidStatusTransitionException(OrderStatus.SUBMITTED, OrderStatus.FILLED);</span>
+<span class="fc" id="L30">            transitions.move(order, OrderStatus.ACCEPTED, null);</span>
+        }
+<span class="fc" id="L32">        ExecutionResult result = executor.execute(order);</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (result.nextStatus() == OrderStatus.FILLED) {</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">            if (order.getOrderStatus() != OrderStatus.PENDING) transitions.move(order, OrderStatus.PENDING, null);</span>
+<span class="fc" id="L35">            order.setPricePerUnit(result.fillPrice());</span>
+<span class="fc" id="L36">            order.setSettlementPending(true);</span>
+<span class="fc" id="L37">            return order;</span>
+        }
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (order.getOrderStatus() != result.nextStatus()) transitions.move(order, result.nextStatus(), result.reason());</span>
+<span class="nc" id="L40">        return null;</span>
+    }
+    @Transactional
+    public void finish(int id, RejectionReason rejection) {
+<span class="fc" id="L44">        Order order = orders.findLockedById(id).orElseThrow();</span>
+        // Another worker may have completed the same idempotent request in the meantime.
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (!order.isSettlementPending()) return;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);</span>
+<span class="fc" id="L48">        order.setSettlementPending(false);</span>
+<span class="fc" id="L49">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

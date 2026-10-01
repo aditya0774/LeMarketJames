@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common</a> &gt; <span class="el_source">OrderExceptionHandler.java</span></div><h1>OrderExceptionHandler.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common;
+
+import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.exception.InsufficientHoldingsException;
+import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
+import com.lemarketjames.orders.exception.NotTradableException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
+
+/**
+ * Translates buy-sell-service feature exceptions into structured error responses. Generic errors
+ * (validation, bad arguments, access denied) are handled by the shared
+ * {@link com.lemarketjames.common.error.GlobalExceptionHandler} from libs/common.
+ */
+@RestControllerAdvice
+<span class="fc" id="L20">public class OrderExceptionHandler {</span>
+
+    @ExceptionHandler(NotTradableException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleNotTradable(NotTradableException ex) {
+<span class="fc" id="L24">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="fc" id="L25">                .body(Map.of(</span>
+<span class="fc" id="L26">                    &quot;success&quot;, false,</span>
+<span class="fc" id="L27">                    &quot;error&quot;, ex.getMessage(),</span>
+<span class="fc" id="L28">                    &quot;code&quot;, RejectionReason.NOT_TRADABLE.name()</span>
+                ));
+    }
+
+    @ExceptionHandler(InsufficientHoldingsException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleInsufficientHoldings(InsufficientHoldingsException ex) {
+<span class="fc" id="L34">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="fc" id="L35">                .body(Map.of(</span>
+<span class="fc" id="L36">                    &quot;success&quot;, false,</span>
+<span class="fc" id="L37">                    &quot;error&quot;, ex.getMessage(),</span>
+<span class="fc" id="L38">                    &quot;code&quot;, RejectionReason.INSUFFICIENT_HOLDINGS.name()</span>
+                ));
+    }
+
+    // The order exists but is somewhere its lifecycle doesn't allow this move from (contract C1).
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleInvalidTransition(InvalidStatusTransitionException ex) {
+<span class="nc" id="L45">        return ResponseEntity.status(HttpStatus.CONFLICT)</span>
+<span class="nc" id="L46">                .body(Map.of(</span>
+<span class="nc" id="L47">                    &quot;success&quot;, false,</span>
+<span class="nc" id="L48">                    &quot;error&quot;, ex.getMessage(),</span>
+                    &quot;code&quot;, &quot;INVALID_STATUS_TRANSITION&quot;
+                ));
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

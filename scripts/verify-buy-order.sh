@@ -15,7 +15,7 @@ trap 'rm -rf -- "$scratch"' EXIT
 
 wait_for_backend() {
     for attempt in $(seq 1 60); do
-        if curl --fail --silent http://localhost:8081/actuator/health >/dev/null; then
+        if curl --fail --silent http://localhost:8085/actuator/health >/dev/null; then
             return 0
         fi
         sleep 1
@@ -42,13 +42,31 @@ status=$(curl --silent --show-error -o "$scratch/order.json" -w '%{http_code}' \
 test "$status" = 201
 order_id=$(node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(!o.success || o.orderStatus!=="SUBMITTED" || !(o.pricePerUnit>0) || !Number.isInteger(o.orderId)) process.exit(1); console.log(o.orderId);' "$scratch/order.json")
 [[ "$order_id" =~ ^[0-9]+$ ]]
+# Wait for automatic execution before comparing immutable restart state.
+filled=0
+for attempt in $(seq 1 60); do
+    curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/final.json"
+    if node -e 'const o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); process.exit(o.orderStatus==="FILLED"?0:1)' "$scratch/final.json"; then
+        filled=1
+        cp "$scratch/final.json" "$scratch/order.json"
+        break
+    fi
+    sleep 1
+done
+test "$filled" = 1
+cash_before=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cash_balance FROM accounts WHERE account_id=$account_id;")
 count=$(compose exec -T db psql -At -U lemarket -d lemarket \
-    -c "SELECT count(*) FROM orders WHERE order_id=$order_id AND account_id=$account_id AND order_type='BUY' AND order_status='SUBMITTED' AND price_per_unit>0;")
+    -c "SELECT count(*) FROM orders WHERE order_id=$order_id AND account_id=$account_id AND order_type='BUY' AND order_status='FILLED' AND price_per_unit>0;")
 test "$count" = 1
 
 # Restart the application, retaining PostgreSQL and its named volume.
-compose restart core-service
+compose restart buy-sell-service
 wait_for_backend
 curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/readback.json"
 node -e 'const fs=require("fs"), a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")), b=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); for(const key of ["orderId","accountId","instrumentId","orderType","quantity","pricePerUnit","orderStatus"]) if(a[key]!==b[key]) throw Error("Restart readback mismatch: "+key);' "$scratch/order.json" "$scratch/readback.json"
-echo "BUY order persisted and remained readable after core-service restart."
+echo "BUY order persisted and remained readable after buy-sell-service restart."
+
+cash_after=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cash_balance FROM accounts WHERE account_id=$account_id;")
+test "$cash_before" = "$cash_after"
+receipts=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT count(*) FROM settlement_receipts WHERE order_id=$order_id AND rejection_reason IS NULL;")
+test "$receipts" = 1

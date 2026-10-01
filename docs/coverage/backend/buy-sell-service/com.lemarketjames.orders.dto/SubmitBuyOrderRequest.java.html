@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubmitBuyOrderRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.dto</a> &gt; <span class="el_source">SubmitBuyOrderRequest.java</span></div><h1>SubmitBuyOrderRequest.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.dto;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
+
+public class SubmitBuyOrderRequest {
+
+    @NotNull(message = &quot;accountId is required&quot;)
+    @Positive(message = &quot;accountId must be positive&quot;)
+    private Integer accountId;
+
+    @NotNull(message = &quot;instrumentId is required&quot;)
+    @Positive(message = &quot;instrumentId must be positive&quot;)
+    private Integer instrumentId;
+
+    @NotNull(message = &quot;quantity is required&quot;)
+    @Positive(message = &quot;quantity must be positive&quot;)
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
+    private BigDecimal quantity;
+
+    @NotNull(message = &quot;pricePerUnit is required&quot;)
+    @Positive(message = &quot;pricePerUnit must be positive&quot;)
+    private BigDecimal pricePerUnit;
+
+<span class="fc" id="L26">    public SubmitBuyOrderRequest() {</span>
+<span class="fc" id="L27">    }</span>
+
+<span class="fc" id="L29">    public SubmitBuyOrderRequest(Integer accountId, Integer instrumentId, BigDecimal quantity, BigDecimal pricePerUnit) {</span>
+<span class="fc" id="L30">        this.accountId = accountId;</span>
+<span class="fc" id="L31">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L32">        this.quantity = quantity;</span>
+<span class="fc" id="L33">        this.pricePerUnit = pricePerUnit;</span>
+<span class="fc" id="L34">    }</span>
+
+    public Integer getAccountId() {
+<span class="fc" id="L37">        return accountId;</span>
+    }
+
+    public void setAccountId(Integer accountId) {
+<span class="fc" id="L41">        this.accountId = accountId;</span>
+<span class="fc" id="L42">    }</span>
+
+    public Integer getInstrumentId() {
+<span class="fc" id="L45">        return instrumentId;</span>
+    }
+
+    public void setInstrumentId(Integer instrumentId) {
+<span class="fc" id="L49">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L50">    }</span>
+
+    public BigDecimal getQuantity() {
+<span class="fc" id="L53">        return quantity;</span>
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+<span class="fc" id="L57">        this.quantity = quantity;</span>
+<span class="fc" id="L58">    }</span>
+
+    public BigDecimal getPricePerUnit() {
+<span class="fc" id="L61">        return pricePerUnit;</span>
+    }
+
+    public void setPricePerUnit(BigDecimal pricePerUnit) {
+<span class="fc" id="L65">        this.pricePerUnit = pricePerUnit;</span>
+<span class="fc" id="L66">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
