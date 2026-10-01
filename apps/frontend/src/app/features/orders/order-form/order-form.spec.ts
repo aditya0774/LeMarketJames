@@ -8,15 +8,15 @@ import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrderFormComponent } from './order-form';
-import { OrdersService } from '../../../core/orders/orders.service';
+import { BalanceService } from '../../../core/orders/orders.service';
 import { CashValidationService } from '../../../core/orders/cash-validation.service';
 import { BalanceResponse, OrderResponse } from '../../../shared/models/order.model';
 
 /**
- * Mock OrdersService for testing
+ * Mock BalanceService for testing
  * Tracks method calls and allows customization of return values
  */
-class MockOrdersService {
+class MockBalanceService {
   callCount = { getBalance: 0, createOrder: 0 };
   balanceResponse: BalanceResponse = {
     success: true,
@@ -61,11 +61,11 @@ class MockOrdersService {
 describe('OrderFormComponent - Frontend Balance Validation', () => {
   let component: OrderFormComponent;
   let fixture: ComponentFixture<OrderFormComponent>;
-  let ordersServiceMock: MockOrdersService;
+  let balanceServiceMock: MockBalanceService;
   let cashValidationService: CashValidationService;
 
   beforeEach(async () => {
-    ordersServiceMock = new MockOrdersService();
+    balanceServiceMock = new MockBalanceService();
 
     await TestBed.configureTestingModule({
       imports: [
@@ -79,7 +79,7 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
         MatSelectModule,
       ],
       providers: [
-        { provide: OrdersService, useValue: ordersServiceMock },
+        { provide: BalanceService, useValue: balanceServiceMock },
         CashValidationService,
       ],
     }).compileComponents();
@@ -97,7 +97,7 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
     it('should fetch account balance on init', async () => {
       fixture.detectChanges();
       await fixture.whenStable();
-      expect(ordersServiceMock.callCount.getBalance).toBe(1);
+      expect(balanceServiceMock.callCount.getBalance).toBe(1);
     });
 
     it('should display balance after fetching', async () => {
@@ -402,8 +402,8 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
         currency: 'USD',
       });
       // Reset error flags
-      ordersServiceMock.createOrderShouldFail = false;
-      ordersServiceMock.createOrderError = null;
+      balanceServiceMock.createOrderShouldFail = false;
+      balanceServiceMock.createOrderError = null;
     });
 
     it('should submit order successfully with sufficient balance', async () => {
@@ -415,12 +415,12 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
       });
       fixture.detectChanges();
       await (component as any).submit();
-      expect(ordersServiceMock.callCount.createOrder).toBe(1);
+      expect(balanceServiceMock.callCount.createOrder).toBe(1);
     });
 
     it('should handle API error gracefully', async () => {
-      ordersServiceMock.createOrderShouldFail = true;
-      ordersServiceMock.createOrderError = new Error('API error');
+      balanceServiceMock.createOrderShouldFail = true;
+      balanceServiceMock.createOrderError = new Error('API error');
       (component as any).form.patchValue({
         type: 'BUY',
         symbol: 'AAPL',
@@ -442,8 +442,8 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
         error: { reason: 'Insufficient balance' },
         status: 400,
       });
-      ordersServiceMock.createOrderShouldFail = true;
-      ordersServiceMock.createOrderError = error;
+      balanceServiceMock.createOrderShouldFail = true;
+      balanceServiceMock.createOrderError = error;
       (component as any).form.patchValue({
         type: 'BUY',
         symbol: 'AAPL',
@@ -480,7 +480,7 @@ describe('OrderFormComponent - Frontend Balance Validation', () => {
       fixture.detectChanges();
       (component as any).submit();
       // Submit should be blocked by disabled button, API should not be called
-      expect(ordersServiceMock.callCount.createOrder).toBe(0);
+      expect(balanceServiceMock.callCount.createOrder).toBe(0);
     });
   });
 

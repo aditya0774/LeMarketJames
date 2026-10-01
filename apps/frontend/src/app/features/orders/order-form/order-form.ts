@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { OrdersService } from '../../../core/orders/orders.service';
+import { BalanceService } from '../../../core/orders/orders.service';
 import { CashValidationService } from '../../../core/orders/cash-validation.service';
 import { BalanceInfo, OrderRequest, OrderType, OrderTypeValue } from '../../../shared/models/order.model';
 
@@ -50,7 +50,7 @@ export class OrderFormComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly ordersService: OrdersService,
+    private readonly balanceService: BalanceService,
     private readonly cashValidationService: CashValidationService,
   ) {
     this.form = this.fb.group({
@@ -64,7 +64,7 @@ export class OrderFormComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const response = await this.ordersService.getBalance();
+      const response = await this.balanceService.getBalance();
       if (response.success && response.balance) {
         this.balance.set(response.balance);
       } else {
@@ -149,7 +149,7 @@ export class OrderFormComponent implements OnInit {
 
     try {
       const orderRequest: OrderRequest = this.form.getRawValue() as OrderRequest;
-      const response = await this.ordersService.createOrder(orderRequest);
+      const response = await this.balanceService.createOrder(orderRequest);
 
       if (response.success && response.orderId) {
         this.successMessage.set(`Order placed successfully! Order ID: ${response.orderId}`);
