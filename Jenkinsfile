@@ -7,6 +7,8 @@ pipeline {
     environment {
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
         NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+        // CI exercises fills regardless of the wall-clock time; production defaults still respect sessions.
+        SIM_RESPECT_MARKET_HOURS = 'false'
         CI_HEALTH_RETRIES = '180'
         CI_HEALTH_SLEEP_SECONDS = '1'
     }
@@ -103,8 +105,6 @@ pipeline {
                         docker-compose down -v --remove-orphans
                         docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
                     fi
-                    # Force kill any containers still using port 8080
-                    docker ps --filter "publish=8080" -q | xargs -r docker kill 2>/dev/null || true
                     set -e
                 '''
             }
@@ -144,6 +144,10 @@ pipeline {
                             mvn -B -pl services/core-service test
                         '''
                     }
+                }
+
+                stage('Test buy-sell service units') {
+                    steps { sh 'mvn -B -pl services/buy-sell-service test' }
                 }
 
                 stage('Test auth service units') {
@@ -223,17 +227,18 @@ pipeline {
                         sleep 1
                     done
                     test "$ready" = 1
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/012_order_execution.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
-                    mvn -B -pl services/core-service,services/auth-service,services/holdings-service -am \
+                    mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
                         -Dspring.profiles.active=postgres-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OwnDataIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/core-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
                 }
             }
         }
@@ -251,7 +256,7 @@ pipeline {
                     echo "$image_tag" > .image_tag
 
                     # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    for service in core-service auth-service market-service holdings-service gateway-service; do
+                    for service in core-service auth-service market-service holdings-service buy-sell-service gateway-service; do
                         docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
                         docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
                     done
@@ -259,6 +264,40 @@ pipeline {
                     docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
 
                     echo "Built versioned images with tag: $image_tag"
+                '''
+            }
+        }
+
+        stage('Apply schema updates') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps {
+                // Init scripts only run for an empty Postgres volume; CI keeps its volume.
+                // Every script from 004 on must be idempotent (safe to run twice); 001-003 are not,
+                // so they only ever run on an empty volume. New migrations are picked up automatically.
+                sh '''
+                    set -eu
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+                    compose up -d db
+                    ready=0
+                    for attempt in $(seq 1 60); do
+                        if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                            ready=1
+                            break
+                        fi
+                        sleep 1
+                    done
+                    test "$ready" = 1
+                    for f in database/schema/0*.sql; do
+                        case "$(basename "$f")" in 001_*|002_*|003_*) continue ;; esac
+                        echo "Applying $f"
+                        compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket < "$f"
+                    done
                 '''
             }
         }
@@ -310,30 +349,6 @@ pipeline {
             }
         }
 
-        stage('Apply schema updates') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps {
-                // Init scripts only run for an empty Postgres volume; CI keeps its volume.
-                // Every script from 004 on must be idempotent (safe to run twice); 001-003 are not,
-                // so they only ever run on an empty volume. New migrations are picked up automatically.
-                sh '''
-                    set -eu
-                    if docker compose version >/dev/null 2>&1; then
-                        compose() { docker compose "$@"; }
-                    else
-                        compose() { docker-compose "$@"; }
-                    fi
-                    for f in database/schema/0*.sql; do
-                        case "$(basename "$f")" in 001_*|002_*|003_*) continue ;; esac
-                        echo "Applying $f"
-                        compose exec -T db psql -q -v ON_ERROR_STOP=1 -U lemarket -d lemarket < "$f"
-                    done
-                '''
-            }
-        }
-
         stage('Run smoke test') {
             when {
                 expression { env.CI_RUN_FULL_STACK == 'true' }
@@ -353,9 +368,10 @@ pipeline {
                     compose exec -T auth-service id
                     compose exec -T market-service id
                     compose exec -T holdings-service id
+                    compose exec -T buy-sell-service id
 
                     # Use host-published ports; gateway-service maps host 8089 to container 8080.
-                    for port in 8081 8082 8089 8083 8084; do
+                    for port in 8081 8082 8089 8083 8084 8085; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         status="000"
@@ -371,7 +387,7 @@ pipeline {
                         if [ "$healthy" -ne 1 ]; then
                             echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
-                            compose logs core-service auth-service market-service holdings-service gateway-service
+                            compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
                             exit 1
                         fi
                     done
@@ -382,7 +398,7 @@ pipeline {
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs core-service auth-service market-service holdings-service gateway-service
+                    compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
                 '''
             }
         }
@@ -584,9 +600,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
+                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service db || true
+                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
                 fi
             '''
         }

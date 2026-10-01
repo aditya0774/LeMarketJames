@@ -38,11 +38,13 @@ class HoldingsSettlementServiceTest {
     @Mock
     private AuditRecorder auditRecorder;
 
+    @Mock private com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts;
     private HoldingsSettlementService settlementService;
 
     @BeforeEach
     void setUp() {
-        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository, auditRecorder);
+        org.mockito.Mockito.lenient().when(accountRepository.findLockedById(1)).thenAnswer(inv -> accountRepository.findById(1).or(() -> Optional.of(accountWithBalance(BigDecimal.ZERO))));
+        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository, auditRecorder, receipts);
     }
 
     @Test
@@ -86,7 +88,7 @@ class HoldingsSettlementServiceTest {
         AccountEntity account = accountWithBalance(new BigDecimal("50.00"));
         when(accountRepository.findById(1)).thenReturn(Optional.of(account));
 
-        assertThrows(IllegalArgumentException.class, () -> settlementService.settle(
+        assertEquals("INSUFFICIENT_CASH", settlementService.settle(
                 request(1, 10, SettlementRequest.OrderType.BUY, new BigDecimal("10"), new BigDecimal("100.00"))));
 
         verify(holdingsRepository, never()).save(any());
@@ -129,7 +131,7 @@ class HoldingsSettlementServiceTest {
     void sellRejectedWhenHoldingMissing() {
         when(holdingsRepository.findByAccountIdAndInstrumentId(1, 10)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> settlementService.settle(
+        assertEquals("INSUFFICIENT_HOLDINGS", settlementService.settle(
                 request(1, 10, SettlementRequest.OrderType.SELL, new BigDecimal("4"), new BigDecimal("120.00"))));
     }
 
@@ -138,7 +140,7 @@ class HoldingsSettlementServiceTest {
         HoldingsEntity existing = new HoldingsEntity(1, 10, new BigDecimal("3"), new BigDecimal("100.00"));
         when(holdingsRepository.findByAccountIdAndInstrumentId(1, 10)).thenReturn(Optional.of(existing));
 
-        assertThrows(IllegalArgumentException.class, () -> settlementService.settle(
+        assertEquals("INSUFFICIENT_HOLDINGS", settlementService.settle(
                 request(1, 10, SettlementRequest.OrderType.SELL, new BigDecimal("4"), new BigDecimal("120.00"))));
     }
 

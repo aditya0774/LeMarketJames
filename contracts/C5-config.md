@@ -28,3 +28,14 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 - **Per environment:** set an environment variable; don't edit code or re-declare the key in `application.properties`. Spring maps `lmj.auth.lockout.max-attempts` to `LMJ_AUTH_LOCKOUT_MAXATTEMPTS`: dots become underscores and dashes are dropped. In Docker, add it under the service's `environment:` in `docker-compose.yml`.
 - **The default itself:** change it in the settings class, where its Javadoc explains it. That is the only place the default is written.
 - **A new setting:** add a field with a default and Javadoc to the settings class that owns it, and add a row here.
+
+## Order execution
+
+`lmj.execution` settings and their defaults live in
+[ExecutionSettings.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionSettings.java):
+`enabled` controls automatic polling, `poll-ms` its interval, `respect-market-hours` the exchange
+session check, and `holidays` the exchange-local closed dates. The shared `MarketHours` model
+defines sessions. Compose supplies the same `SIM_RESPECT_MARKET_HOURS` and `SIM_HOLIDAYS` inputs
+to market and buy-sell so simulation and execution agree. Tests can disable polling while
+exercising the coordinator explicitly. Never disable polling in a live deployment that needs
+automatic recovery of unfinished settlements.

@@ -1,6 +1,6 @@
 package com.lemarketjames.instruments;
 
-import com.lemarketjames.orders.entity.Instrument;
+import com.lemarketjames.common.instruments.Instrument;
 
 /**
  * One supported stock as the frontend sees it.

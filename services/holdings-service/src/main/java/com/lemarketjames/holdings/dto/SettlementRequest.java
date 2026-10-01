@@ -3,18 +3,31 @@ package com.lemarketjames.holdings.dto;
 import java.math.BigDecimal;
 
 /**
- * Body for {@code POST /internal/holdings/settle}: the fill core-service just recorded, sent so
+ * Body for {@code POST /internal/holdings/settle}: the fill buy-sell-service just recorded, sent so
  * this service can apply its cash/holdings side effects. Called server-to-server, never by a browser.
  */
 public class SettlementRequest {
 
     public enum OrderType { BUY, SELL }
 
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer orderId;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer accountId;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
     private Integer instrumentId;
+    @jakarta.validation.constraints.NotNull
     private OrderType orderType;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
     private BigDecimal quantity;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Positive
+    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
     private BigDecimal pricePerUnit;
 
     public SettlementRequest() {}

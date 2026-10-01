@@ -34,7 +34,7 @@ An unknown ticker or a non-positive price gets `400 { message }`.
 ## What consumers see
 
 - **UNAVAILABLE:** every market-service quote endpoint answers `503`. `MarketDataClient` treats that as "no quote", so a BUY is refused with `PRICE_UNAVAILABLE`, and `GET /api/quotes` returns an empty list.
-- **STALE:** quotes stop changing, and their `lastUpdated` is pushed into the past, so `QuoteFreshness.isStale` is true straight away. Refusing stale quotes (`STALE_QUOTE`) is the job of the quote-feed failure story. The stored prices are never overwritten with the backdated copies.
+- **STALE:** quotes stop changing, and their `lastUpdated` is pushed into the past, so `QuoteFreshness.isStale` is true straight away. Buy-sell refuses stale BUY placement and rejects execution with `STALE_QUOTE`. The stored prices are never overwritten with the backdated copies.
 - **A set price** shows up in every quote at once. Day high and low stretch to include it.
 
 ## Market hours

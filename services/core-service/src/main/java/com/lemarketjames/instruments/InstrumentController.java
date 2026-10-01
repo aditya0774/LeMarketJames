@@ -1,6 +1,6 @@
 package com.lemarketjames.instruments;
 
-import com.lemarketjames.orders.repository.InstrumentRepository;
+import com.lemarketjames.common.instruments.InstrumentRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

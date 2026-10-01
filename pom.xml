@@ -28,6 +28,7 @@
         <module>libs/common</module>
         <module>libs/market-client</module>
         <module>services/core-service</module>
+        <module>services/buy-sell-service</module>
         <module>services/auth-service</module>
         <module>services/market-service</module>
         <module>services/holdings-service</module>

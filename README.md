@@ -63,7 +63,7 @@ LeMarketJames/
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
 │   ├── gateway-service/           # :8080 Spring Cloud Gateway, the only backend entry point
 │   ├── auth-service/              # :8082 register, login, logout, /api/auth/me
-│   └── core-service/              # :8081 holdings, market, orders, quotes, sessions
+│   └── core-service/              # :8081 instruments, quotes, sessions
 │       ├── src/main/java/com/lemarketjames/
 │       │   ├── common/            # Core-specific exception handler
 │       │   ├── config/            # Cross-cutting config (Security, etc.)
@@ -813,3 +813,13 @@ Linux:
 ```bash
 xdg-open services/core-service/target/site/jacoco/index.html
 ```
+
+### Buy-sell service
+
+`services/buy-sell-service` runs on port 8085 and owns `/api/v1/orders/**` and
+`/api/v1/buy-orders/**`. The gateway routes these paths to it; core no longer handles orders.
+Apply `database/schema/012_order_execution.sql` to existing databases before starting this
+version. New Docker databases apply it automatically. Execution respects exchange sessions
+by default; for a disposable, always-open test stack set `SIM_RESPECT_MARKET_HOURS=false`
+in Compose. On native Windows set both `SIM_RESPECT_MARKET_HOURS=false` and
+`LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`. See contracts C1, C5 and C6 for recovery and settings.

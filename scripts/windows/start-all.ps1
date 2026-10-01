@@ -6,7 +6,7 @@
     Windows counterpart of `docker compose up`, for machines that can't run Linux containers.
     Builds the backend once, then opens one PowerShell window per process so each one's log
     stays readable and closing a window stops that process. Every service's defaults already
-    point at localhost (database on 5432, services on 8081-8084), so no configuration is needed.
+    point at localhost (database on 5432, services on 8081-8085), so no configuration is needed.
 
     Run .\scripts\windows\setup-db.ps1 once first so the lemarket database exists.
 
@@ -45,6 +45,7 @@ function Start-Window([string]$Title, [string]$WorkingDir, [string]$Command) {
 Start-Window 'market-service :8083'   $repoRoot '$env:SIM_CONTROL_ENABLED = ''true''; mvn -B -pl services/market-service spring-boot:run'
 Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
+Start-Window 'buy-sell-service :8085' $repoRoot 'mvn -B -pl services/buy-sell-service spring-boot:run'
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
 # 8089 matches the port Docker Compose publishes the gateway on, which proxy.conf.json targets.
 Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.arguments=--server.port=8089'"

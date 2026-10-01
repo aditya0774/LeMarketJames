@@ -19,12 +19,12 @@ import java.util.Optional;
 
 /**
  * Applies the cash and holdings side effects of a fill. This is the only place in the system that
- * writes to holdings or debits/credits cash — order placement (core-service) only validates and
+ * writes to holdings or debits/credits cash — order placement (buy-sell-service) only validates and
  * records the order; nothing is settled until this runs.
  *
  * <p>Order placement's cash check is a point-in-time check and can't account for other orders
  * placed in the meantime, so the cash/quantity checks here are re-validated defensively rather than
- * trusted from core-service. This is not a full reservation/holds system: two orders placed before
+ * trusted from buy-sell-service. This is not a full reservation/holds system: two orders placed before
  * either fills can still both pass their placement-time check and one settlement can fail here.
  */
 @Service
@@ -35,12 +35,14 @@ public class HoldingsSettlementService {
     private final HoldingsRepository holdingsRepository;
     private final AccountRepository accountRepository;
     private final AuditRecorder auditRecorder;
+    private final com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts;
 
     public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository,
-                                     AuditRecorder auditRecorder) {
+                                     AuditRecorder auditRecorder, com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts) {
         this.holdingsRepository = holdingsRepository;
         this.accountRepository = accountRepository;
         this.auditRecorder = auditRecorder;
+        this.receipts = receipts;
     }
 
     /**
@@ -48,8 +50,27 @@ public class HoldingsSettlementService {
      * trail never shows a settlement that didn't happen, or misses one that did.
      */
     @Transactional
-    public void settle(SettlementRequest request) {
-        BigDecimal cost = request.getQuantity().multiply(request.getPricePerUnit());
+    public String settle(SettlementRequest request) {
+        // Always lock the account first: serializes cash and holdings updates, including duplicate requests.
+        var account = accountRepository.findLockedById(request.getAccountId()).orElseThrow(
+            () -> new IllegalArgumentException("Account not found"));
+        var previous = receipts.findById(request.getOrderId());
+        if (previous.isPresent()) {
+            if (!previous.get().matches(request)) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT, "Settlement payload differs from its original request");
+            return previous.get().getRejectionReason();
+        }
+        String rejection = null;
+        if (request.getOrderType() == SettlementRequest.OrderType.BUY) {
+            if (account.getCashBalance().compareTo(request.getQuantity().multiply(request.getPricePerUnit()).setScale(2, RoundingMode.HALF_UP)) < 0)
+                rejection = "INSUFFICIENT_CASH";
+        } else if (holdingsRepository.findByAccountIdAndInstrumentId(request.getAccountId(), request.getInstrumentId())
+                .filter(holding -> holding.canSell(request.getQuantity())).isEmpty()) {
+            rejection = "INSUFFICIENT_HOLDINGS";
+        }
+        receipts.save(new com.lemarketjames.holdings.entity.SettlementReceipt(request, rejection));
+        if (rejection != null) return rejection;
+        BigDecimal cost = request.getQuantity().multiply(request.getPricePerUnit()).setScale(2, RoundingMode.HALF_UP);
         boolean buy = request.getOrderType() == SettlementRequest.OrderType.BUY;
         if (buy) {
             settleBuy(request, cost);
@@ -62,6 +83,7 @@ public class HoldingsSettlementService {
         log.info("Settled order={} account={} instrument={} type={} qty={} price={}",
                 request.getOrderId(), request.getAccountId(), request.getInstrumentId(),
                 request.getOrderType(), request.getQuantity(), request.getPricePerUnit());
+        return null;
     }
 
     private void settleBuy(SettlementRequest request, BigDecimal cost) {
