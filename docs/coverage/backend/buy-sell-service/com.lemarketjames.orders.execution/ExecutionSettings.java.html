@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionSettings.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.execution</a> &gt; <span class="el_source">ExecutionSettings.java</span></div><h1>ExecutionSettings.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.execution;
+
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+/** Execution controls; defaults are defined here rather than copied into deployment files. */
+@Component(&quot;executionSettings&quot;)
+@ConfigurationProperties(&quot;lmj.execution&quot;)
+<span class="fc" id="L12">public class ExecutionSettings {</span>
+<span class="fc" id="L13">    private boolean enabled = true;</span>
+<span class="fc" id="L14">    private boolean respectMarketHours = true;</span>
+<span class="fc" id="L15">    private long pollMs = 1000;</span>
+<span class="fc" id="L16">    private Set&lt;LocalDate&gt; holidays = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L17">    public boolean isEnabled() { return enabled; }</span>
+<span class="fc" id="L18">    public void setEnabled(boolean value) { enabled = value; }</span>
+<span class="fc" id="L19">    public boolean isRespectMarketHours() { return respectMarketHours; }</span>
+<span class="nc" id="L20">    public void setRespectMarketHours(boolean value) { respectMarketHours = value; }</span>
+<span class="fc" id="L21">    public long getPollMs() { return pollMs; }</span>
+    public void setPollMs(long value) {
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (value &lt; 100) throw new IllegalArgumentException(&quot;Execution polling must be at least 100ms&quot;);</span>
+<span class="nc" id="L24">        pollMs = value;</span>
+<span class="nc" id="L25">    }</span>
+<span class="fc" id="L26">    public Set&lt;LocalDate&gt; getHolidays() { return holidays; }</span>
+<span class="nc" id="L27">    public void setHolidays(Set&lt;LocalDate&gt; value) { holidays = value; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

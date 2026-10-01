@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Internal, server-to-server only: core-service calls this directly (Docker hostname, bypassing
+ * Internal, server-to-server only: buy-sell-service calls this directly (Docker hostname, bypassing
  * the gateway) when an order transitions to FILLED. Deliberately outside /api/v1/** so no gateway
  * route pattern can accidentally expose it to a browser (see SecurityConfig's /internal/** permit).
  */
@@ -21,10 +21,11 @@ public class HoldingsSettlementController {
 <span class="fc" id="L21">        this.settlementService = settlementService;</span>
 <span class="fc" id="L22">    }</span>
 
+<span class="nc" id="L24">    public record Outcome(String rejectionReason) {}</span>
+
     @PostMapping(&quot;/internal/holdings/settle&quot;)
-    public ResponseEntity&lt;Void&gt; settle(@RequestBody SettlementRequest request) {
-<span class="nc" id="L26">        settlementService.settle(request);</span>
-<span class="nc" id="L27">        return ResponseEntity.ok().build();</span>
+    public ResponseEntity&lt;Outcome&gt; settle(@jakarta.validation.Valid @RequestBody SettlementRequest request) {
+<span class="nc" id="L28">        return ResponseEntity.ok(new Outcome(settlementService.settle(request)));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

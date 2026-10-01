@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsSettlementClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.client</a> &gt; <span class="el_source">HoldingsSettlementClient.java</span></div><h1>HoldingsSettlementClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.client;
+
+import com.lemarketjames.orders.entity.Order;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+/**
+ * Triggers holdings-service to settle a fill (debit/credit cash, upsert the holding). Unlike
+ * MarketDataClient's price reads, this is correctness-critical: a failure here must fail the whole
+ * status-update request rather than degrade silently, since an order should never end up FILLED
+ * without its cash/holdings side effects actually happening.
+ */
+@Service
+public class HoldingsSettlementClient {
+
+    private final RestClient restClient;
+
+<span class="fc" id="L20">    public HoldingsSettlementClient(@Value(&quot;${holdings.service.url}&quot;) String holdingsServiceUrl) {</span>
+<span class="fc" id="L21">        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L22">        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));</span>
+<span class="fc" id="L23">        factory.setReadTimeout(java.time.Duration.ofSeconds(5));</span>
+<span class="fc" id="L24">        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(holdingsServiceUrl).build();</span>
+<span class="fc" id="L25">    }</span>
+
+<span class="nc" id="L27">    private record Outcome(String rejectionReason) {}</span>
+
+    public void settle(Order order) {
+<span class="nc" id="L30">        SettlementRequest request = new SettlementRequest(</span>
+<span class="nc" id="L31">                order.getOrderId(), order.getAccountId(), order.getInstrumentId(),</span>
+<span class="nc" id="L32">                order.getOrderType(), order.getQuantity(), order.getPricePerUnit());</span>
+        try {
+<span class="nc" id="L34">            Outcome outcome = restClient.post()</span>
+<span class="nc" id="L35">                    .uri(&quot;/internal/holdings/settle&quot;)</span>
+<span class="nc" id="L36">                    .body(request)</span>
+<span class="nc" id="L37">                    .retrieve()</span>
+<span class="nc" id="L38">                    .body(Outcome.class);</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">            if (outcome == null) throw new IllegalStateException(&quot;Missing settlement receipt for &quot; + order.getOrderId());</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">            if (outcome.rejectionReason() != null) throw new SettlementRejectedException(</span>
+<span class="nc" id="L41">                com.lemarketjames.orders.entity.RejectionReason.valueOf(outcome.rejectionReason()));</span>
+<span class="nc" id="L42">        } catch (RestClientException e) {</span>
+<span class="nc" id="L43">            throw new IllegalStateException(&quot;Failed to settle order &quot; + order.getOrderId() + &quot; with holdings-service&quot;, e);</span>
+<span class="nc" id="L44">        }</span>
+<span class="nc" id="L45">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -15,9 +15,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Reads order data from core-service for trade history and buying power. core-service's
+ * Reads order data from buy-sell-service for trade history and buying power. buy-sell-service's
  * /api/v1/orders/** endpoints are JWT-ownership-checked, so this relays the incoming request's own
- * jwt cookie rather than bypassing that check — core-service's authorization is unchanged.
+ * jwt cookie rather than bypassing that check — buy-sell-service's authorization is unchanged.
  */
 @Service
 public class OrdersClient {
@@ -41,7 +41,7 @@ public class OrdersClient {
 <span class="nc" id="L41">                    .body(OrderSummary[].class);</span>
 <span class="nc bnc" id="L42" title="All 2 branches missed.">            return orders == null ? List.of() : List.of(orders);</span>
 <span class="nc" id="L43">        } catch (RestClientException e) {</span>
-<span class="nc" id="L44">            log.warn(&quot;core-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
+<span class="nc" id="L44">            log.warn(&quot;buy-sell-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
 <span class="nc" id="L45">            return List.of();</span>
         }
     }
@@ -54,7 +54,7 @@ public class OrdersClient {
 <span class="nc" id="L54">                .map(Cookie::getValue)</span>
 <span class="nc" id="L55">                .orElse(null);</span>
 <span class="nc bnc" id="L56" title="All 2 branches missed.">        if (token == null) {</span>
-<span class="nc" id="L57">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to core-service&quot;);</span>
+<span class="nc" id="L57">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to buy-sell-service&quot;);</span>
         }
 <span class="nc" id="L59">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
     }

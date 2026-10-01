@@ -1,6 +1,7 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsController,0,52,0,0,0,18,0,3,0,3
-LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsSettlementController,7,6,0,0,2,3,1,1,1,1
+LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsSettlementController.Outcome,6,0,0,0,1,0,1,0,1,0
+LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsSettlementController,9,6,0,0,1,3,1,1,1,1
 LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsValidationInternalController,29,6,0,0,11,3,1,1,1,1
 LeMarketJames Holdings Service,com.lemarketjames.holdings,HoldingsExceptionHandler,36,15,4,0,10,4,4,2,2,2
 LeMarketJames Holdings Service,com.lemarketjames.holdings.dto,SettlementRequest.OrderType,0,15,0,0,0,1,0,1,0,1
@@ -19,9 +20,10 @@ LeMarketJames Holdings Service,com.lemarketjames.trades,TradeController,10,6,0,0
 LeMarketJames Holdings Service,com.lemarketjames.trades,TradeService,0,79,0,2,0,19,0,7,0,6
 LeMarketJames Holdings Service,com.lemarketjames.profile,ProfileService,12,63,0,0,0,19,2,3,2,3
 LeMarketJames Holdings Service,com.lemarketjames.profile,ProfileController,9,6,0,0,2,3,1,1,1,1
+LeMarketJames Holdings Service,com.lemarketjames.holdings.entity,SettlementReceipt,0,72,4,6,0,10,4,5,0,4
 LeMarketJames Holdings Service,com.lemarketjames.holdings.entity,HoldingsEntity,29,56,1,3,13,18,9,10,8,9
 LeMarketJames Holdings Service,com.lemarketjames.holdings.service,HoldingsService,11,190,1,5,2,41,1,12,0,10
-LeMarketJames Holdings Service,com.lemarketjames.holdings.service,HoldingsSettlementService,6,271,0,16,0,55,1,15,1,7
+LeMarketJames Holdings Service,com.lemarketjames.holdings.service,HoldingsSettlementService,32,345,2,26,6,65,5,19,3,7
 LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,InsufficientHoldingsException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,UnauthorizedException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.config,SecurityConfig,0,109,0,0,0,21,0,8,0,8

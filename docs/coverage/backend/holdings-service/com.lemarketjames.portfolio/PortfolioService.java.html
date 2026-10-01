@@ -22,7 +22,7 @@ import java.util.Optional;
 /**
  * Implements the balance aggregate documented in contracts/C6-api.md (previously undocumented as
  * unimplemented). cash/invested/totalValue/gain-loss come from this service's own data plus live
- * quotes; buyingPower needs the caller's open BUY orders, which live in core-service.
+ * quotes; buyingPower needs the caller's open BUY orders, which live in buy-sell-service.
  */
 @Service
 public class PortfolioService {
