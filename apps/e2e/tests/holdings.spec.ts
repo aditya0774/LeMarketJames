@@ -89,18 +89,20 @@ test.describe('Holdings View (LMKT-29)', () => {
   test('AC3: Holdings persist after page reload', async ({ page, request }) => {
     // Seed data user with holdings
     await loginViaUi(page, seed('seed_active'));
-    await page.click('a:has-text("Holdings")');
-    await expect(page).toHaveURL(/\/holdings$/);
 
     // Pin market prices to prevent drift during page reload.
     // Without this, market simulator generates new random prices between page loads,
     // causing currentPrice, currentValue, and gainLoss to differ slightly.
-    // Must happen before the initial capture below, otherwise the initial render
-    // can already reflect a price that differs from what gets pinned.
+    // Must happen before the Holdings page is ever opened, otherwise its first
+    // fetch (which populates initialContent below) still reads a live, unpinned
+    // price and only the reload sees the pinned one.
     // (See C4-quote-feed.md for market control contract)
     await pinMarketPrices(request);
 
     try {
+      await page.click('a:has-text("Holdings")');
+      await expect(page).toHaveURL(/\/holdings$/);
+
       // Capture initial holdings (mat-table uses rowgroups, not tbody)
       const initialRows = page.locator('.holdings-table tr');
       await initialRows.first().waitFor({ state: 'visible' });
