@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
-<coverage lines-valid="1317" lines-covered="1158" line-rate="0.8792" branches-valid="802" branches-covered="617" branch-rate="0.7693000000000001" timestamp="1790879341309" complexity="0" version="0.1">
+<coverage lines-valid="1317" lines-covered="1164" line-rate="0.8837999999999999" branches-valid="802" branches-covered="619" branch-rate="0.7718" timestamp="1790884576977" complexity="0" version="0.1">
   <sources>
     <source>/home/runner/work/LeMarketJames/LeMarketJames/apps/frontend</source>
   </sources>
@@ -358,7 +358,7 @@
         </class>
       </classes>
     </package>
-    <package name="app.core.orders" line-rate="0.625" branch-rate="0.7234">
+    <package name="app.core.orders" line-rate="0.75" branch-rate="0.7659">
       <classes>
         <class name="cash-validation.service.ts" filename="src/app/core/orders/cash-validation.service.ts" line-rate="1" branch-rate="1">
           <methods>
@@ -383,7 +383,7 @@
             <line number="54" hits="4" branch="true" condition-coverage="100% (2/2)"/>
           </lines>
         </class>
-        <class name="order.service.ts" filename="src/app/core/orders/order.service.ts" line-rate="0.7857" branch-rate="0.8695">
+        <class name="order.service.ts" filename="src/app/core/orders/order.service.ts" line-rate="1" branch-rate="0.9565">
           <methods>
             <method name="orderTimestamp" hits="38" signature="()V">
               <lines>
@@ -430,9 +430,9 @@
                 <line number="96" hits="1"/>
               </lines>
             </method>
-            <method name="getOrderById" hits="0" signature="()V">
+            <method name="getOrderById" hits="22" signature="()V">
               <lines>
-                <line number="103" hits="0"/>
+                <line number="103" hits="22"/>
               </lines>
             </method>
             <method name="getOrdersByAccountId" hits="8" signature="()V">
@@ -450,31 +450,31 @@
                 <line number="113" hits="38"/>
               </lines>
             </method>
-            <method name="getOrdersByAccountAndStatus" hits="0" signature="()V">
+            <method name="getOrdersByAccountAndStatus" hits="22" signature="()V">
               <lines>
-                <line number="120" hits="0"/>
+                <line number="120" hits="22"/>
               </lines>
             </method>
-            <method name="getOrdersByInstrumentId" hits="0" signature="()V">
+            <method name="getOrdersByInstrumentId" hits="22" signature="()V">
               <lines>
-                <line number="127" hits="0"/>
+                <line number="127" hits="22"/>
               </lines>
             </method>
-            <method name="updateOrderStatus" hits="0" signature="()V">
+            <method name="updateOrderStatus" hits="22" signature="()V">
               <lines>
-                <line number="134" hits="0"/>
+                <line number="134" hits="22"/>
               </lines>
             </method>
-            <method name="rejectOrder" hits="0" signature="()V">
+            <method name="rejectOrder" hits="22" signature="()V">
               <lines>
-                <line number="141" hits="0"/>
+                <line number="141" hits="22"/>
               </lines>
             </method>
           </methods>
           <lines>
             <line number="44" hits="38" branch="true" condition-coverage="100% (2/2)"/>
-            <line number="55" hits="23" branch="true" condition-coverage="100% (5/5)"/>
-            <line number="56" hits="23" branch="false"/>
+            <line number="55" hits="22" branch="true" condition-coverage="100% (5/5)"/>
+            <line number="56" hits="22" branch="false"/>
             <line number="59" hits="21" branch="false"/>
             <line number="60" hits="21" branch="false"/>
             <line number="61" hits="21" branch="false"/>
@@ -491,15 +491,15 @@
             <line number="86" hits="1" branch="true" condition-coverage="50% (1/2)"/>
             <line number="88" hits="2" branch="false"/>
             <line number="97" hits="1" branch="false"/>
-            <line number="104" hits="0" branch="false"/>
+            <line number="104" hits="22" branch="false"/>
             <line number="111" hits="8" branch="true" condition-coverage="100% (2/2)"/>
             <line number="112" hits="8" branch="false"/>
             <line number="113" hits="38" branch="false"/>
-            <line number="121" hits="0" branch="false"/>
-            <line number="128" hits="0" branch="false"/>
-            <line number="135" hits="0" branch="false"/>
-            <line number="142" hits="0" branch="true" condition-coverage="0% (0/2)"/>
-            <line number="143" hits="0" branch="false"/>
+            <line number="121" hits="22" branch="false"/>
+            <line number="128" hits="22" branch="false"/>
+            <line number="135" hits="22" branch="false"/>
+            <line number="142" hits="22" branch="true" condition-coverage="100% (2/2)"/>
+            <line number="143" hits="22" branch="false"/>
           </lines>
         </class>
         <class name="orders.service.ts" filename="src/app/core/orders/orders.service.ts" line-rate="0.07690000000000001" branch-rate="0.23070000000000002">
@@ -609,9 +609,9 @@
             </method>
           </methods>
           <lines>
-            <line number="8" hits="2" branch="false"/>
-            <line number="11" hits="7" branch="true" condition-coverage="100% (5/5)"/>
-            <line number="12" hits="7" branch="false"/>
+            <line number="8" hits="1" branch="false"/>
+            <line number="11" hits="6" branch="true" condition-coverage="100% (5/5)"/>
+            <line number="12" hits="6" branch="false"/>
             <line number="14" hits="5" branch="false"/>
             <line number="17" hits="2" branch="false"/>
             <line number="28" hits="1" branch="false"/>
