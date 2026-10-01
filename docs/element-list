@@ -6,6 +6,7 @@ com.lemarketjames.common.audit
 com.lemarketjames.common.config
 com.lemarketjames.common.domain
 com.lemarketjames.common.error
+com.lemarketjames.common.instruments
 com.lemarketjames.common.security
 com.lemarketjames.config
 com.lemarketjames.gateway
