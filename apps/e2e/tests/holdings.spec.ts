@@ -92,19 +92,21 @@ test.describe('Holdings View (LMKT-29)', () => {
     await page.click('a:has-text("Holdings")');
     await expect(page).toHaveURL(/\/holdings$/);
 
-    // Capture initial holdings (mat-table uses rowgroups, not tbody)
-    const initialRows = page.locator('.holdings-table tr');
-    await initialRows.first().waitFor({ state: 'visible' });
-    const initialHoldings = await initialRows.count();
-    const initialContent = await page.locator('.holdings-table').textContent();
-
     // Pin market prices to prevent drift during page reload.
     // Without this, market simulator generates new random prices between page loads,
     // causing currentPrice, currentValue, and gainLoss to differ slightly.
+    // Must happen before the initial capture below, otherwise the initial render
+    // can already reflect a price that differs from what gets pinned.
     // (See C4-quote-feed.md for market control contract)
     await pinMarketPrices(request);
 
     try {
+      // Capture initial holdings (mat-table uses rowgroups, not tbody)
+      const initialRows = page.locator('.holdings-table tr');
+      await initialRows.first().waitFor({ state: 'visible' });
+      const initialHoldings = await initialRows.count();
+      const initialContent = await page.locator('.holdings-table').textContent();
+
       // AC3: Reload the page
       await page.reload();
 

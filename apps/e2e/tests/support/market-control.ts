@@ -75,9 +75,7 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
 export async function unpinMarketPrices(request: APIRequestContext, baseUrl = MARKET_SERVICE_URL): Promise<void> {
   for (const ticker of SEED_HOLDINGS_TICKERS) {
     try {
-      const response = await request.put(`${baseUrl}/internal/market/control/prices/${ticker}`, {
-        data: { pinned: false }
-      });
+      const response = await request.delete(`${baseUrl}/internal/market/control/prices/${ticker}`);
       if (!response.ok()) {
         console.warn(`Failed to unpin price for ${ticker}: ${response.status()}`);
       }
