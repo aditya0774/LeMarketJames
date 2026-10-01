@@ -35,7 +35,7 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
 
   for (const ticker of SEED_HOLDINGS_TICKERS) {
     try {
-      const response = await request.get(`${baseUrl}/api/market/quotes/by-symbol/${ticker}`);
+      const response = await request.get(`${baseUrl}/api/market/quotes/${ticker}`);
       if (response.ok()) {
         const data = await response.json();
         prices.push({ ticker, price: data.lastPrice });
