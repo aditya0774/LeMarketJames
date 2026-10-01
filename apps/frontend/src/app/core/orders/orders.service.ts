@@ -11,14 +11,15 @@ import {
 } from '../../shared/models/order.model';
 
 /**
- * OrdersService
+ * BalanceService
  *
- * Manages all order-related HTTP calls and balance retrieval.
+ * Fetches account balance and portfolio information.
+ * Also handles order operations (create, list, get details).
  * Follows the same pattern as the Auth service: uses HttpClient,
  * returns Promises via firstValueFrom, and interacts with the backend API.
  */
 @Injectable({ providedIn: 'root' })
-export class OrdersService {
+export class BalanceService {
   private readonly baseUrl = `${environment.apiBaseUrl}/api`;
 
   constructor(private readonly http: HttpClient) {}
