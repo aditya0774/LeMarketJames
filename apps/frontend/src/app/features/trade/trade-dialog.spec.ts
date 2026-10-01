@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { loadTestInstruments } from '../../core/market/instrument-catalog.testing';
@@ -198,5 +198,39 @@ describe('TradeDialog', () => {
     (el().querySelector('.modal') as HTMLElement).click();
 
     expect(closedCount).toBe(3);
+  });
+});
+
+describe('TradeDialog — quote feed unavailable', () => {
+  let fixture: ComponentFixture<TradeDialog>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TradeDialog],
+      providers: [
+        { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7) } },
+        {
+          provide: Quotes,
+          useValue: {
+            watchQuote: () => throwError(() => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' })),
+          },
+        },
+        { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings: [] }) } },
+        { provide: OrderService, useValue: { createOrder: () => of({}), submitBuyOrder: () => of({}) } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    }).compileComponents();
+    await loadTestInstruments();
+
+    fixture = TestBed.createComponent(TradeDialog);
+    fixture.componentRef.setInput('symbol', 'tsla');
+    fixture.detectChanges();
+    await fixture.whenStable();
+  });
+
+  it('shows the prices-unavailable banner when the quote feed errors', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role=alert]')?.textContent).toContain('Prices are temporarily unavailable');
   });
 });
