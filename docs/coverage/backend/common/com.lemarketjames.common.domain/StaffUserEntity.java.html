@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaffUserEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.domain</a> &gt; <span class="el_source">StaffUserEntity.java</span></div><h1>StaffUserEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.domain;
+
+import com.lemarketjames.common.security.Role;
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.util.Set;
+
+/**
+ * Maps to the `staff_users` table (database/schema/010): an internal user with exactly one staff
+ * {@link Role}. Staff are not clients, so they have no trading account (contract C7).
+ */
+@Entity
+@Table(name = &quot;staff_users&quot;)
+<span class="nc" id="L15">public class StaffUserEntity implements LoginAccount {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;staff_id&quot;)
+    private Integer staffId;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(name = &quot;full_name&quot;, nullable = false)
+    private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
+
+<span class="nc" id="L38">    @Column(nullable = false)</span>
+    private boolean active = true;
+
+    @Column(name = &quot;failed_login_attempts&quot;, nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = &quot;locked_until&quot;)
+    private Instant lockedUntil;
+
+<span class="nc" id="L47">    @Column(name = &quot;created_at&quot;, nullable = false)</span>
+<span class="nc" id="L48">    private Instant createdAt = Instant.now();</span>
+
+    public Integer getStaffId() {
+<span class="nc" id="L51">        return staffId;</span>
+    }
+
+    @Override
+    public String getUsername() {
+<span class="nc" id="L56">        return username;</span>
+    }
+
+    public void setUsername(String username) {
+<span class="nc" id="L60">        this.username = username;</span>
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public String getEmail() {
+<span class="nc" id="L65">        return email;</span>
+    }
+
+    public void setEmail(String email) {
+<span class="nc" id="L69">        this.email = email;</span>
+<span class="nc" id="L70">    }</span>
+
+    @Override
+    public String getPassword() {
+<span class="nc" id="L74">        return password;</span>
+    }
+
+    public void setPassword(String password) {
+<span class="nc" id="L78">        this.password = password;</span>
+<span class="nc" id="L79">    }</span>
+
+    public String getFullName() {
+<span class="nc" id="L82">        return fullName;</span>
+    }
+
+    public void setFullName(String fullName) {
+<span class="nc" id="L86">        this.fullName = fullName;</span>
+<span class="nc" id="L87">    }</span>
+
+    public Role getRole() {
+<span class="nc" id="L90">        return role;</span>
+    }
+
+    /** Staff roles only; a staff user can never be a {@link Role#CLIENT}. */
+    public void setRole(Role role) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (role == Role.CLIENT) {</span>
+<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;Staff users cannot have the CLIENT role&quot;);</span>
+        }
+<span class="nc" id="L98">        this.role = role;</span>
+<span class="nc" id="L99">    }</span>
+
+    public boolean isActive() {
+<span class="nc" id="L102">        return active;</span>
+    }
+
+    public void setActive(boolean active) {
+<span class="nc" id="L106">        this.active = active;</span>
+<span class="nc" id="L107">    }</span>
+
+    @Override
+    public Set&lt;Role&gt; roles() {
+<span class="nc" id="L111">        return Set.of(role);</span>
+    }
+
+    @Override
+    public boolean canLogIn() {
+<span class="nc" id="L116">        return active;</span>
+    }
+
+    @Override
+    public int getFailedLoginAttempts() {
+<span class="nc" id="L121">        return failedLoginAttempts;</span>
+    }
+
+    @Override
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+<span class="nc" id="L126">        this.failedLoginAttempts = failedLoginAttempts;</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public Instant getLockedUntil() {
+<span class="nc" id="L131">        return lockedUntil;</span>
+    }
+
+    @Override
+    public void setLockedUntil(Instant lockedUntil) {
+<span class="nc" id="L136">        this.lockedUntil = lockedUntil;</span>
+<span class="nc" id="L137">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="nc" id="L140">        return createdAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

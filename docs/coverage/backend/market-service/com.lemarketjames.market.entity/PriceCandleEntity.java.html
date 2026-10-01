@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceCandleEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.entity</a> &gt; <span class="el_source">PriceCandleEntity.java</span></div><h1>PriceCandleEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+/**
+ * One persisted 1-minute OHLC bar ({@code price_candles}, migration 006), keyed by instrument
+ * and UTC interval start.
+ */
+@Entity
+@Table(name = &quot;price_candles&quot;)
+@IdClass(PriceCandleEntity.Key.class)
+public class PriceCandleEntity {
+
+    @Id
+    @Column(name = &quot;instrument_id&quot;)
+    private Integer instrumentId;
+
+    @Id
+    @Column(name = &quot;interval_start&quot;)
+    private LocalDateTime intervalStart;
+
+    @Column(name = &quot;open_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal openPrice;
+
+    @Column(name = &quot;high_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal highPrice;
+
+    @Column(name = &quot;low_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal lowPrice;
+
+    @Column(name = &quot;close_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal closePrice;
+
+    @Column(nullable = false)
+    private Long volume;
+
+<span class="nc" id="L46">    public PriceCandleEntity() {</span>
+<span class="nc" id="L47">    }</span>
+
+    public PriceCandleEntity(Integer instrumentId, LocalDateTime intervalStart, BigDecimal openPrice,
+<span class="nc" id="L50">                             BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice, Long volume) {</span>
+<span class="nc" id="L51">        this.instrumentId = instrumentId;</span>
+<span class="nc" id="L52">        this.intervalStart = intervalStart;</span>
+<span class="nc" id="L53">        this.openPrice = openPrice;</span>
+<span class="nc" id="L54">        this.highPrice = highPrice;</span>
+<span class="nc" id="L55">        this.lowPrice = lowPrice;</span>
+<span class="nc" id="L56">        this.closePrice = closePrice;</span>
+<span class="nc" id="L57">        this.volume = volume;</span>
+<span class="nc" id="L58">    }</span>
+
+    public Integer getInstrumentId() {
+<span class="nc" id="L61">        return instrumentId;</span>
+    }
+
+    public LocalDateTime getIntervalStart() {
+<span class="nc" id="L65">        return intervalStart;</span>
+    }
+
+    public BigDecimal getOpenPrice() {
+<span class="nc" id="L69">        return openPrice;</span>
+    }
+
+    public BigDecimal getHighPrice() {
+<span class="nc" id="L73">        return highPrice;</span>
+    }
+
+    public BigDecimal getLowPrice() {
+<span class="nc" id="L77">        return lowPrice;</span>
+    }
+
+    public BigDecimal getClosePrice() {
+<span class="nc" id="L81">        return closePrice;</span>
+    }
+
+    public Long getVolume() {
+<span class="nc" id="L85">        return volume;</span>
+    }
+
+    /** Composite primary key: (instrument_id, interval_start). */
+    public static class Key implements Serializable {
+
+        private Integer instrumentId;
+        private LocalDateTime intervalStart;
+
+<span class="nc" id="L94">        public Key() {</span>
+<span class="nc" id="L95">        }</span>
+
+<span class="nc" id="L97">        public Key(Integer instrumentId, LocalDateTime intervalStart) {</span>
+<span class="nc" id="L98">            this.instrumentId = instrumentId;</span>
+<span class="nc" id="L99">            this.intervalStart = intervalStart;</span>
+<span class="nc" id="L100">        }</span>
+
+        @Override
+        public boolean equals(Object other) {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            if (this == other) {</span>
+<span class="nc" id="L105">                return true;</span>
+            }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (!(other instanceof Key key)) {</span>
+<span class="nc" id="L108">                return false;</span>
+            }
+<span class="nc bnc" id="L110" title="All 4 branches missed.">            return Objects.equals(instrumentId, key.instrumentId) &amp;&amp; Objects.equals(intervalStart, key.intervalStart);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L115">            return Objects.hash(instrumentId, intervalStart);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

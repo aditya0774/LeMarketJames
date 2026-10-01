@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.profile</a> &gt; <span class="el_source">ProfileService.java</span></div><h1>ProfileService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.profile;
+
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.profile.dto.ProfileDto;
+import org.springframework.stereotype.Service;
+
+/**
+ * Self-service only: a client can fetch their own profile, resolved from the JWT's username, same
+ * as every other own-data endpoint in this app (holdings, orders). There is no lookup-by-id — that
+ * would need an authorization model (e.g. an admin role) that doesn't exist anywhere in this app.
+ */
+@Service
+public class ProfileService {
+
+    private final ClientRepository clientRepository;
+    private final AccountRepository accountRepository;
+
+<span class="fc" id="L21">    public ProfileService(ClientRepository clientRepository, AccountRepository accountRepository) {</span>
+<span class="fc" id="L22">        this.clientRepository = clientRepository;</span>
+<span class="fc" id="L23">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L24">    }</span>
+
+    public ProfileDto getOwnProfile(String username) {
+<span class="fc" id="L27">        ClientEntity client = clientRepository.findByUsername(username)</span>
+<span class="fc" id="L28">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No client found for username: &quot; + username));</span>
+
+<span class="fc" id="L30">        Integer accountId = accountRepository.findAccountIdByUsername(username)</span>
+<span class="pc" id="L31">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No account found for username: &quot; + username));</span>
+<span class="fc" id="L32">        AccountEntity account = accountRepository.findById(accountId)</span>
+<span class="pc" id="L33">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
+
+<span class="fc" id="L35">        return new ProfileDto(</span>
+<span class="fc" id="L36">                client.getUsername(),</span>
+<span class="fc" id="L37">                client.getFullName(),</span>
+<span class="fc" id="L38">                client.getEmail(),</span>
+<span class="fc" id="L39">                client.getPhone(),</span>
+                accountId,
+<span class="fc" id="L41">                account.getCashBalance(),</span>
+<span class="fc" id="L42">                account.getCurrency(),</span>
+<span class="fc" id="L43">                account.isTradingEnabled(),</span>
+<span class="fc" id="L44">                account.getOpenedDate());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

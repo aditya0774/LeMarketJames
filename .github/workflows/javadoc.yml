@@ -30,10 +30,17 @@ jobs:
       - name: Deploy Javadocs to /docs folder
         run: |
           mkdir -p docs
-          rm -rf docs/*
+          # Clear the old Javadocs but keep docs/coverage/, which the coverage workflow owns.
+          find docs -mindepth 1 -maxdepth 1 ! -name coverage -exec rm -rf {} +
           cp -r ./target/apidocs/* docs/
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
-          git commit -m "Update Javadocs" || true
-          git push
+          git commit -m "Update Javadocs" || exit 0
+          # The coverage workflow may push in the meantime; it only touches docs/coverage/, so a
+          # rebase applies cleanly.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

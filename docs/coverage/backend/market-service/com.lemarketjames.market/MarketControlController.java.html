@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketControlController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market</a> &gt; <span class="el_source">MarketControlController.java</span></div><h1>MarketControlController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market;
+
+import com.lemarketjames.market.service.FeedMode;
+import com.lemarketjames.market.service.MarketFeedControl;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Test controls for the simulated quote feed (contract C4): set a stock's price, or make quotes
+ * stale or unavailable on demand, so pricing and failure handling can be tested without a live
+ * provider.
+ *
+ * &lt;p&gt;Only exists when {@code sim.control.enabled=true} (test environments), and lives under
+ * /internal, which the gateway never routes: like holdings' settlement endpoint, it is reachable
+ * only by calling market-service directly on its own port.
+ */
+@RestController
+@RequestMapping(&quot;/internal/market/control&quot;)
+@ConditionalOnProperty(prefix = &quot;sim.control&quot;, name = &quot;enabled&quot;, havingValue = &quot;true&quot;)
+public class MarketControlController {
+
+    private final MarketFeedControl feed;
+
+<span class="fc" id="L28">    public MarketControlController(MarketFeedControl feed) {</span>
+<span class="fc" id="L29">        this.feed = feed;</span>
+<span class="fc" id="L30">    }</span>
+
+    /** The current feed mode and pinned tickers. */
+    @GetMapping
+    public ControlState state() {
+<span class="fc" id="L35">        return new ControlState(feed.feedMode(), feed.pinnedTickers());</span>
+    }
+
+    /** Body: {@code {&quot;mode&quot;: &quot;LIVE&quot; | &quot;STALE&quot; | &quot;UNAVAILABLE&quot;}}. */
+    @PutMapping(&quot;/feed&quot;)
+    public ControlState setFeed(@RequestBody FeedRequest request) {
+<span class="fc" id="L41">        feed.setFeedMode(request.mode());</span>
+<span class="fc" id="L42">        return state();</span>
+    }
+
+    /** Body: {@code {&quot;price&quot;: 123.45, &quot;pinned&quot;: true}}; pinned defaults to true. */
+    @PutMapping(&quot;/prices/{ticker}&quot;)
+    public ControlState setPrice(@PathVariable String ticker, @RequestBody PriceRequest request) {
+<span class="pc bpc" id="L48" title="3 of 4 branches missed.">        feed.setPrice(ticker, request.price(), request.pinned() == null || request.pinned());</span>
+<span class="fc" id="L49">        return state();</span>
+    }
+
+    /** Lets a pinned stock move again. */
+    @DeleteMapping(&quot;/prices/{ticker}&quot;)
+    public ControlState releasePrice(@PathVariable String ticker) {
+<span class="fc" id="L55">        feed.releasePrice(ticker);</span>
+<span class="fc" id="L56">        return state();</span>
+    }
+
+    /** LIVE feed, nothing pinned. */
+    @PostMapping(&quot;/reset&quot;)
+    public ControlState reset() {
+<span class="fc" id="L62">        feed.reset();</span>
+<span class="fc" id="L63">        return state();</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; badRequest(IllegalArgumentException ex) {
+<span class="fc" id="L68">        return ResponseEntity.badRequest().body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
+    }
+
+<span class="fc" id="L71">    public record ControlState(FeedMode feedMode, Set&lt;String&gt; pinned) {</span>
+    }
+
+<span class="fc" id="L74">    public record FeedRequest(FeedMode mode) {</span>
+    }
+
+<span class="fc" id="L77">    public record PriceRequest(double price, Boolean pinned) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

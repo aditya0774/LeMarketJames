@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuoteDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.quotes.dto</a> &gt; <span class="el_source">QuoteDto.java</span></div><h1>QuoteDto.java</h1><pre class="source lang-java linenums">package com.lemarketjames.quotes.dto;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * Contract-aligned quote payload for GET /api/quotes/{symbol}.
+ */
+public class QuoteDto {
+
+    private final String symbol;
+    private final String name;
+    private final BigDecimal price;
+    private final BigDecimal priceChange;
+    private final BigDecimal priceChangePercent;
+    private final BigDecimal highPrice;
+    private final BigDecimal lowPrice;
+    private final BigDecimal openPrice;
+    private final long volume;
+    private final long marketCap;
+    private final BigDecimal peRatio;
+    private final BigDecimal dividendYield;
+    private final Instant lastUpdate;
+
+    public QuoteDto(
+            String symbol,
+            String name,
+            BigDecimal price,
+            BigDecimal priceChange,
+            BigDecimal priceChangePercent,
+            BigDecimal highPrice,
+            BigDecimal lowPrice,
+            BigDecimal openPrice,
+            long volume,
+            long marketCap,
+            BigDecimal peRatio,
+            BigDecimal dividendYield,
+<span class="fc" id="L38">            Instant lastUpdate) {</span>
+<span class="fc" id="L39">        this.symbol = symbol;</span>
+<span class="fc" id="L40">        this.name = name;</span>
+<span class="fc" id="L41">        this.price = price;</span>
+<span class="fc" id="L42">        this.priceChange = priceChange;</span>
+<span class="fc" id="L43">        this.priceChangePercent = priceChangePercent;</span>
+<span class="fc" id="L44">        this.highPrice = highPrice;</span>
+<span class="fc" id="L45">        this.lowPrice = lowPrice;</span>
+<span class="fc" id="L46">        this.openPrice = openPrice;</span>
+<span class="fc" id="L47">        this.volume = volume;</span>
+<span class="fc" id="L48">        this.marketCap = marketCap;</span>
+<span class="fc" id="L49">        this.peRatio = peRatio;</span>
+<span class="fc" id="L50">        this.dividendYield = dividendYield;</span>
+<span class="fc" id="L51">        this.lastUpdate = lastUpdate;</span>
+<span class="fc" id="L52">    }</span>
+
+    public String getSymbol() {
+<span class="fc" id="L55">        return symbol;</span>
+    }
+
+    public String getName() {
+<span class="fc" id="L59">        return name;</span>
+    }
+
+    public BigDecimal getPrice() {
+<span class="fc" id="L63">        return price;</span>
+    }
+
+    public BigDecimal getPriceChange() {
+<span class="fc" id="L67">        return priceChange;</span>
+    }
+
+    public BigDecimal getPriceChangePercent() {
+<span class="fc" id="L71">        return priceChangePercent;</span>
+    }
+
+    public BigDecimal getHighPrice() {
+<span class="fc" id="L75">        return highPrice;</span>
+    }
+
+    public BigDecimal getLowPrice() {
+<span class="fc" id="L79">        return lowPrice;</span>
+    }
+
+    public BigDecimal getOpenPrice() {
+<span class="fc" id="L83">        return openPrice;</span>
+    }
+
+    public long getVolume() {
+<span class="fc" id="L87">        return volume;</span>
+    }
+
+    public long getMarketCap() {
+<span class="fc" id="L91">        return marketCap;</span>
+    }
+
+    public BigDecimal getPeRatio() {
+<span class="fc" id="L95">        return peRatio;</span>
+    }
+
+    public BigDecimal getDividendYield() {
+<span class="fc" id="L99">        return dividendYield;</span>
+    }
+
+    public Instant getLastUpdate() {
+<span class="fc" id="L103">        return lastUpdate;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

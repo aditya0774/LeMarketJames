@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.auth</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.auth;
+
+import com.lemarketjames.auth.dto.LoginRequest;
+import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import com.lemarketjames.common.security.Role;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * REST controller for handling authentication-related endpoints.
+ * Provides endpoints for user registration, login, logout, and retrieving current user information.
+ */
+@RestController
+@RequestMapping(&quot;/api/auth&quot;)
+public class AuthController {
+
+    private final AuthService authService;
+    private final boolean secureCookie;
+
+    /**
+     * Constructs an AuthController with the given AuthService.
+     *
+     * @param authService the authentication service to use
+     * @param secureCookie whether the auth cookie is marked Secure (HTTPS-only); disable only for plain-HTTP environments
+     */
+    public AuthController(AuthService authService,
+<span class="fc" id="L39">                          @Value(&quot;${auth.cookie.secure:true}&quot;) boolean secureCookie) {</span>
+<span class="fc" id="L40">        this.authService = authService;</span>
+<span class="fc" id="L41">        this.secureCookie = secureCookie;</span>
+<span class="fc" id="L42">    }</span>
+
+    /**
+     * Registers a new user with the provided registration request.
+     *
+     * @param request the registration request containing user details
+     * @return a response entity with the registration result (username and message)
+     */
+    @PostMapping(&quot;/register&quot;)
+    public ResponseEntity&lt;?&gt; register(@RequestBody RegisterRequest request) {
+<span class="fc" id="L52">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="fc" id="L53">                .body(authService.register(request));</span>
+    }
+
+    /**
+     * Authenticates a user with the provided login credentials.
+     * Returns a JWT token in an HTTP-only cookie.
+     *
+     * @param request the login request containing username and password
+     * @return a response entity with the login result and JWT cookie
+     */
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;?&gt; login(@RequestBody LoginRequest request) {
+<span class="fc" id="L65">        AuthService.LoginResult result = authService.login(request);</span>
+<span class="fc" id="L66">        ResponseCookie cookie = buildAuthCookie(result.getToken(), authService.getTokenExpirySeconds());</span>
+
+<span class="fc" id="L68">        Map&lt;String, Object&gt; body = sessionBody(result.getUsername(), result.getRoles());</span>
+<span class="fc" id="L69">        body.put(&quot;message&quot;, result.getMessage());</span>
+<span class="fc" id="L70">        return ResponseEntity.ok()</span>
+<span class="fc" id="L71">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L72">                .body(body);</span>
+    }
+
+    /**
+     * Logs out the current user by clearing the JWT authentication cookie.
+     *
+     * @return a response entity with a logout confirmation message
+     */
+    @PostMapping(&quot;/logout&quot;)
+    public ResponseEntity&lt;?&gt; logout() {
+<span class="nc" id="L82">        ResponseCookie cookie = buildAuthCookie(&quot;&quot;, 0);</span>
+<span class="nc" id="L83">        return ResponseEntity.ok()</span>
+<span class="nc" id="L84">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="nc" id="L85">                .body(Map.of(&quot;message&quot;, &quot;Logged out&quot;));</span>
+    }
+
+    /**
+     * Retrieves information about the currently authenticated user.
+     *
+     * @param authentication the current user's authentication principal
+     * @return a response entity containing the username of the current user
+     */
+    @GetMapping(&quot;/me&quot;)
+    public ResponseEntity&lt;?&gt; me(Authentication authentication) {
+<span class="fc" id="L96">        Set&lt;Role&gt; roles = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L97">                .map(authority -&gt; authority.getAuthority().substring(&quot;ROLE_&quot;.length()))</span>
+<span class="fc" id="L98">                .map(Role::valueOf)</span>
+<span class="fc" id="L99">                .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
+<span class="fc" id="L100">        return ResponseEntity.ok(sessionBody(authentication.getName(), roles));</span>
+    }
+
+    /**
+     * What the frontend needs to know about a session (contract C7): who, which roles, and, for
+     * clients only, the trading account. Staff have no account, so accountId is left out for them.
+     */
+    private Map&lt;String, Object&gt; sessionBody(String username, Set&lt;Role&gt; roles) {
+<span class="fc" id="L108">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L109">        body.put(&quot;username&quot;, username);</span>
+<span class="fc" id="L110">        body.put(&quot;roles&quot;, roles.stream().map(Role::name).sorted().toList());</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (roles.contains(Role.CLIENT)) {</span>
+<span class="fc" id="L112">            body.put(&quot;accountId&quot;, authService.getAccountId(username));</span>
+        }
+<span class="fc" id="L114">        return body;</span>
+    }
+
+    /**
+     * Builds an HTTP-only, secure authentication cookie containing the JWT token.
+     *
+     * @param token the JWT token to store in the cookie
+     * @param maxAgeSeconds the maximum age of the cookie in seconds
+     * @return a ResponseCookie configured with appropriate security settings
+     */
+    private ResponseCookie buildAuthCookie(String token, long maxAgeSeconds) {
+<span class="fc" id="L125">        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)</span>
+<span class="fc" id="L126">                .httpOnly(true)</span>
+<span class="fc" id="L127">                .secure(secureCookie)</span>
+<span class="fc" id="L128">                .sameSite(&quot;Lax&quot;)</span>
+<span class="fc" id="L129">                .path(&quot;/&quot;)</span>
+<span class="fc" id="L130">                .maxAge(maxAgeSeconds)</span>
+<span class="fc" id="L131">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.auth</a> &gt; <span class="el_source">AuthService.java</span></div><h1>AuthService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.auth;
+
+import com.lemarketjames.common.config.PlatformSettings;
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.AccountStatus;
+import com.lemarketjames.common.domain.AddressEntity;
+import com.lemarketjames.common.domain.AddressRepository;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.LoginAccount;
+import com.lemarketjames.common.domain.StaffUserEntity;
+import com.lemarketjames.common.domain.StaffUserRepository;
+import com.lemarketjames.auth.dto.LoginRequest;
+import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
+import com.lemarketjames.common.error.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Service class providing authentication and authorization business logic.
+ * Handles user registration, login, password encoding, and token generation.
+ */
+@Service
+public class AuthService {
+
+<span class="fc" id="L43">    private static final Logger log = LoggerFactory.getLogger(AuthService.class);</span>
+
+    private final ClientRepository clientRepository;
+    private final AddressRepository addressRepository;
+    private final AccountRepository accountRepository;
+    private final StaffUserRepository staffUserRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final PlatformSettings.Auth.Lockout lockout;
+    private final Clock clock;
+
+    /** Resolve the trading account from the server-authenticated identity. */
+    public Integer getAccountId(String username) {
+<span class="fc" id="L56">        return accountRepository.findAccountIdByUsername(username)</span>
+<span class="pc" id="L57">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+    }
+
+    /**
+    * Constructs an AuthService with its authentication and persistence dependencies.
+     *
+     * @param jwtService the JWT service for token generation and validation
+     * @param clientRepository repository for client records
+     * @param addressRepository repository for client addresses
+     * @param accountRepository repository for trading accounts
+     * @param staffUserRepository repository for staff logins
+     * @param settings platform settings; supplies the lockout rule (contract C5)
+     */
+    @Autowired
+    public AuthService(
+            JwtService jwtService,
+            ClientRepository clientRepository,
+            AddressRepository addressRepository,
+            AccountRepository accountRepository,
+            StaffUserRepository staffUserRepository,
+            PlatformSettings settings) {
+<span class="fc" id="L78">        this(jwtService, clientRepository, addressRepository, accountRepository, staffUserRepository, settings,</span>
+<span class="fc" id="L79">                Clock.systemUTC());</span>
+<span class="fc" id="L80">    }</span>
+
+    /** Takes the clock the lockout is timed with, so tests can move time instead of sleeping. */
+    AuthService(
+            JwtService jwtService,
+            ClientRepository clientRepository,
+            AddressRepository addressRepository,
+            AccountRepository accountRepository,
+            StaffUserRepository staffUserRepository,
+            PlatformSettings settings,
+<span class="fc" id="L90">            Clock clock) {</span>
+<span class="fc" id="L91">        this.clientRepository = clientRepository;</span>
+<span class="fc" id="L92">        this.addressRepository = addressRepository;</span>
+<span class="fc" id="L93">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L94">        this.staffUserRepository = staffUserRepository;</span>
+<span class="fc" id="L95">        this.passwordEncoder = new BCryptPasswordEncoder();</span>
+<span class="fc" id="L96">        this.jwtService = jwtService;</span>
+<span class="fc" id="L97">        this.lockout = settings.getAuth().getLockout();</span>
+<span class="fc" id="L98">        this.clock = clock;</span>
+<span class="fc" id="L99">    }</span>
+
+    /**
+     * Registers a new user with the provided registration request.
+     * Validates the request, checks for duplicate usernames, and stores the user with an encoded password.
+     *
+     * @param request the registration request containing user details
+     * @return an AuthResponse with the registered username and success message
+     * @throws IllegalArgumentException if validation fails or username is already taken
+     */
+    public AuthResponse register(RegisterRequest request) {
+<span class="fc" id="L110">        validateRegisterRequest(request);</span>
+
+<span class="fc" id="L112">        String username = request.getUsername();</span>
+<span class="fc" id="L113">        String email = request.getEmail().toLowerCase();</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (clientRepository.existsByUsername(username)) {</span>
+<span class="fc" id="L116">            throw new IllegalArgumentException(&quot;Username is already taken&quot;);</span>
+        }
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (clientRepository.existsByEmail(email)) {</span>
+<span class="fc" id="L120">            throw new IllegalArgumentException(&quot;Email is already registered&quot;);</span>
+        }
+
+<span class="fc" id="L123">        ClientEntity client = new ClientEntity();</span>
+<span class="fc" id="L124">        client.setUsername(username);</span>
+<span class="fc" id="L125">        String encodedPassword = encodePassword(request.getPassword());</span>
+<span class="fc" id="L126">        client.setPassword(encodedPassword);</span>
+<span class="fc" id="L127">        client.setEmail(email);</span>
+<span class="fc" id="L128">        client.setFullName(request.getFullName());</span>
+<span class="fc" id="L129">        client.setDateOfBirth(request.getDateOfBirth());</span>
+<span class="fc" id="L130">        client.setPhone(request.getPhoneNumber());</span>
+<span class="fc" id="L131">        client.setRegisteredDate(LocalDateTime.now());</span>
+        // SSN is hashed like a password: it's never used for lookups or validation.
+<span class="fc" id="L133">        client.setSsn(encodePassword(request.getSsn()));</span>
+<span class="fc" id="L134">        client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());</span>
+        // PostgreSQL's investment_experience constraint uses lowercase values.
+<span class="fc" id="L136">        client.setInvestmentExperience(request.getInvestmentExperience().trim().toLowerCase(Locale.ROOT));</span>
+<span class="fc" id="L137">        client.setAccountStatus(AccountStatus.ACTIVE);</span>
+<span class="fc" id="L138">        client = clientRepository.save(client);</span>
+
+<span class="fc" id="L140">        AddressEntity address = new AddressEntity();</span>
+<span class="fc" id="L141">        address.setClientId(client.getClientId());</span>
+<span class="fc" id="L142">        address.setAddressType(&quot;RESIDENTIAL&quot;);</span>
+<span class="fc" id="L143">        address.setStreetAddress(request.getStreetAddress());</span>
+<span class="fc" id="L144">        address.setCity(request.getCity());</span>
+<span class="fc" id="L145">        address.setState(request.getState());</span>
+<span class="fc" id="L146">        address.setPostalCode(request.getZipCode());</span>
+<span class="fc" id="L147">        String country = request.getCountry();</span>
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">        address.setCountry(country == null || country.isBlank() ? &quot;US&quot; : country);</span>
+<span class="fc" id="L149">        addressRepository.save(address);</span>
+
+<span class="fc" id="L151">        AccountEntity account = new AccountEntity();</span>
+<span class="fc" id="L152">        account.setClientId(client.getClientId());</span>
+<span class="fc" id="L153">        account.setCashBalance(request.getInitialDeposit());</span>
+<span class="fc" id="L154">        account.setCurrency(&quot;USD&quot;);</span>
+<span class="fc" id="L155">        account.setTradingEnabled(true);</span>
+<span class="fc" id="L156">        account.setOpenedDate(LocalDate.now());</span>
+<span class="fc" id="L157">        accountRepository.save(account);</span>
+
+<span class="fc" id="L159">        log.info(&quot;Registration succeeded for username={}&quot;, username);</span>
+
+<span class="fc" id="L161">        return new AuthResponse(username, &quot;User registered successfully&quot;);</span>
+    }
+
+    /**
+     * Authenticates a client or staff user by email and password (contract C7: one login for both).
+     * The request's username field carries the email; it is matched case-insensitively
+     * because registration stores emails lowercased. The password is verified against
+     * the stored BCrypt hash.
+     *
+     * &lt;p&gt;Lockout (contract C5) is stored on the login itself, so it survives restarts: after
+     * {@code lmj.auth.lockout.max-attempts} consecutive wrong passwords the login is locked for
+     * {@code lmj.auth.lockout.duration}.
+     *
+     * @param request the login request containing the email (as username) and password
+     * @return a LoginResult with the username, success message, JWT token and roles
+     * @throws IllegalArgumentException if validation fails, the login is locked or barred, or credentials are invalid
+     */
+    public LoginResult login(LoginRequest request) {
+<span class="fc" id="L179">        validateLoginRequest(request);</span>
+
+<span class="fc" id="L181">        String email = request.getUsername().trim().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L182">        String password = request.getPassword();</span>
+
+        // Clients first: they are the vast majority of logins. Staff never share an email with a client.
+<span class="fc" id="L185">        LoginAccount account = clientRepository.findByEmail(email)</span>
+<span class="fc" id="L186">                .&lt;LoginAccount&gt;map(client -&gt; client)</span>
+<span class="fc" id="L187">                .or(() -&gt; staffUserRepository.findByEmail(email))</span>
+<span class="fc" id="L188">                .orElse(null);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (account == null) {</span>
+<span class="fc" id="L190">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
+<span class="fc" id="L191">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
+        }
+
+<span class="fc bfc" id="L194" title="All 4 branches covered.">        if (account.getLockedUntil() != null &amp;&amp; clock.instant().isBefore(account.getLockedUntil())) {</span>
+<span class="fc" id="L195">            log.warn(&quot;Login blocked for email={} due to active lockout&quot;, email);</span>
+<span class="fc" id="L196">            throw new IllegalArgumentException(&quot;Account temporarily locked due to too many failed attempts. Try again later.&quot;);</span>
+        }
+
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (!matchesPassword(password, account.getPassword())) {</span>
+<span class="fc" id="L200">            registerFailedAttempt(account);</span>
+<span class="fc" id="L201">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
+<span class="fc" id="L202">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
+        }
+
+        // Checked only after the password, so a wrong guess never reveals an account's status.
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (!account.canLogIn()) {</span>
+<span class="fc" id="L207">            log.warn(&quot;Login refused for email={}: account is not active&quot;, email);</span>
+<span class="fc" id="L208">            throw new IllegalArgumentException(&quot;This account is not active. Please contact support.&quot;);</span>
+        }
+
+<span class="fc" id="L211">        account.setFailedLoginAttempts(0);</span>
+<span class="fc" id="L212">        account.setLockedUntil(null);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
+<span class="fc" id="L214">            client.setLastLogin(LocalDateTime.now());</span>
+        }
+<span class="fc" id="L216">        persist(account);</span>
+
+        // The token subject stays the username: /me, orders and account ownership checks look users up by it.
+<span class="fc" id="L219">        String username = account.getUsername();</span>
+<span class="fc" id="L220">        Set&lt;Role&gt; roles = account.roles();</span>
+<span class="fc" id="L221">        String token = jwtService.generateToken(username, roles);</span>
+<span class="fc" id="L222">        log.info(&quot;Login succeeded for username={} roles={}&quot;, username, roles);</span>
+<span class="fc" id="L223">        return new LoginResult(username, &quot;Login successful&quot;, token, roles);</span>
+    }
+
+    // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
+    // The lock is timed from now, after the (slow) password check, so it lasts the full duration.
+    private void registerFailedAttempt(LoginAccount account) {
+<span class="fc" id="L229">        int attempts = account.getFailedLoginAttempts() + 1;</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        if (attempts &gt;= lockout.getMaxAttempts()) {</span>
+<span class="fc" id="L231">            account.setLockedUntil(clock.instant().plus(lockout.getDuration()));</span>
+<span class="fc" id="L232">            attempts = 0;</span>
+        }
+<span class="fc" id="L234">        account.setFailedLoginAttempts(attempts);</span>
+<span class="fc" id="L235">        persist(account);</span>
+<span class="fc" id="L236">    }</span>
+
+    private void persist(LoginAccount account) {
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
+<span class="fc" id="L240">            clientRepository.save(client);</span>
+        } else {
+<span class="fc" id="L242">            staffUserRepository.save((StaffUserEntity) account);</span>
+        }
+<span class="fc" id="L244">    }</span>
+
+    /**
+     * Encodes a raw password using BCrypt with a salt.
+     *
+     * @param rawPassword the plain text password to encode
+     * @return the encoded password hash
+     */
+    public String encodePassword(String rawPassword) {
+<span class="fc" id="L253">        return passwordEncoder.encode(rawPassword);</span>
+    }
+
+    /**
+     * Verifies that a raw password matches the encoded password hash.
+     *
+     * @param rawPassword the plain text password to verify
+     * @param encodedPassword the encoded password hash to compare against
+     * @return true if the passwords match, false otherwise
+     */
+    public boolean matchesPassword(String rawPassword, String encodedPassword) {
+<span class="fc" id="L264">        return passwordEncoder.matches(rawPassword, encodedPassword);</span>
+    }
+
+    /**
+     * Retrieves the JWT token expiration time in seconds.
+     *
+     * @return the token expiration time in seconds
+     */
+    public long getTokenExpirySeconds() {
+<span class="fc" id="L273">        return jwtService.getExpirationSeconds();</span>
+    }
+
+    /**
+     * Validates a registration request ensuring all required fields are present and non-empty.
+     *
+     * @param request the registration request to validate
+     * @throws IllegalArgumentException if any required field is missing or invalid
+     */
+    private void validateRegisterRequest(RegisterRequest request) {
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L284">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
+        }
+
+<span class="fc" id="L287">        Map&lt;String, String&gt; errors = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L288">        requireField(errors, &quot;username&quot;, request.getUsername(), &quot;Username is required&quot;);</span>
+<span class="fc" id="L289">        requireField(errors, &quot;password&quot;, request.getPassword(), &quot;Password is required&quot;);</span>
+<span class="fc" id="L290">        requireField(errors, &quot;email&quot;, request.getEmail(), &quot;Email is required&quot;);</span>
+<span class="fc" id="L291">        requireField(errors, &quot;fullName&quot;, request.getFullName(), &quot;Full name is required&quot;);</span>
+<span class="fc" id="L292">        requireField(errors, &quot;streetAddress&quot;, request.getStreetAddress(), &quot;Street address is required&quot;);</span>
+<span class="fc" id="L293">        requireField(errors, &quot;city&quot;, request.getCity(), &quot;City is required&quot;);</span>
+<span class="fc" id="L294">        requireField(errors, &quot;state&quot;, request.getState(), &quot;State is required&quot;);</span>
+<span class="fc" id="L295">        requireField(errors, &quot;zipCode&quot;, request.getZipCode(), &quot;ZIP code is required&quot;);</span>
+<span class="fc" id="L296">        requireField(errors, &quot;ssn&quot;, request.getSsn(), &quot;SSN is required&quot;);</span>
+<span class="fc" id="L297">        requireField(errors, &quot;phoneNumber&quot;, request.getPhoneNumber(), &quot;Phone number is required&quot;);</span>
+<span class="fc" id="L298">        requireField(errors, &quot;investmentExperience&quot;, request.getInvestmentExperience(), &quot;Investment experience is required&quot;);</span>
+<span class="fc" id="L299">        requireField(errors, &quot;employmentStatus&quot;, request.getEmploymentStatus(), &quot;Employment status is required&quot;);</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (request.getInitialDeposit() == null) {</span>
+<span class="fc" id="L301">            errors.put(&quot;initialDeposit&quot;, &quot;Initial deposit amount is required&quot;);</span>
+        }
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        if (request.getDateOfBirth() == null) {</span>
+<span class="fc" id="L304">            errors.put(&quot;dateOfBirth&quot;, &quot;Date of birth is required&quot;);</span>
+        }
+
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if (!errors.isEmpty()) {</span>
+<span class="fc" id="L308">            throw new ValidationException(errors);</span>
+        }
+<span class="fc" id="L310">    }</span>
+
+    /**
+     * Validates a login request ensuring all required fields are present and non-empty.
+     *
+     * @param request the login request to validate
+     * @throws IllegalArgumentException if any required field is missing or invalid
+     */
+    private void validateLoginRequest(LoginRequest request) {
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L320">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
+        }
+<span class="fc" id="L322">        validateRequired(request.getUsername(), &quot;Email is required&quot;);</span>
+<span class="fc" id="L323">        validateRequired(request.getPassword(), &quot;Password is required&quot;);</span>
+<span class="fc" id="L324">    }</span>
+
+    private void requireField(Map&lt;String, String&gt; errors, String field, String value, String message) {
+<span class="pc bpc" id="L327" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L328">            errors.put(field, message);</span>
+        }
+<span class="fc" id="L330">    }</span>
+
+    private void validateRequired(String value, String message) {
+<span class="pc bpc" id="L333" title="2 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L334">            throw new IllegalArgumentException(message);</span>
+        }
+<span class="fc" id="L336">    }</span>
+
+    /**
+     * Response object for authentication operations containing username and message.
+     */
+    public static class AuthResponse {
+        private final String username;
+        private final String message;
+
+<span class="fc" id="L345">        public AuthResponse(String username, String message) {</span>
+<span class="fc" id="L346">            this.username = username;</span>
+<span class="fc" id="L347">            this.message = message;</span>
+<span class="fc" id="L348">        }</span>
+
+        public String getUsername() {
+<span class="fc" id="L351">            return username;</span>
+        }
+
+        public String getMessage() {
+<span class="fc" id="L355">            return message;</span>
+        }
+    }
+
+    /**
+     * Result object for successful login containing username, message, and JWT token.
+     * The token is not serialized directly in the response; it is only used by the controller
+     * to set the authentication cookie.
+     */
+    public static class LoginResult {
+        private final String username;
+        private final String message;
+        private final String token;
+        private final Set&lt;Role&gt; roles;
+
+<span class="fc" id="L370">        public LoginResult(String username, String message, String token, Set&lt;Role&gt; roles) {</span>
+<span class="fc" id="L371">            this.username = username;</span>
+<span class="fc" id="L372">            this.message = message;</span>
+<span class="fc" id="L373">            this.token = token;</span>
+<span class="fc" id="L374">            this.roles = roles;</span>
+<span class="fc" id="L375">        }</span>
+
+        /** The roles written into the token; tells the controller whether this login has an account. */
+        public Set&lt;Role&gt; getRoles() {
+<span class="fc" id="L379">            return roles;</span>
+        }
+
+        public String getUsername() {
+<span class="fc" id="L383">            return username;</span>
+        }
+
+        public String getMessage() {
+<span class="fc" id="L387">            return message;</span>
+        }
+
+        public String getToken() {
+<span class="fc" id="L391">            return token;</span>
+        }
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

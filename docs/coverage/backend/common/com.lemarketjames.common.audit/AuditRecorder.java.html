@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditRecorder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.audit</a> &gt; <span class="el_source">AuditRecorder.java</span></div><h1>AuditRecorder.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.audit;
+
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.util.Map;
+
+/**
+ * The only way to write the audit trail (contract C2). Each service records the lifecycle events
+ * it causes, so audit never waits on another feature.
+ *
+ * &lt;p&gt;The rule &quot;an event is written in the same transaction as the change it describes&quot; is
+ * enforced, not just documented: {@link Propagation#MANDATORY} makes a call from outside a
+ * transaction fail, and inside one the event commits or rolls back together with the change.
+ */
+@Service
+public class AuditRecorder {
+
+    private final AuditEventRepository events;
+    private final AccountRepository accounts;
+    private final Clock clock;
+
+    @Autowired
+    public AuditRecorder(AuditEventRepository events, AccountRepository accounts) {
+<span class="nc" id="L30">        this(events, accounts, Clock.systemUTC());</span>
+<span class="nc" id="L31">    }</span>
+
+<span class="fc" id="L33">    AuditRecorder(AuditEventRepository events, AccountRepository accounts, Clock clock) {</span>
+<span class="fc" id="L34">        this.events = events;</span>
+<span class="fc" id="L35">        this.accounts = accounts;</span>
+<span class="fc" id="L36">        this.clock = clock;</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Records one event for an order.
+     *
+     * @param type      what happened
+     * @param orderId   the order it happened to
+     * @param accountId the order's account; the client id is resolved from it
+     * @param details   the keys documented on {@code type}
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void record(AuditEventType type, Integer orderId, Integer accountId, Map&lt;String, Object&gt; details) {
+<span class="fc" id="L49">        Integer clientId = accounts.findById(accountId).map(AccountEntity::getClientId).orElse(null);</span>
+<span class="fc" id="L50">        events.save(new AuditEventEntity(orderId, accountId, clientId, type, details, clock.instant()));</span>
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

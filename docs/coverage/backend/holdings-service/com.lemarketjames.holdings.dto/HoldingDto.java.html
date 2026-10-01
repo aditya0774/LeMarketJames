@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.dto</a> &gt; <span class="el_source">HoldingDto.java</span></div><h1>HoldingDto.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.dto;
+
+import java.math.BigDecimal;
+
+public class HoldingDto {
+    private String symbol;
+    private BigDecimal quantity;
+    private BigDecimal averageCost;
+    private BigDecimal currentPrice;
+    private BigDecimal totalCost;
+    private BigDecimal currentValue;
+    private BigDecimal gainLoss;
+    private BigDecimal gainLossPercent;
+
+<span class="nc" id="L15">    public HoldingDto() {}</span>
+
+    public HoldingDto(String symbol, BigDecimal quantity, BigDecimal averageCost,
+                      BigDecimal currentPrice, BigDecimal totalCost, BigDecimal currentValue,
+<span class="fc" id="L19">                      BigDecimal gainLoss, BigDecimal gainLossPercent) {</span>
+<span class="fc" id="L20">        this.symbol = symbol;</span>
+<span class="fc" id="L21">        this.quantity = quantity;</span>
+<span class="fc" id="L22">        this.averageCost = averageCost;</span>
+<span class="fc" id="L23">        this.currentPrice = currentPrice;</span>
+<span class="fc" id="L24">        this.totalCost = totalCost;</span>
+<span class="fc" id="L25">        this.currentValue = currentValue;</span>
+<span class="fc" id="L26">        this.gainLoss = gainLoss;</span>
+<span class="fc" id="L27">        this.gainLossPercent = gainLossPercent;</span>
+<span class="fc" id="L28">    }</span>
+
+    public String getSymbol() {
+<span class="fc" id="L31">        return symbol;</span>
+    }
+
+    public void setSymbol(String symbol) {
+<span class="nc" id="L35">        this.symbol = symbol;</span>
+<span class="nc" id="L36">    }</span>
+
+    public BigDecimal getQuantity() {
+<span class="fc" id="L39">        return quantity;</span>
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+<span class="nc" id="L43">        this.quantity = quantity;</span>
+<span class="nc" id="L44">    }</span>
+
+    public BigDecimal getAverageCost() {
+<span class="fc" id="L47">        return averageCost;</span>
+    }
+
+    public void setAverageCost(BigDecimal averageCost) {
+<span class="nc" id="L51">        this.averageCost = averageCost;</span>
+<span class="nc" id="L52">    }</span>
+
+    public BigDecimal getCurrentPrice() {
+<span class="fc" id="L55">        return currentPrice;</span>
+    }
+
+    public void setCurrentPrice(BigDecimal currentPrice) {
+<span class="nc" id="L59">        this.currentPrice = currentPrice;</span>
+<span class="nc" id="L60">    }</span>
+
+    public BigDecimal getTotalCost() {
+<span class="fc" id="L63">        return totalCost;</span>
+    }
+
+    public void setTotalCost(BigDecimal totalCost) {
+<span class="nc" id="L67">        this.totalCost = totalCost;</span>
+<span class="nc" id="L68">    }</span>
+
+    public BigDecimal getCurrentValue() {
+<span class="fc" id="L71">        return currentValue;</span>
+    }
+
+    public void setCurrentValue(BigDecimal currentValue) {
+<span class="nc" id="L75">        this.currentValue = currentValue;</span>
+<span class="nc" id="L76">    }</span>
+
+    public BigDecimal getGainLoss() {
+<span class="fc" id="L79">        return gainLoss;</span>
+    }
+
+    public void setGainLoss(BigDecimal gainLoss) {
+<span class="nc" id="L83">        this.gainLoss = gainLoss;</span>
+<span class="nc" id="L84">    }</span>
+
+    public BigDecimal getGainLossPercent() {
+<span class="fc" id="L87">        return gainLossPercent;</span>
+    }
+
+    public void setGainLossPercent(BigDecimal gainLossPercent) {
+<span class="nc" id="L91">        this.gainLossPercent = gainLossPercent;</span>
+<span class="nc" id="L92">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

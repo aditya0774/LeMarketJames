@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrdersClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.client</a> &gt; <span class="el_source">OrdersClient.java</span></div><h1>OrdersClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.client;
+
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Reads order data from core-service for trade history and buying power. core-service's
+ * /api/v1/orders/** endpoints are JWT-ownership-checked, so this relays the incoming request's own
+ * jwt cookie rather than bypassing that check — core-service's authorization is unchanged.
+ */
+@Service
+public class OrdersClient {
+
+<span class="fc" id="L25">    private static final Logger log = LoggerFactory.getLogger(OrdersClient.class);</span>
+
+    private final RestClient restClient;
+    private final HttpServletRequest currentRequest;
+
+<span class="fc" id="L30">    public OrdersClient(@Value(&quot;${orders.service.url}&quot;) String ordersServiceUrl, HttpServletRequest currentRequest) {</span>
+<span class="fc" id="L31">        this.restClient = RestClient.builder().baseUrl(ordersServiceUrl).build();</span>
+<span class="fc" id="L32">        this.currentRequest = currentRequest;</span>
+<span class="fc" id="L33">    }</span>
+
+    public List&lt;OrderSummary&gt; getOrdersForAccount(int accountId) {
+        try {
+<span class="nc" id="L37">            OrderSummary[] orders = restClient.get()</span>
+<span class="nc" id="L38">                    .uri(&quot;/api/v1/orders/account/{accountId}&quot;, accountId)</span>
+<span class="nc" id="L39">                    .header(HttpHeaders.COOKIE, relayedJwtCookieHeader())</span>
+<span class="nc" id="L40">                    .retrieve()</span>
+<span class="nc" id="L41">                    .body(OrderSummary[].class);</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            return orders == null ? List.of() : List.of(orders);</span>
+<span class="nc" id="L43">        } catch (RestClientException e) {</span>
+<span class="nc" id="L44">            log.warn(&quot;core-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
+<span class="nc" id="L45">            return List.of();</span>
+        }
+    }
+
+    private String relayedJwtCookieHeader() {
+<span class="nc" id="L50">        Cookie[] cookies = currentRequest.getCookies();</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
+<span class="nc" id="L52">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
+<span class="nc" id="L53">                .findFirst()</span>
+<span class="nc" id="L54">                .map(Cookie::getValue)</span>
+<span class="nc" id="L55">                .orElse(null);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (token == null) {</span>
+<span class="nc" id="L57">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to core-service&quot;);</span>
+        }
+<span class="nc" id="L59">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
