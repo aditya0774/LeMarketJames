@@ -25,27 +25,30 @@ public class OrderExecutionTransactions {
 <span class="pc bpc" id="L25" title="1 of 2 branches missed.">            if (manual) throw new InvalidStatusTransitionException(order.getOrderStatus(), OrderStatus.FILLED);</span>
 <span class="fc" id="L26">            return null;</span>
         }
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (order.getOrderStatus() == OrderStatus.SUBMITTED) {</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        if (order.getOrderStatus() == OrderStatus.SUBMITTED) {</span>
 <span class="pc bpc" id="L29" title="1 of 2 branches missed.">            if (manual) throw new InvalidStatusTransitionException(OrderStatus.SUBMITTED, OrderStatus.FILLED);</span>
 <span class="fc" id="L30">            transitions.move(order, OrderStatus.ACCEPTED, null);</span>
         }
 <span class="fc" id="L32">        ExecutionResult result = executor.execute(order);</span>
-<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (result.nextStatus() == OrderStatus.FILLED) {</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (result.nextStatus() == OrderStatus.FILLED) {</span>
 <span class="pc bpc" id="L34" title="1 of 2 branches missed.">            if (order.getOrderStatus() != OrderStatus.PENDING) transitions.move(order, OrderStatus.PENDING, null);</span>
-<span class="fc" id="L35">            order.setPricePerUnit(result.fillPrice());</span>
-<span class="fc" id="L36">            order.setSettlementPending(true);</span>
-<span class="fc" id="L37">            return order;</span>
+            // The quote is part of the durable intent: a retry settles at this price and keeps its provenance.
+<span class="fc" id="L36">            order.setPricePerUnit(result.fillPrice());</span>
+<span class="fc" id="L37">            order.setQuoteSource(result.quote().source());</span>
+<span class="fc" id="L38">            order.setQuoteTime(result.quote().quoteTime());</span>
+<span class="fc" id="L39">            order.setSettlementPending(true);</span>
+<span class="fc" id="L40">            return order;</span>
         }
-<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (order.getOrderStatus() != result.nextStatus()) transitions.move(order, result.nextStatus(), result.reason());</span>
-<span class="nc" id="L40">        return null;</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (order.getOrderStatus() != result.nextStatus()) transitions.move(order, result.nextStatus(), result.reason());</span>
+<span class="fc" id="L43">        return null;</span>
     }
     @Transactional
     public void finish(int id, RejectionReason rejection) {
-<span class="fc" id="L44">        Order order = orders.findLockedById(id).orElseThrow();</span>
+<span class="fc" id="L47">        Order order = orders.findLockedById(id).orElseThrow();</span>
         // Another worker may have completed the same idempotent request in the meantime.
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (!order.isSettlementPending()) return;</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);</span>
-<span class="fc" id="L48">        order.setSettlementPending(false);</span>
-<span class="fc" id="L49">    }</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (!order.isSettlementPending()) return;</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);</span>
+<span class="fc" id="L51">        order.setSettlementPending(false);</span>
+<span class="fc" id="L52">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
