@@ -258,3 +258,18 @@ The migration is idempotent; new Docker databases apply it automatically. Receip
 have no order foreign key, preserving idempotency even after order cleanup. Never delete receipts
 while their order IDs could be retried or reused. Cash updates and receipts commit together;
 all settlements acquire the account lock first to serialize concurrent buys and sells.
+
+## 013 — Quote used for a fill
+
+Apply `schema/013_execution_quote.sql` before starting the updated buy-sell service (it runs with
+`ddl-auto=validate` and will not start without the columns). It adds `orders.quote_source` and
+`orders.quote_time`: the feed and the time of the quote an order was priced from at execution
+([C6](../contracts/C6-api.md#automatic-execution-and-recovery)). Together with `price_per_unit`
+(the quote's price) and `filled_at` (the execution time) they record how a fill was priced.
+
+```powershell
+Get-Content database/schema/013_execution_quote.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Both columns are
+nullable: orders filled before 013, including the seed data, have no stored quote source or time.

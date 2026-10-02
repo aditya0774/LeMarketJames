@@ -7,7 +7,9 @@ import com.lemarketjames.orders.entity.*;
 import com.lemarketjames.orders.repository.OrderRepository;
 import com.lemarketjames.orders.service.OrderService;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +42,19 @@ class ExecutionRecoveryIntegrationTest {
     }
     @Test void lostResponseRetainsPriceAndRecoveryFinishesExactlyOnce() {
         Order order = seed(); int id = order.getOrderId();
-        when(executor.execute(any())).thenReturn(ExecutionResult.filled(new BigDecimal("99.0000")));
+        // Microsecond precision, so the value reads back unchanged from either database.
+        Instant quoteTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        when(executor.execute(any())).thenReturn(ExecutionResult.filled(
+            new QuoteUsed(new BigDecimal("99.0000"), "SIMULATED_FEED", quoteTime)));
         AtomicInteger calls = new AtomicInteger();
         doAnswer(inv -> {
             Order sent = inv.getArgument(0);
             Order committed = orders.findById(id).orElseThrow();
             assertTrue(committed.isSettlementPending());
             assertEquals(sent.getPricePerUnit(), committed.getPricePerUnit());
+            // The quote used is committed with the intent, before settlement is attempted.
+            assertEquals("SIMULATED_FEED", committed.getQuoteSource());
+            assertEquals(quoteTime, committed.getQuoteTime());
             if (calls.incrementAndGet() == 1) throw new IllegalStateException("Response lost after remote commit");
             return null;
         }).when(settlement).settle(any());
@@ -62,13 +70,18 @@ class ExecutionRecoveryIntegrationTest {
         Order filled = orders.findById(id).orElseThrow();
         assertEquals(Order.OrderStatus.FILLED, filled.getOrderStatus());
         assertFalse(filled.isSettlementPending()); assertNotNull(filled.getFilledAt());
+        // Recovery never re-prices: the fill keeps the quote captured before the lost response.
+        assertEquals(0, new BigDecimal("99.0000").compareTo(filled.getPricePerUnit()));
+        assertEquals("SIMULATED_FEED", filled.getQuoteSource());
+        assertEquals(quoteTime, filled.getQuoteTime());
         verify(executor, times(1)).execute(any());
         verify(settlement, times(2)).settle(any());
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE order_id=? AND action='FILLED'", Integer.class, id));
     }
     @Test void definiteSettlementRefusalBecomesFinalRejection() {
         Order order = seed();
-        when(executor.execute(any())).thenReturn(ExecutionResult.filled(BigDecimal.TEN));
+        when(executor.execute(any())).thenReturn(ExecutionResult.filled(
+            new QuoteUsed(BigDecimal.TEN, "SIMULATED_FEED", Instant.now())));
         doThrow(new SettlementRejectedException(RejectionReason.INSUFFICIENT_HOLDINGS)).when(settlement).settle(any());
         execution.execute(order.getOrderId(), false);
         Order rejected = orders.findById(order.getOrderId()).orElseThrow();

@@ -2,6 +2,7 @@ package com.lemarketjames.orders.dto;
 
 import com.lemarketjames.orders.entity.Order;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public class OrderResponse {
@@ -19,9 +20,11 @@ public class OrderResponse {
     private LocalDateTime submittedAt;
     private LocalDateTime acceptedAt;
     private LocalDateTime filledAt;
+    private String quoteSource;
+    private Instant quoteTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     // Constructor from Order entity (success case)
     public OrderResponse(Order order) {
         this.success = true;
@@ -36,6 +39,8 @@ public class OrderResponse {
         this.submittedAt = order.getSubmittedAt();
         this.acceptedAt = order.getAcceptedAt();
         this.filledAt = order.getFilledAt();
+        this.quoteSource = order.getQuoteSource();
+        this.quoteTime = order.getQuoteTime();
         this.createdAt = order.getCreatedAt();
         this.updatedAt = order.getUpdatedAt();
     }
@@ -112,7 +117,17 @@ public class OrderResponse {
     public LocalDateTime getFilledAt() {
         return filledAt;
     }
-    
+
+    /** The feed the execution quote came from; null until the order has been priced for execution. */
+    public String getQuoteSource() {
+        return quoteSource;
+    }
+
+    /** When the feed produced the execution quote (UTC); null until the order has been priced for execution. */
+    public Instant getQuoteTime() {
+        return quoteTime;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

@@ -66,7 +66,7 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
     private final Map<String, QuoteSnapshot> snapshotsByTicker = new ConcurrentHashMap<>();
     private final Queue<PriceCandle> completedCandles = new ConcurrentLinkedQueue<>();
 
-    /** Test controls (contract C4). Pinned instruments are skipped by tick; guarded by this object's lock. */
+    /** Test controls (contract C4). Pinned instruments keep their price through ticks; guarded by this object's lock. */
     private final Set<Integer> pinned = new HashSet<>();
     private volatile FeedMode feedMode = FeedMode.LIVE;
     /** What readers see while STALE: the quotes at the moment the feed went stale, backdated. */
@@ -132,7 +132,14 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
         double marketShock = random.nextGaussian();
         for (SimulatedInstrument instrument : instruments.values()) {
             if (pinned.contains(instrument.instrument().instrumentId())) {
-                continue; // held at the price a test set
+                // Held at the price a test set. While its exchange is open the quote is still
+                // re-stamped, otherwise it would age past the staleness limit (contract C5) and
+                // orders on a pinned stock would be refused as stale.
+                if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {
+                    instrument.hold(now);
+                    publish(instrument);
+                }
+                continue;
             }
             if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {
                 double shock = GbmModel.correlatedShock(

@@ -50,6 +50,48 @@ class MarketOrderExecutorTest {
         when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(now.minusSeconds(61))));
         assertEquals(RejectionReason.STALE_QUOTE, executor.execute(order).reason());
     }
+    // LMKT-23 AC3: the fill carries the quote it was priced from.
+    @Test void fillCarriesTheQuoteUsed() {
+        Instant quoteTime = now.minusSeconds(2);
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(quoteTime)));
+        ExecutionResult result = executor.execute(order);
+        assertEquals(Order.OrderStatus.FILLED, result.nextStatus());
+        assertEquals(new QuoteUsed(new BigDecimal("101.0000"), MarketOrderExecutor.QUOTE_SOURCE, quoteTime), result.quote());
+    }
+    // LMKT-23 AC1: the limit defaults to 5 seconds, and a quote exactly that old is still usable.
+    @Test void quoteAtTheDefaultFiveSecondLimitFills() {
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(now.minusSeconds(5))));
+        assertEquals(Order.OrderStatus.FILLED, executor.execute(order).nextStatus());
+    }
+    // LMKT-23 AC2: an older quote rejects and never yields a price to fill at.
+    @Test void quoteOlderThanTheLimitRejectsWithoutAFillPrice() {
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(now.minusSeconds(6))));
+        ExecutionResult result = executor.execute(order);
+        assertEquals(Order.OrderStatus.REJECTED, result.nextStatus());
+        assertEquals(RejectionReason.STALE_QUOTE, result.reason());
+        assertNull(result.quote());
+        assertNull(result.fillPrice());
+    }
+    @Test void quoteWithoutATimestampIsTreatedAsStale() {
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(null)));
+        assertEquals(RejectionReason.STALE_QUOTE, executor.execute(order).reason());
+    }
+    @Test void stalenessLimitIsConfigurable() {
+        PlatformSettings platform = new PlatformSettings();
+        platform.getMarket().setStalenessLimit(Duration.ofSeconds(30));
+        executor = new MarketOrderExecutor(market, instruments, accounts, clients, platform, settings, clock, restrictions);
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(now.minusSeconds(20))));
+        assertEquals(Order.OrderStatus.FILLED, executor.execute(order).nextStatus());
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(quote(now.minusSeconds(31))));
+        assertEquals(RejectionReason.STALE_QUOTE, executor.execute(order).reason());
+    }
+    @Test void unusableQuotePriceRejectsAsUnavailable() {
+        when(market.findByInstrumentId(1)).thenReturn(Optional.of(
+            new QuoteSnapshot(null, 100, 99, 0, 100, 100, 100, 100, 0, now, null)));
+        ExecutionResult result = executor.execute(order);
+        assertEquals(RejectionReason.PRICE_UNAVAILABLE, result.reason());
+        assertNull(result.fillPrice());
+    }
     @Test void holidayWaitsWithoutFetchingAQuote() {
         settings.getHolidays().add(LocalDate.of(2026, 9, 30));
         assertEquals(Order.OrderStatus.DELAYED, executor.execute(order).nextStatus());
