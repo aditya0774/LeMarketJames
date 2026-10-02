@@ -1,5 +1,5 @@
 import { test as base, expect, Page } from '@playwright/test';
-import { Client } from 'pg';
+import { connectDatabase } from './support/database';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 // UTC fixtures span years, leap day, and both US DST transitions. Quantity identifies
@@ -15,13 +15,7 @@ const timestamps = [
 
 const test = base.extend<{ seededAccount: number }>({
   seededAccount: [async ({ page, request }, use) => {
-    const connectionString = process.env.E2E_DATABASE_URL;
-    if (!connectionString && process.env.E2E_ALLOW_DATABASE_SEED !== 'true') {
-      throw new Error('Set E2E_DATABASE_URL or explicitly allow seeding a disposable database.');
-    }
-    // node-postgres uses PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD when no URL is supplied.
-    const db = connectionString ? new Client({ connectionString }) : new Client();
-    await db.connect();
+    const db = await connectDatabase();
     const user = newUser('history');
     try {
       await registerViaApi(request, user);

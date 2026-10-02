@@ -31,6 +31,8 @@ curl -X POST localhost:8083/internal/market/control/reset       # LIVE, nothing 
 
 An unknown ticker or a non-positive price gets `400 { message }`.
 
+The feed mode applies to the whole stack, and so does a held price. End-to-end tests that change the mode therefore run in the `feed-failure` Playwright project, after every other test ([playwright.config.ts](../apps/e2e/playwright.config.ts)); a test that holds a price picks a stock no other test holds.
+
 ## What consumers see
 
 - **UNAVAILABLE:** every market-service quote endpoint answers `503`. `MarketDataClient` treats that as "no quote", so a BUY is refused with `PRICE_UNAVAILABLE`, and `GET /api/quotes` returns an empty list.
