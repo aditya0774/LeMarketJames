@@ -65,9 +65,12 @@ Places a market order for one of the caller's accounts.
   "orderId": 42, "accountId": 7, "instrumentId": 5, "orderType": "BUY", "quantity": 1,
   "pricePerUnit": 244.2366, "orderStatus": "SUBMITTED", "rejectionReason": null,
   "submittedAt": "2026-09-21T10:30:00", "acceptedAt": null, "filledAt": null,
+  "quoteSource": null, "quoteTime": null,
   "createdAt": "2026-09-21T10:30:00", "updatedAt": "2026-09-21T10:30:00"
 }
 ```
+
+`quoteSource` and `quoteTime` describe the quote the order was priced from at execution: the feed it came from, and when the feed produced it (ISO-8601 UTC, e.g. `2026-09-21T10:30:04.512Z`). Both are null until execution prices the order; from then on `pricePerUnit` is that quote's price, and `filledAt` is the execution time.
 
 **Failures.** A refused order saves nothing.
 
@@ -123,11 +126,18 @@ The dashboard sends the browser's IANA time zone with every complete selection, 
 The worker processes persisted open orders after startup and on each poll. It accepts SUBMITTED
 orders, delays accepted orders while their exchange is closed, and executes eligible orders at
 the fresh ask (BUY) or bid (SELL), rounded to four decimals. Unavailable/invalid quotes reject
-with `PRICE_UNAVAILABLE`; stale quotes reject with `STALE_QUOTE`. Tradability, account status,
+with `PRICE_UNAVAILABLE`; stale quotes reject with `STALE_QUOTE`. A quote is stale once it is
+older than the staleness limit ([C5](C5-config.md)); a rejected order is never priced from the
+unusable quote. Tradability, account status,
 and configured residence restrictions are rechecked at execution. BUY placement also refuses
 stale quotes; residence restrictions apply to both sides at placement.
 
-Before sending a fill, buy-sell commits `PENDING`, its execution price, and `settlement_pending`.
+The quote used is stored with the fill: its price in `price_per_unit`, its feed in `quote_source`
+and its time in `quote_time` ([013](../database/schema/013_execution_quote.sql)); `filled_at` is
+the execution time. The source is the feed name defined in
+[MarketOrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/MarketOrderExecutor.java).
+
+Before sending a fill, buy-sell commits `PENDING`, its execution quote, and `settlement_pending`.
 That flag prevents operations from changing/rejecting an order with an uncertain settlement.
 Holdings locks the account and persists one outcome per order in `settlement_receipts`, atomically
 with any cash/share changes. `POST /internal/holdings/settle` returns `200 { rejectionReason }`:
@@ -189,9 +199,9 @@ How the balance fields are computed:
 
 ## Internal events and the execution interface (buy-sell-service)
 
-- **Events.** [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits.
+- **Events.** [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills, and carries the quote used (price, source, quote time) and the fill time. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits.
 - **Outbound events (Kafka stub).** After the transition commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands both events to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java), keyed by order id; the topic names are defined in the forwarder. The only implementation today is [KafkaStubOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java), which logs the record and sends nothing, so events still do not reach other services.
-- **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a price, reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
+- **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a quote ([QuoteUsed](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/QuoteUsed.java)), reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
 - **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves.
 
 ## Planned (agreed, not built)

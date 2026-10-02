@@ -29,7 +29,8 @@ public class OrderTransitions {
         Instant now = Instant.now();
         events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now));
         if (next == Order.OrderStatus.FILLED) events.publishEvent(new OrderFilled(order.getOrderId(),
-            order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now));
+            order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now,
+            order.getQuoteSource(), order.getQuoteTime()));
     }
     private void record(Order order, AuditEventType type, Map<String, Object> details) {
         audit.record(type, order.getOrderId(), order.getAccountId(), details);

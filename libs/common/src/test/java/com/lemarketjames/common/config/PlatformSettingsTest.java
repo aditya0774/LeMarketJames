@@ -21,7 +21,7 @@ class PlatformSettingsTest {
         assertEquals(3, settings.getAuth().getLockout().getMaxAttempts());
         assertEquals(Duration.ofSeconds(30), settings.getAuth().getLockout().getDuration());
         assertEquals(Duration.ofMinutes(30), settings.getSession().getInactivityTimeout());
-        assertEquals(Duration.ofSeconds(60), settings.getMarket().getStalenessLimit());
+        assertEquals(Duration.ofSeconds(5), settings.getMarket().getStalenessLimit());
         assertEquals(List.of(), settings.getOrders().getRestrictedLocations());
         assertEquals(Duration.ofDays(365), settings.getAudit().getOnlineRetention());
         assertEquals(LocalTime.of(2, 0), settings.getReports().getOvernightRunTime());

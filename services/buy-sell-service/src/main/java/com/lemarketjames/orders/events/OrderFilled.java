@@ -14,9 +14,12 @@ import java.time.Instant;
  * @param instrumentId the stock traded
  * @param side         BUY or SELL
  * @param quantity     shares filled
- * @param price        price per share
+ * @param price        price per share, taken from the quote used
  * @param filledAt     when the fill happened (UTC)
+ * @param quoteSource  the feed the quote used came from
+ * @param quoteTime    when the feed produced the quote used (UTC)
  */
 public record OrderFilled(Integer orderId, Integer accountId, Integer instrumentId, OrderType side,
-                          BigDecimal quantity, BigDecimal price, Instant filledAt) {
+                          BigDecimal quantity, BigDecimal price, Instant filledAt,
+                          String quoteSource, Instant quoteTime) {
 }

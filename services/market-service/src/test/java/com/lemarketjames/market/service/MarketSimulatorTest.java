@@ -179,6 +179,31 @@ class MarketSimulatorTest {
         assertNotEquals(100.0, simulator.findByTicker("AAPL").orElseThrow().lastPrice());
     }
 
+    // A held price is still a live quote: it must stay inside the staleness limit (contract C5),
+    // or orders on a pinned stock would be refused as stale.
+    @Test
+    void pinnedPriceKeepsAFreshTimestampWhileTheMarketIsOpen() {
+        MarketSimulator simulator = simulator(OPEN, true);
+        simulator.setPrice("AAPL", 100.0, true);
+
+        simulator.tick(OPEN.plusSeconds(30));
+
+        QuoteSnapshot held = simulator.findByTicker("AAPL").orElseThrow();
+        assertEquals(100.0, held.lastPrice(), 1e-9);
+        assertEquals(OPEN.plusSeconds(30), held.lastUpdated());
+    }
+
+    @Test
+    void pinnedPriceIsNotRestampedWhileTheMarketIsClosed() {
+        MarketSimulator simulator = simulator(CLOSED, true);
+        simulator.setPrice("AAPL", 100.0, true);
+        QuoteSnapshot before = simulator.findByTicker("AAPL").orElseThrow();
+
+        simulator.tick(CLOSED.plusSeconds(30));
+
+        assertEquals(before, simulator.findByTicker("AAPL").orElseThrow());
+    }
+
     @Test
     void unpinnedPriceMovesOnFromTheSetValue() {
         MarketSimulator simulator = simulator(OPEN, true);
