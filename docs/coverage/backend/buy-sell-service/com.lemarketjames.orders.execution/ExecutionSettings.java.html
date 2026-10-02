@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 <span class="fc" id="L17">    public boolean isEnabled() { return enabled; }</span>
 <span class="fc" id="L18">    public void setEnabled(boolean value) { enabled = value; }</span>
 <span class="fc" id="L19">    public boolean isRespectMarketHours() { return respectMarketHours; }</span>
-<span class="nc" id="L20">    public void setRespectMarketHours(boolean value) { respectMarketHours = value; }</span>
+<span class="fc" id="L20">    public void setRespectMarketHours(boolean value) { respectMarketHours = value; }</span>
 <span class="fc" id="L21">    public long getPollMs() { return pollMs; }</span>
     public void setPollMs(long value) {
 <span class="nc bnc" id="L23" title="All 2 branches missed.">        if (value &lt; 100) throw new IllegalArgumentException(&quot;Execution polling must be at least 100ms&quot;);</span>

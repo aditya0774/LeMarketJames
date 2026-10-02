@@ -110,7 +110,7 @@ import java.util.List;
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
          * Check with QuoteFreshness in libs/market-client.
          */
-<span class="fc" id="L113">        private Duration stalenessLimit = Duration.ofSeconds(60);</span>
+<span class="fc" id="L113">        private Duration stalenessLimit = Duration.ofSeconds(5);</span>
 
         public Duration getStalenessLimit() {
 <span class="fc" id="L116">            return stalenessLimit;</span>

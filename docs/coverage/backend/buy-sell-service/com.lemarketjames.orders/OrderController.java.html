@@ -95,10 +95,10 @@ public class OrderController {
     public ResponseEntity&lt;OrderResponse&gt; updateOrderStatus(
             @PathVariable Integer orderId,
             @PathVariable Order.OrderStatus status) {
-<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
-<span class="nc" id="L99">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
-<span class="nc" id="L100">            execution.execute(orderId, true);</span>
-<span class="nc" id="L101">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
+<span class="fc" id="L99">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
+<span class="fc" id="L100">            execution.execute(orderId, true);</span>
+<span class="fc" id="L101">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
         }
 <span class="nc" id="L103">        OrderResponse response = orderService.updateOrderStatus(orderId, status);</span>
 <span class="nc" id="L104">        return ResponseEntity.ok(response);</span>

@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `79ec3ec8` on 2026-10-01 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `caa904ae` on 2026-10-02 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -11,14 +11,14 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 40.24 | 27.27 | 199 / 333 |
 | [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 53.73 | 67.50 | 31 / 67 |
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 95.65 | 81.82 | 12 / 276 |
-| [buy-sell-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/buy-sell-service/index.html) | 85.69 | 74.59 | 89 / 622 |
+| [buy-sell-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/buy-sell-service/index.html) | 87.15 | 78.07 | 82 / 638 |
 | [core-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/core-service/index.html) | 82.08 | 66.67 | 38 / 212 |
 | [gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 76.67 | 71.43 | 122 / 523 |
-| [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 58.64 | 64.10 | 182 / 440 |
-| **Back end (all modules)** | 72.83 | 69.80 | 675 / 2484 |
+| [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 59.10 | 65.00 | 182 / 445 |
+| **Back end (all modules)** | 73.33 | 71.37 | 668 / 2505 |
 | **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 87.92 | 78.29 | 162 / 1341 |
-| **Everything** | 78.12 | 75.27 | 837 / 3825 |
+| **Everything** | 78.42 | 75.81 | 830 / 3846 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -56,6 +56,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-02 | `caa904ae` | 73.33 | 71.37 | 87.92 | 78.29 |
 | 2026-10-01 | `79ec3ec8` | 72.83 | 69.80 | 87.92 | 78.29 |
 | 2026-10-01 | `62b35882` | 72.69 | 69.80 | 87.92 | 78.29 |
 | 2026-10-01 | `e803a8b0` | 72.69 | 69.80 | 87.74 | 76.90 |

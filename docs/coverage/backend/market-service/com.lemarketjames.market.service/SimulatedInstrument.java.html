@@ -92,6 +92,16 @@ class SimulatedInstrument {
 <span class="fc" id="L92">    }</span>
 
     /**
+     * Keeps a held (pinned) price current without moving it. The feed is still live and still
+     * quoting this price, so the quote must not look stale to consumers; making quotes stale is
+     * {@link FeedMode#STALE}'s job, not a side effect of holding a price.
+     */
+    void hold(Instant now) {
+<span class="fc" id="L100">        rollTradingDayIfNeeded(now);</span>
+<span class="fc" id="L101">        lastUpdated = now;</span>
+<span class="fc" id="L102">    }</span>
+
+    /**
      * Applies one GBM step.
      *
      * @param now              time of this tick
@@ -101,27 +111,27 @@ class SimulatedInstrument {
      * @return a candle if this tick started a new minute and the previous one is complete
      */
     Optional&lt;PriceCandle&gt; advance(Instant now, double elapsedSeconds, double shock, double volumeNoise) {
-<span class="fc" id="L104">        rollTradingDayIfNeeded(now);</span>
+<span class="fc" id="L114">        rollTradingDayIfNeeded(now);</span>
 
-<span class="fc" id="L106">        double dtYears = elapsedSeconds / hours.tradingSecondsPerYear();</span>
-<span class="fc" id="L107">        double priceBeforeTick = lastPrice;</span>
-<span class="fc" id="L108">        lastPrice = GbmModel.nextPrice(lastPrice, instrument.drift(), instrument.volatility(), dtYears, shock);</span>
-<span class="fc" id="L109">        highPrice = Math.max(highPrice, lastPrice);</span>
-<span class="fc" id="L110">        lowPrice = Math.min(lowPrice, lastPrice);</span>
+<span class="fc" id="L116">        double dtYears = elapsedSeconds / hours.tradingSecondsPerYear();</span>
+<span class="fc" id="L117">        double priceBeforeTick = lastPrice;</span>
+<span class="fc" id="L118">        lastPrice = GbmModel.nextPrice(lastPrice, instrument.drift(), instrument.volatility(), dtYears, shock);</span>
+<span class="fc" id="L119">        highPrice = Math.max(highPrice, lastPrice);</span>
+<span class="fc" id="L120">        lowPrice = Math.min(lowPrice, lastPrice);</span>
 
-<span class="fc" id="L112">        long tickVolume = simulateVolume(elapsedSeconds, shock, volumeNoise);</span>
-<span class="fc" id="L113">        volume += tickVolume;</span>
-<span class="fc" id="L114">        lastUpdated = now;</span>
+<span class="fc" id="L122">        long tickVolume = simulateVolume(elapsedSeconds, shock, volumeNoise);</span>
+<span class="fc" id="L123">        volume += tickVolume;</span>
+<span class="fc" id="L124">        lastUpdated = now;</span>
 
-<span class="fc" id="L116">        Optional&lt;PriceCandle&gt; completed = completeCandleIfMinuteChanged(now);</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (candleStart == null) {</span>
-<span class="fc" id="L118">            startCandle(now, priceBeforeTick);</span>
+<span class="fc" id="L126">        Optional&lt;PriceCandle&gt; completed = completeCandleIfMinuteChanged(now);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (candleStart == null) {</span>
+<span class="fc" id="L128">            startCandle(now, priceBeforeTick);</span>
         }
-<span class="fc" id="L120">        candleHigh = Math.max(candleHigh, lastPrice);</span>
-<span class="fc" id="L121">        candleLow = Math.min(candleLow, lastPrice);</span>
-<span class="fc" id="L122">        candleClose = lastPrice;</span>
-<span class="fc" id="L123">        candleVolume += tickVolume;</span>
-<span class="fc" id="L124">        return completed;</span>
+<span class="fc" id="L130">        candleHigh = Math.max(candleHigh, lastPrice);</span>
+<span class="fc" id="L131">        candleLow = Math.min(candleLow, lastPrice);</span>
+<span class="fc" id="L132">        candleClose = lastPrice;</span>
+<span class="fc" id="L133">        candleVolume += tickVolume;</span>
+<span class="fc" id="L134">        return completed;</span>
     }
 
     /**
@@ -129,36 +139,36 @@ class SimulatedInstrument {
      * closed, so the last candle of a session is stored promptly rather than at the next open.
      */
     Optional&lt;PriceCandle&gt; completeCandleIfMinuteChanged(Instant now) {
-<span class="fc bfc" id="L132" title="All 4 branches covered.">        boolean sameMinute = candleStart != null &amp;&amp; candleStart.equals(now.truncatedTo(ChronoUnit.MINUTES));</span>
-<span class="fc bfc" id="L133" title="All 4 branches covered.">        if (candleStart == null || sameMinute) {</span>
-<span class="fc" id="L134">            return Optional.empty();</span>
+<span class="fc bfc" id="L142" title="All 4 branches covered.">        boolean sameMinute = candleStart != null &amp;&amp; candleStart.equals(now.truncatedTo(ChronoUnit.MINUTES));</span>
+<span class="fc bfc" id="L143" title="All 4 branches covered.">        if (candleStart == null || sameMinute) {</span>
+<span class="fc" id="L144">            return Optional.empty();</span>
         }
-<span class="fc" id="L136">        PriceCandle candle = new PriceCandle(instrument.instrumentId(), candleStart,</span>
+<span class="fc" id="L146">        PriceCandle candle = new PriceCandle(instrument.instrumentId(), candleStart,</span>
                 candleOpen, candleHigh, candleLow, candleClose, candleVolume);
-<span class="fc" id="L138">        candleStart = null;</span>
-<span class="fc" id="L139">        return Optional.of(candle);</span>
+<span class="fc" id="L148">        candleStart = null;</span>
+<span class="fc" id="L149">        return Optional.of(candle);</span>
     }
 
     QuoteSnapshot snapshot() {
         // Half the spread either side of the mid price.
-<span class="fc" id="L144">        double halfSpread = lastPrice * instrument.spreadBps() / 10_000 / 2;</span>
-<span class="fc" id="L145">        return new QuoteSnapshot(instrument, lastPrice, lastPrice - halfSpread, lastPrice + halfSpread,</span>
+<span class="fc" id="L154">        double halfSpread = lastPrice * instrument.spreadBps() / 10_000 / 2;</span>
+<span class="fc" id="L155">        return new QuoteSnapshot(instrument, lastPrice, lastPrice - halfSpread, lastPrice + halfSpread,</span>
                 openPrice, highPrice, lowPrice, previousClose, volume, lastUpdated, tradingDate);
     }
 
     /** At the first tick of a new trading day, yesterday's last price becomes the previous close. */
     private void rollTradingDayIfNeeded(Instant now) {
-<span class="fc" id="L151">        LocalDate today = hours.tradingDate(now);</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        if (today.equals(tradingDate)) {</span>
-<span class="fc" id="L153">            return;</span>
+<span class="fc" id="L161">        LocalDate today = hours.tradingDate(now);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (today.equals(tradingDate)) {</span>
+<span class="fc" id="L163">            return;</span>
         }
-<span class="fc" id="L155">        previousClose = lastPrice;</span>
-<span class="fc" id="L156">        openPrice = lastPrice;</span>
-<span class="fc" id="L157">        highPrice = lastPrice;</span>
-<span class="fc" id="L158">        lowPrice = lastPrice;</span>
-<span class="fc" id="L159">        volume = 0;</span>
-<span class="fc" id="L160">        tradingDate = today;</span>
-<span class="fc" id="L161">    }</span>
+<span class="fc" id="L165">        previousClose = lastPrice;</span>
+<span class="fc" id="L166">        openPrice = lastPrice;</span>
+<span class="fc" id="L167">        highPrice = lastPrice;</span>
+<span class="fc" id="L168">        lowPrice = lastPrice;</span>
+<span class="fc" id="L169">        volume = 0;</span>
+<span class="fc" id="L170">        tradingDate = today;</span>
+<span class="fc" id="L171">    }</span>
 
     /**
      * Volume is not part of GBM, so it is approximated: the configured average daily volume
@@ -166,20 +176,20 @@ class SimulatedInstrument {
      * price moves (as real markets trade more on big moves).
      */
     private long simulateVolume(double elapsedSeconds, double shock, double volumeNoise) {
-<span class="fc" id="L169">        double expected = instrument.avgDailyVolume() * elapsedSeconds / hours.sessionSeconds();</span>
-<span class="fc" id="L170">        double noise = Math.exp(VOLUME_NOISE_SIGMA * volumeNoise - 0.5 * VOLUME_NOISE_SIGMA * VOLUME_NOISE_SIGMA);</span>
+<span class="fc" id="L179">        double expected = instrument.avgDailyVolume() * elapsedSeconds / hours.sessionSeconds();</span>
+<span class="fc" id="L180">        double noise = Math.exp(VOLUME_NOISE_SIGMA * volumeNoise - 0.5 * VOLUME_NOISE_SIGMA * VOLUME_NOISE_SIGMA);</span>
         // E|Z| is about 0.8, so 0.6 + 0.5|Z| averages roughly 1.
-<span class="fc" id="L172">        double moveFactor = 0.6 + 0.5 * Math.abs(shock);</span>
-<span class="fc" id="L173">        return Math.max(0L, Math.round(expected * noise * moveFactor));</span>
+<span class="fc" id="L182">        double moveFactor = 0.6 + 0.5 * Math.abs(shock);</span>
+<span class="fc" id="L183">        return Math.max(0L, Math.round(expected * noise * moveFactor));</span>
     }
 
     private void startCandle(Instant now, double openingPrice) {
-<span class="fc" id="L177">        candleStart = now.truncatedTo(ChronoUnit.MINUTES);</span>
-<span class="fc" id="L178">        candleOpen = openingPrice;</span>
-<span class="fc" id="L179">        candleHigh = openingPrice;</span>
-<span class="fc" id="L180">        candleLow = openingPrice;</span>
-<span class="fc" id="L181">        candleClose = openingPrice;</span>
-<span class="fc" id="L182">        candleVolume = 0;</span>
-<span class="fc" id="L183">    }</span>
+<span class="fc" id="L187">        candleStart = now.truncatedTo(ChronoUnit.MINUTES);</span>
+<span class="fc" id="L188">        candleOpen = openingPrice;</span>
+<span class="fc" id="L189">        candleHigh = openingPrice;</span>
+<span class="fc" id="L190">        candleLow = openingPrice;</span>
+<span class="fc" id="L191">        candleClose = openingPrice;</span>
+<span class="fc" id="L192">        candleVolume = 0;</span>
+<span class="fc" id="L193">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

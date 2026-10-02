@@ -7,16 +7,16 @@ import java.math.BigDecimal;
 
 /**
  * The outcome of {@link OrderExecutor#execute}: the status the order should move to next and,
- * depending on it, the fill price or the rejection reason.
+ * depending on it, the quote it fills at or the rejection reason.
  *
  * @param nextStatus FILLED, REJECTED, or PENDING/DELAYED when it can't execute yet
- * @param fillPrice  price per share; set only when nextStatus is FILLED
+ * @param quote      the quote the order fills at; set only when nextStatus is FILLED
  * @param reason     why it was refused; set only when nextStatus is REJECTED
  */
-<span class="fc" id="L16">public record ExecutionResult(OrderStatus nextStatus, BigDecimal fillPrice, RejectionReason reason) {</span>
+<span class="fc" id="L16">public record ExecutionResult(OrderStatus nextStatus, QuoteUsed quote, RejectionReason reason) {</span>
 
-    public static ExecutionResult filled(BigDecimal price) {
-<span class="fc" id="L19">        return new ExecutionResult(OrderStatus.FILLED, price, null);</span>
+    public static ExecutionResult filled(QuoteUsed quote) {
+<span class="fc" id="L19">        return new ExecutionResult(OrderStatus.FILLED, quote, null);</span>
     }
 
     public static ExecutionResult rejected(RejectionReason reason) {
@@ -25,6 +25,11 @@ import java.math.BigDecimal;
 
     public static ExecutionResult waiting(OrderStatus status) {
 <span class="fc" id="L27">        return new ExecutionResult(status, null, null);</span>
+    }
+
+    /** Price per share to fill at, or null when the order isn't filling. */
+    public BigDecimal fillPrice() {
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        return quote == null ? null : quote.price();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

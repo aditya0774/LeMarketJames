@@ -18,6 +18,11 @@ import org.springframework.stereotype.Service;
 /** Prices orders only from fresh market quotes; settlement rechecks cash and shares under lock. */
 @Service
 public class MarketOrderExecutor implements OrderExecutor {
+    /**
+     * Name stored as the source of every quote used for a fill. MarketDataService is the only
+     * price feed and its quotes don't name their origin, so the executor that reads it does.
+     */
+    static final String QUOTE_SOURCE = &quot;SIMULATED_FEED&quot;;
     private final MarketDataService market;
     private final InstrumentRepository instruments;
     private final AccountRepository accounts;
@@ -28,37 +33,38 @@ public class MarketOrderExecutor implements OrderExecutor {
     private final com.lemarketjames.orders.service.TradingRestrictions restrictions;
     public MarketOrderExecutor(MarketDataService market, InstrumentRepository instruments,
             AccountRepository accounts, ClientRepository clients, PlatformSettings platform,
-<span class="fc" id="L31">            ExecutionSettings settings, Clock clock, com.lemarketjames.orders.service.TradingRestrictions restrictions) {</span>
-<span class="fc" id="L32">        this.market = market; this.instruments = instruments; this.accounts = accounts;</span>
-<span class="fc" id="L33">        this.clients = clients; this.platform = platform; this.settings = settings; this.clock = clock; this.restrictions = restrictions;</span>
-<span class="fc" id="L34">    }</span>
+<span class="fc" id="L36">            ExecutionSettings settings, Clock clock, com.lemarketjames.orders.service.TradingRestrictions restrictions) {</span>
+<span class="fc" id="L37">        this.market = market; this.instruments = instruments; this.accounts = accounts;</span>
+<span class="fc" id="L38">        this.clients = clients; this.platform = platform; this.settings = settings; this.clock = clock; this.restrictions = restrictions;</span>
+<span class="fc" id="L39">    }</span>
     @Override
     public ExecutionResult execute(Order order) {
-<span class="fc" id="L37">        var account = accounts.findById(order.getAccountId());</span>
-<span class="pc bpc" id="L38" title="2 of 4 branches missed.">        if (account.isEmpty() || !account.get().isTradingEnabled()</span>
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">                || !clients.findById(account.get().getClientId()).map(c -&gt; c.getAccountStatus().canTrade()).orElse(false)) {</span>
-<span class="nc" id="L40">            return ExecutionResult.rejected(RejectionReason.ACCOUNT_RESTRICTED);</span>
+<span class="fc" id="L42">        var account = accounts.findById(order.getAccountId());</span>
+<span class="pc bpc" id="L43" title="2 of 4 branches missed.">        if (account.isEmpty() || !account.get().isTradingEnabled()</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">                || !clients.findById(account.get().getClientId()).map(c -&gt; c.getAccountStatus().canTrade()).orElse(false)) {</span>
+<span class="nc" id="L45">            return ExecutionResult.rejected(RejectionReason.ACCOUNT_RESTRICTED);</span>
         }
-<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (restrictions.locationRestricted(order.getAccountId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);</span>
-<span class="fc" id="L43">        var instrument = instruments.findById(order.getInstrumentId());</span>
-<span class="pc bpc" id="L44" title="1 of 4 branches missed.">        if (instrument.isEmpty() || !instrument.get().isTradable()) {</span>
-<span class="fc" id="L45">            return ExecutionResult.rejected(RejectionReason.NOT_TRADABLE);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (restrictions.locationRestricted(order.getAccountId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);</span>
+<span class="fc" id="L48">        var instrument = instruments.findById(order.getInstrumentId());</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">        if (instrument.isEmpty() || !instrument.get().isTradable()) {</span>
+<span class="fc" id="L50">            return ExecutionResult.rejected(RejectionReason.NOT_TRADABLE);</span>
         }
-<span class="fc" id="L47">        var stock = instrument.get();</span>
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (settings.isRespectMarketHours() &amp;&amp; !MarketHours.forInstrument(stock.getAssetClass().name(),</span>
-<span class="fc bfc" id="L49" title="All 2 branches covered.">                stock.getLocation()).isOpen(clock.instant(), settings.getHolidays())) {</span>
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">            return ExecutionResult.waiting(order.getOrderStatus() == OrderStatus.PENDING</span>
-<span class="pc" id="L51">                ? OrderStatus.PENDING : OrderStatus.DELAYED);</span>
+<span class="fc" id="L52">        var stock = instrument.get();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (settings.isRespectMarketHours() &amp;&amp; !MarketHours.forInstrument(stock.getAssetClass().name(),</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">                stock.getLocation()).isOpen(clock.instant(), settings.getHolidays())) {</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            return ExecutionResult.waiting(order.getOrderStatus() == OrderStatus.PENDING</span>
+<span class="pc" id="L56">                ? OrderStatus.PENDING : OrderStatus.DELAYED);</span>
         }
-<span class="fc" id="L53">        var quote = market.findByInstrumentId(order.getInstrumentId());</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (quote.isEmpty()) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
-<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {</span>
-<span class="fc" id="L56">            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE);</span>
+<span class="fc" id="L58">        var quote = market.findByInstrumentId(order.getInstrumentId());</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (quote.isEmpty()) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {</span>
+<span class="fc" id="L61">            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE);</span>
         }
-<span class="fc bfc" id="L58" title="All 2 branches covered.">        double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();</span>
-<span class="pc bpc" id="L59" title="2 of 4 branches missed.">        if (!Double.isFinite(raw) || raw &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
-<span class="fc" id="L60">        BigDecimal price = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);</span>
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        return price.signum() &gt; 0 ? ExecutionResult.filled(price) : ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (!Double.isFinite(raw) || raw &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
+<span class="fc" id="L65">        BigDecimal price = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (price.signum() &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
+<span class="fc" id="L67">        return ExecutionResult.filled(new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated()));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

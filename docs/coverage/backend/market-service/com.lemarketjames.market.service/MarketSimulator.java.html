@@ -66,7 +66,7 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
 <span class="fc" id="L66">    private final Map&lt;String, QuoteSnapshot&gt; snapshotsByTicker = new ConcurrentHashMap&lt;&gt;();</span>
 <span class="fc" id="L67">    private final Queue&lt;PriceCandle&gt; completedCandles = new ConcurrentLinkedQueue&lt;&gt;();</span>
 
-    /** Test controls (contract C4). Pinned instruments are skipped by tick; guarded by this object's lock. */
+    /** Test controls (contract C4). Pinned instruments keep their price through ticks; guarded by this object's lock. */
 <span class="fc" id="L70">    private final Set&lt;Integer&gt; pinned = new HashSet&lt;&gt;();</span>
 <span class="fc" id="L71">    private volatile FeedMode feedMode = FeedMode.LIVE;</span>
     /** What readers see while STALE: the quotes at the moment the feed went stale, backdated. */
@@ -132,52 +132,59 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
 <span class="fc" id="L132">        double marketShock = random.nextGaussian();</span>
 <span class="fc bfc" id="L133" title="All 2 branches covered.">        for (SimulatedInstrument instrument : instruments.values()) {</span>
 <span class="fc bfc" id="L134" title="All 2 branches covered.">            if (pinned.contains(instrument.instrument().instrumentId())) {</span>
-<span class="fc" id="L135">                continue; // held at the price a test set</span>
+                // Held at the price a test set. While its exchange is open the quote is still
+                // re-stamped, otherwise it would age past the staleness limit (contract C5) and
+                // orders on a pinned stock would be refused as stale.
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {</span>
+<span class="fc" id="L139">                    instrument.hold(now);</span>
+<span class="fc" id="L140">                    publish(instrument);</span>
+                }
+                continue;
             }
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {</span>
-<span class="fc" id="L138">                double shock = GbmModel.correlatedShock(</span>
-<span class="fc" id="L139">                        marketShock, random.nextGaussian(), instrument.instrument().marketCorrelation());</span>
-<span class="fc" id="L140">                instrument.advance(now, elapsedSeconds, shock, random.nextGaussian())</span>
-<span class="fc" id="L141">                        .ifPresent(completedCandles::add);</span>
-<span class="fc" id="L142">                publish(instrument);</span>
-<span class="fc" id="L143">            } else {</span>
-<span class="fc" id="L144">                instrument.completeCandleIfMinuteChanged(now).ifPresent(completedCandles::add);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (instrument.isTrading(now, properties.isRespectMarketHours(), holidays)) {</span>
+<span class="fc" id="L145">                double shock = GbmModel.correlatedShock(</span>
+<span class="fc" id="L146">                        marketShock, random.nextGaussian(), instrument.instrument().marketCorrelation());</span>
+<span class="fc" id="L147">                instrument.advance(now, elapsedSeconds, shock, random.nextGaussian())</span>
+<span class="fc" id="L148">                        .ifPresent(completedCandles::add);</span>
+<span class="fc" id="L149">                publish(instrument);</span>
+<span class="fc" id="L150">            } else {</span>
+<span class="fc" id="L151">                instrument.completeCandleIfMinuteChanged(now).ifPresent(completedCandles::add);</span>
             }
-<span class="fc" id="L146">        }</span>
-<span class="fc" id="L147">    }</span>
+<span class="fc" id="L153">        }</span>
+<span class="fc" id="L154">    }</span>
 
     /**
      * Removes and returns candles completed since the last call, for persistence.
      */
     public List&lt;PriceCandle&gt; drainCompletedCandles() {
-<span class="fc" id="L153">        List&lt;PriceCandle&gt; drained = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L160">        List&lt;PriceCandle&gt; drained = new ArrayList&lt;&gt;();</span>
         PriceCandle candle;
-<span class="fc bfc" id="L155" title="All 2 branches covered.">        while ((candle = completedCandles.poll()) != null) {</span>
-<span class="fc" id="L156">            drained.add(candle);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        while ((candle = completedCandles.poll()) != null) {</span>
+<span class="fc" id="L163">            drained.add(candle);</span>
         }
-<span class="fc" id="L158">        return drained;</span>
+<span class="fc" id="L165">        return drained;</span>
     }
 
     @Override
     public Optional&lt;QuoteSnapshot&gt; findByTicker(String ticker) {
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (ticker == null) {</span>
-<span class="nc" id="L164">            return Optional.empty();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (ticker == null) {</span>
+<span class="nc" id="L171">            return Optional.empty();</span>
         }
-<span class="fc" id="L166">        return Optional.ofNullable(snapshotsByTicker.get(ticker.trim().toUpperCase(Locale.ROOT)))</span>
-<span class="fc" id="L167">                .map(live -&gt; visible(live.instrument().instrumentId(), live));</span>
+<span class="fc" id="L173">        return Optional.ofNullable(snapshotsByTicker.get(ticker.trim().toUpperCase(Locale.ROOT)))</span>
+<span class="fc" id="L174">                .map(live -&gt; visible(live.instrument().instrumentId(), live));</span>
     }
 
     @Override
     public Optional&lt;QuoteSnapshot&gt; findByInstrumentId(int instrumentId) {
-<span class="fc" id="L172">        return Optional.ofNullable(snapshotsById.get(instrumentId)).map(live -&gt; visible(instrumentId, live));</span>
+<span class="fc" id="L179">        return Optional.ofNullable(snapshotsById.get(instrumentId)).map(live -&gt; visible(instrumentId, live));</span>
     }
 
     /** What quote readers see: the live quotes, or the frozen stale ones while the feed is STALE. */
     @Override
     public Collection&lt;QuoteSnapshot&gt; findAll() {
-<span class="nc bnc" id="L178" title="All 2 branches missed.">        return feedMode == FeedMode.STALE</span>
-<span class="nc" id="L179">                ? List.copyOf(staleSnapshotsById.values())</span>
-<span class="nc" id="L180">                : List.copyOf(snapshotsById.values());</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        return feedMode == FeedMode.STALE</span>
+<span class="nc" id="L186">                ? List.copyOf(staleSnapshotsById.values())</span>
+<span class="nc" id="L187">                : List.copyOf(snapshotsById.values());</span>
     }
 
     /**
@@ -185,89 +192,89 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
      * overwrite the stored prices with its backdated copies.
      */
     public Collection&lt;QuoteSnapshot&gt; latestSnapshots() {
-<span class="fc" id="L188">        return List.copyOf(snapshotsById.values());</span>
+<span class="fc" id="L195">        return List.copyOf(snapshotsById.values());</span>
     }
 
     private QuoteSnapshot visible(int instrumentId, QuoteSnapshot live) {
-<span class="fc bfc" id="L192" title="All 2 branches covered.">        return feedMode == FeedMode.STALE ? staleSnapshotsById.getOrDefault(instrumentId, live) : live;</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        return feedMode == FeedMode.STALE ? staleSnapshotsById.getOrDefault(instrumentId, live) : live;</span>
     }
 
     @Override
     public FeedMode feedMode() {
-<span class="fc" id="L197">        return feedMode;</span>
+<span class="fc" id="L204">        return feedMode;</span>
     }
 
     @Override
     public synchronized void setFeedMode(FeedMode mode) {
-<span class="pc bpc" id="L202" title="1 of 4 branches missed.">        if (mode == FeedMode.STALE &amp;&amp; feedMode != FeedMode.STALE) {</span>
-<span class="fc" id="L203">            Duration age = properties.getControl().getStaleAge();</span>
-<span class="fc" id="L204">            Map&lt;Integer, QuoteSnapshot&gt; frozen = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L205">            snapshotsById.forEach((id, quote) -&gt; frozen.put(id, backdated(quote, age)));</span>
-<span class="fc" id="L206">            staleSnapshotsById = Map.copyOf(frozen);</span>
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">        if (mode == FeedMode.STALE &amp;&amp; feedMode != FeedMode.STALE) {</span>
+<span class="fc" id="L210">            Duration age = properties.getControl().getStaleAge();</span>
+<span class="fc" id="L211">            Map&lt;Integer, QuoteSnapshot&gt; frozen = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L212">            snapshotsById.forEach((id, quote) -&gt; frozen.put(id, backdated(quote, age)));</span>
+<span class="fc" id="L213">            staleSnapshotsById = Map.copyOf(frozen);</span>
         }
-<span class="fc" id="L208">        feedMode = mode;</span>
-<span class="fc" id="L209">        log.info(&quot;Quote feed mode set to {}&quot;, mode);</span>
-<span class="fc" id="L210">    }</span>
+<span class="fc" id="L215">        feedMode = mode;</span>
+<span class="fc" id="L216">        log.info(&quot;Quote feed mode set to {}&quot;, mode);</span>
+<span class="fc" id="L217">    }</span>
 
     @Override
     public synchronized void setPrice(String ticker, double price, boolean pin) {
-<span class="pc bpc" id="L214" title="1 of 4 branches missed.">        if (!(price &gt; 0) || !Double.isFinite(price)) {</span>
-<span class="fc" id="L215">            throw new IllegalArgumentException(&quot;Price must be a positive number&quot;);</span>
+<span class="pc bpc" id="L221" title="1 of 4 branches missed.">        if (!(price &gt; 0) || !Double.isFinite(price)) {</span>
+<span class="fc" id="L222">            throw new IllegalArgumentException(&quot;Price must be a positive number&quot;);</span>
         }
-<span class="fc" id="L217">        SimulatedInstrument instrument = simulated(ticker);</span>
-<span class="fc" id="L218">        instrument.overridePrice(price, clock.instant());</span>
-<span class="fc" id="L219">        int id = instrument.instrument().instrumentId();</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (pin) {</span>
-<span class="fc" id="L221">            pinned.add(id);</span>
+<span class="fc" id="L224">        SimulatedInstrument instrument = simulated(ticker);</span>
+<span class="fc" id="L225">        instrument.overridePrice(price, clock.instant());</span>
+<span class="fc" id="L226">        int id = instrument.instrument().instrumentId();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (pin) {</span>
+<span class="fc" id="L228">            pinned.add(id);</span>
         } else {
-<span class="fc" id="L223">            pinned.remove(id);</span>
+<span class="fc" id="L230">            pinned.remove(id);</span>
         }
-<span class="fc" id="L225">        publish(instrument);</span>
-<span class="fc" id="L226">        log.info(&quot;Price of {} set to {} (pinned={})&quot;, instrument.instrument().ticker(), price, pin);</span>
-<span class="fc" id="L227">    }</span>
+<span class="fc" id="L232">        publish(instrument);</span>
+<span class="fc" id="L233">        log.info(&quot;Price of {} set to {} (pinned={})&quot;, instrument.instrument().ticker(), price, pin);</span>
+<span class="fc" id="L234">    }</span>
 
     @Override
     public synchronized void releasePrice(String ticker) {
-<span class="fc" id="L231">        pinned.remove(simulated(ticker).instrument().instrumentId());</span>
-<span class="fc" id="L232">    }</span>
+<span class="fc" id="L238">        pinned.remove(simulated(ticker).instrument().instrumentId());</span>
+<span class="fc" id="L239">    }</span>
 
     @Override
     public synchronized Set&lt;String&gt; pinnedTickers() {
-<span class="fc" id="L236">        return pinned.stream().map(id -&gt; instruments.get(id).instrument().ticker())</span>
-<span class="fc" id="L237">                .collect(Collectors.toCollection(TreeSet::new));</span>
+<span class="fc" id="L243">        return pinned.stream().map(id -&gt; instruments.get(id).instrument().ticker())</span>
+<span class="fc" id="L244">                .collect(Collectors.toCollection(TreeSet::new));</span>
     }
 
     @Override
     public synchronized void reset() {
-<span class="fc" id="L242">        pinned.clear();</span>
-<span class="fc" id="L243">        setFeedMode(FeedMode.LIVE);</span>
-<span class="fc" id="L244">    }</span>
+<span class="fc" id="L249">        pinned.clear();</span>
+<span class="fc" id="L250">        setFeedMode(FeedMode.LIVE);</span>
+<span class="fc" id="L251">    }</span>
 
     private SimulatedInstrument simulated(String ticker) {
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        String wanted = ticker == null ? &quot;&quot; : ticker.trim().toUpperCase(Locale.ROOT);</span>
-<span class="fc" id="L248">        return instruments.values().stream()</span>
-<span class="fc" id="L249">                .filter(instrument -&gt; instrument.instrument().ticker().equalsIgnoreCase(wanted))</span>
-<span class="fc" id="L250">                .findFirst()</span>
-<span class="fc" id="L251">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Unknown ticker: &quot; + ticker));</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        String wanted = ticker == null ? &quot;&quot; : ticker.trim().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L255">        return instruments.values().stream()</span>
+<span class="fc" id="L256">                .filter(instrument -&gt; instrument.instrument().ticker().equalsIgnoreCase(wanted))</span>
+<span class="fc" id="L257">                .findFirst()</span>
+<span class="fc" id="L258">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Unknown ticker: &quot; + ticker));</span>
     }
 
     private static QuoteSnapshot backdated(QuoteSnapshot q, Duration age) {
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        Instant updated = q.lastUpdated() == null ? null : q.lastUpdated().minus(age);</span>
-<span class="fc" id="L256">        return new QuoteSnapshot(q.instrument(), q.lastPrice(), q.bidPrice(), q.askPrice(), q.openPrice(),</span>
-<span class="fc" id="L257">                q.highPrice(), q.lowPrice(), q.previousClose(), q.volume(), updated, q.tradingDate());</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        Instant updated = q.lastUpdated() == null ? null : q.lastUpdated().minus(age);</span>
+<span class="fc" id="L263">        return new QuoteSnapshot(q.instrument(), q.lastPrice(), q.bidPrice(), q.askPrice(), q.openPrice(),</span>
+<span class="fc" id="L264">                q.highPrice(), q.lowPrice(), q.previousClose(), q.volume(), updated, q.tradingDate());</span>
     }
 
     private void publish(SimulatedInstrument instrument) {
-<span class="fc" id="L261">        QuoteSnapshot snapshot = instrument.snapshot();</span>
-<span class="fc" id="L262">        snapshotsById.put(snapshot.instrument().instrumentId(), snapshot);</span>
-<span class="fc" id="L263">        snapshotsByTicker.put(snapshot.instrument().ticker().toUpperCase(Locale.ROOT), snapshot);</span>
-<span class="fc" id="L264">    }</span>
+<span class="fc" id="L268">        QuoteSnapshot snapshot = instrument.snapshot();</span>
+<span class="fc" id="L269">        snapshotsById.put(snapshot.instrument().instrumentId(), snapshot);</span>
+<span class="fc" id="L270">        snapshotsByTicker.put(snapshot.instrument().ticker().toUpperCase(Locale.ROOT), snapshot);</span>
+<span class="fc" id="L271">    }</span>
 
     private double elapsedSimulatedSeconds(Instant now) {
-<span class="fc" id="L267">        double tickSeconds = properties.getTickMs() / 1000.0;</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        double realSeconds = lastTickAt == null ? tickSeconds : (now.toEpochMilli() - lastTickAt.toEpochMilli()) / 1000.0;</span>
-<span class="fc" id="L269">        double bounded = Math.max(0, Math.min(realSeconds, tickSeconds * MAX_TICKS_PER_STEP));</span>
-<span class="fc" id="L270">        return bounded * properties.getSpeedMultiplier();</span>
+<span class="fc" id="L274">        double tickSeconds = properties.getTickMs() / 1000.0;</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        double realSeconds = lastTickAt == null ? tickSeconds : (now.toEpochMilli() - lastTickAt.toEpochMilli()) / 1000.0;</span>
+<span class="fc" id="L276">        double bounded = Math.max(0, Math.min(realSeconds, tickSeconds * MAX_TICKS_PER_STEP));</span>
+<span class="fc" id="L277">        return bounded * properties.getSpeedMultiplier();</span>
     }
 
     /**
@@ -281,7 +288,7 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
      * @param volume        volume of the stored trading day
      * @param lastUpdated   when the stored price was produced
      */
-<span class="fc" id="L284">    public record StoredQuote(double lastPrice, double openPrice, double highPrice, double lowPrice,</span>
+<span class="fc" id="L291">    public record StoredQuote(double lastPrice, double openPrice, double highPrice, double lowPrice,</span>
                               double previousClose, long volume, Instant lastUpdated) {
     }
 }
