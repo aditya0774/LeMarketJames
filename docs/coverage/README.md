@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `a3c9105d` on 2026-10-02 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `90c9dbdf` on 2026-10-02 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -17,8 +17,8 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 76.67 | 71.43 | 122 / 523 |
 | [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 59.10 | 65.00 | 182 / 445 |
 | **Back end (all modules)** | 74.11 | 72.19 | 659 / 2545 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 87.92 | 78.29 | 162 / 1341 |
-| **Everything** | 78.87 | 76.08 | 821 / 3886 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 88.37 | 78.55 | 156 / 1341 |
+| **Everything** | 79.03 | 76.25 | 815 / 3886 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -47,15 +47,16 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | `src/app/core/orders/orders.service.ts` | 9 | 30.77 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 91.84 |
-| `src/app/core/orders/order.service.ts` | 6 | 78.57 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
 | `src/app/features/auth/login/login.html` | 5 | 86.11 |
 | `src/app/features/orders/order-form/order-form.ts` | 5 | 91.94 |
+| `src/app/features/trade/trade-dialog.html` | 5 | 94.05 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-02 | `90c9dbdf` | 74.11 | 72.19 | 88.37 | 78.55 |
 | 2026-10-02 | `a3c9105d` | 74.11 | 72.19 | 87.92 | 78.29 |
 | 2026-10-02 | `d6d184c2` | 74.11 | 72.19 | 87.92 | 78.29 |
 | 2026-10-02 | `caa904ae` | 73.33 | 71.37 | 87.92 | 78.29 |
