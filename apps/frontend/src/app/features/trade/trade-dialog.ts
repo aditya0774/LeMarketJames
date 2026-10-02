@@ -86,7 +86,7 @@ export class TradeDialog implements OnDestroy {
   });
 
   protected readonly canSubmit = computed(
-    () => !!this.instrument()?.tradable && this.quantityValid() && !this.exceedsHoldings() && !this.submitting(),
+    () => !!this.instrument()?.tradable && this.quantityValid() && !this.exceedsHoldings() && !this.submitting() && !this.quoteError(),
   );
 
   constructor() {
