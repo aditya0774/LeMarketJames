@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuoteService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Core Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.quotes</a> &gt; <span class="el_source">QuoteService.java</span></div><h1>QuoteService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.quotes;
 
+import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.quotes.dto.QuoteDto;
@@ -10,6 +11,7 @@ import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Serves quotes from the simulated market.
@@ -25,10 +27,12 @@ public class QuoteService {
     private static final int DISPLAY_SCALE = 2;
 
     private final MarketDataService marketData;
+    private final MarketFeedStatus feedStatus;
 
-<span class="fc" id="L29">    public QuoteService(MarketDataService marketData) {</span>
-<span class="fc" id="L30">        this.marketData = marketData;</span>
-<span class="fc" id="L31">    }</span>
+<span class="fc" id="L32">    public QuoteService(MarketDataService marketData, MarketFeedStatus feedStatus) {</span>
+<span class="fc" id="L33">        this.marketData = marketData;</span>
+<span class="fc" id="L34">        this.feedStatus = feedStatus;</span>
+<span class="fc" id="L35">    }</span>
 
     /**
      * Returns the current quote for a symbol, with prices and percentages rounded to 2 decimals
@@ -37,63 +41,80 @@ public class QuoteService {
      *
      * @param rawSymbol ticker symbol; surrounding whitespace and case are ignored
      * @return the contract-shaped quote payload
-     * @throws IllegalArgumentException if the symbol is null or blank
-     * @throws SymbolNotFoundException  if no simulated instrument has that ticker
+     * @throws IllegalArgumentException     if the symbol is null or blank
+     * @throws QuoteFeedUnavailableException if the feed is currently down (see {@link MarketFeedStatus})
+     * @throws SymbolNotFoundException       if no simulated instrument has that ticker
      */
     public QuoteDto getQuote(String rawSymbol) {
-<span class="fc" id="L44">        String symbol = normalize(rawSymbol);</span>
-<span class="fc" id="L45">        return marketData.findByTicker(symbol)</span>
-<span class="fc" id="L46">                .map(QuoteService::toDto)</span>
-<span class="fc" id="L47">                .orElseThrow(() -&gt; new SymbolNotFoundException(&quot;Symbol not found&quot;));</span>
+<span class="fc" id="L49">        String symbol = normalize(rawSymbol);</span>
+<span class="fc" id="L50">        Optional&lt;QuoteDto&gt; quote = marketData.findByTicker(symbol).map(QuoteService::toDto);</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (quote.isPresent()) {</span>
+<span class="fc" id="L52">            return quote.get();</span>
+        }
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (!feedStatus.isAvailable()) {</span>
+<span class="fc" id="L55">            throw new QuoteFeedUnavailableException(&quot;Price unavailable&quot;);</span>
+        }
+<span class="fc" id="L57">        throw new SymbolNotFoundException(&quot;Symbol not found&quot;);</span>
     }
 
     /**
      * Returns the current quote for every simulated instrument in one call, so a screen showing the
      * whole market (the dashboard) makes one request per refresh instead of one per stock.
      *
-     * @return contract-shaped quotes sorted by symbol; empty if market-service is unavailable
+     * @return contract-shaped quotes sorted by symbol
+     * @throws QuoteFeedUnavailableException if the feed is currently down (see {@link MarketFeedStatus})
      */
     public List&lt;QuoteDto&gt; getAllQuotes() {
-<span class="fc" id="L57">        return marketData.findAll().stream()</span>
-<span class="fc" id="L58">                .map(QuoteService::toDto)</span>
-<span class="fc" id="L59">                .sorted(Comparator.comparing(QuoteDto::getSymbol))</span>
-<span class="fc" id="L60">                .toList();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (!feedStatus.isAvailable()) {</span>
+<span class="fc" id="L69">            throw new QuoteFeedUnavailableException(&quot;Price unavailable&quot;);</span>
+        }
+<span class="fc" id="L71">        return marketData.findAll().stream()</span>
+<span class="fc" id="L72">                .map(QuoteService::toDto)</span>
+<span class="fc" id="L73">                .sorted(Comparator.comparing(QuoteDto::getSymbol))</span>
+<span class="fc" id="L74">                .toList();</span>
     }
 
     /** Shared by the single and batch lookups so both return exactly the same quote shape. */
     private static QuoteDto toDto(QuoteSnapshot snapshot) {
-<span class="fc" id="L65">        return new QuoteDto(</span>
-<span class="fc" id="L66">                snapshot.instrument().ticker(),</span>
-<span class="fc" id="L67">                snapshot.instrument().name(),</span>
-<span class="fc" id="L68">                money(snapshot.lastPrice()),</span>
-<span class="fc" id="L69">                money(snapshot.priceChange()),</span>
-<span class="fc" id="L70">                money(snapshot.priceChangePercent()),</span>
-<span class="fc" id="L71">                money(snapshot.highPrice()),</span>
-<span class="fc" id="L72">                money(snapshot.lowPrice()),</span>
-<span class="fc" id="L73">                money(snapshot.openPrice()),</span>
-<span class="fc" id="L74">                snapshot.volume(),</span>
-<span class="fc" id="L75">                snapshot.marketCap(),</span>
-<span class="fc" id="L76">                money(snapshot.peRatio()),</span>
-<span class="fc" id="L77">                money(snapshot.dividendYieldPercent()),</span>
-<span class="fc" id="L78">                snapshot.lastUpdated());</span>
+<span class="fc" id="L79">        return new QuoteDto(</span>
+<span class="fc" id="L80">                snapshot.instrument().ticker(),</span>
+<span class="fc" id="L81">                snapshot.instrument().name(),</span>
+<span class="fc" id="L82">                money(snapshot.lastPrice()),</span>
+<span class="fc" id="L83">                money(snapshot.priceChange()),</span>
+<span class="fc" id="L84">                money(snapshot.priceChangePercent()),</span>
+<span class="fc" id="L85">                money(snapshot.highPrice()),</span>
+<span class="fc" id="L86">                money(snapshot.lowPrice()),</span>
+<span class="fc" id="L87">                money(snapshot.openPrice()),</span>
+<span class="fc" id="L88">                snapshot.volume(),</span>
+<span class="fc" id="L89">                snapshot.marketCap(),</span>
+<span class="fc" id="L90">                money(snapshot.peRatio()),</span>
+<span class="fc" id="L91">                money(snapshot.dividendYieldPercent()),</span>
+<span class="fc" id="L92">                snapshot.lastUpdated());</span>
     }
 
     private String normalize(String rawSymbol) {
-<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        if (rawSymbol == null || rawSymbol.isBlank()) {</span>
-<span class="fc" id="L83">            throw new IllegalArgumentException(&quot;Symbol is required&quot;);</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">        if (rawSymbol == null || rawSymbol.isBlank()) {</span>
+<span class="fc" id="L97">            throw new IllegalArgumentException(&quot;Symbol is required&quot;);</span>
         }
-<span class="fc" id="L85">        return rawSymbol.trim().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L99">        return rawSymbol.trim().toUpperCase(Locale.ROOT);</span>
     }
 
     private static BigDecimal money(double value) {
-<span class="fc" id="L89">        return BigDecimal.valueOf(value).setScale(DISPLAY_SCALE, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L103">        return BigDecimal.valueOf(value).setScale(DISPLAY_SCALE, RoundingMode.HALF_UP);</span>
     }
 
     /** Raised for an unknown ticker; mapped to the contract's 404 response by the controller. */
     public static class SymbolNotFoundException extends RuntimeException {
         public SymbolNotFoundException(String message) {
-<span class="fc" id="L95">            super(message);</span>
-<span class="fc" id="L96">        }</span>
+<span class="fc" id="L109">            super(message);</span>
+<span class="fc" id="L110">        }</span>
+    }
+
+    /** Raised while the quote feed is down; mapped to the contract's 503 response by the controller. */
+    public static class QuoteFeedUnavailableException extends RuntimeException {
+        public QuoteFeedUnavailableException(String message) {
+<span class="fc" id="L116">            super(message);</span>
+<span class="fc" id="L117">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

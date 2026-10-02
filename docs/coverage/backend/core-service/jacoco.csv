@@ -1,9 +1,10 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 LeMarketJames Core Service,com.lemarketjames.instruments,InstrumentDto,0,27,0,0,0,3,0,2,0,2
 LeMarketJames Core Service,com.lemarketjames.instruments,InstrumentController,0,21,0,0,0,6,0,2,0,2
-LeMarketJames Core Service,com.lemarketjames.quotes,QuotesController,0,35,0,0,0,8,0,3,0,3
+LeMarketJames Core Service,com.lemarketjames.quotes,QuotesController,0,58,0,0,0,14,0,3,0,3
 LeMarketJames Core Service,com.lemarketjames.quotes,QuoteService.SymbolNotFoundException,0,4,0,0,0,2,0,1,0,1
-LeMarketJames Core Service,com.lemarketjames.quotes,QuoteService,0,97,1,3,0,29,1,8,0,7
+LeMarketJames Core Service,com.lemarketjames.quotes,QuoteService.QuoteFeedUnavailableException,0,4,0,0,0,2,0,1,0,1
+LeMarketJames Core Service,com.lemarketjames.quotes,QuoteService,0,122,1,9,0,35,1,10,0,6
 LeMarketJames Core Service,com.lemarketjames.common,CoreExceptionHandler,13,3,0,0,4,1,1,1,1,1
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteDto,0,81,0,0,0,28,0,14,0,14
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3

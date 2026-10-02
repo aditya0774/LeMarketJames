@@ -7,10 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,11 @@ import java.util.Optional;
  * (empty/404) rather than throwing, matching how callers already treated an unsimulated instrument
  * before this feature was ever a separate service (see HoldingsService's zero-valued fallback).
  *
+ * &lt;p&gt;Every call reports its outcome to {@link MarketFeedStatus}, so a caller that needs to tell
+ * &quot;the feed is down&quot; apart from an ordinary empty result (an unsimulated instrument) can check
+ * {@link MarketFeedStatus#isAvailable()}. The connect/read timeouts below mean a hung market-service
+ * surfaces as a failure instead of blocking the caller forever.
+ *
  * &lt;p&gt;Only created in services that set {@code market.service.url} (core-service, holdings-service).
  * market-service component-scans this library too (it needs the shared model and interface), and
  * without this condition it would get a second {@link MarketDataService} bean next to its own
@@ -30,48 +37,62 @@ import java.util.Optional;
 @ConditionalOnProperty(name = &quot;market.service.url&quot;)
 public class MarketDataClient implements MarketDataService {
 
-<span class="nc" id="L33">    private static final Logger log = LoggerFactory.getLogger(MarketDataClient.class);</span>
+<span class="fc" id="L40">    private static final Logger log = LoggerFactory.getLogger(MarketDataClient.class);</span>
 
     private final RestClient restClient;
+    private final MarketFeedStatus feedStatus;
 
-<span class="nc" id="L37">    public MarketDataClient(@Value(&quot;${market.service.url}&quot;) String marketServiceUrl) {</span>
-<span class="nc" id="L38">        this.restClient = RestClient.builder().baseUrl(marketServiceUrl).build();</span>
-<span class="nc" id="L39">    }</span>
+    public MarketDataClient(
+            @Value(&quot;${market.service.url}&quot;) String marketServiceUrl,
+            @Value(&quot;${market.service.connect-timeout-ms:3000}&quot;) long connectTimeoutMs,
+            @Value(&quot;${market.service.read-timeout-ms:5000}&quot;) long readTimeoutMs,
+<span class="fc" id="L49">            MarketFeedStatus feedStatus) {</span>
+<span class="fc" id="L50">        var factory = new SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L51">        factory.setConnectTimeout(Duration.ofMillis(connectTimeoutMs));</span>
+<span class="fc" id="L52">        factory.setReadTimeout(Duration.ofMillis(readTimeoutMs));</span>
+<span class="fc" id="L53">        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(marketServiceUrl).build();</span>
+<span class="fc" id="L54">        this.feedStatus = feedStatus;</span>
+<span class="fc" id="L55">    }</span>
 
     @Override
     public Optional&lt;QuoteSnapshot&gt; findByTicker(String ticker) {
-<span class="nc" id="L43">        return get(&quot;/api/market/quotes/{ticker}&quot;, QuoteSnapshot.class, ticker);</span>
+<span class="nc" id="L59">        return get(&quot;/api/market/quotes/{ticker}&quot;, QuoteSnapshot.class, ticker);</span>
     }
 
     @Override
     public Optional&lt;QuoteSnapshot&gt; findByInstrumentId(int instrumentId) {
-<span class="nc" id="L48">        return get(&quot;/api/market/quotes/by-instrument/{instrumentId}&quot;, QuoteSnapshot.class, instrumentId);</span>
+<span class="nc" id="L64">        return get(&quot;/api/market/quotes/by-instrument/{instrumentId}&quot;, QuoteSnapshot.class, instrumentId);</span>
     }
 
     @Override
     public Collection&lt;QuoteSnapshot&gt; findAll() {
         try {
-<span class="nc" id="L54">            QuoteSnapshot[] quotes = restClient.get()</span>
-<span class="nc" id="L55">                    .uri(&quot;/api/market/quotes&quot;)</span>
-<span class="nc" id="L56">                    .retrieve()</span>
-<span class="nc" id="L57">                    .body(QuoteSnapshot[].class);</span>
-<span class="nc bnc" id="L58" title="All 2 branches missed.">            return quotes == null ? List.of() : List.of(quotes);</span>
-<span class="nc" id="L59">        } catch (RestClientException e) {</span>
-<span class="nc" id="L60">            log.warn(&quot;market-service call failed for findAll(): {}&quot;, e.getMessage());</span>
-<span class="nc" id="L61">            return List.of();</span>
+<span class="fc" id="L70">            QuoteSnapshot[] quotes = restClient.get()</span>
+<span class="fc" id="L71">                    .uri(&quot;/api/market/quotes&quot;)</span>
+<span class="fc" id="L72">                    .retrieve()</span>
+<span class="fc" id="L73">                    .body(QuoteSnapshot[].class);</span>
+<span class="fc" id="L74">            feedStatus.recordSuccess();</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            return quotes == null ? List.of() : List.of(quotes);</span>
+<span class="fc" id="L76">        } catch (RestClientException e) {</span>
+<span class="fc" id="L77">            log.warn(&quot;market-service call failed for findAll(): {}&quot;, e.getMessage());</span>
+<span class="fc" id="L78">            feedStatus.recordFailure();</span>
+<span class="fc" id="L79">            return List.of();</span>
         }
     }
 
     private &lt;T&gt; Optional&lt;T&gt; get(String uriTemplate, Class&lt;T&gt; responseType, Object... uriVariables) {
         try {
-<span class="nc" id="L67">            return Optional.ofNullable(restClient.get()</span>
-<span class="nc" id="L68">                    .uri(uriTemplate, uriVariables)</span>
-<span class="nc" id="L69">                    .retrieve()</span>
-<span class="nc" id="L70">                    .onStatus(HttpStatusCode::is4xxClientError, (req, res) -&gt; { })</span>
-<span class="nc" id="L71">                    .body(responseType));</span>
-<span class="nc" id="L72">        } catch (RestClientException e) {</span>
-<span class="nc" id="L73">            log.warn(&quot;market-service call failed for {}: {}&quot;, uriTemplate, e.getMessage());</span>
-<span class="nc" id="L74">            return Optional.empty();</span>
+<span class="nc" id="L85">            Optional&lt;T&gt; result = Optional.ofNullable(restClient.get()</span>
+<span class="nc" id="L86">                    .uri(uriTemplate, uriVariables)</span>
+<span class="nc" id="L87">                    .retrieve()</span>
+<span class="nc" id="L88">                    .onStatus(HttpStatusCode::is4xxClientError, (req, res) -&gt; { })</span>
+<span class="nc" id="L89">                    .body(responseType));</span>
+<span class="nc" id="L90">            feedStatus.recordSuccess();</span>
+<span class="nc" id="L91">            return result;</span>
+<span class="nc" id="L92">        } catch (RestClientException e) {</span>
+<span class="nc" id="L93">            log.warn(&quot;market-service call failed for {}: {}&quot;, uriTemplate, e.getMessage());</span>
+<span class="nc" id="L94">            feedStatus.recordFailure();</span>
+<span class="nc" id="L95">            return Optional.empty();</span>
         }
     }
 }

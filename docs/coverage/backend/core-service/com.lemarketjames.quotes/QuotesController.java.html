@@ -25,17 +25,25 @@ public class QuotesController {
 
     /** Every quote in one response, so the dashboard polls once per refresh rather than once per stock. */
     @GetMapping
-    public QuotesListResponse getAllQuotes() {
-<span class="fc" id="L29">        return new QuotesListResponse(true, quoteService.getAllQuotes());</span>
+    public ResponseEntity&lt;?&gt; getAllQuotes() {
+        try {
+<span class="fc" id="L30">            return ResponseEntity.ok(new QuotesListResponse(true, quoteService.getAllQuotes()));</span>
+<span class="fc" id="L31">        } catch (QuoteService.QuoteFeedUnavailableException ex) {</span>
+<span class="fc" id="L32">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</span>
+<span class="fc" id="L33">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+        }
     }
 
     @GetMapping(&quot;/{symbol}&quot;)
     public ResponseEntity&lt;?&gt; getQuote(@PathVariable String symbol) {
         try {
-<span class="fc" id="L35">            return ResponseEntity.ok(new QuoteSuccessResponse(true, quoteService.getQuote(symbol)));</span>
-<span class="fc" id="L36">        } catch (QuoteService.SymbolNotFoundException ex) {</span>
-<span class="fc" id="L37">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
-<span class="fc" id="L38">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+<span class="fc" id="L40">            return ResponseEntity.ok(new QuoteSuccessResponse(true, quoteService.getQuote(symbol)));</span>
+<span class="fc" id="L41">        } catch (QuoteService.SymbolNotFoundException ex) {</span>
+<span class="fc" id="L42">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L43">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+<span class="fc" id="L44">        } catch (QuoteService.QuoteFeedUnavailableException ex) {</span>
+<span class="fc" id="L45">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</span>
+<span class="fc" id="L46">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
         }
     }
 }

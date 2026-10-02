@@ -1,4 +1,4 @@
-import { APIRequestContext } from '@playwright/test';
+import { APIRequestContext, expect } from '@playwright/test';
 
 /**
  * Helper to stabilize market prices for deterministic E2E tests.
@@ -15,7 +15,61 @@ const SEED_HOLDINGS_TICKERS = [
   'JPM', 'KO', 'TSLA', 'META', 'AMD', 'COST', 'WMT'
 ];
 
-const MARKET_SERVICE_URL = 'http://localhost:8083';
+// The controls are served by market-service itself, never through the gateway (C4), so they
+// need their own address when the stack isn't on this machine.
+const MARKET_SERVICE_URL = process.env.E2E_MARKET_URL ?? 'http://localhost:8083';
+
+/** The fields of market-service's raw quote that execution tests compare a fill against. */
+export interface FeedQuote {
+  lastPrice: number;
+  bidPrice: number;
+  askPrice: number;
+  /** ISO-8601 UTC: when the feed produced this quote. */
+  lastUpdated: string;
+}
+
+/** Feed modes; the values and their meaning are defined in market-service's FeedMode (C4). */
+export type FeedMode = 'LIVE' | 'STALE' | 'UNAVAILABLE';
+
+/**
+ * Sets one stock's price and holds it there, so a test knows the exact quote an order executes at.
+ * A held price is still a fresh quote (C4). Fails the test if the controls are not enabled, unlike
+ * pinMarketPrices below, because a test that depends on the price cannot continue without it.
+ */
+export async function pinPrice(request: APIRequestContext, ticker: string, price: number): Promise<void> {
+  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/prices/${ticker}`, {
+    data: { price, pinned: true },
+  });
+  expect(response.status(), `pin ${ticker}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
+}
+
+/** Lets a stock pinned with pinPrice move again. */
+export async function releasePrice(request: APIRequestContext, ticker: string): Promise<void> {
+  const response = await request.delete(`${MARKET_SERVICE_URL}/internal/market/control/prices/${ticker}`);
+  expect(response.status(), await response.text()).toBe(200);
+}
+
+/** The quote market-service is serving for a stock right now, as buy-sell-service reads it. */
+export async function getQuote(request: APIRequestContext, ticker: string): Promise<FeedQuote> {
+  const response = await request.get(`${MARKET_SERVICE_URL}/api/market/quotes/${ticker}`);
+  expect(response.status(), await response.text()).toBe(200);
+  return response.json();
+}
+
+/**
+ * Switches the whole feed. The mode is global, so only tests in the `feed-failure` Playwright
+ * project may call this: it runs after every other test has finished (playwright.config.ts).
+ */
+export async function setFeedMode(request: APIRequestContext, mode: FeedMode): Promise<void> {
+  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/feed`, { data: { mode } });
+  expect(response.status(), `feed ${mode}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
+}
+
+/** Back to a LIVE feed with nothing pinned. */
+export async function resetFeed(request: APIRequestContext): Promise<void> {
+  const response = await request.post(`${MARKET_SERVICE_URL}/internal/market/control/reset`);
+  expect(response.status(), await response.text()).toBe(200);
+}
 
 /**
  * Pin all market prices to prevent drift during E2E tests.
