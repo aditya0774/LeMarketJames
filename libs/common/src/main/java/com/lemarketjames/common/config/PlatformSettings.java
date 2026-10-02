@@ -110,7 +110,7 @@ public class PlatformSettings {
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
          * Check with QuoteFreshness in libs/market-client.
          */
-        private Duration stalenessLimit = Duration.ofSeconds(60);
+        private Duration stalenessLimit = Duration.ofSeconds(5);
 
         public Duration getStalenessLimit() {
             return stalenessLimit;

@@ -24,7 +24,8 @@ class OrderEventForwarderTest {
         verify(publisher).publish(OrderEventForwarder.STATUS_CHANGED_TOPIC, "7", event);
     }
     @Test void forwardsFillKeyedByOrder() {
-        var event = new OrderFilled(7, 1, 3, Order.OrderType.BUY, BigDecimal.TEN, new BigDecimal("101.0000"), now);
+        var event = new OrderFilled(7, 1, 3, Order.OrderType.BUY, BigDecimal.TEN, new BigDecimal("101.0000"), now,
+            "SIMULATED_FEED", now.minusSeconds(1));
         forwarder.onFilled(event);
         verify(publisher).publish(OrderEventForwarder.FILLED_TOPIC, "7", event);
     }

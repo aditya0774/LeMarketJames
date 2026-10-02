@@ -92,6 +92,16 @@ class SimulatedInstrument {
     }
 
     /**
+     * Keeps a held (pinned) price current without moving it. The feed is still live and still
+     * quoting this price, so the quote must not look stale to consumers; making quotes stale is
+     * {@link FeedMode#STALE}'s job, not a side effect of holding a price.
+     */
+    void hold(Instant now) {
+        rollTradingDayIfNeeded(now);
+        lastUpdated = now;
+    }
+
+    /**
      * Applies one GBM step.
      *
      * @param now              time of this tick

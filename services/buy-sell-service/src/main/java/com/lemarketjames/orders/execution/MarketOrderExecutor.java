@@ -18,6 +18,11 @@ import org.springframework.stereotype.Service;
 /** Prices orders only from fresh market quotes; settlement rechecks cash and shares under lock. */
 @Service
 public class MarketOrderExecutor implements OrderExecutor {
+    /**
+     * Name stored as the source of every quote used for a fill. MarketDataService is the only
+     * price feed and its quotes don't name their origin, so the executor that reads it does.
+     */
+    static final String QUOTE_SOURCE = "SIMULATED_FEED";
     private final MarketDataService market;
     private final InstrumentRepository instruments;
     private final AccountRepository accounts;
@@ -58,6 +63,7 @@ public class MarketOrderExecutor implements OrderExecutor {
         double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();
         if (!Double.isFinite(raw) || raw <= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
         BigDecimal price = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);
-        return price.signum() > 0 ? ExecutionResult.filled(price) : ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
+        if (price.signum() <= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
+        return ExecutionResult.filled(new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated()));
     }
 }

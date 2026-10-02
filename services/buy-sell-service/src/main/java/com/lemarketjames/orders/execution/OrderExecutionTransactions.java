@@ -32,7 +32,10 @@ public class OrderExecutionTransactions {
         ExecutionResult result = executor.execute(order);
         if (result.nextStatus() == OrderStatus.FILLED) {
             if (order.getOrderStatus() != OrderStatus.PENDING) transitions.move(order, OrderStatus.PENDING, null);
+            // The quote is part of the durable intent: a retry settles at this price and keeps its provenance.
             order.setPricePerUnit(result.fillPrice());
+            order.setQuoteSource(result.quote().source());
+            order.setQuoteTime(result.quote().quoteTime());
             order.setSettlementPending(true);
             return order;
         }

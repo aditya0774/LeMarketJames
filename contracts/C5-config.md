@@ -17,7 +17,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 |---|---|
 | Inactivity timeout: `PlatformSettings.Session` | Not yet. For the session-timeout story; today a session ends when its JWT expires. |
 | Lockout attempts and duration: `PlatformSettings.Auth.Lockout` | auth-service login, for clients and staff |
-| Quote staleness limit: `PlatformSettings.Market` | Not yet. For the quote-feed failure story, through `QuoteFreshness`. |
+| Quote staleness limit: `PlatformSettings.Market` | buy-sell-service, through `QuoteFreshness`: BUY placement refuses a stale quote, and execution rejects the order instead of filling at one ([C6](C6-api.md#automatic-execution-and-recovery)). |
 | Market hours and holidays: `MarketHours`, `sim.respect-market-hours`, `sim.holidays` | market-service's simulator |
 | Location restriction list: `PlatformSettings.Orders` | Not yet. For order placement, with the `LOCATION_RESTRICTED` code. |
 | Audit online retention window: `PlatformSettings.Audit` | Not yet. For the audit archival and audit view stories ([C2](C2-audit.md)). |

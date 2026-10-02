@@ -3,6 +3,7 @@ package com.lemarketjames.orders.entity;
 import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.EnumSet;
@@ -128,7 +129,14 @@ public class Order {
     
     @Column(name = "filled_at")
     private LocalDateTime filledAt;
-    
+
+    // The quote the order was priced from at execution (pricePerUnit is that quote's price).
+    @Column(name = "quote_source", length = 50)
+    private String quoteSource;
+
+    @Column(name = "quote_time")
+    private Instant quoteTime;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -256,7 +264,23 @@ public class Order {
     public void setFilledAt(LocalDateTime filledAt) {
         this.filledAt = filledAt;
     }
-    
+
+    public String getQuoteSource() {
+        return quoteSource;
+    }
+
+    public void setQuoteSource(String quoteSource) {
+        this.quoteSource = quoteSource;
+    }
+
+    public Instant getQuoteTime() {
+        return quoteTime;
+    }
+
+    public void setQuoteTime(Instant quoteTime) {
+        this.quoteTime = quoteTime;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
