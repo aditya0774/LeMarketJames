@@ -32,6 +32,7 @@ com.lemarketjames.orders.entity
 com.lemarketjames.orders.events
 com.lemarketjames.orders.exception
 com.lemarketjames.orders.execution
+com.lemarketjames.orders.messaging
 com.lemarketjames.orders.repository
 com.lemarketjames.orders.service
 com.lemarketjames.portfolio

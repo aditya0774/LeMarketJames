@@ -39,7 +39,7 @@ export class Dashboard implements OnInit {
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
-  private readonly ordersService = inject(BalanceService);
+  private readonly balanceService = inject(BalanceService);
   private readonly catalog = inject(InstrumentCatalog);
   private readonly quotes = inject(Quotes);
   private readonly router = inject(Router);
@@ -215,7 +215,7 @@ export class Dashboard implements OnInit {
   }
 
   private loadBalance(): void {
-    this.ordersService.getBalance().then(
+    this.balanceService.getBalance().then(
       (response) => {
         if (response.success && response.balance) {
           this.balanceData.set(response.balance);
