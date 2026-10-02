@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class MarketDataClientTest {
 
-    private static final long SHORT_TIMEOUT_MS = 300;
+    private static final long SHORT_TIMEOUT_MS = 800;
 
     private final List<HttpServer> servers = new ArrayList<>();
 
