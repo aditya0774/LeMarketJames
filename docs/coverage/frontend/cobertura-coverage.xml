@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
-<coverage lines-valid="1341" lines-covered="1179" line-rate="0.8791" branches-valid="829" branches-covered="649" branch-rate="0.7828" timestamp="1790971405005" complexity="0" version="0.1">
+<coverage lines-valid="1341" lines-covered="1179" line-rate="0.8791" branches-valid="829" branches-covered="649" branch-rate="0.7828" timestamp="1790972758690" complexity="0" version="0.1">
   <sources>
     <source>/home/runner/work/LeMarketJames/LeMarketJames/apps/frontend</source>
   </sources>
@@ -274,7 +274,7 @@
             </method>
           </methods>
           <lines>
-            <line number="9" hits="1" branch="false"/>
+            <line number="9" hits="2" branch="false"/>
             <line number="23" hits="30" branch="false"/>
             <line number="24" hits="30" branch="false"/>
             <line number="25" hits="30" branch="false"/>
@@ -335,11 +335,11 @@
             </method>
           </methods>
           <lines>
-            <line number="24" hits="38" branch="true" condition-coverage="100% (5/5)"/>
-            <line number="25" hits="38" branch="false"/>
-            <line number="26" hits="38" branch="false"/>
-            <line number="28" hits="38" branch="true" condition-coverage="100% (1/1)"/>
-            <line number="29" hits="38" branch="false"/>
+            <line number="24" hits="39" branch="true" condition-coverage="100% (5/5)"/>
+            <line number="25" hits="39" branch="false"/>
+            <line number="26" hits="39" branch="false"/>
+            <line number="28" hits="39" branch="true" condition-coverage="100% (1/1)"/>
+            <line number="29" hits="39" branch="false"/>
             <line number="35" hits="40" branch="false"/>
             <line number="36" hits="30" branch="false"/>
             <line number="38" hits="1" branch="false"/>
@@ -1995,8 +1995,8 @@
             </method>
           </methods>
           <lines>
-            <line number="8" hits="2" branch="false"/>
-            <line number="15" hits="2" branch="false"/>
+            <line number="8" hits="1" branch="false"/>
+            <line number="15" hits="1" branch="false"/>
             <line number="19" hits="17" branch="false"/>
             <line number="23" hits="66" branch="true" condition-coverage="100% (3/3)"/>
             <line number="25" hits="53" branch="false"/>
