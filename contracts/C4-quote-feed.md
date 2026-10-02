@@ -12,6 +12,7 @@ Pricing, failure handling and the indicative price can be tested without a live 
 | Feed modes, and what each one means | [FeedMode.java](../services/market-service/src/main/java/com/lemarketjames/market/service/FeedMode.java) |
 | The controls | [MarketFeedControl.java](../services/market-service/src/main/java/com/lemarketjames/market/service/MarketFeedControl.java), exposed by [MarketControlController.java](../services/market-service/src/main/java/com/lemarketjames/market/MarketControlController.java) |
 | Is a quote too old? | [QuoteFreshness.java](../libs/market-client/src/main/java/com/lemarketjames/market/model/QuoteFreshness.java), with the limit from [C5](C5-config.md) |
+| Is the feed currently down, from a consumer's point of view? | [MarketFeedStatus.java](../libs/market-client/src/main/java/com/lemarketjames/market/client/MarketFeedStatus.java), updated by every [MarketDataClient.java](../libs/market-client/src/main/java/com/lemarketjames/market/client/MarketDataClient.java) call |
 
 ## Controlling the feed
 
