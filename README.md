@@ -462,6 +462,14 @@ npm run report                    # open the HTML report from the last run
 
 To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Only enable database seeding for a disposable development or CI database; never point it at production.
 
+The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
+
+- The quote-feed test controls ([C4](contracts/C4-quote-feed.md)) on market-service, reached directly at `http://localhost:8083`; set `E2E_MARKET_URL` if it is elsewhere.
+- The same database access as the order-history suite, to read the audit trail, which has no API yet.
+- Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
+
+`execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished. Playwright skips it when an earlier test failed.
+
 Jenkins runs the suite in the stage **Run Playwright E2E tests**, right after the smoke test. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
 
 ---

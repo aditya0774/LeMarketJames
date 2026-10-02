@@ -7,6 +7,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Either way the browser and the API calls go through the same origin a real user would use.
  */
 const isCi = !!process.env.CI;
+const FEED_FAILURE_TESTS = /feed-failure\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests',
@@ -26,5 +27,16 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: FEED_FAILURE_TESTS },
+    // These tests make the quote feed stale or unavailable for the whole stack (contract C4),
+    // which would refuse every other test's orders. Depending on the main project makes them
+    // start only once it has finished; Playwright skips them if it failed.
+    {
+      name: 'feed-failure',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: FEED_FAILURE_TESTS,
+      dependencies: ['chromium'],
+    },
+  ],
 });
