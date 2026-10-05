@@ -26,11 +26,12 @@ class HoldingsSettlementClientTest {
     private static final Integer TEST_INSTRUMENT_ID = 7;
     private static final BigDecimal TEST_QUANTITY = BigDecimal.valueOf(100);
     private static final BigDecimal TEST_PRICE = BigDecimal.valueOf(150.50);
+    private static final String TEST_SERVICE_URL = "http://localhost:9999";
 
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsSettlementClient("http://localhost:9999");
+        client = new HoldingsSettlementClient(TEST_SERVICE_URL);
     }
 
     // ========== Contract Validation Tests ==========
