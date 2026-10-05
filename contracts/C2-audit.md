@@ -10,7 +10,7 @@ Each lifecycle story writes its own audit events, so the audit trail doesn't wai
 | Stored fields (the `audit_log` table) | [AuditEventEntity.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventEntity.java), table reshaped by [010](../database/schema/010_shared_contracts.sql) and [014](../database/schema/014_submission_audit.sql) |
 | The only way to write | [AuditRecorder.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditRecorder.java) |
 | The placement rules a `RULE_CHECKED` event can name, in the order they run | [ValidationRule.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/submission/ValidationRule.java) |
-| Reading a trail | [AuditEventRepository.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventRepository.java) |
+| Reading a trail, and the only operations the app has (insert and read) | [AuditEventRepository.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventRepository.java) |
 
 Each event records the order, its account, the client, when it happened as a UTC instant taken from the server's clock, and a JSON `details` object.
 
@@ -59,6 +59,7 @@ A BUY refused for lack of cash:
 - **A refused order's trail commits on its own.** There is no order to commit with, so [SubmissionRecorder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/submission/SubmissionRecorder.java) writes it in a transaction of its own, before the caller is told the order was refused. If the trail can't be written, the caller gets an error, not the refusal.
 - **Nothing lost, nothing duplicated.** A submission's events are collected while the checks run and written in one transaction, so a restart or failed deployment part-way through leaves the whole trail or none of it. An event exists exactly when the caller could have received a response. `event_key` is unique, so writing a submission's events a second time fails as a whole and stores nothing, including the order.
 - **Written only through `AuditRecorder`.** Never insert into `audit_log` directly. `order_events` from 001 is an unused early draft; don't write to it.
+- **Never changed, never deleted.** No feature or API can update or delete an audit event. `AuditEventRepository` offers only insert and the two reads above, and `AuditEventEntity` is immutable, so there is nothing for a feature to call. Don't add a delete or update method to either, and don't widen the repository to `JpaRepository` or `CrudRepository`.
 - **Each service audits what it does:**
 
   | Where | Event types |
