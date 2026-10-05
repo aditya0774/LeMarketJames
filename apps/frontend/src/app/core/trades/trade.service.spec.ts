@@ -215,10 +215,12 @@ describe('TradeService', () => {
      */
     it('should handle 403 Forbidden error', () => {
       const accountId = 1;
+      let errorOccurred = false;
 
       service.getTrades(accountId).subscribe(
-        () => fail('should have failed'),
+        () => expect.fail('should have failed'),
         error => {
+          errorOccurred = true;
           expect(error.status).toBe(403);
         }
       );
@@ -235,10 +237,12 @@ describe('TradeService', () => {
      */
     it('should handle 500 Server error', () => {
       const accountId = 1;
+      let errorOccurred = false;
 
       service.getTrades(accountId).subscribe(
-        () => fail('should have failed'),
+        () => expect.fail('should have failed'),
         error => {
+          errorOccurred = true;
           expect(error.status).toBe(500);
         }
       );
@@ -255,10 +259,12 @@ describe('TradeService', () => {
      */
     it('should handle 400 Bad Request error', () => {
       const accountId = -1; // Invalid account ID
+      let errorOccurred = false;
 
       service.getTrades(accountId).subscribe(
-        () => fail('should have failed'),
+        () => expect.fail('should have failed'),
         error => {
+          errorOccurred = true;
           expect(error.status).toBe(400);
         }
       );

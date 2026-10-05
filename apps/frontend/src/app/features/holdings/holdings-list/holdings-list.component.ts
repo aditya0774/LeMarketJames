@@ -1,16 +1,14 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
 import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
 import { Auth } from '@app/core/auth/auth';
 import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model';
-import { ByStockReportComponent } from '../by-stock-report/by-stock-report.component';
 
 /**
  * Holdings Display Component
@@ -37,15 +35,10 @@ import { ByStockReportComponent } from '../by-stock-report/by-stock-report.compo
     MatButtonModule,
     MatTableModule,
     MatCardModule,
-    MatIconModule,
-    MatTabsModule,
-    ByStockReportComponent
+    MatIconModule
   ]
 })
 export class HoldingsListComponent implements OnInit {
-  // Tab selection state
-  protected readonly activeTab = signal<'holdings' | 'by-stock'>('holdings');
-  
   // Use getters to access service signals (avoids initialization order issues)
   get isLoading() {
     return this.holdingsService.isLoading;
@@ -68,7 +61,8 @@ export class HoldingsListComponent implements OnInit {
 
   constructor(
     private readonly holdingsService: HoldingsService,
-    private readonly auth: Auth
+    private readonly auth: Auth,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -121,9 +115,9 @@ export class HoldingsListComponent implements OnInit {
   }
 
   /**
-   * Switch between Holdings and By Stock tabs
+   * Navigate to the by-stock detail view when a stock row is clicked
    */
-  selectTab(tab: 'holdings' | 'by-stock'): void {
-    this.activeTab.set(tab);
+  onStockClick(symbol: string): void {
+    this.router.navigate(['/holdings', symbol]);
   }
 }

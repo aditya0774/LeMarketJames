@@ -1,0 +1,58 @@
+<div class="by-stock-detail-container">
+  <!-- Back Navigation -->
+  <div class="back-button-wrapper">
+    <button mat-icon-button (click)="goBackToHoldings()" class="back-button" title="Back to Holdings">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="state-container loading-state">
+    <mat-spinner [diameter]="48"></mat-spinner>
+    <p>Loading trades for {{ selectedSymbol() }}...</p>
+  </div>
+
+  <!-- Error State -->
+  <ng-container *ngIf="hasError()">
+    <mat-card class="state-container error-state">
+      <mat-card-content>
+        <h3>Unable to Load Trades</h3>
+        <p class="error-message">{{ error()?.message }}</p>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="retry()"
+          class="retry-button">
+          Try Again
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+
+  <!-- Empty State -->
+  <ng-container *ngIf="hasNoTrades()">
+    <mat-card class="state-container empty-state">
+      <mat-card-content>
+        <h3>No Trading Activity</h3>
+        <p>There are no trades recorded for {{ selectedSymbol() }}.</p>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+
+  <!-- Success State: Trades Table -->
+  <ng-container *ngIf="!isLoading() && !hasError() && trades().length > 0">
+    <mat-card class="by-stock-card">
+      <mat-card-header>
+        <h2>{{ selectedSymbol() }} - Trade History</h2>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Trades Table -->
+        <app-by-stock-trades-table 
+          [trades]="trades()"
+          [selectedSymbol]="selectedSymbol()">
+        </app-by-stock-trades-table>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>
