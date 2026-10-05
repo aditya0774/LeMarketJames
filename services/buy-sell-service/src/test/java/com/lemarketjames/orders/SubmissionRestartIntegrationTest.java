@@ -69,6 +69,7 @@ class SubmissionRestartIntegrationTest {
     @Autowired SubmissionRecorder submissions;
     @Autowired OrderTransitions transitions;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AuditTestCleanup cleanup;
     // Spied, not mocked: writes are real except the one that stands in for the process stopping.
     @SpyBean AuditEventRepository events;
     @MockBean MarketDataService market;
@@ -92,11 +93,9 @@ class SubmissionRestartIntegrationTest {
     void removeOnlyThisTestsCommittedData() {
         SecurityContextHolder.clearContext();
         reset(events);
-        jdbc.update("DELETE FROM audit_log WHERE request_id=? OR client_id=? OR account_id=?", requestId, clientId, accountId);
-        jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
-        jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
-        jdbc.update("DELETE FROM addresses WHERE client_id=?", clientId);
-        jdbc.update("DELETE FROM clients WHERE client_id=?", clientId);
+        // By request too: the direct insert below names no client, should it ever get through.
+        cleanup.removeSubmission(requestId);
+        cleanup.removeClient(username);
     }
 
     @Test
