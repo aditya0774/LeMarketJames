@@ -44,11 +44,11 @@ public class OrderService {
     private final AccountRepository accountRepository;
     private final ClientRepository clientRepository;
     private final MarketDataService marketDataService;
-
     private final TradingRestrictions restrictions;
     private final HoldingsValidationClient holdingsValidationClient;
     private final AuditRecorder auditRecorder;
     private final OrderTransitions transitions;
+    private final AuditEventRepository auditEventRepository;
 
     public OrderService(OrderRepository orderRepository,
                         InstrumentRepository instrumentRepository,
@@ -59,7 +59,8 @@ public class OrderService {
                         TradingRestrictions restrictions,
                         HoldingsValidationClient holdingsValidationClient,
                         AuditRecorder auditRecorder,
-                        OrderTransitions transitions) {
+                        OrderTransitions transitions,
+                        AuditEventRepository auditEventRepository) {
         this.orderRepository = orderRepository;
         this.instrumentRepository = instrumentRepository;
         this.accountRepository = accountRepository;
@@ -70,6 +71,7 @@ public class OrderService {
         this.holdingsValidationClient = holdingsValidationClient;
         this.auditRecorder = auditRecorder;
         this.transitions = transitions;
+        this.auditEventRepository = auditEventRepository;
     }
 
     /**
@@ -336,4 +338,34 @@ public class OrderService {
         auditRecorder.record(type, order.getOrderId(), order.getAccountId(), details);
     }
 
+    /**
+    * Retrieves the chronological audit trail for an order.
+    * 
+    * <p>Returns all audit events (SUBMITTED, VALIDATED, ACCEPTED, FILLED, REJECTED, SETTLED) 
+    * in the order they were recorded. Events are ordered by {@code audit_id} (auto-increment),
+    * which reflects insertion order across all services.
+    * 
+    * <p><strong>Security:</strong> This method does not check ownership or role. Callers must validate
+    * access separately via {@link #findOwnOrder(Integer)} before calling this method.
+    * 
+    * <p><strong>Empty timelines:</strong> If the order has no audit events (which should not occur in normal operation),
+    * returns an empty list rather than throwing an exception.
+    *
+    * @param orderId the order ID to retrieve events for
+    * @return list of {@link AuditEventDto} in chronological order (oldest first); empty list if no events exist
+    * @throws IllegalArgumentException if orderId is null
+    */
+    public List<AuditEventDto> getOrderTimelineEvents(Integer orderId) {
+        if (orderId == null) {
+            throw new IllegalArgumentException("orderId cannot be null");
+        }
+        return auditEventRepository.findByOrderIdOrderByOccurredAtAsc(orderId)
+            .stream()
+            .map(event -> new AuditEventDto(
+                event.getEventType(),
+                event.getOccurredAt(),
+                event.getDetails()
+            ))
+            .toList();
+    }
 }
