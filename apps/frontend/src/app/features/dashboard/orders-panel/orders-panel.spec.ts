@@ -16,6 +16,23 @@ function order(orderId: number, submittedAt: string): OrderResponse {
   };
 }
 
+function rejectedOrder(reason: string): OrderResponse {
+  return {
+    success: true,
+    orderId: 999,
+    accountId: 7,
+    instrumentId: 1,
+    orderType: 'BUY',
+    quantity: 1,
+    pricePerUnit: 10,
+    orderStatus: 'REJECTED',
+    rejectionReason: reason,
+    submittedAt: '2026-03-08T12:00:00',
+    createdAt: '2026-03-08T12:00:00',
+    updatedAt: '2026-03-08T12:00:00',
+  };
+}
+
 describe('OrdersPanel date filtering', () => {
   let fixture: ComponentFixture<OrdersPanel>;
   const seeds = [
@@ -111,5 +128,20 @@ describe('OrdersPanel date filtering', () => {
     fixture.componentRef.setInput('error', 'Unable to load orders');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Unable to load orders');
+  });
+
+  it('shows reconnecting indicator while the live stream is retrying', () => {
+    fixture.componentRef.setInput('liveConnection', 'reconnecting');
+    fixture.detectChanges();
+    const badge = fixture.nativeElement.querySelector('.live-badge') as HTMLElement;
+    expect(badge.textContent?.trim()).toBe('Reconnecting');
+    expect(badge.classList.contains('live-badge-reconnecting')).toBe(true);
+  });
+
+  it('renders plain-language rejection text from a reason code', () => {
+    fixture.componentRef.setInput('orders', [rejectedOrder('INSUFFICIENT_CASH')]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent)
+      .toContain('Order rejected because your available cash is too low for this buy order.');
   });
 });
