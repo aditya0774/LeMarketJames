@@ -15,7 +15,7 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `orders` | buy-sell-service | buy-sell-service, holdings-service (through buy-sell's API) |
 | `settlement_receipts` | holdings-service | holdings-service (idempotent execution outcomes) |
 | `holdings` | holdings-service (settlement) | holdings-service |
-| `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)) | — (audit views are planned) |
+| `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
 | `market_quotes`, `price_candles` | market-service | market-service |
 | `instrument_market_params` | migrations only | market-service |
 | `reporting_trades` (view) | — | reports and insights ([C6](../contracts/C6-api.md#internal-events-and-the-execution-interface-core-service)) |
@@ -309,3 +309,44 @@ Get-Content database/schema/015_seed_submission_audit.sql | psql -v ON_ERROR_STO
 Idempotent, and it only touches the `seed_*` clients' events, so it is safe on an existing
 database; without the seed it does nothing. It needs 014 first. The added checks get later
 `audit_id`s than their orders' other events, so read a seeded trail in `created_at` order.
+
+## 016 — Audit lockdown
+
+`schema/016_audit_lockdown.sql` makes audit records impossible to change or delete
+([C2](../contracts/C2-audit.md#the-lockdown)). It covers `audit_log` and the unused `order_events`.
+
+| Change | Why |
+|---|---|
+| New login `lemarket_app` | The restricted account for the services. It owns nothing and is no superuser, so it cannot grant itself more. |
+| Grants for `lemarket_app` | Ordinary read and write on every table, now and for tables created later, except the audit tables: `SELECT` and `INSERT` only. |
+| Triggers on the audit tables | Refuse `UPDATE`, `DELETE` and `TRUNCATE` for every role, the owner included (SQLSTATE `LM001`). |
+
+There are now two accounts:
+
+| Account | For | Default password |
+|---|---|---|
+| `lemarket` (owner) | Migrations, seeding, resets, the `psql` calls in Jenkins and the scripts | `changeme`, from `DB_PASSWORD` |
+| `lemarket_app` | The services and the `postgres-test` integration tests | `changeme_app`, from `APP_DB_PASSWORD` |
+
+Apply it as the owner, like every other file. It needs `psql`, because it reads the new role's
+password from the `APP_DB_PASSWORD` environment variable of the `psql` process.
+
+```sh
+docker compose up -d db   # recreates the container so it has APP_DB_PASSWORD
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
+```
+
+With a native Windows PostgreSQL install, `lemarket` is not a superuser and cannot create the role.
+Run `.\scripts\windows\setup-db.ps1` first: it creates `lemarket_app` as `postgres` and leaves an
+existing database alone. Then:
+
+```powershell
+Get-Content database/schema/016_audit_lockdown.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Existing rows are
+unchanged. Earlier files that update or delete audit rows (009, 010, 015) are still safe to
+re-apply: their statements match no rows by then, and the triggers fire per row.
+
+After 016, a migration can no longer update or delete audit rows. A test that has to remove its own
+audit events uses `AuditTestCleanup` (see C2).

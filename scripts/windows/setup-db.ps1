@@ -8,6 +8,11 @@
     password every service expects), then runs every database/schema/*.sql file in numeric order,
     exactly like docker-entrypoint-initdb.d does on first start.
 
+    Also creates `lemarket_app`, the restricted account of the audit lockdown
+    (database/schema/016_audit_lockdown.sql). `lemarket` owns the database but is no superuser
+    here, so it cannot create that role itself. This part runs even when the database already
+    exists, so an existing database only needs 016 applied afterwards.
+
     Schema files are only applied to a freshly created database, because they are not safe to
     re-run. Pass -Reset to drop and recreate the database (wipes all data).
 
@@ -18,6 +23,8 @@
 param(
     # Must match SPRING_DATASOURCE_PASSWORD / DB_PASSWORD (services default to 'changeme').
     [string]$DbPassword = 'changeme',
+    # Password of lemarket_app; must match APP_DB_PASSWORD (016 defaults to 'changeme_app').
+    [string]$AppDbPassword = 'changeme_app',
     [string]$PgHost = 'localhost',
     [int]$PgPort = 5432,
     [switch]$Reset
@@ -55,17 +62,21 @@ $secure = Read-Host 'Password for the PostgreSQL "postgres" superuser' -AsSecure
 $superPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
 
-# Create the login, or reset its password so it matches what the services use.
-$escaped = $DbPassword.Replace("'", "''")
-Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', @"
+# Create each login, or reset its password so it matches what the services and scripts use.
+# lemarket owns the database; lemarket_app gets its (restricted) rights from 016.
+foreach ($login in @(@{ Name = 'lemarket'; Password = $DbPassword }, @{ Name = 'lemarket_app'; Password = $AppDbPassword })) {
+    $name = $login.Name
+    $escaped = $login.Password.Replace("'", "''")
+    Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', @"
 DO `$`$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lemarket') THEN
-    CREATE ROLE lemarket LOGIN PASSWORD '$escaped';
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$name') THEN
+    CREATE ROLE $name LOGIN PASSWORD '$escaped';
   ELSE
-    ALTER ROLE lemarket WITH LOGIN PASSWORD '$escaped';
+    ALTER ROLE $name WITH LOGIN PASSWORD '$escaped';
   END IF;
 END `$`$;
 "@)
+}
 
 $exists = Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', "SELECT 1 FROM pg_database WHERE datname = 'lemarket'")
 if ($exists -and $Reset) {
@@ -81,7 +92,8 @@ if ($exists) {
 # The owner can create tables in public (PostgreSQL 15+ no longer lets every role do so).
 Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', 'CREATE DATABASE lemarket OWNER lemarket')
 
-# Apply as lemarket so the tables are owned by the same role the services log in with.
+# Apply as lemarket so it owns the tables: migrations and resets run as the owner, and
+# lemarket_app is only given what 016 grants it.
 Get-ChildItem $schemaDir -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "Applying $($_.Name)"
     Invoke-Psql 'lemarket' $DbPassword 'lemarket' @('-q', '-f', $_.FullName) | Out-Null

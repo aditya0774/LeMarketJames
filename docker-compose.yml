@@ -165,6 +165,9 @@ services:
       POSTGRES_DB: lemarket
       POSTGRES_USER: lemarket
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      # Password of lemarket_app, the restricted account 016_audit_lockdown.sql creates. Read by
+      # psql inside this container, both on first start and when Jenkins re-applies the schema.
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (the frontend and gateway never call db directly;

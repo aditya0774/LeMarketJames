@@ -141,8 +141,9 @@ public class PlatformSettings {
     /** The audit trail (audit_log). */
     public static class Audit {
         /**
-         * How long audit events stay online (queryable in the app) before being archived
-         * (audit_log.archived). Archived events are kept, not deleted.
+         * How long audit events stay online (queryable in the app) before they count as
+         * archived. Archived events are kept, not deleted, and their rows are not changed: an
+         * event's age is what makes it archived (contract C2).
          */
         private Duration onlineRetention = Duration.ofDays(365);
 
