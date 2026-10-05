@@ -255,13 +255,13 @@ pipeline {
                     # Keep one Maven invocation so integration tests share startup work.
                     mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
                         -Dspring.profiles.active=postgres-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
                 }
             }
         }
