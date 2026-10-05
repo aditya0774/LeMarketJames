@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TradeSearchService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.trades</a> &gt; <span class="el_source">TradeSearchService.java</span></div><h1>TradeSearchService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.trades;
+
+import com.lemarketjames.orders.entity.Order.OrderStatus;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional(readOnly = true)
+public class TradeSearchService {
+    private final TradeSearchRepository trades;
+
+<span class="fc" id="L15">    public TradeSearchService(TradeSearchRepository trades) {</span>
+<span class="fc" id="L16">        this.trades = trades;</span>
+<span class="fc" id="L17">    }</span>
+
+    public List&lt;TradeSearchResult&gt; search(Integer orderId, Integer clientId, String from, String to) {
+<span class="fc bfc" id="L20" title="All 2 branches covered.">        if (orderId != null) {</span>
+<span class="pc bpc" id="L21" title="1 of 8 branches missed.">            if (orderId &lt;= 0 || clientId != null || from != null || to != null) {</span>
+<span class="fc" id="L22">                throw new IllegalArgumentException(&quot;Supply a positive orderId alone, or clientId with from and to&quot;);</span>
+            }
+<span class="fc" id="L24">            return trades.findTrade(orderId, OrderStatus.FILLED);</span>
+        }
+<span class="fc bfc" id="L26" title="All 8 branches covered.">        if (clientId == null || clientId &lt;= 0 || from == null || to == null) {</span>
+<span class="fc" id="L27">            throw new IllegalArgumentException(&quot;Supply a positive clientId with both from and to, or orderId alone&quot;);</span>
+        }
+<span class="fc" id="L29">        LocalDate start = parseDate(from);</span>
+<span class="fc" id="L30">        LocalDate end = parseDate(to);</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (end.isBefore(start)) {</span>
+<span class="fc" id="L32">            throw new IllegalArgumentException(&quot;to must be on or after from&quot;);</span>
+        }
+        // Stored timestamps are UTC. Exclusive next midnight includes the entire final day.
+<span class="fc" id="L35">        return trades.findClientTrades(clientId, start.atStartOfDay(), end.plusDays(1).atStartOfDay(),</span>
+                OrderStatus.FILLED);
+    }
+
+    private LocalDate parseDate(String value) {
+        try {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (!value.matches(&quot;[0-9]{4}-[0-9]{2}-[0-9]{2}&quot;)) {</span>
+<span class="fc" id="L42">                throw new IllegalArgumentException(&quot;Dates must be YYYY-MM-DD&quot;);</span>
+            }
+<span class="fc" id="L44">            LocalDate date = LocalDate.parse(value);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (date.getYear() &lt; 1) throw new IllegalArgumentException(&quot;Date year must be positive&quot;);</span>
+<span class="fc" id="L46">            return date;</span>
+<span class="fc" id="L47">        } catch (DateTimeException ex) {</span>
+<span class="fc" id="L48">            throw new IllegalArgumentException(&quot;Invalid calendar date&quot;, ex);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

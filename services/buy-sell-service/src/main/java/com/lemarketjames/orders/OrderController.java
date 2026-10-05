@@ -5,6 +5,8 @@ import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.service.OrderService;
+import com.lemarketjames.orders.submission.SubmissionRequestId;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,11 +28,13 @@ public class OrderController {
     /**
      * Create a new order with cash validation
      * POST /api/v1/orders
-     * Returns 201 on success, 400 if insufficient balance
+     * Returns 201 on success, 400 if insufficient balance. Every response carries the submission's
+     * X-Request-Id, which is what its audit trail is filed under (contract C2).
      */
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        OrderResponse response = orderService.createOrder(request);
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request,
+                                                     HttpServletResponse httpResponse) {
+        OrderResponse response = orderService.createOrder(request, SubmissionRequestId.issue(httpResponse));
         
         // If validation failed, return 400 Bad Request
         if (!response.isSuccess()) {

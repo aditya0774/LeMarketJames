@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,7 +51,7 @@ class BuyOrderControllerTest {
         created.setPricePerUnit(new BigDecimal("100.00"));
         OrderResponse response = new OrderResponse(created);
 
-        when(orderService.submitBuyOrder(any(SubmitBuyOrderRequest.class))).thenReturn(response);
+        when(orderService.submitBuyOrder(any(SubmitBuyOrderRequest.class), anyString())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/buy-orders")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -76,7 +77,7 @@ class BuyOrderControllerTest {
             "Insufficient balance. Required: $100000.00, Available: $5000.00"
         );
 
-        when(orderService.submitBuyOrder(any(SubmitBuyOrderRequest.class))).thenReturn(failureResponse);
+        when(orderService.submitBuyOrder(any(SubmitBuyOrderRequest.class), anyString())).thenReturn(failureResponse);
 
         mockMvc.perform(post("/api/v1/buy-orders")
                 .contentType(MediaType.APPLICATION_JSON)

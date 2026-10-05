@@ -1,6 +1,6 @@
 # C3 – Seed / test data set
 
-Read-side stories (portfolio, audit, reporting) can be built and demoed before the write side exists, because every environment starts with the same people, stocks and history. This page is the only description of the seed personas. The data itself is [011_seed_test_data.sql](../database/schema/011_seed_test_data.sql), and [010](../database/schema/010_shared_contracts.sql) adds the suspended stock.
+Read-side stories (portfolio, audit, reporting) can be built and demoed before the write side exists, because every environment starts with the same people, stocks and history. This page is the only description of the seed personas. The data itself is [011_seed_test_data.sql](../database/schema/011_seed_test_data.sql); [010](../database/schema/010_shared_contracts.sql) adds the suspended stock, and [015](../database/schema/015_seed_submission_audit.sql) adds the submission audit trail to the seeded orders.
 
 ## Logging in
 
@@ -16,7 +16,7 @@ Every seed login, client or staff, uses the password **`Pass123!`**. Log in with
 | `seed_closed@seed.lemarket.com` | `CLOSED` | Login is refused; the history of a closed account |
 | `seed_expired@seed.lemarket.com` | `EXPIRED` | Can log in and view, but orders are refused with `ACCOUNT_RESTRICTED` |
 | `seed_locked@seed.lemarket.com` | Locked out (lock never expires) | The lockout message, even with the right password |
-| `seed_notrading@seed.lemarket.com` | Active, trading disabled on the account | Orders refused with `ACCOUNT_RESTRICTED`; has one such rejected order |
+| `seed_notrading@seed.lemarket.com` | Active, trading disabled on the account | Orders refused with `ACCOUNT_RESTRICTED`; has one such rejected order, and one refused submission in the audit trail |
 
 ## Staff
 
@@ -34,7 +34,8 @@ The 50 real stocks from 009 are all tradable. **`CAVS`** (id 52) is the suspende
 
 - Orders in every status, spread over days, months and years. Dates are relative to when the seed ran, so "last 12 months" stays true.
 - Holdings, average costs and cash are calculated from the seeded fills, so every balance agrees with the history.
-- Audit events for every seeded order, one per lifecycle step it reached. The filled ones are complete trades: SUBMITTED, VALIDATED, ACCEPTED, FILLED, SETTLED.
+- Audit events for every seeded order, one per lifecycle step it reached. The filled ones are complete trades: SUBMITTED, a RULE_CHECKED for each placement check, VALIDATED, ACCEPTED, FILLED, SETTLED.
+- One refused submission for `seed_notrading`: a trail with no order, ending on the failed `ACCOUNT_STATUS` check ([C2](C2-audit.md#the-submission-trail)). Find it by its request ID, not an order ID.
 
 ## Where it's loaded
 

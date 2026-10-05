@@ -17,11 +17,25 @@ public class AuditEventEntity {
     @Column(name = &quot;audit_id&quot;)
     private Long auditId;
 
-    @Column(name = &quot;order_id&quot;, nullable = false)
+    /** Null for a refused submission: no order was saved, so {@link #requestId} identifies it. */
+    @Column(name = &quot;order_id&quot;)
     private Integer orderId;
 
-    @Column(name = &quot;account_id&quot;, nullable = false)
+    /** Null when the caller was refused access to the account they asked for. */
+    @Column(name = &quot;account_id&quot;)
     private Integer accountId;
+
+    /** The submission request that caused the event; set on submission events only. */
+    @Column(name = &quot;request_id&quot;, length = 36)
+    private String requestId;
+
+    /**
+     * Unique per submission, event type and rule, so the same event can't be stored twice. Null for
+     * events that aren't part of a submission. Declared unique here so the H2 test schema enforces
+     * it like the index in database/schema/014.
+     */
+    @Column(name = &quot;event_key&quot;, length = 120, unique = true)
+    private String eventKey;
 
     @Column(name = &quot;client_id&quot;)
     private Integer clientId;
@@ -42,50 +56,65 @@ public class AuditEventEntity {
     @Column(nullable = false)
     private boolean archived;
 
-<span class="nc" id="L45">    protected AuditEventEntity() {</span>
+<span class="nc" id="L59">    protected AuditEventEntity() {</span>
         // for JPA
-<span class="nc" id="L47">    }</span>
+<span class="nc" id="L61">    }</span>
 
     public AuditEventEntity(Integer orderId, Integer accountId, Integer clientId, AuditEventType eventType,
-<span class="fc" id="L50">                            Map&lt;String, Object&gt; details, Instant occurredAt) {</span>
-<span class="fc" id="L51">        this.orderId = orderId;</span>
-<span class="fc" id="L52">        this.accountId = accountId;</span>
-<span class="fc" id="L53">        this.clientId = clientId;</span>
-<span class="fc" id="L54">        this.eventType = eventType;</span>
-<span class="fc" id="L55">        this.details = details;</span>
-<span class="fc" id="L56">        this.occurredAt = occurredAt;</span>
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L64">                            Map&lt;String, Object&gt; details, Instant occurredAt) {</span>
+<span class="fc" id="L65">        this.orderId = orderId;</span>
+<span class="fc" id="L66">        this.accountId = accountId;</span>
+<span class="fc" id="L67">        this.clientId = clientId;</span>
+<span class="fc" id="L68">        this.eventType = eventType;</span>
+<span class="fc" id="L69">        this.details = details;</span>
+<span class="fc" id="L70">        this.occurredAt = occurredAt;</span>
+<span class="fc" id="L71">    }</span>
+
+    /** A submission event, which also carries the request it belongs to and its unique key. */
+    public AuditEventEntity(SubmissionAuditEvent event, Instant occurredAt) {
+<span class="fc" id="L75">        this(event.orderId(), event.accountId(), event.clientId(), event.type(), event.details(), occurredAt);</span>
+<span class="fc" id="L76">        this.requestId = event.requestId();</span>
+<span class="fc" id="L77">        this.eventKey = event.eventKey();</span>
+<span class="fc" id="L78">    }</span>
 
     public Long getAuditId() {
-<span class="nc" id="L60">        return auditId;</span>
+<span class="nc" id="L81">        return auditId;</span>
+    }
+
+    public String getRequestId() {
+<span class="fc" id="L85">        return requestId;</span>
+    }
+
+    public String getEventKey() {
+<span class="fc" id="L89">        return eventKey;</span>
     }
 
     public Integer getOrderId() {
-<span class="fc" id="L64">        return orderId;</span>
+<span class="fc" id="L93">        return orderId;</span>
     }
 
     public Integer getAccountId() {
-<span class="fc" id="L68">        return accountId;</span>
+<span class="fc" id="L97">        return accountId;</span>
     }
 
     public Integer getClientId() {
-<span class="fc" id="L72">        return clientId;</span>
+<span class="fc" id="L101">        return clientId;</span>
     }
 
     public AuditEventType getEventType() {
-<span class="fc" id="L76">        return eventType;</span>
+<span class="fc" id="L105">        return eventType;</span>
     }
 
     public Map&lt;String, Object&gt; getDetails() {
-<span class="fc" id="L80">        return details;</span>
+<span class="fc" id="L109">        return details;</span>
     }
 
     public Instant getOccurredAt() {
-<span class="fc" id="L84">        return occurredAt;</span>
+<span class="fc" id="L113">        return occurredAt;</span>
     }
 
     public boolean isArchived() {
-<span class="nc" id="L88">        return archived;</span>
+<span class="nc" id="L117">        return archived;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

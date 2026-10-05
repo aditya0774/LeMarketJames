@@ -60,8 +60,12 @@ export async function getQuote(request: APIRequestContext, ticker: string): Prom
  * Switches the whole feed. The mode is global, so only tests in the `feed-failure` Playwright
  * project may call this: it runs after every other test has finished (playwright.config.ts).
  */
-export async function setFeedMode(request: APIRequestContext, mode: FeedMode): Promise<void> {
-  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/feed`, { data: { mode } });
+export async function setFeedMode(
+  request: APIRequestContext,
+  mode: FeedMode,
+  baseUrl = MARKET_SERVICE_URL
+): Promise<void> {
+  const response = await request.put(`${baseUrl}/internal/market/control/feed`, { data: { mode } });
   expect(response.status(), `feed ${mode}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
 }
 
@@ -138,5 +142,3 @@ export async function unpinMarketPrices(request: APIRequestContext, baseUrl = MA
     }
   }
 }
-
-

@@ -68,7 +68,7 @@ public class OrderControllerTest {
             new com.lemarketjames.orders.dto.OrderResponse();
         successResponse.setSuccess(true);
         
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenReturn(successResponse);
 
         // Act & Assert
@@ -99,7 +99,7 @@ public class OrderControllerTest {
             new com.lemarketjames.orders.dto.OrderResponse(false, 
                 "Insufficient balance. Required: $100000.00, Available: $5000.00");
         
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenReturn(failureResponse);
 
         // Act & Assert
@@ -133,18 +133,23 @@ public class OrderControllerTest {
             new com.lemarketjames.orders.dto.OrderResponse();
         successResponse.setSuccess(true);
         
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenReturn(successResponse);
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/orders")
+        var result = mockMvc.perform(post("/api/v1/orders")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"accountId\":1,\"instrumentId\":1,\"orderType\":\"SELL\",\"quantity\":5.0000,\"pricePerUnit\":100.00}"))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.success").value(true));
-        
-        // Verify cash validation was called by OrderService (even for SELL)
-        verify(orderService).createOrder(any(CreateOrderRequest.class));
+            .andExpect(jsonPath("$.success").value(true))
+            .andReturn();
+
+        // Verify cash validation was called by OrderService (even for SELL), and that the ID it
+        // files the audit trail under is the one the caller gets back (contract C2).
+        var requestId = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(orderService).createOrder(any(CreateOrderRequest.class), requestId.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(requestId.getValue(),
+            result.getResponse().getHeader("X-Request-Id"));
     }
 
     /**
@@ -168,7 +173,7 @@ public class OrderControllerTest {
             new com.lemarketjames.orders.dto.OrderResponse();
         successResponse.setSuccess(true);
         
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenReturn(successResponse);
 
         // Act & Assert
@@ -193,7 +198,7 @@ public class OrderControllerTest {
         order.setPricePerUnit(new BigDecimal("200.50"));
         OrderResponse response = new OrderResponse(order);
 
-        when(orderService.createOrder(any(CreateOrderRequest.class))).thenReturn(response);
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -209,7 +214,7 @@ public class OrderControllerTest {
     void createOrderReturnsBadRequestForNonTradableInstrument() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("10"));
 
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenThrow(new NotTradableException("Instrument is currently not tradable"));
 
         mockMvc.perform(post("/api/v1/orders")
@@ -247,7 +252,7 @@ public class OrderControllerTest {
     void createOrderReturnsForbiddenForAccountAccessDenied() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(99, 1, Order.OrderType.BUY, new BigDecimal("10"));
 
-        when(orderService.createOrder(any(CreateOrderRequest.class)))
+        when(orderService.createOrder(any(CreateOrderRequest.class), anyString()))
             .thenThrow(new AccessDeniedException("Account access is not allowed"));
 
         mockMvc.perform(post("/api/v1/orders")

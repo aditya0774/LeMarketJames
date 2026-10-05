@@ -4,6 +4,9 @@ import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.SubmissionAuditEvent;
+import com.lemarketjames.orders.submission.SubmissionRecorder;
+import org.mockito.ArgumentCaptor;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.common.domain.AccountStatus;
@@ -82,12 +85,20 @@ class OrderServiceTest {
     @Mock private TradingRestrictions restrictions;
     private OrderService orderService;
 
+    private static final String REQUEST_ID = "req-1";
+
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(orderRepository.findLockedById(any())).thenAnswer(inv -> orderRepository.findById(inv.getArgument(0)));
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, clientRepository,
-            cashValidationService, marketDataService, restrictions, holdingsValidationClient,
-            auditRecorder, new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events));
+        // The real checks and the real recorder run against the mocks below, so these tests cover
+        // placement end to end, down to the audit events handed to AuditRecorder.
+        AccountAccess accountAccess = new AccountAccess(accountRepository, clientRepository);
+        var validator = new com.lemarketjames.orders.submission.SubmissionValidator(accountAccess, accountRepository,
+            clientRepository, instrumentRepository, restrictions, holdingsValidationClient, marketDataService,
+            cashValidationService);
+        orderService = new OrderService(orderRepository, accountAccess, validator,
+            new SubmissionRecorder(orderRepository, auditRecorder),
+            new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events));
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -104,7 +115,7 @@ class OrderServiceTest {
     void sellValidatesHoldingsBeforeSavingAndDoesNotCheckCash() {
         var request = validSell();
         when(orderRepository.save(any())).thenAnswer(call -> call.getArgument(0));
-        var response = orderService.createOrder(request);
+        var response = orderService.createOrder(request, REQUEST_ID);
         var sequence = inOrder(holdingsValidationClient, orderRepository);
         sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
         sequence.verify(orderRepository).save(any());
@@ -118,8 +129,153 @@ class OrderServiceTest {
         var request = validSell();
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
             .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
-        assertThrows(InsufficientHoldingsException.class, () -> orderService.createOrder(request));
+        assertThrows(InsufficientHoldingsException.class, () -> orderService.createOrder(request, REQUEST_ID));
         verifyNoInteractions(orderRepository, cashValidationService);
+    }
+
+    // ---- LMKT-99: the audit trail each kind of submission leaves (contract C2) ----
+
+    /** The events handed to the audit trail, as TYPE or TYPE:RULE:RESULT[:reason]. */
+    private List<String> auditedSteps() {
+        return audited().stream().map(event -> event.rule() == null ? event.type().name()
+            : event.type() + ":" + event.rule() + ":" + event.details().get("result")
+                + (event.details().containsKey("reason") ? ":" + event.details().get("reason") : "")).toList();
+    }
+
+    private List<SubmissionAuditEvent> audited() {
+        ArgumentCaptor<SubmissionAuditEvent> events = ArgumentCaptor.forClass(SubmissionAuditEvent.class);
+        verify(auditRecorder, atLeast(0)).recordSubmission(events.capture());
+        return events.getAllValues();
+    }
+
+    private void callerIsClient(int clientId) {
+        ClientEntity client = mock(ClientEntity.class);
+        when(client.getClientId()).thenReturn(clientId);
+        when(clientRepository.findByUsername("testuser")).thenReturn(Optional.of(client));
+    }
+
+    @Test
+    @DisplayName("AC1+AC2: an accepted order is saved with SUBMITTED, a pass per rule, then VALIDATED")
+    void acceptedOrderIsSavedWithItsWholeTrail() {
+        var request = validSell();
+        callerIsClient(42);
+        Order saved = new Order(1, 1, Order.OrderType.SELL, BigDecimal.ONE);
+        saved.setOrderId(77);
+        when(orderRepository.save(any())).thenReturn(saved);
+
+        assertTrue(orderService.createOrder(request, REQUEST_ID).isSuccess());
+
+        assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
+            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"),
+            auditedSteps());
+        // Every event names the order, the caller's client and account, and the one request.
+        audited().forEach(event -> {
+            assertEquals(77, event.orderId());
+            assertEquals(42, event.clientId());
+            assertEquals(1, event.accountId());
+            assertEquals(REQUEST_ID, event.requestId());
+        });
+        var submitted = audited().get(0).details();
+        assertEquals("SELL", submitted.get("side"));
+        assertEquals(BigDecimal.ONE, submitted.get("quantity"));
+        assertEquals(1, submitted.get("instrumentId"));
+        assertNull(submitted.get("price"));
+        assertFalse(submitted.containsKey("requestedAccountId"));
+        // VALIDATED lists the rules that actually ran, not a fixed list.
+        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"),
+            audited().get(6).details().get("checks"));
+        // The order is saved before its events, so they can carry its ID.
+        var sequence = inOrder(orderRepository, auditRecorder);
+        sequence.verify(orderRepository).save(any());
+        sequence.verify(auditRecorder, times(7)).recordSubmission(any());
+    }
+
+    @Test
+    @DisplayName("AC2: an order refused with a response saves no order but leaves its trail, ending on the failure")
+    void orderRefusedByResponseLeavesItsTrailWithoutAnOrder() {
+        var request = validBuy();
+        callerIsClient(42);
+        when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
+        when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
+        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+
+        assertEquals("INSUFFICIENT_CASH", orderService.createOrder(request, REQUEST_ID).getCode());
+
+        assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
+            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:PRICE_AVAILABLE:PASS",
+            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"), auditedSteps());
+        audited().forEach(event -> {
+            assertNull(event.orderId(), "a refused order has no order ID");
+            assertEquals(42, event.clientId());
+            assertEquals(REQUEST_ID, event.requestId());
+        });
+        assertEquals(new BigDecimal("250.0000"), audited().get(0).details().get("price"));
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    @DisplayName("AC2: an order refused by an exception leaves its trail before the exception reaches the caller")
+    void orderRefusedByExceptionLeavesItsTrail() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        Instrument suspended = new Instrument();
+        suspended.setTradable(false);
+        when(instrumentRepository.findById(1)).thenReturn(Optional.of(suspended));
+
+        assertThrows(NotTradableException.class, () -> orderService.createOrder(
+            new CreateOrderRequest(1, 1, Order.OrderType.BUY, BigDecimal.ONE), REQUEST_ID));
+
+        assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
+            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:FAIL:NOT_TRADABLE"), auditedSteps());
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    @DisplayName("AC2: refused account access is audited against the caller, never the account they asked for")
+    void refusedAccountAccessIsAuditedAgainstTheCaller() {
+        callerIsClient(42);
+        when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> orderService.createOrder(
+            new CreateOrderRequest(99, 1, Order.OrderType.BUY, BigDecimal.ONE), REQUEST_ID));
+
+        assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:FAIL:ACCOUNT_ACCESS_DENIED"), auditedSteps());
+        audited().forEach(event -> {
+            assertEquals(42, event.clientId());
+            assertNull(event.accountId());
+        });
+        assertEquals(99, audited().get(0).details().get("requestedAccountId"));
+    }
+
+    @Test
+    @DisplayName("A check that can't complete is audited as ERROR and its exception still reaches the caller")
+    void checkThatCannotCompleteIsAuditedAsError() {
+        var request = validSell();
+        var unreachable = new IllegalStateException("holdings-service unreachable");
+        doThrow(unreachable).when(holdingsValidationClient)
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+
+        assertSame(unreachable, assertThrows(IllegalStateException.class,
+            () -> orderService.createOrder(request, REQUEST_ID)));
+
+        assertEquals("RULE_CHECKED:HOLDINGS:ERROR", auditedSteps().get(5));
+        assertEquals(6, auditedSteps().size());
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    @DisplayName("A refusal that can't be recorded is not reported as a refusal")
+    void refusalThatCannotBeAuditedSurfacesTheAuditFailure() {
+        var request = validSell();
+        var refusal = new InsufficientHoldingsException("Insufficient holdings");
+        doThrow(refusal).when(holdingsValidationClient)
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+        var auditDown = new IllegalStateException("audit store unavailable");
+        doThrow(auditDown).when(auditRecorder).recordSubmission(any());
+
+        var thrown = assertThrows(IllegalStateException.class, () -> orderService.createOrder(request, REQUEST_ID));
+
+        assertSame(auditDown, thrown);
+        assertArrayEquals(new Throwable[]{refusal}, thrown.getSuppressed());
     }
 
     private CreateOrderRequest validSell() {
@@ -159,7 +315,7 @@ class OrderServiceTest {
                 && order.getInstrumentId().equals(1)
         ))).thenReturn(savedOrder);
 
-        OrderResponse response = orderService.submitBuyOrder(request);
+        OrderResponse response = orderService.submitBuyOrder(request, REQUEST_ID);
 
         assertNotNull(response);
         assertEquals(77, response.getOrderId());
@@ -190,7 +346,7 @@ class OrderServiceTest {
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(227.55)));
         
         // Act
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(request, REQUEST_ID);
         
         // Assert
         assertNotNull(response);
@@ -216,7 +372,7 @@ class OrderServiceTest {
         when(instrumentRepository.findById(1)).thenReturn(Optional.of(instrument));
 
         // Act & Assert
-        assertThrows(NotTradableException.class, () -> orderService.createOrder(request));
+        assertThrows(NotTradableException.class, () -> orderService.createOrder(request, REQUEST_ID));
     }
 
     @Test
@@ -231,7 +387,7 @@ class OrderServiceTest {
         when(instrumentRepository.findById(999)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request, REQUEST_ID));
     }
 
     @Test
@@ -243,7 +399,7 @@ class OrderServiceTest {
 
         when(accountRepository.existsByAccountIdAndUsername(99, "testuser")).thenReturn(false);
 
-        assertThrows(AccessDeniedException.class, () -> orderService.createOrder(request));
+        assertThrows(AccessDeniedException.class, () -> orderService.createOrder(request, REQUEST_ID));
         verifyNoInteractions(cashValidationService, marketDataService, orderRepository);
     }
 
@@ -266,7 +422,7 @@ class OrderServiceTest {
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250.12345)));
         when(orderRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = orderService.createOrder(request);
+        var response = orderService.createOrder(request, REQUEST_ID);
 
         assertTrue(response.isSuccess());
         assertEquals(new BigDecimal("250.1235"), response.getPricePerUnit());
@@ -280,7 +436,7 @@ class OrderServiceTest {
         when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
         when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
 
-        var response = orderService.createOrder(request);
+        var response = orderService.createOrder(request, REQUEST_ID);
 
         assertFalse(response.isSuccess());
         assertEquals("INSUFFICIENT_CASH", response.getCode());
@@ -291,7 +447,7 @@ class OrderServiceTest {
     void unavailableMarketPriceDoesNotSaveOrCheckCash() {
         var request = validBuy();
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.empty());
-        assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request).getCode());
+        assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request, REQUEST_ID).getCode());
         verifyNoInteractions(orderRepository, cashValidationService);
     }
 
@@ -300,7 +456,7 @@ class OrderServiceTest {
         var request = validBuy();
         for (double price : new double[]{0, -1, Double.NaN, Double.POSITIVE_INFINITY, 0.000001}) {
             when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(price)));
-            assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request).getCode());
+            assertEquals("PRICE_UNAVAILABLE", orderService.createOrder(request, REQUEST_ID).getCode());
         }
         verifyNoInteractions(orderRepository, cashValidationService);
     }
@@ -448,7 +604,7 @@ class OrderServiceTest {
         when(accountRepository.findById(1)).thenReturn(Optional.of(account));
 
         OrderResponse response = orderService.createOrder(
-            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")));
+            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")), REQUEST_ID);
 
         assertFalse(response.isSuccess());
         assertEquals("ACCOUNT_RESTRICTED", response.getCode());
@@ -468,7 +624,7 @@ class OrderServiceTest {
         when(clientRepository.findById(3)).thenReturn(Optional.of(client));
 
         OrderResponse response = orderService.createOrder(
-            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")));
+            new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1")), REQUEST_ID);
 
         assertEquals("ACCOUNT_RESTRICTED", response.getCode());
     }

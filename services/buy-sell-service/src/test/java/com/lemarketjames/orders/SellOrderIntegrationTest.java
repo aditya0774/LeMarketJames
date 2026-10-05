@@ -62,6 +62,8 @@ class SellOrderIntegrationTest {
     @AfterEach
     void cleanup() {
         // Remove only this test's committed rows, including on the disposable PostgreSQL profile.
+        // A refused order's audit events reference the client, and no account when access was refused.
+        jdbc.update("DELETE FROM audit_log WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         if (accountId != null) {
             // Audit events reference the orders, so they go first.
             jdbc.update("DELETE FROM audit_log WHERE account_id=?", accountId);

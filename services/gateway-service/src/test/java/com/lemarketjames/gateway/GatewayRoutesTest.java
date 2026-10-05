@@ -40,7 +40,8 @@ class GatewayRoutesTest {
     @Test
     void ordersResolveToBuySellAndInternalSettlementHasNoRoute() {
         List<Route> routes = routeLocator.getRoutes().collectList().block();
-        for (String path : List.of("/api/v1/orders", "/api/v1/orders/42", "/api/v1/buy-orders")) {
+        for (String path : List.of("/api/v1/orders", "/api/v1/orders/42", "/api/v1/buy-orders",
+                "/api/v1/orders/trades/search?orderId=42")) {
             var exchange = org.springframework.mock.web.server.MockServerWebExchange.from(
                 org.springframework.mock.http.server.reactive.MockServerHttpRequest.get(path));
             assertEquals("buy-sell-service", routes.stream()

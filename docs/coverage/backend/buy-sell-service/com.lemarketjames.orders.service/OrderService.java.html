@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.service</a> &gt; <span class="el_source">OrderService.java</span></div><h1>OrderService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.service;
 
-import com.lemarketjames.common.audit.AuditEventType;
-import com.lemarketjames.common.audit.AuditRecorder;
-import com.lemarketjames.common.domain.AccountEntity;
-import com.lemarketjames.common.domain.ClientEntity;
-import com.lemarketjames.common.domain.ClientRepository;
 import com.lemarketjames.common.security.Role;
-import com.lemarketjames.market.service.MarketDataService;
-import com.lemarketjames.common.domain.AccountRepository;
-import com.lemarketjames.holdings.client.HoldingsValidationClient;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
-import com.lemarketjames.common.instruments.Instrument;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.execution.OrderTransitions;
-import com.lemarketjames.orders.exception.NotTradableException;
-import com.lemarketjames.common.instruments.InstrumentRepository;
 import com.lemarketjames.orders.repository.OrderRepository;
+import com.lemarketjames.orders.submission.SubmissionRecorder;
+import com.lemarketjames.orders.submission.SubmissionTrail;
+import com.lemarketjames.orders.submission.SubmissionValidator;
+import com.lemarketjames.orders.submission.ValidationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,148 +19,103 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
 
-<span class="fc" id="L39">    private static final Logger log = LoggerFactory.getLogger(OrderService.class);</span>
+<span class="fc" id="L28">    private static final Logger log = LoggerFactory.getLogger(OrderService.class);</span>
 
     private final OrderRepository orderRepository;
-    private final CashValidationService cashValidationService;
-    private final InstrumentRepository instrumentRepository;
-    private final AccountRepository accountRepository;
-    private final ClientRepository clientRepository;
-    private final MarketDataService marketDataService;
-
-    private final TradingRestrictions restrictions;
-    private final HoldingsValidationClient holdingsValidationClient;
-    private final AuditRecorder auditRecorder;
+    private final AccountAccess accountAccess;
+    private final SubmissionValidator validator;
+    private final SubmissionRecorder submissions;
     private final OrderTransitions transitions;
 
     public OrderService(OrderRepository orderRepository,
-                        InstrumentRepository instrumentRepository,
-                        AccountRepository accountRepository,
-                        ClientRepository clientRepository,
-                        CashValidationService cashValidationService,
-                        MarketDataService marketDataService,
-                        TradingRestrictions restrictions,
-                        HoldingsValidationClient holdingsValidationClient,
-                        AuditRecorder auditRecorder,
-<span class="fc" id="L62">                        OrderTransitions transitions) {</span>
-<span class="fc" id="L63">        this.orderRepository = orderRepository;</span>
-<span class="fc" id="L64">        this.instrumentRepository = instrumentRepository;</span>
-<span class="fc" id="L65">        this.accountRepository = accountRepository;</span>
-<span class="fc" id="L66">        this.clientRepository = clientRepository;</span>
-<span class="fc" id="L67">        this.cashValidationService = cashValidationService;</span>
-<span class="fc" id="L68">        this.marketDataService = marketDataService;</span>
-<span class="fc" id="L69">        this.restrictions = restrictions;</span>
-<span class="fc" id="L70">        this.holdingsValidationClient = holdingsValidationClient;</span>
-<span class="fc" id="L71">        this.auditRecorder = auditRecorder;</span>
-<span class="fc" id="L72">        this.transitions = transitions;</span>
-<span class="fc" id="L73">    }</span>
+                        AccountAccess accountAccess,
+                        SubmissionValidator validator,
+                        SubmissionRecorder submissions,
+<span class="fc" id="L40">                        OrderTransitions transitions) {</span>
+<span class="fc" id="L41">        this.orderRepository = orderRepository;</span>
+<span class="fc" id="L42">        this.accountAccess = accountAccess;</span>
+<span class="fc" id="L43">        this.validator = validator;</span>
+<span class="fc" id="L44">        this.submissions = submissions;</span>
+<span class="fc" id="L45">        this.transitions = transitions;</span>
+<span class="fc" id="L46">    }</span>
 
     /**
-     * Submit an order after ownership, account, tradability and side-specific validation.
-     * SELL orders require sufficient holdings; submission does not execute a trade.
-     * For BUY orders, validates that the account has sufficient cash.
-     * BUY prices are captured from the market, never trusted from the browser.
-     * A saved order is audited as SUBMITTED then VALIDATED in the same transaction (contract C2).
+     * Submit an order once it passes the submission checks ({@link SubmissionValidator}).
+     * Submission does not execute a trade.
+     *
+     * &lt;p&gt;Every submission leaves an audit trail under {@code requestId} (contract C2): an accepted
+     * order's is saved in the same transaction as the order, and a refused order's is saved on its
+     * own. Deliberately not transactional itself: the checks only read, and with no transaction
+     * around them a refusal has nothing to roll its trail back.
+     *
+     * @param requestId the server-generated ID of this submission
      */
-    @Transactional
-    public OrderResponse createOrder(CreateOrderRequest request) {
-<span class="fc" id="L84">        validateAccountAccess(request.getAccountId());</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (!accountMayTrade(request.getAccountId())) {</span>
-<span class="fc" id="L86">            log.warn(&quot;Order refused for restricted accountId={}&quot;, request.getAccountId());</span>
-<span class="fc" id="L87">            return new OrderResponse(false, &quot;This account can't place orders right now. Please contact support.&quot;,</span>
-<span class="fc" id="L88">                RejectionReason.ACCOUNT_RESTRICTED.name());</span>
-        }
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (restrictions.locationRestricted(request.getAccountId())) {</span>
-<span class="nc" id="L91">            return new OrderResponse(false, &quot;Trading is restricted in your location&quot;, RejectionReason.LOCATION_RESTRICTED.name());</span>
-        }
-<span class="fc" id="L93">        validateInstrumentTradability(request.getInstrumentId());</span>
-        // Browser validation is advisory; every SELL must be checked again before saving.
-<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (request.getOrderType() == Order.OrderType.SELL) {</span>
-<span class="fc" id="L96">            holdingsValidationClient.validateSufficientHoldings(request.getAccountId(), authenticatedUsername(),</span>
-<span class="fc" id="L97">                request.getInstrumentId(), request.getQuantity());</span>
-        }
-<span class="fc" id="L99">        BigDecimal price = null;</span>
-        // For BUY orders, validate sufficient cash
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (request.getOrderType() == Order.OrderType.BUY) {</span>
-<span class="fc" id="L102">            var quote = marketDataService.findByInstrumentId(request.getInstrumentId());</span>
-<span class="fc bfc" id="L103" title="All 6 branches covered.">            if (quote.isEmpty() || !Double.isFinite(quote.get().askPrice()) || quote.get().askPrice() &lt;= 0) {</span>
-<span class="fc" id="L104">                return new OrderResponse(false, &quot;Market price is unavailable. Please try again.&quot;,</span>
-<span class="fc" id="L105">                    RejectionReason.PRICE_UNAVAILABLE.name());</span>
-            }
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (restrictions.stale(quote.get())) {</span>
-<span class="nc" id="L108">                return new OrderResponse(false, &quot;Market quote is stale&quot;, RejectionReason.STALE_QUOTE.name());</span>
-            }
-            // Match the database scale so validation and the persisted snapshot agree.
-<span class="fc" id="L111">            price = BigDecimal.valueOf(quote.get().askPrice()).setScale(4, RoundingMode.HALF_UP);</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (price.signum() &lt;= 0) {</span>
-<span class="fc" id="L113">                return new OrderResponse(false, &quot;Market price is unavailable. Please try again.&quot;,</span>
-<span class="fc" id="L114">                    RejectionReason.PRICE_UNAVAILABLE.name());</span>
-            }
-<span class="fc" id="L116">            BigDecimal orderCost = request.getQuantity().multiply(price);</span>
-
-<span class="fc" id="L118">            boolean hasSufficientCash = cashValidationService.validateSufficientCash(</span>
-<span class="fc" id="L119">                request.getAccountId(),</span>
-                orderCost
-            );
-
-<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (!hasSufficientCash) {</span>
-<span class="fc" id="L124">                BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());</span>
-<span class="fc" id="L125">                return new OrderResponse(false,</span>
-<span class="fc" id="L126">                    String.format(&quot;Insufficient balance. Required: $%.2f, Available: $%.2f&quot;,</span>
-<span class="fc" id="L127">                        orderCost, availableCash), RejectionReason.INSUFFICIENT_CASH.name());</span>
-            }
+    public OrderResponse createOrder(CreateOrderRequest request, String requestId) {
+<span class="fc" id="L60">        SubmissionTrail trail = new SubmissionTrail(requestId, accountAccess.callerClientId(), request);</span>
+        ValidationOutcome outcome;
+        try {
+<span class="fc" id="L63">            outcome = validator.validate(request, trail);</span>
+<span class="fc" id="L64">        } catch (RuntimeException refusal) {</span>
+<span class="fc" id="L65">            recordRefusalBeforeRethrowing(trail, refusal);</span>
+<span class="fc" id="L66">            throw refusal;</span>
+<span class="fc" id="L67">        }</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (outcome.isRefused()) {</span>
+<span class="fc" id="L69">            submissions.refuse(trail);</span>
+<span class="fc" id="L70">            return outcome.refusal();</span>
         }
 
         // Persist only after all submission checks pass.
-<span class="fc" id="L132">        Order order = new Order(</span>
-<span class="fc" id="L133">            request.getAccountId(),</span>
-<span class="fc" id="L134">            request.getInstrumentId(),</span>
-<span class="fc" id="L135">            request.getOrderType(),</span>
-<span class="fc" id="L136">            request.getQuantity()</span>
+<span class="fc" id="L74">        Order order = new Order(</span>
+<span class="fc" id="L75">            request.getAccountId(),</span>
+<span class="fc" id="L76">            request.getInstrumentId(),</span>
+<span class="fc" id="L77">            request.getOrderType(),</span>
+<span class="fc" id="L78">            request.getQuantity()</span>
         );
 
-<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (price != null) {</span>
-<span class="fc" id="L140">            order.setPricePerUnit(price);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (outcome.price() != null) {</span>
+<span class="fc" id="L82">            order.setPricePerUnit(outcome.price());</span>
         }
 
-<span class="fc" id="L143">        Order savedOrder = orderRepository.save(order);</span>
-<span class="fc" id="L144">        Map&lt;String, Object&gt; submitted = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L145">        submitted.put(&quot;side&quot;, savedOrder.getOrderType().name());</span>
-<span class="fc" id="L146">        submitted.put(&quot;quantity&quot;, savedOrder.getQuantity());</span>
-<span class="fc" id="L147">        submitted.put(&quot;price&quot;, savedOrder.getPricePerUnit());</span>
-<span class="fc" id="L148">        audit(AuditEventType.SUBMITTED, savedOrder, submitted);</span>
-<span class="fc" id="L149">        audit(AuditEventType.VALIDATED, savedOrder, Map.of(&quot;checks&quot;,</span>
-<span class="fc bfc" id="L150" title="All 2 branches covered.">            savedOrder.getOrderType() == Order.OrderType.BUY</span>
-<span class="fc" id="L151">                ? List.of(&quot;ACCOUNT&quot;, &quot;TRADABLE&quot;, &quot;CASH&quot;)</span>
-<span class="fc" id="L152">                : List.of(&quot;ACCOUNT&quot;, &quot;TRADABLE&quot;, &quot;HOLDINGS&quot;)));</span>
-<span class="fc" id="L153">        log.info(&quot;Order submitted orderId={} accountId={} instrumentId={} side={}&quot;,</span>
-<span class="fc" id="L154">            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(), savedOrder.getOrderType());</span>
-<span class="fc" id="L155">        return new OrderResponse(savedOrder);</span>
+<span class="fc" id="L85">        Order savedOrder = submissions.accept(order, trail);</span>
+<span class="fc" id="L86">        log.info(&quot;Order submitted orderId={} accountId={} instrumentId={} side={} requestId={}&quot;,</span>
+<span class="fc" id="L87">            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(),</span>
+<span class="fc" id="L88">            savedOrder.getOrderType(), requestId);</span>
+<span class="fc" id="L89">        return new OrderResponse(savedOrder);</span>
     }
+
+    /**
+     * A check that threw still leaves its trail. If the trail itself can't be saved, that failure is
+     * what the caller sees: a refusal is only reported once it has been recorded.
+     */
+    private void recordRefusalBeforeRethrowing(SubmissionTrail trail, RuntimeException refusal) {
+        // A check that didn't finish (an unexpected error, not a refusal) is recorded as ERROR.
+<span class="fc" id="L98">        trail.abandon();</span>
+        try {
+<span class="fc" id="L100">            submissions.refuse(trail);</span>
+<span class="fc" id="L101">        } catch (RuntimeException auditFailure) {</span>
+<span class="fc" id="L102">            auditFailure.addSuppressed(refusal);</span>
+<span class="fc" id="L103">            throw auditFailure;</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">    }</span>
 
     /**
      * Submit a BUY order via the dedicated buy-order entrypoint.
      */
-    @Transactional
-    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request) {
-<span class="fc" id="L163">        CreateOrderRequest createOrderRequest = new CreateOrderRequest(</span>
-<span class="fc" id="L164">            request.getAccountId(),</span>
-<span class="fc" id="L165">            request.getInstrumentId(),</span>
+    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request, String requestId) {
+<span class="fc" id="L111">        CreateOrderRequest createOrderRequest = new CreateOrderRequest(</span>
+<span class="fc" id="L112">            request.getAccountId(),</span>
+<span class="fc" id="L113">            request.getInstrumentId(),</span>
             Order.OrderType.BUY,
-<span class="fc" id="L167">            request.getQuantity()</span>
+<span class="fc" id="L115">            request.getQuantity()</span>
         );
-<span class="fc" id="L169">        createOrderRequest.setPricePerUnit(request.getPricePerUnit());</span>
-<span class="fc" id="L170">        return createOrder(createOrderRequest);</span>
+<span class="fc" id="L117">        createOrderRequest.setPricePerUnit(request.getPricePerUnit());</span>
+<span class="fc" id="L118">        return createOrder(createOrderRequest, requestId);</span>
     }
 
     /**
@@ -175,122 +123,77 @@ public class OrderService {
      * (contract C7), who manage every client's orders.
      */
     private Order findOwnOrder(Integer orderId) {
-<span class="fc" id="L178">        authenticatedUsername();</span>
+<span class="fc" id="L126">        accountAccess.authenticatedUsername();</span>
         // Use the same denial for missing and foreign IDs to avoid exposing their existence.
-<span class="fc" id="L180">        Order order = orderRepository.findById(orderId)</span>
-<span class="fc" id="L181">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (!callerHasRole(Role.TRADING_OPS)) {</span>
-<span class="fc" id="L183">            validateAccountAccess(order.getAccountId());</span>
+<span class="fc" id="L128">        Order order = orderRepository.findById(orderId)</span>
+<span class="fc" id="L129">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (!callerHasRole(Role.TRADING_OPS)) {</span>
+<span class="fc" id="L131">            accountAccess.requireOwnAccount(order.getAccountId());</span>
         }
-<span class="fc" id="L185">        return order;</span>
-    }
-
-    private String authenticatedUsername() {
-<span class="fc" id="L189">        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();</span>
-<span class="pc bpc" id="L190" title="2 of 4 branches missed.">        if (authentication == null || !authentication.isAuthenticated()</span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">                || &quot;anonymousUser&quot;.equals(authentication.getName())) {</span>
-<span class="nc" id="L192">            throw new AccessDeniedException(&quot;Authentication required&quot;);</span>
-        }
-<span class="fc" id="L194">        return authentication.getName();</span>
+<span class="fc" id="L133">        return order;</span>
     }
 
     private boolean callerHasRole(Role role) {
-<span class="fc" id="L198">        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();</span>
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">        return authentication != null &amp;&amp; authentication.getAuthorities().stream()</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">            .anyMatch(authority -&gt; role.authority().equals(authority.getAuthority()));</span>
+<span class="fc" id="L137">        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        return authentication != null &amp;&amp; authentication.getAuthorities().stream()</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            .anyMatch(authority -&gt; role.authority().equals(authority.getAuthority()));</span>
     }
-
-    private void validateAccountAccess(Integer accountId) {
-<span class="fc" id="L204">        String username = authenticatedUsername();</span>
-<span class="fc" id="L205">        boolean ownsAccount = accountRepository.existsByAccountIdAndUsername(accountId, username);</span>
-<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (!ownsAccount) {</span>
-<span class="fc" id="L207">            log.warn(&quot;Order access denied for username={} accountId={}&quot;, username, accountId);</span>
-<span class="fc" id="L208">            throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
-        }
-<span class="fc" id="L210">    }</span>
-
-    /**
-     * Whether the account may trade: trading enabled on the account and the client ACTIVE (an
-     * EXPIRED client may log in but not trade). Runs after the ownership check, so the account exists.
-     */
-    private boolean accountMayTrade(Integer accountId) {
-<span class="fc" id="L217">        return accountRepository.findById(accountId)</span>
-<span class="fc bfc" id="L218" title="All 4 branches covered.">            .map(account -&gt; account.isTradingEnabled() &amp;&amp; clientMayTrade(account))</span>
-<span class="fc" id="L219">            .orElse(true);</span>
-    }
-
-    private boolean clientMayTrade(AccountEntity account) {
-<span class="fc" id="L223">        return clientRepository.findById(account.getClientId())</span>
-<span class="fc" id="L224">            .map(ClientEntity::getAccountStatus)</span>
-<span class="fc" id="L225">            .map(status -&gt; status.canTrade())</span>
-<span class="fc" id="L226">            .orElse(true);</span>
-    }
-
-    private void validateInstrumentTradability(Integer instrumentId) {
-<span class="fc" id="L230">        Instrument instrument = instrumentRepository.findById(instrumentId)</span>
-<span class="fc" id="L231">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Instrument not found with ID: &quot; + instrumentId));</span>
-
-<span class="fc bfc" id="L233" title="All 2 branches covered.">        if (!instrument.isTradable()) {</span>
-<span class="fc" id="L234">            log.warn(&quot;Tradability check failed for instrumentId={}&quot;, instrumentId);</span>
-<span class="fc" id="L235">            throw new NotTradableException(&quot;Instrument is currently not tradable&quot;);</span>
-        }
-<span class="fc" id="L237">    }</span>
 
     /**
      * Get order by ID
      */
     public OrderResponse getOrderById(Integer orderId) {
-<span class="fc" id="L243">        return new OrderResponse(findOwnOrder(orderId));</span>
+<span class="fc" id="L146">        return new OrderResponse(findOwnOrder(orderId));</span>
     }
 
     /**
      * Get all orders for an account
      */
     public List&lt;OrderResponse&gt; getOrdersByAccountId(Integer accountId) {
-<span class="fc" id="L250">        validateAccountAccess(accountId);</span>
-<span class="fc" id="L251">        return orderRepository.findByAccountId(accountId)</span>
-<span class="fc" id="L252">            .stream()</span>
-<span class="fc" id="L253">            .map(OrderResponse::new)</span>
-<span class="fc" id="L254">            .collect(Collectors.toList());</span>
+<span class="fc" id="L153">        accountAccess.requireOwnAccount(accountId);</span>
+<span class="fc" id="L154">        return orderRepository.findByAccountId(accountId)</span>
+<span class="fc" id="L155">            .stream()</span>
+<span class="fc" id="L156">            .map(OrderResponse::new)</span>
+<span class="fc" id="L157">            .collect(Collectors.toList());</span>
     }
 
     /**
      * Get orders for an account with a specific status
      */
     public List&lt;OrderResponse&gt; getOrdersByAccountAndStatus(Integer accountId, Order.OrderStatus status) {
-<span class="fc" id="L261">        validateAccountAccess(accountId);</span>
-<span class="fc" id="L262">        return orderRepository.findByAccountIdAndOrderStatus(accountId, status)</span>
-<span class="fc" id="L263">            .stream()</span>
-<span class="fc" id="L264">            .map(OrderResponse::new)</span>
-<span class="fc" id="L265">            .collect(Collectors.toList());</span>
+<span class="fc" id="L164">        accountAccess.requireOwnAccount(accountId);</span>
+<span class="fc" id="L165">        return orderRepository.findByAccountIdAndOrderStatus(accountId, status)</span>
+<span class="fc" id="L166">            .stream()</span>
+<span class="fc" id="L167">            .map(OrderResponse::new)</span>
+<span class="fc" id="L168">            .collect(Collectors.toList());</span>
     }
 
     public List&lt;OrderResponse&gt; getOrdersByAccountId(Integer accountId, String date, String timeZone) {
-<span class="fc" id="L269">        return getOrdersByAccountAndStatus(accountId, null, date, timeZone);</span>
+<span class="fc" id="L172">        return getOrdersByAccountAndStatus(accountId, null, date, timeZone);</span>
     }
 
     public List&lt;OrderResponse&gt; getOrdersByAccountAndStatus(
             Integer accountId, Order.OrderStatus status, String date, String timeZone) {
-<span class="fc" id="L274">        validateAccountAccess(accountId);</span>
-<span class="fc" id="L275">        OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);</span>
+<span class="fc" id="L177">        accountAccess.requireOwnAccount(accountId);</span>
+<span class="fc" id="L178">        OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);</span>
         List&lt;Order&gt; orders;
-<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (period == null) {</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">            orders = status == null ? orderRepository.findByAccountId(accountId)</span>
-<span class="fc" id="L279">                : orderRepository.findByAccountIdAndOrderStatus(accountId, status);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (period == null) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            orders = status == null ? orderRepository.findByAccountId(accountId)</span>
+<span class="fc" id="L182">                : orderRepository.findByAccountIdAndOrderStatus(accountId, status);</span>
         } else {
-<span class="fc" id="L281">            orders = orderRepository.findHistory(accountId, status, period.start(), period.end());</span>
+<span class="fc" id="L184">            orders = orderRepository.findHistory(accountId, status, period.start(), period.end());</span>
         }
-<span class="fc" id="L283">        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());</span>
+<span class="fc" id="L186">        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());</span>
     }
 
     /**
      * Get all orders for an instrument
      */
     public List&lt;OrderResponse&gt; getOrdersByInstrumentId(Integer instrumentId) {
-<span class="fc" id="L290">        return orderRepository.findOwnByInstrumentId(instrumentId, authenticatedUsername())</span>
-<span class="fc" id="L291">            .stream()</span>
-<span class="fc" id="L292">            .map(OrderResponse::new)</span>
-<span class="fc" id="L293">            .collect(Collectors.toList());</span>
+<span class="fc" id="L193">        return orderRepository.findOwnByInstrumentId(instrumentId, accountAccess.authenticatedUsername())</span>
+<span class="fc" id="L194">            .stream()</span>
+<span class="fc" id="L195">            .map(OrderResponse::new)</span>
+<span class="fc" id="L196">            .collect(Collectors.toList());</span>
     }
 
     /**
@@ -300,20 +203,20 @@ public class OrderService {
      */
     @Transactional
     public OrderResponse updateOrderStatus(Integer orderId, Order.OrderStatus newStatus) {
-<span class="fc" id="L303">        Order order = orderRepository.findLockedById(orderId)</span>
-<span class="pc" id="L304">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
-<span class="fc" id="L305">        findOwnOrder(orderId);</span>
-<span class="pc bpc" id="L306" title="1 of 2 branches missed.">        if (order.isSettlementPending()) throw new org.springframework.web.server.ResponseStatusException(</span>
+<span class="fc" id="L206">        Order order = orderRepository.findLockedById(orderId)</span>
+<span class="pc" id="L207">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+<span class="fc" id="L208">        findOwnOrder(orderId);</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (order.isSettlementPending()) throw new org.springframework.web.server.ResponseStatusException(</span>
             org.springframework.http.HttpStatus.CONFLICT, &quot;Settlement is in progress; retry after reconciliation&quot;);
 
-<span class="pc bpc" id="L309" title="1 of 2 branches missed.">        if (newStatus == Order.OrderStatus.FILLED) {</span>
-<span class="nc" id="L310">            throw new IllegalArgumentException(&quot;Fills must use the durable execution coordinator&quot;);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        if (newStatus == Order.OrderStatus.FILLED) {</span>
+<span class="nc" id="L213">            throw new IllegalArgumentException(&quot;Fills must use the durable execution coordinator&quot;);</span>
         }
-<span class="fc" id="L312">        transitions.move(order, newStatus,</span>
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">            newStatus == Order.OrderStatus.REJECTED ? RejectionReason.REJECTED_BY_OPERATIONS : null);</span>
+<span class="fc" id="L215">        transitions.move(order, newStatus,</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            newStatus == Order.OrderStatus.REJECTED ? RejectionReason.REJECTED_BY_OPERATIONS : null);</span>
 
-<span class="fc" id="L315">        Order updatedOrder = orderRepository.save(order);</span>
-<span class="fc" id="L316">        return new OrderResponse(updatedOrder);</span>
+<span class="fc" id="L218">        Order updatedOrder = orderRepository.save(order);</span>
+<span class="fc" id="L219">        return new OrderResponse(updatedOrder);</span>
     }
 
     /**
@@ -321,20 +224,16 @@ public class OrderService {
      */
     @Transactional
     public OrderResponse rejectOrder(Integer orderId, RejectionReason reason) {
-<span class="fc" id="L324">        Order order = orderRepository.findLockedById(orderId)</span>
-<span class="pc" id="L325">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
-<span class="fc" id="L326">        findOwnOrder(orderId);</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (order.isSettlementPending()) throw new org.springframework.web.server.ResponseStatusException(</span>
+<span class="fc" id="L227">        Order order = orderRepository.findLockedById(orderId)</span>
+<span class="pc" id="L228">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+<span class="fc" id="L229">        findOwnOrder(orderId);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        if (order.isSettlementPending()) throw new org.springframework.web.server.ResponseStatusException(</span>
             org.springframework.http.HttpStatus.CONFLICT, &quot;Settlement is in progress; retry after reconciliation&quot;);
 
-<span class="fc" id="L330">        transitions.move(order, Order.OrderStatus.REJECTED, reason);</span>
-<span class="fc" id="L331">        Order rejectedOrder = orderRepository.save(order);</span>
-<span class="fc" id="L332">        return new OrderResponse(rejectedOrder);</span>
+<span class="fc" id="L233">        transitions.move(order, Order.OrderStatus.REJECTED, reason);</span>
+<span class="fc" id="L234">        Order rejectedOrder = orderRepository.save(order);</span>
+<span class="fc" id="L235">        return new OrderResponse(rejectedOrder);</span>
     }
-
-    private void audit(AuditEventType type, Order order, Map&lt;String, Object&gt; details) {
-<span class="fc" id="L336">        auditRecorder.record(type, order.getOrderId(), order.getAccountId(), details);</span>
-<span class="fc" id="L337">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
