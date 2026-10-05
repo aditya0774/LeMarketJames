@@ -137,7 +137,7 @@ describe('ByStockDetailComponent', () => {
     it('should show NO_ACCOUNT error when currentAccountId is null', fakeAsync(() => {
       const authMock = { currentAccountId: () => null };
       TestBed.inject(Auth);
-      (AuthService as any) = authMock;
+      (authService as any) = authMock;
       
       component['loadTrades']('AAPL');
       tick(100);
