@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
@@ -39,7 +39,6 @@ import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model'
   ]
 })
 export class HoldingsListComponent implements OnInit {
-  
   // Use getters to access service signals (avoids initialization order issues)
   get isLoading() {
     return this.holdingsService.isLoading;
@@ -62,7 +61,8 @@ export class HoldingsListComponent implements OnInit {
 
   constructor(
     private readonly holdingsService: HoldingsService,
-    private readonly auth: Auth
+    private readonly auth: Auth,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -112,5 +112,12 @@ export class HoldingsListComponent implements OnInit {
   isAuthError(): boolean {
     const currentError = this.error();
     return currentError?.code === 'ACCOUNT_ACCESS_DENIED';
+  }
+
+  /**
+   * Navigate to the by-stock detail view when a stock row is clicked
+   */
+  onStockClick(symbol: string): void {
+    this.router.navigate(['/holdings', symbol]);
   }
 }

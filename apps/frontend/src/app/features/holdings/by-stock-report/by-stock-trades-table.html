@@ -1,0 +1,73 @@
+<div class="trades-table-wrapper">
+  <!-- Table for trades -->
+  <table class="trades-table">
+    <thead>
+      <tr>
+        <th class="sortable" (click)="toggleSort('filledAt')">
+          Date
+          <span class="sort-indicator">{{ getSortIndicator('filledAt') }}</span>
+        </th>
+        <th class="sortable" (click)="toggleSort('side')">
+          Side
+          <span class="sort-indicator">{{ getSortIndicator('side') }}</span>
+        </th>
+        <th class="sortable numeric" (click)="toggleSort('quantity')">
+          Quantity
+          <span class="sort-indicator">{{ getSortIndicator('quantity') }}</span>
+        </th>
+        <th class="sortable numeric" (click)="toggleSort('pricePerUnit')">
+          Price
+          <span class="sort-indicator">{{ getSortIndicator('pricePerUnit') }}</span>
+        </th>
+        <th class="numeric">Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (sortedTrades().length === 0) {
+        <tr class="empty-row">
+          <td colspan="5" class="empty-cell">
+            No trades found for {{ selectedSymbol() }}.
+          </td>
+        </tr>
+      } @else {
+        @for (trade of sortedTrades(); track trade.filledAt + '-' + $index) {
+          <tr class="trade-row">
+            <!-- Date Column -->
+            <td class="date-cell">
+              {{ trade.filledAt | date: 'MMM d, y HH:mm:ss' }}
+            </td>
+
+            <!-- Side Column with Badge -->
+            <td class="side-cell">
+              <span [ngClass]="getSideBadgeClass(trade.side)">
+                {{ trade.side }}
+              </span>
+            </td>
+
+            <!-- Quantity Column -->
+            <td class="numeric quantity-cell">
+              {{ trade.quantity | number: '1.0-0' }}
+            </td>
+
+            <!-- Price Column -->
+            <td class="numeric price-cell">
+              {{ trade.pricePerUnit | currency: 'USD': 'symbol': '1.2-4' }}
+            </td>
+
+            <!-- Cost Column (computed) -->
+            <td class="numeric cost-cell">
+              {{ calculateCost(trade) | currency: 'USD': 'symbol': '1.2-2' }}
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+
+  <!-- Summary Info -->
+  @if (sortedTrades().length > 0) {
+    <div class="trades-summary">
+      <p class="summary-text">Showing {{ sortedTrades().length }} trade(s) for {{ selectedSymbol() }}</p>
+    </div>
+  }
+</div>
