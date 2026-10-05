@@ -12,12 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestClientException;
 
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
@@ -44,7 +41,7 @@ class OrderExecutionSchedulerTest {
     private static final Integer ORDER_ID_1 = 101;
     private static final Integer ORDER_ID_2 = 102;
     private static final Integer ORDER_ID_3 = 103;
-    private static final long POLL_MS = 1000L;
+    
 
     @BeforeEach
     void setUp() {
