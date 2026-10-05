@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
+import { vi, expect } from 'vitest';
 
 import { ByStockReportComponent } from './by-stock-report.component';
 import { TradeService } from '../../../core/trades/trade.service';
@@ -87,7 +88,7 @@ describe('ByStockReportComponent', () => {
      * Verify getOwnTrades is called
      */
     it('should load trades on init', () => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of(mockTrades));
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of(mockTrades));
       component.ngOnInit();
       expect(tradeServiceMock.getTrades).toHaveBeenCalledWith(1);
     });
@@ -97,7 +98,7 @@ describe('ByStockReportComponent', () => {
      * Verify currentAccountId is used
      */
     it('should get accountId from Auth service', () => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of(mockTrades));
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of(mockTrades));
       component.ngOnInit();
       expect(tradeServiceMock.getTrades).toHaveBeenCalledWith(
         authServiceMock.currentAccountId()
@@ -188,15 +189,13 @@ describe('ByStockReportComponent', () => {
      * Test: Loading state is set during fetch
      * Verify isLoading signal reflects loading status
      */
-    it('should set isLoading during trade fetch', (done) => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of(mockTrades));
+    it('should set isLoading during trade fetch', async () => {
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of(mockTrades));
       component.ngOnInit();
 
       // Check isLoading becomes false after subscribe
-      setTimeout(() => {
-        expect(component['isLoading']()).toBe(false);
-        done();
-      }, 100);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(component['isLoading']()).toBe(false);
     });
 
     /**
@@ -218,7 +217,7 @@ describe('ByStockReportComponent', () => {
      */
     it('should display safe error message on 403 ACCOUNT_ACCESS_DENIED', () => {
       const mockError = { status: 403, error: { message: 'Forbidden' } };
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(
         throwError(() => mockError)
       );
 
@@ -237,7 +236,7 @@ describe('ByStockReportComponent', () => {
      */
     it('should handle 400 Bad Request error', () => {
       const mockError = { status: 400, error: { message: 'Invalid request' } };
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(
         throwError(() => mockError)
       );
 
@@ -254,7 +253,7 @@ describe('ByStockReportComponent', () => {
      */
     it('should handle 500 Server error', () => {
       const mockError = { status: 500, error: { message: 'Server error' } };
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(
         throwError(() => mockError)
       );
 
@@ -272,7 +271,7 @@ describe('ByStockReportComponent', () => {
      */
     it('should handle network error', () => {
       const mockError = { status: 0, message: 'Network error' };
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(
         throwError(() => mockError)
       );
 
@@ -288,13 +287,14 @@ describe('ByStockReportComponent', () => {
      * Verify retry reloads trades
      */
     it('should retry loading trades after error', () => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of(mockTrades));
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of(mockTrades));
       
       component.ngOnInit();
       fixture.detectChanges();
       
       // Clear the spy call count
-      (tradeServiceMock.getTrades as jasmine.Spy).calls.reset();
+      vi.clearAllMocks();
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of(mockTrades));
       
       component.retry();
       expect(tradeServiceMock.getTrades).toHaveBeenCalled();
@@ -307,7 +307,7 @@ describe('ByStockReportComponent', () => {
      * Verify empty state indicator
      */
     it('should indicate hasNoTrades when trades array is empty', () => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of([]));
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of([]));
       component.ngOnInit();
       fixture.detectChanges();
 
@@ -318,7 +318,7 @@ describe('ByStockReportComponent', () => {
      * Test: No trades → empty state message shown
      */
     it('should show empty state when no trades exist', () => {
-      spyOn(tradeServiceMock, 'getTrades').and.returnValue(of([]));
+      vi.spyOn(tradeServiceMock, 'getTrades').mockReturnValue(of([]));
       component.ngOnInit();
       fixture.detectChanges();
 
