@@ -1,7 +1,6 @@
 package com.lemarketjames.market.service;
 
 import com.lemarketjames.market.entity.MarketQuoteEntity;
-import com.lemarketjames.market.entity.PriceCandleEntity;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.PriceCandle;
 import com.lemarketjames.market.model.QuoteSnapshot;
@@ -21,6 +20,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +28,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -296,12 +293,13 @@ class MarketPersistenceServiceTest {
     void testSave_QuoteRepositoryError() {
         // Arrange
         QuoteSnapshot snapshot = createTestSnapshot(createTestInstrument());
+        Collection<QuoteSnapshot> snapshots = List.of(snapshot);
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenThrow(new RuntimeException("Database error"));
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> 
-            service.save(List.of(snapshot), Collections.emptyList())
+            service.save(snapshots, Collections.emptyList())
         );
     }
 
@@ -311,6 +309,8 @@ class MarketPersistenceServiceTest {
         // Arrange
         QuoteSnapshot snapshot = createTestSnapshot(createTestInstrument());
         PriceCandle candle = createTestCandle();
+        Collection<QuoteSnapshot> snapshots = List.of(snapshot);
+        List<PriceCandle> candles = List.of(candle);
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
@@ -318,7 +318,7 @@ class MarketPersistenceServiceTest {
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> 
-            service.save(List.of(snapshot), List.of(candle))
+            service.save(snapshots, candles)
         );
     }
 
