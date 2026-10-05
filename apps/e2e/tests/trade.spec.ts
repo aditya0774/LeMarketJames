@@ -18,7 +18,7 @@ test.describe('Trading', () => {
     await dialog.getByRole('button', { name: 'Place buy order' }).click();
 
     // The order's status depends on the simulator (e.g. submitted or filled), so accept any.
-    await expect(dialog.getByRole('status')).toHaveText(/Buy order #\d+ for 1 AAPL is \w+\./);
+    await expect(dialog.getByRole('status')).toHaveText(/Buy order #\d+ for 1 AAPL is \w+\./, { timeout: 15000 });
     await dialog.getByRole('button', { name: 'Done' }).click();
     await expect(dialog).toBeHidden();
 

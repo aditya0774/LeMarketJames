@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { OrderResponse } from '../../../core/orders/order.service';
+import { OrdersConnectionState, OrderResponse } from '../../../core/orders/order.service';
 import { InstrumentCatalog } from '../../../core/market/instrument-catalog';
 import {
   ORDER_FILTERS,
@@ -9,6 +9,7 @@ import {
   statusLabel,
   statusPillClass,
 } from './order-status';
+import { rejectionReasonLabel } from './rejection-reason';
 
 const PAGE_SIZE = 5;
 type Period = 'day' | 'month' | 'year';
@@ -30,6 +31,7 @@ export class OrdersPanel {
   readonly dateChange = output<string>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
+  readonly liveConnection = input<OrdersConnectionState>('connecting');
 
   protected readonly filters = ORDER_FILTERS;
   protected readonly filter = signal<OrderFilter>('ALL');
@@ -37,10 +39,16 @@ export class OrdersPanel {
   protected readonly period = signal<Period>('day');
   protected readonly dateValue = signal('');
   protected readonly dateError = computed(() => this.period() === 'year' && this.dateValue()
-    && (!/^[0-9]{4}$/.test(this.dateValue()) || Number(this.dateValue()) < 1)
+    && (!/^\d{4}$/.test(this.dateValue()) || Number(this.dateValue()) < 1)
     ? 'Enter a four-digit year between 0001 and 9999.' : null);
   protected readonly statusPillClass = statusPillClass;
   protected readonly statusLabel = statusLabel;
+  protected readonly rejectionReasonLabel = rejectionReasonLabel;
+  protected readonly liveConnectionLabel = computed(() => {
+    if (this.liveConnection() === 'reconnecting') return 'Reconnecting';
+    if (this.liveConnection() === 'live') return 'Live';
+    return 'Connecting';
+  });
 
   /** Newest first, then narrowed by the active chip. */
   protected readonly filtered = computed(() =>
@@ -75,7 +83,7 @@ export class OrdersPanel {
     this.dateValue.set(value);
     this.page.set(1);
     // Wait for a complete year instead of requesting partial values while typing.
-    if (!value || (this.period() === 'year' ? /^[0-9]{4}$/.test(value) && Number(value) > 0 : true)) {
+    if (!value || (this.period() === 'year' ? /^\d{4}$/.test(value) && Number(value) > 0 : true)) {
       this.dateChange.emit(value);
     }
   }
@@ -96,5 +104,9 @@ export class OrdersPanel {
 
   protected nameFor(order: OrderResponse): string {
     return this.catalog.byId(order.instrumentId)?.name ?? '';
+  }
+
+  protected isFilled(order: OrderResponse): boolean {
+    return order.orderStatus === 'FILLED';
   }
 }
