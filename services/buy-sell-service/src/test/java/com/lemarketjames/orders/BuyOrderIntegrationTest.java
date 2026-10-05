@@ -69,7 +69,9 @@ class BuyOrderIntegrationTest {
     @AfterEach
     void removeOnlyThisTestsCommittedData() {
         // The disposable PostgreSQL suite also runs other tests; never truncate shared tables.
-        // Audit events reference the orders, so they go first.
+        // Audit events reference the orders, so they go first. A refused order's events reference
+        // the client (and no account when access was refused), so they are found by client too.
+        jdbc.update("DELETE FROM audit_log WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
         jdbc.update("DELETE FROM audit_log WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
         jdbc.update("DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
         jdbc.update("DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
@@ -103,7 +105,10 @@ class BuyOrderIntegrationTest {
         assertEquals("SUBMITTED", row.get("order_status"));
         // Contract C2: the order's audit events were committed with it, tied to the client.
         var audit = jdbc.queryForList("SELECT action, client_id FROM audit_log WHERE order_id=? ORDER BY audit_id", orderId);
-        assertEquals(List.of("SUBMITTED", "VALIDATED"), audit.stream().map(event -> event.get("action")).toList());
+        // One RULE_CHECKED per placement check sits between the two (OrderSubmissionAuditIntegrationTest).
+        assertEquals(List.of("SUBMITTED", "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED",
+            "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "VALIDATED"),
+            audit.stream().map(event -> event.get("action")).toList());
         Integer clientId = clients.findByUsername(username).orElseThrow().getClientId();
         audit.forEach(event -> assertEquals(clientId, ((Number) event.get("client_id")).intValue()));
         mvc.perform(get("/api/v1/orders/" + orderId).cookie(cookie))

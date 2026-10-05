@@ -273,3 +273,39 @@ Get-Content database/schema/013_execution_quote.sql | psql -v ON_ERROR_STOP=1 -h
 
 The migration is idempotent; new Docker databases apply it automatically. Both columns are
 nullable: orders filled before 013, including the seed data, have no stored quote source or time.
+
+## 014 — Submission and validation audit
+
+Apply `schema/014_submission_audit.sql` before starting any updated service: they all map
+`audit_log` through `libs/common` with `ddl-auto=validate` and will not start without the new
+columns. It prepares `audit_log` for the trail of an order submission ([C2](../contracts/C2-audit.md)):
+
+| Change | Why |
+|---|---|
+| `order_id` and `account_id` are optional | A refused order saves no order row, and a caller refused access to an account has none of their own to record. |
+| `request_id` added | The server-generated ID shared by every event of one submission; it identifies a refused order. A CHECK requires an order or a request ID on every row. |
+| `event_key` added, unique | One value per submission, event type and rule, so the same event can never be stored twice. Null for events that aren't part of a submission. |
+| `action` allows `RULE_CHECKED` | One event per validation check. 010 carries the same list, because it is re-applied before 014. |
+
+```powershell
+Get-Content database/schema/014_submission_audit.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Existing rows are
+unchanged: they keep their order and account, and have no request ID or event key.
+
+## 015 — Seed data for the submission audit
+
+`schema/015_seed_submission_audit.sql` brings the audit events seeded by 011 to the shape 014
+introduced ([C3](../contracts/C3-seed-data.md)): seeded `SUBMITTED` and `VALIDATED` events get a
+request ID and event key, every validated seed order gets a passed `RULE_CHECKED` per rule, and
+`seed_notrading` gets one refused submission with no order. It is a separate file because 011 runs
+before 014 adds those columns, and because 011 is skipped on a database that already has the seed.
+
+```powershell
+Get-Content database/schema/015_seed_submission_audit.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+Idempotent, and it only touches the `seed_*` clients' events, so it is safe on an existing
+database; without the seed it does nothing. It needs 014 first. The added checks get later
+`audit_id`s than their orders' other events, so read a seeded trail in `created_at` order.
