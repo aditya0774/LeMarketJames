@@ -16,31 +16,31 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = &quot;sim&quot;, name = &quot;enabled&quot;, havingValue = &quot;true&quot;, matchIfMissing = true)
 public class MarketScheduler {
 
-<span class="nc" id="L19">    private static final Logger log = LoggerFactory.getLogger(MarketScheduler.class);</span>
+<span class="fc" id="L19">    private static final Logger log = LoggerFactory.getLogger(MarketScheduler.class);</span>
 
     private final MarketSimulator simulator;
     private final MarketPersistenceService persistence;
 
-<span class="nc" id="L24">    public MarketScheduler(MarketSimulator simulator, MarketPersistenceService persistence) {</span>
-<span class="nc" id="L25">        this.simulator = simulator;</span>
-<span class="nc" id="L26">        this.persistence = persistence;</span>
-<span class="nc" id="L27">    }</span>
+<span class="fc" id="L24">    public MarketScheduler(MarketSimulator simulator, MarketPersistenceService persistence) {</span>
+<span class="fc" id="L25">        this.simulator = simulator;</span>
+<span class="fc" id="L26">        this.persistence = persistence;</span>
+<span class="fc" id="L27">    }</span>
 
     @Scheduled(fixedRateString = &quot;${sim.tick-ms:1000}&quot;)
     public void tick() {
-<span class="nc" id="L31">        simulator.tick();</span>
-<span class="nc" id="L32">    }</span>
+<span class="fc" id="L31">        simulator.tick();</span>
+<span class="fc" id="L32">    }</span>
 
     @Scheduled(fixedRateString = &quot;${sim.snapshot-interval-ms:5000}&quot;,
             initialDelayString = &quot;${sim.snapshot-interval-ms:5000}&quot;)
     public void saveSnapshot() {
         try {
-<span class="nc" id="L38">            persistence.save(simulator.latestSnapshots(), simulator.drainCompletedCandles());</span>
-<span class="nc" id="L39">        } catch (RuntimeException ex) {</span>
+<span class="fc" id="L38">            persistence.save(simulator.latestSnapshots(), simulator.drainCompletedCandles());</span>
+<span class="fc" id="L39">        } catch (RuntimeException ex) {</span>
             // A failed save must not stop the market; the next save writes the latest prices again.
             // Candles drained in this attempt are lost, which only leaves a gap in chart history.
-<span class="nc" id="L42">            log.error(&quot;Failed to persist market snapshot&quot;, ex);</span>
-<span class="nc" id="L43">        }</span>
-<span class="nc" id="L44">    }</span>
+<span class="fc" id="L42">            log.error(&quot;Failed to persist market snapshot&quot;, ex);</span>
+<span class="fc" id="L43">        }</span>
+<span class="fc" id="L44">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

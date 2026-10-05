@@ -2,14 +2,14 @@ GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,CashValidationService,0,58,0,6,0,12,0,8,0,5
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,AccountAccess,5,62,3,5,1,18,3,6,0,5
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,OrderHistoryPeriod,0,107,0,18,0,21,0,11,0,2
-LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,TradingRestrictions,0,79,1,5,0,11,1,8,0,6
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,TradingRestrictions,0,79,0,6,0,11,0,9,0,6
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.service,OrderService,23,375,4,18,1,90,6,24,2,17
 LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsSettlementClient.Outcome,6,0,0,0,1,0,1,0,1,0
 LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,SettlementRejectedException,0,11,0,0,0,2,0,2,0,2
-LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsValidationRequest,15,0,0,0,1,0,1,0,1,0
-LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsSettlementClient,61,23,4,0,15,6,3,1,1,1
-LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsValidationClient,62,9,4,0,17,3,4,1,2,1
-LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,SettlementRequest,21,0,0,0,1,0,1,0,1,0
+LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsValidationRequest,0,15,0,0,0,1,0,1,0,1
+LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsSettlementClient,24,60,4,0,6,15,2,2,0,2
+LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,HoldingsValidationClient,35,36,4,0,10,10,3,2,1,2
+LeMarketJames Buy Sell Service,com.lemarketjames.holdings.client,SettlementRequest,0,21,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames,BuySellServiceApplication,5,3,0,0,1,1,1,1,1,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.exception,NotTradableException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.exception,InvalidStatusTransitionException,0,8,0,0,0,2,0,1,0,1
@@ -46,6 +46,6 @@ LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,MarketOrderExe
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderExecutionService,0,37,0,2,0,12,0,3,0,2
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderExecutionScheduler.TimeConfiguration,0,5,0,0,0,2,0,2,0,2
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderTransitions,0,107,0,10,0,17,0,8,0,3
-LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderExecutionScheduler,35,21,3,1,6,5,2,3,0,3
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderExecutionScheduler,0,56,0,4,0,11,0,5,0,3
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,ExecutionResult,0,42,0,2,0,5,0,6,0,5
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,ExecutionSettings,17,37,2,0,4,11,3,7,2,7

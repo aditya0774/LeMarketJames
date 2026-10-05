@@ -27,20 +27,20 @@ public class HoldingsSettlementClient {
 <span class="nc" id="L27">    private record Outcome(String rejectionReason) {}</span>
 
     public void settle(Order order) {
-<span class="nc" id="L30">        SettlementRequest request = new SettlementRequest(</span>
-<span class="nc" id="L31">                order.getOrderId(), order.getAccountId(), order.getInstrumentId(),</span>
-<span class="nc" id="L32">                order.getOrderType(), order.getQuantity(), order.getPricePerUnit());</span>
+<span class="fc" id="L30">        SettlementRequest request = new SettlementRequest(</span>
+<span class="fc" id="L31">                order.getOrderId(), order.getAccountId(), order.getInstrumentId(),</span>
+<span class="fc" id="L32">                order.getOrderType(), order.getQuantity(), order.getPricePerUnit());</span>
         try {
-<span class="nc" id="L34">            Outcome outcome = restClient.post()</span>
-<span class="nc" id="L35">                    .uri(&quot;/internal/holdings/settle&quot;)</span>
-<span class="nc" id="L36">                    .body(request)</span>
-<span class="nc" id="L37">                    .retrieve()</span>
+<span class="fc" id="L34">            Outcome outcome = restClient.post()</span>
+<span class="fc" id="L35">                    .uri(&quot;/internal/holdings/settle&quot;)</span>
+<span class="fc" id="L36">                    .body(request)</span>
+<span class="fc" id="L37">                    .retrieve()</span>
 <span class="nc" id="L38">                    .body(Outcome.class);</span>
 <span class="nc bnc" id="L39" title="All 2 branches missed.">            if (outcome == null) throw new IllegalStateException(&quot;Missing settlement receipt for &quot; + order.getOrderId());</span>
 <span class="nc bnc" id="L40" title="All 2 branches missed.">            if (outcome.rejectionReason() != null) throw new SettlementRejectedException(</span>
 <span class="nc" id="L41">                com.lemarketjames.orders.entity.RejectionReason.valueOf(outcome.rejectionReason()));</span>
-<span class="nc" id="L42">        } catch (RestClientException e) {</span>
-<span class="nc" id="L43">            throw new IllegalStateException(&quot;Failed to settle order &quot; + order.getOrderId() + &quot; with holdings-service&quot;, e);</span>
+<span class="fc" id="L42">        } catch (RestClientException e) {</span>
+<span class="fc" id="L43">            throw new IllegalStateException(&quot;Failed to settle order &quot; + order.getOrderId() + &quot; with holdings-service&quot;, e);</span>
 <span class="nc" id="L44">        }</span>
 <span class="nc" id="L45">    }</span>
 }
