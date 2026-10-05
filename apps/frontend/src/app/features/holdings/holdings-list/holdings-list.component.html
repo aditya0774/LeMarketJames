@@ -6,8 +6,28 @@
     </button>
   </div>
 
-  <!-- AC1: Loading State -->
-  <div *ngIf="isLoading()" class="state-container loading-state">
+  <!-- Tab Selector -->
+  <div class="tabs-wrapper">
+    <button 
+      mat-button 
+      [class.tab-active]="activeTab() === 'holdings'"
+      (click)="selectTab('holdings')"
+      class="tab-button">
+      Holdings
+    </button>
+    <button 
+      mat-button 
+      [class.tab-active]="activeTab() === 'by-stock'"
+      (click)="selectTab('by-stock')"
+      class="tab-button">
+      By Stock
+    </button>
+  </div>
+
+  <!-- Holdings Tab Content -->
+  <ng-container *ngIf="activeTab() === 'holdings'">
+    <!-- AC1: Loading State -->
+    <div *ngIf="isLoading()" class="state-container loading-state">
     <mat-spinner [diameter]="48"></mat-spinner>
     <p>Loading holdings...</p>
   </div>
@@ -131,5 +151,11 @@
         </div>
       </mat-card-content>
     </mat-card>
+  </ng-container>
+  </ng-container>
+
+  <!-- By Stock Tab Content -->
+  <ng-container *ngIf="activeTab() === 'by-stock'">
+    <app-by-stock-report></app-by-stock-report>
   </ng-container>
 </div>

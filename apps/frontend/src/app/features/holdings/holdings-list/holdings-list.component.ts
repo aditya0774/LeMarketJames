@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -6,9 +6,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTabsModule } from '@angular/material/tabs';
 import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
 import { Auth } from '@app/core/auth/auth';
 import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model';
+import { ByStockReportComponent } from '../by-stock-report/by-stock-report.component';
 
 /**
  * Holdings Display Component
@@ -35,10 +37,14 @@ import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model'
     MatButtonModule,
     MatTableModule,
     MatCardModule,
-    MatIconModule
+    MatIconModule,
+    MatTabsModule,
+    ByStockReportComponent
   ]
 })
 export class HoldingsListComponent implements OnInit {
+  // Tab selection state
+  protected readonly activeTab = signal<'holdings' | 'by-stock'>('holdings');
   
   // Use getters to access service signals (avoids initialization order issues)
   get isLoading() {
@@ -112,5 +118,12 @@ export class HoldingsListComponent implements OnInit {
   isAuthError(): boolean {
     const currentError = this.error();
     return currentError?.code === 'ACCOUNT_ACCESS_DENIED';
+  }
+
+  /**
+   * Switch between Holdings and By Stock tabs
+   */
+  selectTab(tab: 'holdings' | 'by-stock'): void {
+    this.activeTab.set(tab);
   }
 }
