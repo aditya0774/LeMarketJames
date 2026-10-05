@@ -3,6 +3,7 @@ package com.lemarketjames.orders;
 import com.lemarketjames.common.audit.AuditEventEntity;
 import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditLockdownCheck;
 import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.audit.SubmissionAuditEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -89,6 +91,17 @@ class AuditLockdownIntegrationTest {
             + "AND tableowner = current_user", Integer.class), "it owns no table, so it can't grant itself anything");
     }
 
+    // This context started, so the startup check accepted the application account. The owner is
+    // what a service must never run as: the same check refuses it.
+    @Test
+    void aServiceRefusesToStartOnTheOwnerAccount() {
+        owner.thenRollBack(db -> {
+            AuditLockdownCheck check = new AuditLockdownCheck(db);
+            IllegalStateException refused = assertThrows(IllegalStateException.class, check::verify);
+            assertTrue(refused.getMessage().contains("audit_log, order_events"), refused.getMessage());
+        });
+    }
+
     @Test
     void theApplicationAccountHoldsOnlyInsertAndSelectOnTheAuditTables() {
         for (String table : List.of("audit_log", "order_events")) {
@@ -136,8 +149,8 @@ class AuditLockdownIntegrationTest {
     // rows any more, and a statement that touches no audit record is not an attempt on one.
     @Test
     void aStatementThatTouchesNoAuditRecordIsNotRefused() {
-        asTheOwner("UPDATE audit_log SET archived=TRUE WHERE request_id=?", "no-such-request");
-        asTheOwner("DELETE FROM audit_log WHERE request_id=?", "no-such-request");
+        assertDoesNotThrow(() -> asTheOwner("UPDATE audit_log SET archived=TRUE WHERE request_id=?", "no-such-request"));
+        assertDoesNotThrow(() -> asTheOwner("DELETE FROM audit_log WHERE request_id=?", "no-such-request"));
     }
 
     @Test

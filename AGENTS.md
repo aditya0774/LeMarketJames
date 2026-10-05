@@ -77,7 +77,7 @@ Run Maven commands from the repo root.
 1. Create `services/<name>-service/` with its own `pom.xml`: parent `lemarketjames-parent`, `<relativePath>../../pom.xml</relativePath>`, and a `common` dependency if it's a servlet service.
 2. Add the folder to `<modules>` in the root `pom.xml`.
 3. Put the `@SpringBootApplication` class in the root `com.lemarketjames` package so it picks up `com.lemarketjames.common.*`. Move the feature's packages and tests out of `core-service`.
-4. Point it at the shared database (`SPRING_DATASOURCE_*`), give it the same `JWT_SECRET`, and keep `spring.jpa.hibernate.ddl-auto=validate`. Schema changes still go in `database/schema`.
+4. Point it at the shared database (`SPRING_DATASOURCE_*`) as `lemarket_app`, the restricted account that can't change audit records ([C2](contracts/C2-audit.md#the-lockdown)); never the owner `lemarket`. Give it the same `JWT_SECRET`, and keep `spring.jpa.hibernate.ddl-auto=validate`. Schema changes still go in `database/schema`.
 5. Add a route for its paths in `services/gateway-service/src/main/resources/application.yml`, **above** the `core-service` catch-all.
 6. Add a `Dockerfile` (copy an existing service's), a service in `docker-compose.yml`, and the name to the image loop in the Jenkinsfile.
 

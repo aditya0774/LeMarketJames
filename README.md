@@ -217,7 +217,7 @@ On Windows, from the repo root:
 ```powershell
 .\scripts\windows\setup-db.ps1
 ```
-It asks for the `postgres` superuser password. It then creates the `lemarket` login and database, using the password `changeme` that every service expects by default, and applies every file in `database/schema/` in numeric order. Run it again with `-Reset` to wipe and recreate the database, for example after new schema files land. On other OSes, do the same by hand: create role and database `lemarket`, then `psql -U lemarket -d lemarket -f` each schema file in order. Schema changes always go in new numbered files; never edit existing ones in place.
+It asks for the `postgres` superuser password. It then creates the `lemarket` login and database, and the `lemarket_app` login the services use, with the default passwords `changeme` and `changeme_app`, and applies every file in `database/schema/` in numeric order. Run it again with `-Reset` to wipe and recreate the database, for example after new schema files land. On other OSes, do the same by hand: create role and database `lemarket`, then `psql -U lemarket -d lemarket -f` each schema file in order. Schema changes always go in new numbered files; never edit existing ones in place.
 
 **Start everything:**
 
@@ -401,14 +401,19 @@ APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
 ```
 This is per-machine configuration and is never committed, so the repo stays tied to no particular host.
 
-**Database Credentials:**
-- Username: `lemarket`
-- Password: `changeme` (default; override with environment variable)
+**Database Credentials:** there are two accounts ([database/README.md](database/README.md#016--audit-lockdown)).
 
-To use a custom database password, set the `DB_PASSWORD` environment variable:
+| Account | For | Default password | Override with |
+|---|---|---|---|
+| `lemarket_app` | The services. It can't change or delete audit records. | `changeme_app` | `APP_DB_PASSWORD` |
+| `lemarket` | The owner: migrations, seeding, resets and database tools. | `changeme` | `DB_PASSWORD` |
+
+To use custom database passwords, set both environment variables:
 ```bash
-DB_PASSWORD=your_secure_password docker compose up -d --build
+DB_PASSWORD=your_secure_password APP_DB_PASSWORD=another_secure_password docker compose up -d --build
 ```
+
+A service refuses to start if its account can change audit records, so don't point one at `lemarket`.
 
 **Database Port:** PostgreSQL is exposed on `localhost:5432` for use with database tools (e.g., pgAdmin, DBeaver).
 
@@ -460,7 +465,7 @@ npm test                          # or: npm run test:headed to watch the browser
 npm run report                    # open the HTML report from the last run
 ```
 
-To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Only enable database seeding for a disposable development or CI database; never point it at production.
+To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Connect as the application account (`PGUSER=lemarket_app`), as Jenkins does: the suite needs no more rights than the services have. Only enable database seeding for a disposable development or CI database; never point it at production.
 
 The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
 

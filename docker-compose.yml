@@ -48,10 +48,12 @@ services:
         condition: service_healthy
     environment:
       # Development defaults for the disposable testing stack; environment overrides remain supported.
+      # Every service logs in as lemarket_app, the restricted account that can't change or delete
+      # audit records (database/schema/016_audit_lockdown.sql). Only migrations use the owner.
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
-      SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   core-service:
@@ -70,8 +72,8 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
-      SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       MARKET_SERVICE_URL: http://market-service:8083
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
@@ -91,8 +93,8 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
-      SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       MARKET_SERVICE_URL: http://market-service:8083
       LMJ_EXECUTION_RESPECT_MARKET_HOURS: ${SIM_RESPECT_MARKET_HOURS:-true}
       LMJ_EXECUTION_HOLIDAYS: ${SIM_HOLIDAYS:-}
@@ -119,8 +121,8 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
-      SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       # This stack is a test environment, so the quote-feed test controls are on (contract C4,
       # contracts/C4-quote-feed.md). They sit under /internal on port 8083, never behind the gateway.
       SIM_CONTROL_ENABLED: "true"
@@ -146,8 +148,8 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
-      SPRING_DATASOURCE_USERNAME: lemarket
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       MARKET_SERVICE_URL: http://market-service:8083
       ORDERS_SERVICE_URL: http://buy-sell-service:8085
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
