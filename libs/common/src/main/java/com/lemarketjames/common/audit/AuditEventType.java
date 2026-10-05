@@ -5,7 +5,7 @@ package com.lemarketjames.common.audit;
  * Javadoc lists the keys its {@code details} JSON carries; writers and readers rely on them.
  *
  * <p>Mirrors: the {@code audit_log.action} CHECK constraint (database/schema/010 and 014), and the
- * seed events in database/schema/011.
+ * seed events in database/schema/011 and 015.
  */
 public enum AuditEventType {
     /**

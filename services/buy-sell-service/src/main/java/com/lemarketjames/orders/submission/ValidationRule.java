@@ -4,6 +4,8 @@ package com.lemarketjames.orders.submission;
  * The checks an order goes through before it is saved, in the order they run. Each one that runs
  * is audited as a {@code RULE_CHECKED} event carrying its name (contract C2), so this enum is the
  * list the trade timeline displays.
+ *
+ * <p>Mirrors: the seeded checks in database/schema/015.
  */
 public enum ValidationRule {
     /** The account belongs to the caller. Fails with {@code ACCOUNT_ACCESS_DENIED}. */
