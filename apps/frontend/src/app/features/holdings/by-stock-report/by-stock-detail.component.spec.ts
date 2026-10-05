@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -83,78 +83,68 @@ describe('ByStockDetailComponent', () => {
   });
 
   describe('Route Parameter Extraction', () => {
-    it('should extract symbol from route parameter', fakeAsync(() => {
+    it('should extract symbol from route parameter', () => {
       fixture.detectChanges();
-      tick(100);
       
       expect(component['selectedSymbol']()).toBe('AAPL');
-    }));
+    });
 
-    it('should uppercase the symbol', fakeAsync(() => {
+    it('should uppercase the symbol', () => {
       paramsSubject.next({ symbol: 'aapl' });
       fixture.detectChanges();
-      tick(100);
       
       expect(component['selectedSymbol']()).toBe('AAPL');
-    }));
+    });
   });
 
   describe('Data Loading', () => {
-    it('should load trades for the symbol on init', fakeAsync(() => {
+    it('should load trades for the symbol on init', () => {
       fixture.detectChanges();
-      tick(100);
       
       expect(tradeService.getTradesBySymbol).toHaveBeenCalledWith(1, 'AAPL');
-    }));
+    });
 
-    it('should store trades in component state', fakeAsync(() => {
+    it('should store trades in component state', () => {
       fixture.detectChanges();
-      tick(100);
       
       expect(component['trades']().length).toBeGreaterThan(0);
-    }));
+    });
 
-    it('should set isLoading signal to false after fetch', fakeAsync(() => {
+    it('should set isLoading signal to false after fetch', () => {
       fixture.detectChanges();
-      tick(100);
       
       expect(component['isLoading']()).toBe(false);
-    }));
+    });
   });
 
   describe('Error Handling', () => {
-    it('should display safe error message on 403 ACCOUNT_ACCESS_DENIED', fakeAsync(() => {
+    it('should display safe error message on 403 ACCOUNT_ACCESS_DENIED', () => {
       const error403 = { status: 403, error: { message: 'Forbidden' } };
       tradeService.getTradesBySymbol.mockReturnValueOnce(throwError(() => error403));
 
       fixture.detectChanges();
-      tick(100);
       
       expect(component['error']()?.code).toBe('ACCOUNT_ACCESS_DENIED');
       expect(component['error']()?.message).toBe('You do not have permission to view this account.');
-    }));
+    });
 
-    it('should show NO_ACCOUNT error when currentAccountId is null', fakeAsync(() => {
-      const authMock = { currentAccountId: () => null };
-      TestBed.inject(Auth);
-      (authService as any) = authMock;
+    it('should show NO_ACCOUNT error when currentAccountId is null', () => {
+      // Spy on the injected auth service and mock it to return null
+      vi.spyOn(authService, 'currentAccountId').mockReturnValueOnce(null);
       
       component['loadTrades']('AAPL');
-      tick(100);
       
       expect(component['error']()?.code).toBe('NO_ACCOUNT');
-    }));
+    });
 
-    it('should reload trades on retry', fakeAsync(() => {
+    it('should reload trades on retry', () => {
       tradeService.getTradesBySymbol.mockClear();
       fixture.detectChanges();
-      tick(100);
       
       component['retry']();
-      tick(100);
       
       expect(tradeService.getTradesBySymbol).toHaveBeenCalled();
-    }));
+    });
   });
 
   describe('Navigation', () => {
@@ -174,13 +164,12 @@ describe('ByStockDetailComponent', () => {
   });
 
   describe('Empty State', () => {
-    it('should show empty state when no trades found', fakeAsync(() => {
+    it('should show empty state when no trades found', () => {
       tradeService.getTradesBySymbol.mockReturnValueOnce(of([]));
       fixture.detectChanges();
-      tick(100);
       
       expect(component['hasNoTrades']()).toBe(true);
-    }));
+    });
   });
 });
 

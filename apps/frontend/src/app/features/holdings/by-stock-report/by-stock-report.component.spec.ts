@@ -177,9 +177,16 @@ describe('ByStockReportComponent', () => {
      */
     it('should return empty array when filtering non-existent symbol', () => {
       component.ngOnInit();
+      fixture.detectChanges();
+      
+      // Select a symbol that exists to verify filtering works
+      component.onSymbolChange('GOOGL');
+      fixture.detectChanges();
+      expect(component['filteredTrades']().length).toBe(1);
+      
+      // Now select a non-existent symbol
       component['selectedSymbol'].set('NONEXISTENT');
       fixture.detectChanges();
-
       expect(component['filteredTrades']().length).toBe(0);
     });
   });

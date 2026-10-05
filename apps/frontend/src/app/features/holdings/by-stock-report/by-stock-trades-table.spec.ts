@@ -87,8 +87,8 @@ describe('ByStockTradesTable', () => {
       fixture.detectChanges();
       const firstRow = compiled.query(By.css('tbody tr'));
       
-      // Check that row contains expected data
-      expect(firstRow.nativeElement.textContent).toContain('150');
+      // First row should be the most recent trade (2026-09-22): SELL 5 @ $155.00
+      expect(firstRow.nativeElement.textContent).toContain('155');
     });
 
     /**
