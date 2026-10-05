@@ -1,6 +1,5 @@
 package com.lemarketjames.holdings.client;
 
-import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
