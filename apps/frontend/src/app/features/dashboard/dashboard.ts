@@ -1,12 +1,12 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { InstrumentCatalog } from '../../core/market/instrument-catalog';
-import { OrderResponse, OrderService } from '../../core/orders/order.service';
+import { OrderResponse, OrderService, OrdersConnectionState } from '../../core/orders/order.service';
 import { BalanceService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { HoldingDto } from '../../shared/models/holdings.model';
@@ -54,8 +54,10 @@ export class Dashboard implements OnInit {
   private historyDate = '';
   private historyRequest?: Subscription;
   private ordersRequest?: Subscription;
+  private liveOrdersRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
+  protected readonly ordersConnection = signal<OrdersConnectionState>('connecting');
 
   protected readonly balanceData = signal<BalanceInfo | null>(null);
   protected readonly balanceLoading = signal(true);
@@ -90,10 +92,7 @@ export class Dashboard implements OnInit {
     this.loadOrders();
     this.loadBalance();
     this.loadHistory();
-    // Placement is asynchronous: keep watching open orders until execution finishes.
-    interval(MARKET_REFRESH_MS).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      if (!this.sessionExpired() && this.openOrders() > 0) this.loadOrders();
-    });
+    this.startLiveOrdersWatch();
   }
 
   protected openTrade(symbol: string): void {
@@ -107,7 +106,6 @@ export class Dashboard implements OnInit {
   /** A placed order changes holdings and the order list, so reload both behind the popup. */
   protected onOrderPlaced(): void {
     this.loadHoldings();
-    this.loadOrders();
     this.loadHistory();
   }
 
@@ -182,6 +180,45 @@ export class Dashboard implements OnInit {
       });
   }
 
+  private startLiveOrdersWatch(): void {
+    if (this.liveOrdersRequest && !this.liveOrdersRequest.closed) return;
+    const accountId = this.auth.currentAccountId();
+    if (!accountId) return;
+
+    this.liveOrdersRequest = this.orderService
+      .watchOrdersByAccountId(accountId, MARKET_REFRESH_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: snapshot => {
+          this.ordersConnection.set(snapshot.connection);
+          const nextOrders = snapshot.orders ?? [];
+          const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
+          this.orders.set(nextOrders);
+
+          const changed = nextOrders.some(order =>
+            previous.has(order.orderId) && previous.get(order.orderId) !== order.orderStatus,
+          );
+          if (changed) {
+            this.loadHoldings();
+            this.loadHistory();
+          }
+
+          if (!this.historyDate) {
+            this.historyOrders.set(nextOrders);
+            this.ordersLoading.set(false);
+            this.ordersError.set(null);
+            return;
+          }
+
+          const latestById = new Map(nextOrders.map(order => [order.orderId, order]));
+          this.historyOrders.update(rows => rows.map(order => latestById.get(order.orderId) ?? order));
+        },
+        error: (err) => {
+          this.flagExpiredSession(err);
+        },
+      });
+  }
+
   protected onHistoryDateChange(date: string): void {
     this.historyDate = date;
     this.loadHistory();
@@ -236,6 +273,7 @@ export class Dashboard implements OnInit {
   private flagExpiredSession(err: unknown): void {
     if (err instanceof HttpErrorResponse && err.status === 401) {
       this.sessionExpired.set(true);
+      this.liveOrdersRequest?.unsubscribe();
     }
   }
 }

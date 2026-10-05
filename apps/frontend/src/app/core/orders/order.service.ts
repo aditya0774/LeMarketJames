@@ -1,9 +1,16 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, defer, map, switchMap, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, defer, map, of, scan, switchMap, throwError, timer } from 'rxjs';
 import { HoldingsService } from '../holdings/holdings.service';
 import { Auth } from '../auth/auth';
 import { environment } from '../../../environments/environment';
+
+export type OrdersConnectionState = 'connecting' | 'live' | 'reconnecting';
+
+export interface OrdersWatchSnapshot {
+  orders: OrderResponse[];
+  connection: OrdersConnectionState;
+}
 
 export interface OrderRequest {
   accountId: number;
@@ -56,9 +63,9 @@ export class OrderService {
   private readonly apiUrl = `${environment.apiBaseUrl}/api/v1/orders`;
 
   constructor(
-    private http: HttpClient,
-    private holdingsService: HoldingsService,
-    private auth: Auth
+    private readonly http: HttpClient,
+    private readonly holdingsService: HoldingsService,
+    private readonly auth: Auth
   ) {}
 
   /**
@@ -111,6 +118,29 @@ export class OrderService {
     const params = filter ? { date: filter.date, timeZone: filter.timeZone } : undefined;
     return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`, { params }).pipe(
       map(orders => orders.map(order => ({ ...order, submittedAt: orderTimestamp(order.submittedAt) }))),
+    );
+  }
+
+  /**
+   * Poll account orders as a mocked live stream.
+   */
+  watchOrdersByAccountId(accountId: number, refreshMs: number): Observable<OrdersWatchSnapshot> {
+    type PollResult = { ok: true; orders: OrderResponse[] } | { ok: false };
+    return timer(0, refreshMs).pipe(
+      switchMap(() => this.getOrdersByAccountId(accountId).pipe(
+        map((orders): PollResult => ({ ok: true, orders })),
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            return throwError(() => error);
+          }
+          return of<PollResult>({ ok: false });
+        }),
+      )),
+      scan((state: OrdersWatchSnapshot, result) =>
+        result.ok
+          ? { orders: result.orders, connection: 'live' as const }
+          : { ...state, connection: 'reconnecting' as const },
+      { orders: [], connection: 'connecting' as const }),
     );
   }
 

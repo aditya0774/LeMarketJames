@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Auth } from '../auth/auth';
 import { HoldingsService } from '../holdings/holdings.service';
@@ -59,5 +60,37 @@ describe('BUY order HTTP integration', () => {
     expect(call.request.params.keys()).toEqual([]);
     call.flush([{ submittedAt: '2026-01-01T00:00:00+05:30' }]);
     expect(submittedAt).toBe('2026-01-01T00:00:00+05:30');
+  });
+
+  it('streams account orders and marks reconnecting after a transient failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const states: string[] = [];
+      const sizes: number[] = [];
+      service.watchOrdersByAccountId(7, 2000).subscribe(snapshot => {
+        states.push(snapshot.connection);
+        sizes.push(snapshot.orders.length);
+      });
+
+      await vi.advanceTimersByTimeAsync(0);
+      http.expectOne(`${environment.apiBaseUrl}/api/v1/orders/account/7`)
+        .flush([{ submittedAt: '2026-03-08T05:00:00' }]);
+      expect(states.at(-1)).toBe('live');
+      expect(sizes.at(-1)).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(2000);
+      http.expectOne(`${environment.apiBaseUrl}/api/v1/orders/account/7`)
+        .flush({ message: 'temporary' }, { status: 503, statusText: 'Service Unavailable' });
+      expect(states.at(-1)).toBe('reconnecting');
+      expect(sizes.at(-1)).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(2000);
+      http.expectOne(`${environment.apiBaseUrl}/api/v1/orders/account/7`)
+        .flush([{ submittedAt: '2026-03-08T05:01:00' }]);
+      expect(states.at(-1)).toBe('live');
+      expect(sizes.at(-1)).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
