@@ -273,3 +273,23 @@ Get-Content database/schema/013_execution_quote.sql | psql -v ON_ERROR_STOP=1 -h
 
 The migration is idempotent; new Docker databases apply it automatically. Both columns are
 nullable: orders filled before 013, including the seed data, have no stored quote source or time.
+
+## 014 — Submission and validation audit
+
+Apply `schema/014_submission_audit.sql` before starting any updated service: they all map
+`audit_log` through `libs/common` with `ddl-auto=validate` and will not start without the new
+columns. It prepares `audit_log` for the trail of an order submission ([C2](../contracts/C2-audit.md)):
+
+| Change | Why |
+|---|---|
+| `order_id` and `account_id` are optional | A refused order saves no order row, and a caller refused access to an account has none of their own to record. |
+| `request_id` added | The server-generated ID shared by every event of one submission; it identifies a refused order. A CHECK requires an order or a request ID on every row. |
+| `event_key` added, unique | One value per submission, event type and rule, so the same event can never be stored twice. Null for events that aren't part of a submission. |
+| `action` allows `RULE_CHECKED` | One event per validation check. 010 carries the same list, because it is re-applied before 014. |
+
+```powershell
+Get-Content database/schema/014_submission_audit.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Existing rows are
+unchanged: they keep their order and account, and have no request ID or event key.

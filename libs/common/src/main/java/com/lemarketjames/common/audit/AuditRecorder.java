@@ -49,4 +49,14 @@ public class AuditRecorder {
         Integer clientId = accounts.findById(accountId).map(AccountEntity::getClientId).orElse(null);
         events.save(new AuditEventEntity(orderId, accountId, clientId, type, details, clock.instant()));
     }
+
+    /**
+     * Records one event of an order submission. Its {@link SubmissionAuditEvent#eventKey()} is
+     * unique in the table, so writing the same event again fails and rolls the caller's
+     * transaction back instead of storing a duplicate.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordSubmission(SubmissionAuditEvent event) {
+        events.save(new AuditEventEntity(event, clock.instant()));
+    }
 }

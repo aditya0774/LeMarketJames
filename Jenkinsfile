@@ -250,6 +250,7 @@ pipeline {
                     test "$ready" = 1
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/012_order_execution.sql
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/013_execution_quote.sql
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/014_submission_audit.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
