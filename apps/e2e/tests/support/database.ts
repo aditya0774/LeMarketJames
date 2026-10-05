@@ -31,6 +31,20 @@ export async function auditTrail(db: Client, orderId: number): Promise<AuditEven
   return result.rows;
 }
 
+/**
+ * The lifecycle steps of a trail, without the RULE_CHECKED event written for each placement check
+ * between SUBMITTED and VALIDATED (C2). Which checks run depends on the side of the order, and
+ * buy-sell-service's own tests cover them; these specs are about the steps around them.
+ */
+export function lifecycleSteps(trail: AuditEvent[]): string[] {
+  return trail.filter(event => event.action !== 'RULE_CHECKED').map(event => event.action);
+}
+
+/** The placement checks of a trail, in the order they ran. */
+export function ruleChecks(trail: AuditEvent[]): AuditEvent[] {
+  return trail.filter(event => event.action === 'RULE_CHECKED');
+}
+
 export interface StoredOrder {
   order_status: string;
   /** NUMERIC comes back as a string, so no precision is lost. */

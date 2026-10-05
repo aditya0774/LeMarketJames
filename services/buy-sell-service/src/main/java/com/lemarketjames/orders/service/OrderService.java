@@ -1,7 +1,5 @@
 package com.lemarketjames.orders.service;
 
-import com.lemarketjames.common.audit.AuditEventType;
-import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.security.Role;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
@@ -10,6 +8,8 @@ import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.execution.OrderTransitions;
 import com.lemarketjames.orders.repository.OrderRepository;
+import com.lemarketjames.orders.submission.SubmissionRecorder;
+import com.lemarketjames.orders.submission.SubmissionTrail;
 import com.lemarketjames.orders.submission.SubmissionValidator;
 import com.lemarketjames.orders.submission.ValidationOutcome;
 import org.slf4j.Logger;
@@ -19,9 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,30 +30,43 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final AccountAccess accountAccess;
     private final SubmissionValidator validator;
-    private final AuditRecorder auditRecorder;
+    private final SubmissionRecorder submissions;
     private final OrderTransitions transitions;
 
     public OrderService(OrderRepository orderRepository,
                         AccountAccess accountAccess,
                         SubmissionValidator validator,
-                        AuditRecorder auditRecorder,
+                        SubmissionRecorder submissions,
                         OrderTransitions transitions) {
         this.orderRepository = orderRepository;
         this.accountAccess = accountAccess;
         this.validator = validator;
-        this.auditRecorder = auditRecorder;
+        this.submissions = submissions;
         this.transitions = transitions;
     }
 
     /**
      * Submit an order once it passes the submission checks ({@link SubmissionValidator}).
      * Submission does not execute a trade.
-     * A saved order is audited as SUBMITTED then VALIDATED in the same transaction (contract C2).
+     *
+     * <p>Every submission leaves an audit trail under {@code requestId} (contract C2): an accepted
+     * order's is saved in the same transaction as the order, and a refused order's is saved on its
+     * own. Deliberately not transactional itself: the checks only read, and with no transaction
+     * around them a refusal has nothing to roll its trail back.
+     *
+     * @param requestId the server-generated ID of this submission
      */
-    @Transactional
-    public OrderResponse createOrder(CreateOrderRequest request) {
-        ValidationOutcome outcome = validator.validate(request);
+    public OrderResponse createOrder(CreateOrderRequest request, String requestId) {
+        SubmissionTrail trail = new SubmissionTrail(requestId, accountAccess.callerClientId(), request);
+        ValidationOutcome outcome;
+        try {
+            outcome = validator.validate(request, trail);
+        } catch (RuntimeException refusal) {
+            recordRefusalBeforeRethrowing(trail, refusal);
+            throw refusal;
+        }
         if (outcome.isRefused()) {
+            submissions.refuse(trail);
             return outcome.refusal();
         }
 
@@ -71,26 +82,32 @@ public class OrderService {
             order.setPricePerUnit(outcome.price());
         }
 
-        Order savedOrder = orderRepository.save(order);
-        Map<String, Object> submitted = new HashMap<>();
-        submitted.put("side", savedOrder.getOrderType().name());
-        submitted.put("quantity", savedOrder.getQuantity());
-        submitted.put("price", savedOrder.getPricePerUnit());
-        audit(AuditEventType.SUBMITTED, savedOrder, submitted);
-        audit(AuditEventType.VALIDATED, savedOrder, Map.of("checks",
-            savedOrder.getOrderType() == Order.OrderType.BUY
-                ? List.of("ACCOUNT", "TRADABLE", "CASH")
-                : List.of("ACCOUNT", "TRADABLE", "HOLDINGS")));
-        log.info("Order submitted orderId={} accountId={} instrumentId={} side={}",
-            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(), savedOrder.getOrderType());
+        Order savedOrder = submissions.accept(order, trail);
+        log.info("Order submitted orderId={} accountId={} instrumentId={} side={} requestId={}",
+            savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(),
+            savedOrder.getOrderType(), requestId);
         return new OrderResponse(savedOrder);
+    }
+
+    /**
+     * A check that threw still leaves its trail. If the trail itself can't be saved, that failure is
+     * what the caller sees: a refusal is only reported once it has been recorded.
+     */
+    private void recordRefusalBeforeRethrowing(SubmissionTrail trail, RuntimeException refusal) {
+        // A check that didn't finish (an unexpected error, not a refusal) is recorded as ERROR.
+        trail.abandon();
+        try {
+            submissions.refuse(trail);
+        } catch (RuntimeException auditFailure) {
+            auditFailure.addSuppressed(refusal);
+            throw auditFailure;
+        }
     }
 
     /**
      * Submit a BUY order via the dedicated buy-order entrypoint.
      */
-    @Transactional
-    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request) {
+    public OrderResponse submitBuyOrder(SubmitBuyOrderRequest request, String requestId) {
         CreateOrderRequest createOrderRequest = new CreateOrderRequest(
             request.getAccountId(),
             request.getInstrumentId(),
@@ -98,7 +115,7 @@ public class OrderService {
             request.getQuantity()
         );
         createOrderRequest.setPricePerUnit(request.getPricePerUnit());
-        return createOrder(createOrderRequest);
+        return createOrder(createOrderRequest, requestId);
     }
 
     /**
@@ -216,10 +233,6 @@ public class OrderService {
         transitions.move(order, Order.OrderStatus.REJECTED, reason);
         Order rejectedOrder = orderRepository.save(order);
         return new OrderResponse(rejectedOrder);
-    }
-
-    private void audit(AuditEventType type, Order order, Map<String, Object> details) {
-        auditRecorder.record(type, order.getOrderId(), order.getAccountId(), details);
     }
 
 }

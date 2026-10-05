@@ -8,14 +8,22 @@ package com.lemarketjames.common.audit;
  * seed events in database/schema/011.
  */
 public enum AuditEventType {
-    /** The order was saved. Details: {@code side}, {@code quantity}, {@code price} (null for SELL). */
+    /**
+     * An order was submitted, whether or not it was then saved. Details: {@code side},
+     * {@code quantity}, {@code price} (null for a SELL, or a BUY refused before it was priced),
+     * {@code instrumentId}, and {@code requestedAccountId} only when the caller was refused access
+     * to that account.
+     */
     SUBMITTED,
     /**
      * One placement check ran. Details: {@code rule} (a buy-sell ValidationRule), {@code result}
      * (PASS, FAIL or ERROR) and, on FAIL, {@code reason} (the code the caller was given).
      */
     RULE_CHECKED,
-    /** Placement checks passed. Details: {@code checks} (array, e.g. ["ACCOUNT", "TRADABLE", "CASH"]). */
+    /**
+     * Every placement check passed and the order was saved. Details: {@code checks} (array of the
+     * rules that ran, e.g. ["ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"]).
+     */
     VALIDATED,
     /** The order was accepted for execution. Details: none ({@code {}}). */
     ACCEPTED,
