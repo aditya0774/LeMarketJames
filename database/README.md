@@ -350,3 +350,17 @@ re-apply: their statements match no rows by then, and the triggers fire per row.
 
 After 016, a migration can no longer update or delete audit rows. A test that has to remove its own
 audit events uses `AuditTestCleanup` (see C2).
+
+### The record of refused attempts
+
+A refused change to an audit record is recorded in the server log, with the account and the
+statement ([C2](../contracts/C2-audit.md#refused-attempts-are-recorded)). The Compose `db` service
+is set up for it. A native Windows install logs the error and the statement out of the box, but
+not who ran it; to add that:
+
+```powershell
+.\scripts\windows\setup-db.ps1 -AuditLogging
+```
+
+This changes `log_line_prefix` for the whole PostgreSQL install and turns on DDL logging for the
+`lemarket` database. The log files are in the `log` folder of the PostgreSQL data directory.

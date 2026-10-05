@@ -13,12 +13,18 @@
     here, so it cannot create that role itself. This part runs even when the database already
     exists, so an existing database only needs 016 applied afterwards.
 
+    Pass -AuditLogging to make the server log name the account behind every statement it records,
+    the way the Compose db does. That log is the record of refused attempts to change audit
+    records (contracts/C2-audit.md). It is opt-in because the log format is a setting of the
+    whole PostgreSQL install, not just of the lemarket database.
+
     Schema files are only applied to a freshly created database, because they are not safe to
     re-run. Pass -Reset to drop and recreate the database (wipes all data).
 
 .EXAMPLE
     .\scripts\windows\setup-db.ps1
     .\scripts\windows\setup-db.ps1 -Reset
+    .\scripts\windows\setup-db.ps1 -AuditLogging
 #>
 param(
     # Must match SPRING_DATASOURCE_PASSWORD / DB_PASSWORD (services default to 'changeme').
@@ -27,7 +33,9 @@ param(
     [string]$AppDbPassword = 'changeme_app',
     [string]$PgHost = 'localhost',
     [int]$PgPort = 5432,
-    [switch]$Reset
+    [switch]$Reset,
+    # Changes the log line format of the whole PostgreSQL install; see the description.
+    [switch]$AuditLogging
 )
 
 $ErrorActionPreference = 'Stop'
@@ -78,6 +86,18 @@ END `$`$;
 "@)
 }
 
+# Mirrors the db command in docker-compose.yml. The prefix puts the account, database, client
+# program and address on every log line. DDL logging is set on the lemarket database only, so the
+# password statements above, which run in the postgres database, never reach the log.
+function Enable-AuditLogging {
+    if (-not $AuditLogging) { return }
+    Invoke-Psql 'postgres' $superPassword 'postgres' @(
+        '-c', "ALTER SYSTEM SET log_line_prefix = '%m [%p] %quser=%u db=%d app=%a client=%h '",
+        '-c', "ALTER DATABASE lemarket SET log_statement = 'ddl'",
+        '-c', 'SELECT pg_reload_conf()') | Out-Null
+    Write-Host 'Server log now records the account behind each statement, and DDL on lemarket.'
+}
+
 $exists = Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', "SELECT 1 FROM pg_database WHERE datname = 'lemarket'")
 if ($exists -and $Reset) {
     Write-Host 'Dropping existing lemarket database (-Reset)...'
@@ -85,12 +105,14 @@ if ($exists -and $Reset) {
     $exists = $null
 }
 if ($exists) {
+    Enable-AuditLogging
     Write-Host 'Database lemarket already exists; schema not re-applied. Use -Reset to recreate it, or apply new files with psql (see database/README.md).'
     return
 }
 
 # The owner can create tables in public (PostgreSQL 15+ no longer lets every role do so).
 Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', 'CREATE DATABASE lemarket OWNER lemarket')
+Enable-AuditLogging
 
 # Apply as lemarket so it owns the tables: migrations and resets run as the owner, and
 # lemarket_app is only given what 016 grants it.

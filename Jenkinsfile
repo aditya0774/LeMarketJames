@@ -511,6 +511,15 @@ pipeline {
             steps { sh 'bash scripts/verify-sell-order.sh' }
         }
 
+        // Against the running stack: nobody can change an audit record, and each refused attempt
+        // is in the database's server log with the account and the statement (LMKT-100).
+        stage('Verify audit lockdown') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-audit-lockdown.sh' }
+        }
+
         stage('Run quote API contract smoke test') {
             when {
                 expression { env.CI_RUN_FULL_STACK == 'true' }

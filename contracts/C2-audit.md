@@ -90,6 +90,23 @@ The database refuses a change to an audit record by itself, whatever the applica
 - **Resetting test data.** A whole-database reset (`docker compose down -v`, `setup-db.ps1 -Reset`) is unaffected. A test that must remove its own audit events does it through [AuditTestCleanup](../services/buy-sell-service/src/test/java/com/lemarketjames/orders/AuditTestCleanup.java): as the owner, with the trigger switched off inside the deleting transaction. Don't delete audit rows any other way, and never outside a disposable database.
 - **Proven by** [AuditLockdownIntegrationTest](../services/buy-sell-service/src/test/java/com/lemarketjames/orders/AuditLockdownIntegrationTest.java), which runs on PostgreSQL only.
 
+### Refused attempts are recorded
+
+Every refused attempt is recorded in PostgreSQL's server log, by the server itself:
+
+```
+2026-10-05 20:14:03.112 UTC [412] user=lemarket_app db=lemarket app=psql client=10.0.0.7 ERROR:  permission denied for table audit_log
+2026-10-05 20:14:03.112 UTC [412] user=lemarket_app db=lemarket app=psql client=10.0.0.7 STATEMENT:  DELETE FROM audit_log WHERE audit_id = 1
+```
+
+- **What it holds.** When, which account, which database, the client program and address, the error, and the statement that was refused. The number in brackets is the session, and ties the lines of one attempt together.
+- **Why the log and not a table.** The refused statement's transaction is rolled back, so nothing written inside it would survive. A missing privilege is also refused before any trigger runs, so nothing inside the database sees it. The server log is written outside the transaction and sees every attempt, whoever makes it and with whatever tool.
+- **The account can't switch it off.** The settings that control it can only be changed by a superuser.
+- **Switching a trigger off is recorded too.** DDL is logged, so the one thing the owner could do to get around the triggers leaves a line naming the account.
+- **Where it is set.** The `db` service's `command` in [docker-compose.yml](../docker-compose.yml). On a native Windows install, `setup-db.ps1 -AuditLogging`; without it the attempt is still logged, but the line does not name the account.
+- **Limits.** Values bound as parameters are not logged; the statement shows `$1` in their place. The log is not in the database, so it will not appear in the planned audit views. Keeping it is the deployment's job: a Compose container's log goes when the container is removed, so a real environment must ship the server log somewhere it is retained as long as the audit trail.
+- **Proven by** [verify-audit-lockdown.sh](../scripts/verify-audit-lockdown.sh), a Jenkins stage that makes the attempts against the running stack as both accounts and then finds each one in the server log.
+
 ## Mirrors (change together with `AuditEventType`)
 
 - The `audit_log.action` CHECK constraint, in both [010](../database/schema/010_shared_contracts.sql) and [014](../database/schema/014_submission_audit.sql): 010 is re-applied before 014, so the two lists must match.

@@ -156,6 +156,16 @@ services:
 
   db:
     image: postgres:16-alpine
+    # The server log is the record of every refused attempt to change an audit record
+    # (contracts/C2-audit.md). A failed statement is logged by default; the prefix adds who ran it
+    # and from where, and DDL is logged so that switching a trigger off shows up too.
+    # scripts/verify-audit-lockdown.sh reads the user= part; change them together.
+    command:
+      - postgres
+      - -c
+      - "log_line_prefix=%m [%p] %quser=%u db=%d app=%a client=%h "
+      - -c
+      - log_statement=ddl
     healthcheck:
       # TCP readiness waits until initial schema scripts have completed.
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U lemarket -d lemarket"]
