@@ -89,9 +89,11 @@ BEGIN
         ALTER TABLE audit_log ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
     END IF;
 END $$;
+-- Kept identical to the list in 014: this file is re-applied on databases that already hold
+-- RULE_CHECKED events, and re-adding the constraint without that type would fail.
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_action_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_action_check
-    CHECK (action IN ('SUBMITTED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED'));
+    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED'));
 CREATE INDEX IF NOT EXISTS audit_log_order_idx  ON audit_log (order_id);
 CREATE INDEX IF NOT EXISTS audit_log_client_idx ON audit_log (client_id, created_at);
 

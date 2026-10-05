@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { auditTrail, connectDatabase, storedOrder } from './support/database';
+import { auditTrail, connectDatabase, lifecycleSteps, storedOrder } from './support/database';
 import { FeedMode, resetFeed, setFeedMode } from './support/market-control';
 import { getOrder, instrumentIdOf, loginViaApi, placeOrder, waitForFinalStatus } from './support/orders';
 import { newUser, registerViaApi } from './support/users';
@@ -62,7 +62,7 @@ for (const { mode, reason, title } of cases) {
 
       // AC4: the rejection is audited with its reason; no fill and no settlement were recorded.
       const trail = await auditTrail(db, placed.orderId);
-      expect(trail.map(event => event.action)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'REJECTED']);
+      expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'REJECTED']);
       expect(trail[trail.length - 1].details).toEqual({ reason });
 
       // With quotes back, the rejection is final and nothing was settled: the share and the cash

@@ -52,14 +52,16 @@ import java.util.List;
                 // Preserve the original failure status during the container's error dispatch.
 <span class="fc" id="L53">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
 <span class="fc" id="L54">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;).permitAll()</span>
+                // Dispute searches may read any client's fills, so only operations may call them.
+<span class="fc" id="L56">                .requestMatchers(&quot;/api/v1/orders/trades/search&quot;).hasRole(Role.TRADING_OPS.name())</span>
                 // Moving orders through their lifecycle is an operations task (contract C7).
-<span class="fc" id="L56">                .requestMatchers(HttpMethod.PUT, &quot;/api/v1/orders/*/status/*&quot;).hasRole(Role.TRADING_OPS.name())</span>
-<span class="fc" id="L57">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders/*/reject&quot;).hasRole(Role.TRADING_OPS.name())</span>
-<span class="fc" id="L58">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders&quot;, &quot;/api/v1/buy-orders&quot;).hasRole(Role.CLIENT.name())</span>
-<span class="fc" id="L59">                .anyRequest().authenticated())</span>
-<span class="fc" id="L60">            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);</span>
+<span class="fc" id="L58">                .requestMatchers(HttpMethod.PUT, &quot;/api/v1/orders/*/status/*&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L59">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders/*/reject&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L60">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders&quot;, &quot;/api/v1/buy-orders&quot;).hasRole(Role.CLIENT.name())</span>
+<span class="fc" id="L61">                .anyRequest().authenticated())</span>
+<span class="fc" id="L62">            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);</span>
 
-<span class="fc" id="L62">        return http.build();</span>
+<span class="fc" id="L64">        return http.build();</span>
     }
 
     /**
@@ -70,16 +72,16 @@ import java.util.List;
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-<span class="fc" id="L73">        CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L75">        CorsConfiguration configuration = new CorsConfiguration();</span>
         // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
-<span class="fc" id="L75">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8081&quot;));</span>
-<span class="fc" id="L76">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
-<span class="fc" id="L77">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
-<span class="fc" id="L78">        configuration.setAllowCredentials(true);</span>
+<span class="fc" id="L77">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8081&quot;));</span>
+<span class="fc" id="L78">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L79">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
+<span class="fc" id="L80">        configuration.setAllowCredentials(true);</span>
 
-<span class="fc" id="L80">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
-<span class="fc" id="L81">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
-<span class="fc" id="L82">        return source;</span>
+<span class="fc" id="L82">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc" id="L83">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L84">        return source;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

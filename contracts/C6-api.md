@@ -55,7 +55,7 @@ Places a market order for one of the caller's accounts.
 - `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
 - For a SELL, holdings-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
-- Placing an order saves it as `SUBMITTED` and writes its `SUBMITTED` and `VALIDATED` audit events ([C2](C2-audit.md)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
+- Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
 
 **Response `201`** (the order DTO, also returned by every read below):
 
@@ -72,7 +72,9 @@ Places a market order for one of the caller's accounts.
 
 `quoteSource` and `quoteTime` describe the quote the order was priced from at execution: the feed it came from, and when the feed produced it (ISO-8601 UTC, e.g. `2026-09-21T10:30:04.512Z`). Both are null until execution prices the order; from then on `pricePerUnit` is that quote's price, and `filledAt` is the execution time.
 
-**Failures.** A refused order saves nothing.
+**Response header `X-Request-Id`.** A UUID the server issues for the submission, on the `201` and on every refusal below that reaches placement (not on a `401` or an invalid-fields `400`). The submission's audit trail is filed under it ([C2](C2-audit.md#the-submission-trail)).
+
+**Failures.** A refused order saves no order, but its submission and the checks that ran are audited under its request ID.
 
 | HTTP | When | Body |
 |---|---|---|
@@ -109,6 +111,36 @@ The two account-history endpoints accept these optional date-filter parameters:
 - Ownership is checked before querying. The status endpoint combines its status restriction with the same date period.
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
+
+### Trade search (TRADING_OPS only)
+
+`GET /api/v1/orders/trades/search` (buy-sell-service, through the existing orders gateway route).
+Supply exactly one search mode:
+
+- `?orderId=42`: the filled order with that ID.
+- `?clientId=7&from=2026-01-01&to=2026-01-31`: that client's filled orders across their accounts.
+
+IDs must be positive integers. `from` and `to` are UTC calendar dates (`YYYY-MM-DD`, positive
+four-digit year), both required for client search. Filtering uses `filledAt`, from midnight on
+`from` through the entire `to` day (exclusive next midnight). Results are newest fill first,
+then descending order ID for equal fill times. Client IDs are not account IDs.
+
+**Response `200`** is an array of [TradeSearchResult](../services/buy-sell-service/src/main/java/com/lemarketjames/trades/TradeSearchResult.java):
+
+```json
+[
+  { "orderId": 42, "clientId": 7, "accountId": 9, "instrumentId": 5,
+    "symbol": "AAPL", "side": "BUY", "quantity": 2, "pricePerUnit": 123.4567,
+    "filledAt": "2026-01-10T12:00:00" }
+]
+```
+
+Only FILLED orders are trades. Unknown IDs, unfilled orders and ranges with no matches return
+`200 []`. Results use stored execution prices and instrument symbols, without live quote calls.
+Mixed or incomplete search modes, malformed IDs/dates, nonpositive IDs, and reversed ranges
+return `400 { "message": "..." }`. Missing/expired authentication gets `401`; every other role,
+including a client searching for their own trade, gets `403`. Operations may search any client's
+trades, including closed clients. Existing ownership rules for client history are unchanged.
 
 ### Changing an order's status (TRADING_OPS only)
 
@@ -210,7 +242,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
-- **Audit (COMPLIANCE):** `GET /api/v1/audit?orderId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention).
+- **Audit (COMPLIANCE):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
 - **Reports (ANALYST, COMPLIANCE):** built on `reporting_trades`.
   - `GET /api/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, fee, timestamp }], total, limit, offset }`.
   - `GET /api/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.

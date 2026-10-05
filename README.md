@@ -878,8 +878,9 @@ xdg-open services/core-service/target/site/jacoco/index.html
 
 `services/buy-sell-service` runs on port 8085 and owns `/api/v1/orders/**` and
 `/api/v1/buy-orders/**`. The gateway routes these paths to it; core no longer handles orders.
-Apply `database/schema/012_order_execution.sql` and `013_execution_quote.sql` to existing
-databases before starting this version. New Docker databases apply them automatically. Execution respects exchange sessions
+Apply `database/schema/012_order_execution.sql`, `013_execution_quote.sql`,
+`014_submission_audit.sql` and `015_seed_submission_audit.sql` to existing databases before
+starting this version. New Docker databases apply them automatically. Execution respects exchange sessions
 by default; for a disposable, always-open test stack set `SIM_RESPECT_MARKET_HOURS=false`
 in Compose. On native Windows set both `SIM_RESPECT_MARKET_HOURS=false` and
 `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`. See contracts C1, C5 and C6 for recovery and settings.
