@@ -2,6 +2,8 @@ package com.lemarketjames.orders.service;
 
 import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.AuditEventEntity;
+import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
@@ -9,6 +11,7 @@ import com.lemarketjames.common.security.Role;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.client.HoldingsValidationClient;
+import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
@@ -176,7 +179,7 @@ public class OrderService {
      * Loads an order the caller may act on: their own, or any order for trading operations staff
      * (contract C7), who manage every client's orders.
      */
-    private Order findOwnOrder(Integer orderId) {
+    public Order findOwnOrder(Integer orderId) {
         authenticatedUsername();
         // Use the same denial for missing and foreign IDs to avoid exposing their existence.
         Order order = orderRepository.findById(orderId)
