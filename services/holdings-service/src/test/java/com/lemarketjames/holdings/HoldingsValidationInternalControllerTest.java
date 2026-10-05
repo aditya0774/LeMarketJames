@@ -1,5 +1,6 @@
 package com.lemarketjames.holdings;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lemarketjames.holdings.dto.InternalHoldingsValidationRequest;
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
 import com.lemarketjames.holdings.service.HoldingsService;
@@ -9,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +23,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -37,7 +41,10 @@ class HoldingsValidationInternalControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
     private HoldingsService holdingsService;
 
     private static final Integer TEST_ACCOUNT_ID = 1;
@@ -46,9 +53,18 @@ class HoldingsValidationInternalControllerTest {
     private static final BigDecimal TEST_QUANTITY = BigDecimal.valueOf(100);
     private static final String ENDPOINT = "/internal/holdings/validate";
 
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        HoldingsService holdingsService() {
+            return mock(HoldingsService.class);
+        }
+    }
+
     @BeforeEach
     void setUp() {
-        // No special setup needed
+        // Reset mock before each test
+        reset(holdingsService);
     }
 
     // ========== Happy Path Tests ==========
@@ -316,13 +332,7 @@ class HoldingsValidationInternalControllerTest {
 
     // ========== Helper Methods ==========
 
-    private String toJson(InternalHoldingsValidationRequest request) {
-        return String.format(
-            "{\"accountId\":%d,\"username\":\"%s\",\"instrumentId\":%d,\"sellQuantity\":%s}",
-            request.getAccountId(),
-            request.getUsername(),
-            request.getInstrumentId(),
-            request.getSellQuantity()
-        );
+    private String toJson(InternalHoldingsValidationRequest request) throws Exception {
+        return objectMapper.writeValueAsString(request);
     }
 }
