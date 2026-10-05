@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 /**
@@ -54,8 +53,8 @@ class TradingRestrictionsTest {
 
     private static final Integer TEST_ACCOUNT_ID = 1;
     private static final Integer TEST_CLIENT_ID = 100;
-    private static final String US_STATE = "NY";
-    private static final String COUNTRY_CODE = "US";
+    
+    
 
     // Test configuration
     private PlatformSettings.Orders orderSettings;

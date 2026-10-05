@@ -7,22 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -37,7 +28,7 @@ class OrdersClientTest {
     private HttpServletRequest currentRequest;
 
     private OrdersClient client;
-    private RestClient restClient;
+    
 
     private static final Integer TEST_ACCOUNT_ID = 1;
     private static final String TEST_SERVICE_URL = "http://localhost:8085";
@@ -46,7 +37,7 @@ class OrdersClientTest {
     @BeforeEach
     void setUp() {
         client = new OrdersClient(TEST_SERVICE_URL, currentRequest);
-        restClient = (RestClient) ReflectionTestUtils.getField(client, "restClient");
+        
     }
 
     // ========== Happy Path Tests ==========
