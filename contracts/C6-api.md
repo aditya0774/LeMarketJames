@@ -110,6 +110,36 @@ The two account-history endpoints accept these optional date-filter parameters:
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
+### Trade search (TRADING_OPS only)
+
+`GET /api/v1/orders/trades/search` (buy-sell-service, through the existing orders gateway route).
+Supply exactly one search mode:
+
+- `?orderId=42`: the filled order with that ID.
+- `?clientId=7&from=2026-01-01&to=2026-01-31`: that client's filled orders across their accounts.
+
+IDs must be positive integers. `from` and `to` are UTC calendar dates (`YYYY-MM-DD`, positive
+four-digit year), both required for client search. Filtering uses `filledAt`, from midnight on
+`from` through the entire `to` day (exclusive next midnight). Results are newest fill first,
+then descending order ID for equal fill times. Client IDs are not account IDs.
+
+**Response `200`** is an array of [TradeSearchResult](../services/buy-sell-service/src/main/java/com/lemarketjames/trades/TradeSearchResult.java):
+
+```json
+[
+  { "orderId": 42, "clientId": 7, "accountId": 9, "instrumentId": 5,
+    "symbol": "AAPL", "side": "BUY", "quantity": 2, "pricePerUnit": 123.4567,
+    "filledAt": "2026-01-10T12:00:00" }
+]
+```
+
+Only FILLED orders are trades. Unknown IDs, unfilled orders and ranges with no matches return
+`200 []`. Results use stored execution prices and instrument symbols, without live quote calls.
+Mixed or incomplete search modes, malformed IDs/dates, nonpositive IDs, and reversed ranges
+return `400 { "message": "..." }`. Missing/expired authentication gets `401`; every other role,
+including a client searching for their own trade, gets `403`. Operations may search any client's
+trades, including closed clients. Existing ownership rules for client history are unchanged.
+
 ### Changing an order's status (TRADING_OPS only)
 
 | Method & path | Effect |
