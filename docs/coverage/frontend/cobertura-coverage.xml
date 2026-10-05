@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
-<coverage lines-valid="1341" lines-covered="1179" line-rate="0.8791" branches-valid="830" branches-covered="650" branch-rate="0.7831" timestamp="1791224309012" complexity="0" version="0.1">
+<coverage lines-valid="1341" lines-covered="1179" line-rate="0.8791" branches-valid="830" branches-covered="650" branch-rate="0.7831" timestamp="1791229746695" complexity="0" version="0.1">
   <sources>
     <source>/home/runner/work/LeMarketJames/LeMarketJames/apps/frontend</source>
   </sources>
@@ -274,7 +274,7 @@
             </method>
           </methods>
           <lines>
-            <line number="9" hits="2" branch="false"/>
+            <line number="9" hits="1" branch="false"/>
             <line number="23" hits="30" branch="false"/>
             <line number="24" hits="30" branch="false"/>
             <line number="25" hits="30" branch="false"/>
@@ -335,11 +335,11 @@
             </method>
           </methods>
           <lines>
-            <line number="24" hits="39" branch="true" condition-coverage="100% (5/5)"/>
-            <line number="25" hits="39" branch="false"/>
-            <line number="26" hits="39" branch="false"/>
-            <line number="28" hits="39" branch="true" condition-coverage="100% (1/1)"/>
-            <line number="29" hits="39" branch="false"/>
+            <line number="24" hits="38" branch="true" condition-coverage="100% (5/5)"/>
+            <line number="25" hits="38" branch="false"/>
+            <line number="26" hits="38" branch="false"/>
+            <line number="28" hits="38" branch="true" condition-coverage="100% (1/1)"/>
+            <line number="29" hits="38" branch="false"/>
             <line number="35" hits="40" branch="false"/>
             <line number="36" hits="30" branch="false"/>
             <line number="38" hits="1" branch="false"/>
@@ -1872,7 +1872,7 @@
             </method>
           </methods>
           <lines>
-            <line number="4" hits="1" branch="false"/>
+            <line number="4" hits="2" branch="false"/>
             <line number="16" hits="12" branch="false"/>
             <line number="17" hits="12" branch="false"/>
             <line number="18" hits="3" branch="false"/>
@@ -3161,16 +3161,16 @@
                 <line number="51" hits="112"/>
               </lines>
             </method>
-            <method name="template" hits="65" signature="()V">
+            <method name="template" hits="66" signature="()V">
               <lines>
-                <line number="44" hits="65"/>
+                <line number="44" hits="66"/>
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="3" hits="1" branch="false"/>
-            <line number="4" hits="1" branch="false"/>
-            <line number="5" hits="1" branch="false"/>
+            <line number="3" hits="2" branch="false"/>
+            <line number="4" hits="2" branch="false"/>
+            <line number="5" hits="2" branch="false"/>
             <line number="12" hits="116" branch="true" condition-coverage="100% (2/2)"/>
             <line number="13" hits="83" branch="false"/>
             <line number="15" hits="33" branch="false"/>
@@ -3186,11 +3186,11 @@
             <line number="40" hits="374" branch="false"/>
             <line number="41" hits="64" branch="false"/>
             <line number="44" hits="438" branch="true" condition-coverage="100% (10/10)"/>
-            <line number="45" hits="65" branch="true" condition-coverage="100% (1/1)"/>
-            <line number="46" hits="65" branch="true" condition-coverage="100% (1/1)"/>
-            <line number="47" hits="65" branch="true" condition-coverage="100% (1/1)"/>
+            <line number="45" hits="66" branch="true" condition-coverage="100% (1/1)"/>
+            <line number="46" hits="66" branch="true" condition-coverage="100% (1/1)"/>
+            <line number="47" hits="66" branch="true" condition-coverage="100% (1/1)"/>
             <line number="49" hits="112" branch="true" condition-coverage="100% (1/1)"/>
-            <line number="51" hits="65" branch="false"/>
+            <line number="51" hits="66" branch="false"/>
             <line number="52" hits="112" branch="false"/>
             <line number="53" hits="112" branch="true" condition-coverage="100% (4/4)"/>
             <line number="54" hits="81" branch="false"/>
@@ -3210,7 +3210,7 @@
             </method>
           </methods>
           <lines>
-            <line number="3" hits="1" branch="false"/>
+            <line number="3" hits="2" branch="false"/>
             <line number="7" hits="32" branch="true" condition-coverage="100% (5/5)"/>
             <line number="9" hits="33" branch="true" condition-coverage="100% (4/4)"/>
           </lines>
@@ -3224,7 +3224,7 @@
             </method>
           </methods>
           <lines>
-            <line number="3" hits="1" branch="false"/>
+            <line number="3" hits="2" branch="false"/>
             <line number="7" hits="32" branch="true" condition-coverage="100% (5/5)"/>
             <line number="9" hits="34" branch="true" condition-coverage="75% (3/4)"/>
             <line number="10" hits="0" branch="false"/>
