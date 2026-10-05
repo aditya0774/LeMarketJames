@@ -4,7 +4,6 @@ import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 
@@ -28,11 +27,12 @@ class HoldingsValidationClientTest {
     private static final String TEST_USERNAME = "testuser";
     private static final Integer TEST_INSTRUMENT_ID = 5;
     private static final BigDecimal TEST_QUANTITY = BigDecimal.valueOf(100);
+    private static final String TEST_SERVICE_URL = "http://localhost:9999";
 
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsValidationClient("http://localhost:9999");
+        client = new HoldingsValidationClient(TEST_SERVICE_URL);
     }
 
     // ========== Contract Validation Tests ==========
@@ -118,7 +118,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_ServiceUnreachable() {
         // Client points to non-existent service
         HoldingsValidationClient unreachableClient = 
-            new HoldingsValidationClient("http://localhost:9999");
+            new HoldingsValidationClient(TEST_SERVICE_URL);
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
             unreachableClient.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
