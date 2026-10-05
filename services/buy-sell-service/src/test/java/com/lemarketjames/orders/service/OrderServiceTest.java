@@ -85,8 +85,12 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(orderRepository.findLockedById(any())).thenAnswer(inv -> orderRepository.findById(inv.getArgument(0)));
-        orderService = new OrderService(orderRepository, instrumentRepository, accountRepository, clientRepository,
-            cashValidationService, marketDataService, restrictions, holdingsValidationClient,
+        // The real checks run against the mocks below, so these tests cover placement end to end.
+        AccountAccess accountAccess = new AccountAccess(accountRepository);
+        var validator = new com.lemarketjames.orders.submission.SubmissionValidator(accountAccess, accountRepository,
+            clientRepository, instrumentRepository, restrictions, holdingsValidationClient, marketDataService,
+            cashValidationService);
+        orderService = new OrderService(orderRepository, accountAccess, validator,
             auditRecorder, new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events));
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
