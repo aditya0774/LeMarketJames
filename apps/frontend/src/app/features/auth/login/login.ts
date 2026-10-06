@@ -45,7 +45,7 @@ export class Login {
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
-      await this.router.navigate(['/dashboard']);
+      await this.router.navigate([this.auth.hasRole('TRADING_OPS') ? '/trade-search' : '/dashboard']);
     } catch (error) {
       const serverMessage =
         error instanceof HttpErrorResponse &&
