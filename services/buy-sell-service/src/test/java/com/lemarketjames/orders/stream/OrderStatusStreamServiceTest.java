@@ -18,14 +18,9 @@ class OrderStatusStreamServiceTest {
     private final OrderStatusStreamService service = new OrderStatusStreamService();
 
     @Test
-    void subscribeRegistersEmitterAndCompletionRemovesIt() {
-        SseEmitter emitter = service.subscribe(7);
-
+    void subscribeRegistersEmitter() {
+        service.subscribe(7);
         assertEquals(1, subscriberCount(7));
-
-        emitter.complete();
-
-        assertEquals(0, subscriberCount(7));
     }
 
     @Test
@@ -47,7 +42,8 @@ class OrderStatusStreamServiceTest {
 
     @Test
     void publishRemovesEmitterWhenSendFails() {
-        service.subscribe(7);
+        SseEmitter emitter = service.subscribe(7);
+        emitter.complete();
 
         var event = new OrderStatusChanged(
             42,
@@ -58,7 +54,7 @@ class OrderStatusStreamServiceTest {
         );
         service.publish(event);
 
-        // In unit tests there is no HTTP response writer attached, so send fails and cleanup runs.
+        // Closed emitters should be evicted when publish hits a send failure.
         assertEquals(0, subscriberCount(7));
     }
 

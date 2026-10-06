@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -50,7 +50,7 @@ class OrderStatusStreamApiTest {
 
         mockMvc.perform(get("/api/v1/orders/stream").with(user("alice").roles("CLIENT")))
             .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+            .andExpect(request().asyncStarted());
 
         verify(accountAccess).callerAccountId();
         verify(orderStatusStreamService).subscribe(7);
