@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `71769d7f` on 2026-10-06 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `41f04049` on 2026-10-06 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -17,8 +17,8 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 84.32 | 77.14 | 82 / 523 |
 | [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 82.70 | 70.00 | 77 / 445 |
 | **Back end (all modules)** | 82.43 | 78.03 | 483 / 2749 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 88.54 | 78.64 | 185 / 1614 |
-| **Everything** | 84.69 | 78.43 | 668 / 4363 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.17 | 80.17 | 185 / 1708 |
+| **Everything** | 85.01 | 79.48 | 668 / 4457 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -56,6 +56,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-06 | `41f04049` | 82.43 | 78.03 | 89.17 | 80.17 |
 | 2026-10-06 | `71769d7f` | 82.43 | 78.03 | 88.54 | 78.64 |
 | 2026-10-06 | `1e8738e7` | 82.33 | 77.95 | 88.54 | 78.64 |
 | 2026-10-05 | `d79f3a45` | 82.24 | 77.78 | 88.54 | 78.64 |
