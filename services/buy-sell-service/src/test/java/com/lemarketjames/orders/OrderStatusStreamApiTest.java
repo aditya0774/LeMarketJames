@@ -73,4 +73,15 @@ class OrderStatusStreamApiTest {
         verify(accountAccess, never()).callerAccountId();
         verify(orderStatusStreamService, never()).subscribe(org.mockito.ArgumentMatchers.anyInt());
     }
+
+    @Test
+    void clientWithoutLinkedAccountIsRejected() throws Exception {
+        when(accountAccess.callerAccountId()).thenReturn(null);
+
+        mockMvc.perform(get("/api/v1/orders/stream").with(user("staff-no-account").roles("CLIENT")))
+            .andExpect(status().isForbidden());
+
+        verify(accountAccess).callerAccountId();
+        verify(orderStatusStreamService, never()).subscribe(org.mockito.ArgumentMatchers.anyInt());
+    }
 }
