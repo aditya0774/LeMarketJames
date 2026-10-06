@@ -58,6 +58,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status/*").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/reject").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers("/api/v1/orders/*/timeline").hasRole(Role.TRADING_OPS.name())
+                .requestMatchers(HttpMethod.GET, "/api/v1/orders/stream").hasRole(Role.CLIENT.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders", "/api/v1/buy-orders").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
