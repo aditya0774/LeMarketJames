@@ -34,6 +34,11 @@ public class AccountAccess {
             .orElse(null);
     }
 
+    /** The authenticated caller's account ID, or null for callers without a trading account. */
+    public Integer callerAccountId() {
+        return accountRepository.findAccountIdByUsername(authenticatedUsername()).orElse(null);
+    }
+
     public String authenticatedUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
