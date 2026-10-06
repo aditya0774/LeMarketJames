@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- LMKT-138: Add `reporting-service` (port 8086) for analyst reports under `/api/v1/reports/**`,
+  with `GET /api/v1/reports/ping`, `ANALYST`-only access, a shared report date-range helper in
+  the `lmj.reports.time-zone` zone, and read-side limits (small pool, read-only, query timeout).
+  Planned report paths move from `/api/reports/...` to `/api/v1/reports/...`; reports are no
+  longer open to `COMPLIANCE`, and the planned activity response loses its `fee` field.
 - LMKT-91: Add optional `date` and `timeZone` filters to account order history and
   status-filtered history, using local calendar boundaries and UTC placement times.
   Preserve array responses, ownership checks, and unfiltered requests.

@@ -64,6 +64,7 @@ LeMarketJames/
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
 │   ├── gateway-service/           # :8080 Spring Cloud Gateway, the only backend entry point
 │   ├── auth-service/              # :8082 register, login, logout, /api/auth/me
+│   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); not behind the trading gateway
 │   └── core-service/              # :8081 instruments, quotes, sessions
 │       ├── src/main/java/com/lemarketjames/
 │       │   ├── common/            # Core-specific exception handler
@@ -233,6 +234,7 @@ mvn -pl services/market-service spring-boot:run     # http://localhost:8083
 mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
 mvn -pl services/core-service spring-boot:run       # http://localhost:8081
 mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
+mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; not behind the gateway)
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
 cd apps/frontend && npm install && npm start        # http://localhost:4200
 cd apps/frontend && npm run start:staff             # staff app, http://localhost:4201
@@ -346,6 +348,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    - Auth service: `http://localhost:8082` (direct access for debugging)
    - Market service: `http://localhost:8083` (direct access for debugging)
    - Holdings service: `http://localhost:8084` (direct access for debugging)
+   - Reporting service: `http://localhost:8086` (direct access; the trading gateway has no route to it)
    - PostgreSQL database: `localhost:5432`
    - A production (nginx) build of the frontend: `http://localhost:4200`
    - A production (nginx) build of the staff app: `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
@@ -363,13 +366,14 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    curl http://localhost:8082/actuator/health
    curl http://localhost:8083/actuator/health
    curl http://localhost:8084/actuator/health
+   curl http://localhost:8086/actuator/health
    ```
 
 4. Open `http://localhost:4200` and log in or register.
 
 5. View logs:
    ```bash
-   docker compose logs -f gateway-service auth-service core-service market-service holdings-service
+   docker compose logs -f gateway-service auth-service core-service market-service holdings-service reporting-service
    ```
 
 6. Stop all services:
@@ -428,7 +432,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Backend entry point |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway on 8090, not built yet (LMKT-143) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway on 8090, not built yet (LMKT-143). It will route `/api/v1/reports/**` to [reporting-service](#reporting-service) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -535,6 +539,8 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 - The same database access as the order-history suite, to read the audit trail, which has no API yet.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
 
+`reporting-access.spec.ts` checks who may read reports, with the seed logins. The trading gateway has no route to reporting-service, so the suite calls it directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
+
 `execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished. Playwright skips it when an earlier test failed.
 
 Jenkins runs the suite in the stage **Run Playwright E2E tests**, right after the smoke test. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
@@ -553,7 +559,8 @@ Once the application is running (via any of the three methods), you can access:
 | **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
 | **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
 | **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |
-| **Health Checks** | `GET http://localhost:{8089,8081,8082,8083,8084}/actuator/health` | Gateway / core / auth / market / holdings liveness (`UP`/`DOWN`) |
+| **Health Checks** | `GET http://localhost:{8089,8081,8082,8083,8084,8086}/actuator/health` | Gateway / core / auth / market / holdings / reporting liveness (`UP`/`DOWN`) |
+| **Reports (staff)** | `GET http://localhost:8086/api/v1/reports/ping` | reporting-service, called directly until the staff gateway exists; `ANALYST` login only |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 
 **Frontend Routes:**
@@ -952,3 +959,22 @@ starting this version. New Docker databases apply them automatically. Execution 
 by default; for a disposable, always-open test stack set `SIM_RESPECT_MARKET_HOURS=false`
 in Compose. On native Windows set both `SIM_RESPECT_MARKET_HOURS=false` and
 `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`. See contracts C1, C5 and C6 for recovery and settings.
+
+### Reporting service
+
+`services/reporting-service` runs on port 8086 and owns `/api/v1/reports/**`: aggregate,
+read-only reports for analysts, built on the `reporting_trades` view. The trading gateway does
+not route to it; the staff gateway (LMKT-143) will. Until then, call it directly with the `jwt`
+cookie from a staff login (seed logins: [C3](contracts/C3-seed-data.md)):
+
+```bash
+curl -c cookies.txt -H "Content-Type: application/json" \
+     -d '{"username":"analyst@seed.lemarket.com","password":"Pass123!"}' \
+     http://localhost:8089/api/auth/login
+curl -b cookies.txt http://localhost:8086/api/v1/reports/ping
+```
+
+Only `ANALYST` gets `200`; no cookie gets `401` and every other role `403`. It needs no new
+migration. Its connections to the shared database are few, read-only and time-limited so reports
+can't slow down trading. Those limits, and the rules every report endpoint follows, are in its
+[README](services/reporting-service/README.md); the API is in [C6](contracts/C6-api.md#reports-reporting-service).

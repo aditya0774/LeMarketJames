@@ -6,7 +6,7 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 
 ## Rules for every public endpoint
 
-- **Entry point.** Browsers call only the gateway (`:8080` in a container, `:8089` on the host), under `/api/**`. Paths under `/internal/**` exist only service-to-service and are never routed by the gateway.
+- **Entry point.** Browsers call only the gateway (`:8080` in a container, `:8089` on the host), under `/api/**`. Paths under `/internal/**` exist only service-to-service and are never routed by the gateway. Staff reports are the exception: they are served through the staff gateway instead ([Reports](#reports-reporting-service)).
 - **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. The cookie carries the caller's roles ([C7](C7-roles.md)).
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
 - **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
@@ -311,6 +311,28 @@ How the balance fields are computed:
 | `dayGainLoss(%)` | Σ quantity × (price − today's open); % relative to Σ quantity × open |
 | `totalGainLoss(%)` | the holdings totals, relative to total cost |
 
+## Reports (reporting-service)
+
+Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`, LMKT-143), the staff app's only backend entry point. Until that gateway exists, call reporting-service directly.
+
+Rules for every report (the full list, for whoever builds one, is in the service's [README](../services/reporting-service/README.md#rules-for-every-report-endpoint)):
+
+- **Path.** Every report is under `/api/v1/reports/...`.
+- **Access.** `ANALYST` only ([C7](C7-roles.md)). A missing or expired cookie gets `401`; every other role gets `403`.
+- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price.
+- **Aggregates only.** A response never contains `client_id` or anything else that identifies an individual client, and never a single trade.
+- **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
+
+### GET /api/v1/reports/ping
+
+Reads no data. Tells a caller that reporting-service is up and that their role may read reports, and which time zone reports use.
+
+```json
+{ "success": true, "service": "reporting-service", "timeZone": "America/New_York" }
+```
+
+`timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -340,16 +362,16 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 - **Events.** [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills, and carries the quote used (price, source, quote time) and the fill time. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits.
 - **Outbound events (Kafka stub).** After the transition commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands both events to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java), keyed by order id; the topic names are defined in the forwarder. The only implementation today is [KafkaStubOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java), which logs the record and sends nothing, so events still do not reach other services.
 - **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a quote ([QuoteUsed](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/QuoteUsed.java)), reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
-- **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves.
+- **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves; for reports it is the only source ([Reports](#reports-reporting-service)).
 
 ## Planned (agreed, not built)
 
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (COMPLIANCE):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST, COMPLIANCE):** built on `reporting_trades`.
-  - `GET /api/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, fee, timestamp }], total, limit, offset }`.
-  - `GET /api/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
+- **Reports (ANALYST):** the service, its access rule and `GET /api/v1/reports/ping` are built; see [Reports](#reports-reporting-service), whose rules apply to the two reports below. These two are still planned. Their response shapes were agreed before those rules (`activity` lists single trades, and `instruments` needs prices that `reporting_trades` doesn't have), so the story that builds each one must first reconcile it with the rules and update this section:
+  - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
+  - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
 - **Watchlist:** `GET /api/v1/watchlist`, `POST /api/v1/watchlist { symbol }` (`409 ALREADY_WATCHED`), `DELETE /api/v1/watchlist/{symbol}`. It needs a new `watchlist (account_id, instrument_id, added_at)` table in the next free migration number, in its own `watchlist` feature package.
