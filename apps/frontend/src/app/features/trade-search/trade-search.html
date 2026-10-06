@@ -1,0 +1,48 @@
+<header>
+  <p class="eyebrow">Trading Operations</p>
+  <h1>Trade search</h1>
+  <p>Find completed trades to investigate a client enquiry.</p>
+</header>
+<section class="search-panel" aria-label="Search trades">
+  <form (ngSubmit)="search()" novalidate>
+    <fieldset>
+      <legend>Search by</legend>
+      <label><input type="radio" name="mode" value="order" [(ngModel)]="mode" (ngModelChange)="clearResults()"> Order ID</label>
+      <label><input type="radio" name="mode" value="client" [(ngModel)]="mode" (ngModelChange)="clearResults()"> Client and dates</label>
+    </fieldset>
+    <div class="fields">
+      @if (mode === 'order') {
+        <label>Order ID<input name="orderId" inputmode="numeric" [(ngModel)]="orderId" (ngModelChange)="clearResults()" required></label>
+      } @else {
+        <label>Client ID<input name="clientId" inputmode="numeric" [(ngModel)]="clientId" (ngModelChange)="clearResults()" required aria-describedby="date-help"></label>
+        <label>Start date (UTC)<input name="from" type="date" [(ngModel)]="from" (ngModelChange)="clearResults()" required></label>
+        <label>End date (UTC)<input name="to" type="date" [(ngModel)]="to" (ngModelChange)="clearResults()" required></label>
+      }
+      <button type="submit" [disabled]="loading()">{{ loading() ? 'Searching…' : 'Search trades' }}</button>
+    </div>
+    @if (mode === 'client') { <p id="date-help">Use the client ID, not the account ID. Both dates include the full day in UTC.</p> }
+  </form>
+  @if (error()) { <p role="alert">{{ error() }}</p> }
+</section>
+<section class="results" aria-label="Trade search results" [attr.aria-busy]="loading()">
+  <p role="status" aria-live="polite">
+    @if (loading()) { Searching trades… }
+    @else if (searched()) {
+      @if (results().length) { {{ results().length }} trade(s) found. }
+      @else { No trades found for these search criteria. }
+    } @else if (!error()) { Enter search criteria to find a trade. }
+  </p>
+  @if (results().length) {
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Trades table">
+      <table>
+        <caption>Completed trades · Prices in USD · Times in UTC</caption>
+        <thead><tr><th scope="col">Order ID</th><th scope="col">Client ID</th><th scope="col">Account ID</th><th scope="col">Stock</th><th scope="col">Side</th><th scope="col">Quantity</th><th scope="col">Execution price (USD)</th><th scope="col">Executed at (UTC)</th></tr></thead>
+        <tbody>
+          @for (trade of results(); track trade.orderId) {
+            <tr><td>{{ trade.orderId }}</td><td>{{ trade.clientId }}</td><td>{{ trade.accountId }}</td><td>{{ trade.symbol }}</td><td>{{ trade.side }}</td><td>{{ trade.quantity | number:'1.0-4' }}</td><td>{{ trade.pricePerUnit | number:'1.4-4' }}</td><td>{{ utcTime(trade.filledAt) }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
