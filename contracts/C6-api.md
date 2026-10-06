@@ -112,6 +112,40 @@ The two account-history endpoints accept these optional date-filter parameters:
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
+### GET /api/v1/orders/stream
+
+Live order-status events for the signed-in client, delivered as Server-Sent Events (`text/event-stream`).
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/v1/orders/stream` | SSE stream of order-status changes for the caller's own account only |
+
+The stream emits an `order-status-changed` event each time buy-sell-service publishes an [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) for the caller's account.
+
+**Event payload:**
+
+```json
+{
+  "orderId": 42,
+  "accountId": 7,
+  "from": "SUBMITTED",
+  "to": "ACCEPTED",
+  "occurredAt": "2026-09-21T10:30:01.123Z"
+}
+```
+
+Access control and failures:
+
+| HTTP | When | Body |
+|---|---|---|
+| 200 | Stream opened | `text/event-stream` |
+| 401 | Not authenticated | see rules above |
+| 403 | Authenticated but not a client role | see rules above |
+
+- The endpoint is for signed-in clients only.
+- The server infers the account from the authenticated caller; it does not accept an account-id parameter.
+- The stream must never include events for another account.
+
 ### Order timeline (TRADING_OPS only)
 
 Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills.
