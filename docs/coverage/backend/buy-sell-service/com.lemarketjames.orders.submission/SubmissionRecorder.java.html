@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubmissionRecorder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">SubmissionRecorder.java</span></div><h1>SubmissionRecorder.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.SubmissionAuditEvent;
+import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.repository.OrderRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Commits the outcome of an order submission (contract C2). A separate bean from the coordinator
+ * in {@code OrderService} so each outcome is exactly one transaction: an accepted order is saved
+ * together with its trail, and a refused order's trail commits on its own, with no order
+ * transaction around it to roll it back.
+ */
+@Service
+public class SubmissionRecorder {
+
+    private final OrderRepository orders;
+    private final AuditRecorder audit;
+
+<span class="fc" id="L25">    public SubmissionRecorder(OrderRepository orders, AuditRecorder audit) {</span>
+<span class="fc" id="L26">        this.orders = orders;</span>
+<span class="fc" id="L27">        this.audit = audit;</span>
+<span class="fc" id="L28">    }</span>
+
+    /** Saves an order that passed its checks: SUBMITTED, one RULE_CHECKED per rule, then VALIDATED. */
+    @Transactional
+    public Order accept(Order order, SubmissionTrail trail) {
+<span class="fc" id="L33">        Order saved = orders.save(order);</span>
+<span class="fc" id="L34">        Integer orderId = saved.getOrderId();</span>
+<span class="fc" id="L35">        recordSubmittedAndChecks(trail, orderId);</span>
+<span class="fc" id="L36">        record(trail, AuditEventType.VALIDATED, null, orderId, Map.of(&quot;checks&quot;,</span>
+<span class="fc" id="L37">            trail.checks().stream().map(check -&gt; check.rule().name()).toList()));</span>
+<span class="fc" id="L38">        return saved;</span>
+    }
+
+    /** Records a refused submission: SUBMITTED, then each check that ran, the last one not a PASS. */
+    @Transactional
+    public void refuse(SubmissionTrail trail) {
+<span class="fc" id="L44">        recordSubmittedAndChecks(trail, null);</span>
+<span class="fc" id="L45">    }</span>
+
+    private void recordSubmittedAndChecks(SubmissionTrail trail, Integer orderId) {
+        // HashMap because a SELL, or a BUY refused before it was priced, has a null price.
+<span class="fc" id="L49">        Map&lt;String, Object&gt; submitted = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L50">        submitted.put(&quot;side&quot;, trail.side().name());</span>
+<span class="fc" id="L51">        submitted.put(&quot;quantity&quot;, trail.quantity());</span>
+<span class="fc" id="L52">        submitted.put(&quot;price&quot;, trail.price());</span>
+<span class="fc" id="L53">        submitted.put(&quot;instrumentId&quot;, trail.instrumentId());</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (!trail.ownsAccount()) {</span>
+            // The account column stays empty for an account that isn't the caller's; keep what was asked for.
+<span class="fc" id="L56">            submitted.put(&quot;requestedAccountId&quot;, trail.requestedAccountId());</span>
+        }
+<span class="fc" id="L58">        record(trail, AuditEventType.SUBMITTED, null, orderId, submitted);</span>
+
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (SubmissionTrail.Check check : trail.checks()) {</span>
+<span class="fc" id="L61">            Map&lt;String, Object&gt; details = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L62">            details.put(&quot;rule&quot;, check.rule().name());</span>
+<span class="fc" id="L63">            details.put(&quot;result&quot;, check.result().name());</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (check.reason() != null) {</span>
+<span class="fc" id="L65">                details.put(&quot;reason&quot;, check.reason());</span>
+            }
+<span class="fc" id="L67">            record(trail, AuditEventType.RULE_CHECKED, check.rule().name(), orderId, details);</span>
+<span class="fc" id="L68">        }</span>
+<span class="fc" id="L69">    }</span>
+
+    private void record(SubmissionTrail trail, AuditEventType type, String rule, Integer orderId,
+                        Map&lt;String, Object&gt; details) {
+<span class="fc" id="L73">        audit.recordSubmission(new SubmissionAuditEvent(trail.requestId(), type, rule, orderId,</span>
+<span class="fc" id="L74">            trail.accountId(), trail.clientId(), details));</span>
+<span class="fc" id="L75">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

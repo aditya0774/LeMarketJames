@@ -250,17 +250,19 @@ pipeline {
                     test "$ready" = 1
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/012_order_execution.sql
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/013_execution_quote.sql
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/014_submission_audit.sql
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/015_seed_submission_audit.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
                         -Dspring.profiles.active=postgres-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
                 }
             }
         }

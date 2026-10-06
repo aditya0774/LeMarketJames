@@ -4,6 +4,7 @@ import { Login } from './features/auth/login/login';
 import { Home } from './features/home/home';
 import { Dashboard } from './features/dashboard/dashboard';
 import { HoldingsListComponent } from './features/holdings/holdings-list/holdings-list.component';
+import { ByStockDetailComponent } from './features/holdings/by-stock-report/by-stock-detail.component';
 import { AppShell } from './shared/layout/app-shell/app-shell';
 import { authGuard } from './core/auth/auth.guard';
 
@@ -14,6 +15,7 @@ export const routes: Routes = [
   // Keep existing bookmarks on the supported, authenticated trading flow.
   { path: 'orders', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'holdings', component: HoldingsListComponent },
+  { path: 'holdings/:symbol', component: ByStockDetailComponent },
   // Signed-in pages share the sidebar layout from the LeUI mockup.
   {
     path: '',

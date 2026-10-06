@@ -35,6 +35,7 @@ com.lemarketjames.orders.execution
 com.lemarketjames.orders.messaging
 com.lemarketjames.orders.repository
 com.lemarketjames.orders.service
+com.lemarketjames.orders.submission
 com.lemarketjames.portfolio
 com.lemarketjames.portfolio.dto
 com.lemarketjames.profile

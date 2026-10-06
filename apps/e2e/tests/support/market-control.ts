@@ -56,7 +56,14 @@ export async function getQuote(request: APIRequestContext, ticker: string): Prom
   return response.json();
 }
 
-
+/**
+ * Switches the whole feed. The mode is global, so only tests in the `feed-failure` Playwright
+ * project may call this: it runs after every other test has finished (playwright.config.ts).
+ */
+export async function setFeedMode(request: APIRequestContext, mode: FeedMode): Promise<void> {
+  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/feed`, { data: { mode } });
+  expect(response.status(), `feed ${mode}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
+}
 
 /** Back to a LIVE feed with nothing pinned. */
 export async function resetFeed(request: APIRequestContext): Promise<void> {
@@ -131,35 +138,3 @@ export async function unpinMarketPrices(request: APIRequestContext, baseUrl = MA
     }
   }
 }
-
-/**
- * Set the quote feed mode to control feed availability for testing.
- * 
- * @param request Playwright APIRequestContext (from test fixture)
- * @param mode Feed mode: 'LIVE' (normal operation), 'STALE' (prices frozen), or 'UNAVAILABLE' (no quotes)
- * @param baseUrl Market service base URL (defaults to http://localhost:8083)
- * 
- * Usage:
- *   await setFeedMode(request, 'UNAVAILABLE');  // Trigger feed failure
- *   await setFeedMode(request, 'LIVE');          // Restore normal operation
- * 
- * This is used to test failure scenarios: e.g., when feed goes down, UI shows error banner,
- * order submission is disabled, and recovery is automatic when feed is restored (LMKT-34).
- */
-export async function setFeedMode(
-  request: APIRequestContext, 
-  mode: 'LIVE' | 'STALE' | 'UNAVAILABLE',
-  baseUrl = MARKET_SERVICE_URL
-): Promise<void> {
-  try {
-    const response = await request.put(`${baseUrl}/internal/market/control/feed`, {
-      data: { mode }
-    });
-    if (!response.ok()) {
-      console.warn(`Failed to set feed mode to ${mode}: ${response.status()}`);
-    }
-  } catch (err) {
-    console.warn(`Failed to set feed mode to ${mode}:`, err);
-  }
-}
-

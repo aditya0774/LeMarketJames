@@ -20,12 +20,12 @@ public class TradingRestrictions {
 <span class="fc" id="L20">    }</span>
     public boolean locationRestricted(int accountId) {
 <span class="fc" id="L22">        var denied = settings.getOrders().getRestrictedLocations();</span>
-<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (denied.isEmpty()) return false;</span>
-<span class="nc" id="L24">        var account = accounts.findById(accountId).orElseThrow();</span>
-<span class="nc" id="L25">        return addresses.findByClientId(account.getClientId()).stream()</span>
-<span class="nc" id="L26">            .filter(a -&gt; &quot;RESIDENTIAL&quot;.equals(a.getAddressType()))</span>
-<span class="nc bnc" id="L27" title="All 2 branches missed.">            .anyMatch(a -&gt; denied.stream().anyMatch(location -&gt; location.equalsIgnoreCase(a.getState())</span>
-<span class="nc bnc" id="L28" title="All 2 branches missed.">                || location.equalsIgnoreCase(a.getCountry())));</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (denied.isEmpty()) return false;</span>
+<span class="fc" id="L24">        var account = accounts.findById(accountId).orElseThrow();</span>
+<span class="fc" id="L25">        return addresses.findByClientId(account.getClientId()).stream()</span>
+<span class="fc" id="L26">            .filter(a -&gt; &quot;RESIDENTIAL&quot;.equals(a.getAddressType()))</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">            .anyMatch(a -&gt; denied.stream().anyMatch(location -&gt; location.equalsIgnoreCase(a.getState())</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">                || location.equalsIgnoreCase(a.getCountry())));</span>
     }
     public boolean stale(QuoteSnapshot quote) {
 <span class="fc" id="L31">        return QuoteFreshness.isStale(quote, settings.getMarket().getStalenessLimit(), clock);</span>

@@ -17,11 +17,25 @@ public class AuditEventEntity {
     @Column(name = "audit_id")
     private Long auditId;
 
-    @Column(name = "order_id", nullable = false)
+    /** Null for a refused submission: no order was saved, so {@link #requestId} identifies it. */
+    @Column(name = "order_id")
     private Integer orderId;
 
-    @Column(name = "account_id", nullable = false)
+    /** Null when the caller was refused access to the account they asked for. */
+    @Column(name = "account_id")
     private Integer accountId;
+
+    /** The submission request that caused the event; set on submission events only. */
+    @Column(name = "request_id", length = 36)
+    private String requestId;
+
+    /**
+     * Unique per submission, event type and rule, so the same event can't be stored twice. Null for
+     * events that aren't part of a submission. Declared unique here so the H2 test schema enforces
+     * it like the index in database/schema/014.
+     */
+    @Column(name = "event_key", length = 120, unique = true)
+    private String eventKey;
 
     @Column(name = "client_id")
     private Integer clientId;
@@ -56,8 +70,23 @@ public class AuditEventEntity {
         this.occurredAt = occurredAt;
     }
 
+    /** A submission event, which also carries the request it belongs to and its unique key. */
+    public AuditEventEntity(SubmissionAuditEvent event, Instant occurredAt) {
+        this(event.orderId(), event.accountId(), event.clientId(), event.type(), event.details(), occurredAt);
+        this.requestId = event.requestId();
+        this.eventKey = event.eventKey();
+    }
+
     public Long getAuditId() {
         return auditId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public String getEventKey() {
+        return eventKey;
     }
 
     public Integer getOrderId() {

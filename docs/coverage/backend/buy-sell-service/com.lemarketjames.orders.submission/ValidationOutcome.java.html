@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidationOutcome.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">ValidationOutcome.java</span></div><h1>ValidationOutcome.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import com.lemarketjames.orders.dto.OrderResponse;
+import com.lemarketjames.orders.entity.RejectionReason;
+import java.math.BigDecimal;
+
+/**
+ * What the submission checks decided: the order may be saved (at {@code price}, null for a SELL),
+ * or it is refused with the response the caller gets.
+ */
+<span class="fc" id="L11">public record ValidationOutcome(BigDecimal price, OrderResponse refusal) {</span>
+
+    public static ValidationOutcome passed(BigDecimal price) {
+<span class="fc" id="L14">        return new ValidationOutcome(price, null);</span>
+    }
+
+    public static ValidationOutcome refused(String message, RejectionReason reason) {
+<span class="fc" id="L18">        return new ValidationOutcome(null, new OrderResponse(false, message, reason.name()));</span>
+    }
+
+    public boolean isRefused() {
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        return refusal != null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -3,6 +3,8 @@
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
 import com.lemarketjames.orders.service.OrderService;
+import com.lemarketjames.orders.submission.SubmissionRequestId;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,17 +19,19 @@ public class BuyOrderController {
 
     private final OrderService orderService;
 
-<span class="fc" id="L20">    public BuyOrderController(OrderService orderService) {</span>
-<span class="fc" id="L21">        this.orderService = orderService;</span>
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L22">    public BuyOrderController(OrderService orderService) {</span>
+<span class="fc" id="L23">        this.orderService = orderService;</span>
+<span class="fc" id="L24">    }</span>
 
+    // Every response carries the submission's X-Request-Id, like POST /api/v1/orders (contract C2).
     @PostMapping
-    public ResponseEntity&lt;OrderResponse&gt; submitBuyOrder(@Valid @RequestBody SubmitBuyOrderRequest request) {
-<span class="fc" id="L26">        OrderResponse response = orderService.submitBuyOrder(request);</span>
-<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
-<span class="fc" id="L28">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
+    public ResponseEntity&lt;OrderResponse&gt; submitBuyOrder(@Valid @RequestBody SubmitBuyOrderRequest request,
+                                                        HttpServletResponse httpResponse) {
+<span class="fc" id="L30">        OrderResponse response = orderService.submitBuyOrder(request, SubmissionRequestId.issue(httpResponse));</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
+<span class="fc" id="L32">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
         }
-<span class="fc" id="L30">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+<span class="fc" id="L34">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -19,6 +19,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** The code a caller gets when an account isn't theirs; also what the audit trail records for it. */
+    public static final String ACCOUNT_ACCESS_DENIED = "ACCOUNT_ACCESS_DENIED";
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(ValidationException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -49,7 +52,7 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                     "success", false,
                     "error", "Access denied",
-                    "code", "ACCOUNT_ACCESS_DENIED"
+                    "code", ACCOUNT_ACCESS_DENIED
                 ));
     }
 }

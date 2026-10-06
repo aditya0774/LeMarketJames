@@ -34,6 +34,8 @@ export default defineConfig({
     // start only once it has finished; Playwright skips them if it failed.
     {
       name: 'feed-failure',
+      // Different files still share one global feed; serialize all outage scenarios.
+      workers: 1,
       use: { ...devices['Desktop Chrome'] },
       testMatch: FEED_FAILURE_TESTS,
       dependencies: ['chromium'],

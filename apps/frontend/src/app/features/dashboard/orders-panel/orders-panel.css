@@ -24,3 +24,29 @@
   font-size: 12px;
   align-self: center;
 }
+
+.live-badge {
+  margin-left: auto;
+  border: 1px solid #16a34a;
+  border-radius: 999px;
+  color: #166534;
+  background: #f0fdf4;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 4px 10px;
+}
+
+.live-badge-reconnecting {
+  border-color: #d97706;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.status-detail {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 260px;
+}

@@ -1,6 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
 import { Client } from 'pg';
-import { auditTrail, connectDatabase, storedOrder } from './support/database';
+import { auditTrail, connectDatabase, lifecycleSteps, ruleChecks, storedOrder } from './support/database';
 import { getQuote, pinPrice, releasePrice } from './support/market-control';
 import { OrderDto, QUOTE_SOURCE, instrumentIdOf, loginViaApi, placeOrder, utc, waitForFinalStatus } from './support/orders';
 import { newUser, registerViaApi } from './support/users';
@@ -70,7 +70,14 @@ test.describe('Fill an accepted order at the current market price (LMKT-23)', ()
   /** AC4: one audit event per lifecycle step, settlement before the fill it belongs to (C2). */
   async function expectFillAudited(db: Client, order: OrderDto) {
     const trail = await auditTrail(db, order.orderId);
-    expect(trail.map(event => event.action)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+    expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+    // LMKT-99: an accepted order also has one event per placement check, every one a pass, and
+    // they are the checks VALIDATED says ran.
+    const checks = ruleChecks(trail);
+    expect(checks.length).toBeGreaterThan(0);
+    expect(checks.map(check => check.details.result)).toEqual(checks.map(() => 'PASS'));
+    expect(trail.find(event => event.action === 'VALIDATED')!.details.checks)
+      .toEqual(checks.map(check => check.details.rule));
     const filled = trail[trail.length - 1].details;
     expect(Number(filled.price)).toBe(order.pricePerUnit);
     expect(Number(filled.quantity)).toBe(order.quantity);
