@@ -44,6 +44,7 @@ class SellOrderIntegrationTest {
     @Autowired JwtService jwt;
     @Autowired InstrumentRepository instruments;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AuditTestCleanup cleanup;
     @MockBean HoldingsValidationClient holdingsValidationClient;
     String username;
     Integer accountId, instrumentId, nonTradableId;
@@ -62,19 +63,10 @@ class SellOrderIntegrationTest {
     @AfterEach
     void cleanup() {
         // Remove only this test's committed rows, including on the disposable PostgreSQL profile.
-        // A refused order's audit events reference the client, and no account when access was refused.
-        jdbc.update("DELETE FROM audit_log WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
-        if (accountId != null) {
-            // Audit events reference the orders, so they go first.
-            jdbc.update("DELETE FROM audit_log WHERE account_id=?", accountId);
-            jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
-            jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
-        }
+        cleanup.removeClient(username);
         if (nonTradableId != null) {
             jdbc.update("DELETE FROM instruments WHERE instrument_id=?", nonTradableId);
         }
-        jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
-        jdbc.update("DELETE FROM clients WHERE username=?", username);
     }
 
     private String request(int account, int instrument, Object quantity) throws Exception {

@@ -47,6 +47,7 @@ class BuyOrderIntegrationTest {
     @Autowired AddressRepository addresses;
     @Autowired JwtService jwt;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AuditTestCleanup cleanup;
     String username;
     Integer accountId;
     Integer instrumentId;
@@ -68,15 +69,7 @@ class BuyOrderIntegrationTest {
 
     @AfterEach
     void removeOnlyThisTestsCommittedData() {
-        // The disposable PostgreSQL suite also runs other tests; never truncate shared tables.
-        // Audit events reference the orders, so they go first. A refused order's events reference
-        // the client (and no account when access was refused), so they are found by client too.
-        jdbc.update("DELETE FROM audit_log WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
-        jdbc.update("DELETE FROM audit_log WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
-        jdbc.update("DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON a.client_id=c.client_id WHERE c.username=?)", username);
-        jdbc.update("DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
-        jdbc.update("DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=?)", username);
-        jdbc.update("DELETE FROM clients WHERE username=?", username);
+        cleanup.removeClient(username);
         if (nonTradableId != null) {
             jdbc.update("DELETE FROM instruments WHERE instrument_id=?", nonTradableId);
         }

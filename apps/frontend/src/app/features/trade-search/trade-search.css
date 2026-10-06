@@ -1,0 +1,22 @@
+:host { display: block; color: var(--text); padding: 24px 0; }
+h1 { font-size: 32px; margin: 8px 0; }
+p { color: var(--text-dim); }
+.eyebrow { color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+.search-panel, .results { background: var(--ink-2); border: 1px solid var(--purple-line); border-radius: var(--radius-lg); padding: 24px; margin-top: 24px; }
+fieldset { border: 0; padding: 0; margin: 0 0 24px; }
+legend { margin-bottom: 12px; font-weight: 600; }
+fieldset label { display: inline-flex; gap: 8px; align-items: center; margin-right: 24px; }
+input[type=radio] { accent-color: var(--gold); }
+.fields { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
+.fields label { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 170px; }
+.fields input { box-sizing: border-box; width: 100%; background: var(--ink); color: var(--text); border: 1px solid var(--purple-line); border-radius: 8px; padding: 12px; font: inherit; color-scheme: dark; }
+button { background: var(--gold); color: var(--ink); padding: 13px 24px; border: 0; border-radius: 8px; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+[role=alert] { color: var(--down); }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; font-variant-numeric: tabular-nums; }
+caption { text-align: left; color: var(--text-dim); padding-bottom: 16px; }
+th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--purple-line); }
+th { color: var(--text-dim); font-size: 12px; }
+@media (max-width: 600px) { .search-panel, .results { padding: 16px; } button { width: 100%; } }

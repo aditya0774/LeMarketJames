@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLockdownCheck.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.audit</a> &gt; <span class="el_source">AuditLockdownCheck.java</span></div><h1>AuditLockdownCheck.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.audit;
+
+import jakarta.annotation.PostConstruct;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * Refuses to start a service whose database account could change or delete audit records
+ * (contract C2).
+ *
+ * &lt;p&gt;The database only protects the audit trail from an account that was never given the right to
+ * change it (database/schema/016_audit_lockdown.sql). A service left on the owner account would
+ * run normally and quietly keep that right, so the mistake is made loud here instead: the service
+ * does not come up.
+ */
+@Component
+public class AuditLockdownCheck {
+
+    /** The audit tables. Mirrors database/schema/016_audit_lockdown.sql. */
+<span class="fc" id="L23">    static final List&lt;String&gt; AUDIT_TABLES = List.of(&quot;audit_log&quot;, &quot;order_events&quot;);</span>
+
+    /** The audit tables the connected account holds any change privilege on; a superuser holds all. */
+<span class="fc" id="L26">    static final String CHANGEABLE_AUDIT_TABLES =</span>
+<span class="fc" id="L27">            &quot;SELECT t FROM unnest(ARRAY['&quot; + String.join(&quot;', '&quot;, AUDIT_TABLES) + &quot;']) AS t &quot;</span>
+                    + &quot;WHERE has_table_privilege(current_user, t, 'UPDATE, DELETE, TRUNCATE')&quot;;
+
+    private final JdbcTemplate jdbc;
+
+<span class="fc" id="L32">    public AuditLockdownCheck(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L33">        this.jdbc = jdbc;</span>
+<span class="fc" id="L34">    }</span>
+
+    /** @throws IllegalStateException when the account may update, delete or truncate an audit table */
+    @PostConstruct
+    public void verify() {
+<span class="pc" id="L39">        String database = jdbc.execute((ConnectionCallback&lt;String&gt;) c -&gt; c.getMetaData().getDatabaseProductName());</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (!&quot;PostgreSQL&quot;.equals(database)) {</span>
+            // The H2 schema of the unit tests has no accounts or privileges to check.
+<span class="fc" id="L42">            return;</span>
+        }
+<span class="fc" id="L44">        List&lt;String&gt; changeable = jdbc.queryForList(CHANGEABLE_AUDIT_TABLES, String.class);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (!changeable.isEmpty()) {</span>
+<span class="fc" id="L46">            String account = jdbc.queryForObject(&quot;SELECT current_user&quot;, String.class);</span>
+<span class="fc" id="L47">            throw new IllegalStateException(&quot;Database account '&quot; + account + &quot;' may change or delete audit records (&quot;</span>
+<span class="fc" id="L48">                    + String.join(&quot;, &quot;, changeable) + &quot;). Services must log in as lemarket_app, which may only &quot;</span>
+                    + &quot;insert and read them; see database/README.md (016).&quot;);
+        }
+<span class="fc" id="L51">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

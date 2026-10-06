@@ -252,17 +252,19 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/013_execution_quote.sql
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/014_submission_audit.sql
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/015_seed_submission_audit.sql
+                    # The tests below log in as lemarket_app, which 016 creates and restricts.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
                         -Dspring.profiles.active=postgres-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
                 }
             }
         }
@@ -480,8 +482,8 @@ pipeline {
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
                         -e E2E_BASE_URL=http://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
-                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket \
-                        -e PGPASSWORD="${DB_PASSWORD:-changeme}" \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
+                        -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test'
@@ -508,6 +510,15 @@ pipeline {
                 expression { env.CI_RUN_FULL_STACK == 'true' }
             }
             steps { sh 'bash scripts/verify-sell-order.sh' }
+        }
+
+        // Against the running stack: nobody can change an audit record, and each refused attempt
+        // is in the database's server log with the account and the statement (LMKT-100).
+        stage('Verify audit lockdown') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-audit-lockdown.sh' }
         }
 
         stage('Run quote API contract smoke test') {

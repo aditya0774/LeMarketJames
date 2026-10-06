@@ -141,42 +141,43 @@ import java.util.List;
     /** The audit trail (audit_log). */
 <span class="fc" id="L142">    public static class Audit {</span>
         /**
-         * How long audit events stay online (queryable in the app) before being archived
-         * (audit_log.archived). Archived events are kept, not deleted.
+         * How long audit events stay online (queryable in the app) before they count as
+         * archived. Archived events are kept, not deleted, and their rows are not changed: an
+         * event's age is what makes it archived (contract C2).
          */
-<span class="fc" id="L147">        private Duration onlineRetention = Duration.ofDays(365);</span>
+<span class="fc" id="L148">        private Duration onlineRetention = Duration.ofDays(365);</span>
 
         public Duration getOnlineRetention() {
-<span class="fc" id="L150">            return onlineRetention;</span>
+<span class="fc" id="L151">            return onlineRetention;</span>
         }
 
         public void setOnlineRetention(Duration onlineRetention) {
-<span class="nc" id="L154">            this.onlineRetention = onlineRetention;</span>
-<span class="nc" id="L155">        }</span>
+<span class="nc" id="L155">            this.onlineRetention = onlineRetention;</span>
+<span class="nc" id="L156">        }</span>
     }
 
     /** Scheduled reporting. */
-<span class="fc" id="L159">    public static class Reports {</span>
+<span class="fc" id="L160">    public static class Reports {</span>
         /** Local time of day the overnight reports run. */
-<span class="fc" id="L161">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
+<span class="fc" id="L162">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
         /** Time zone overnightRunTime is in. */
-<span class="fc" id="L163">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
+<span class="fc" id="L164">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
 
         public LocalTime getOvernightRunTime() {
-<span class="fc" id="L166">            return overnightRunTime;</span>
+<span class="fc" id="L167">            return overnightRunTime;</span>
         }
 
         public void setOvernightRunTime(LocalTime overnightRunTime) {
-<span class="nc" id="L170">            this.overnightRunTime = overnightRunTime;</span>
-<span class="nc" id="L171">        }</span>
+<span class="nc" id="L171">            this.overnightRunTime = overnightRunTime;</span>
+<span class="nc" id="L172">        }</span>
 
         public ZoneId getTimeZone() {
-<span class="nc" id="L174">            return timeZone;</span>
+<span class="nc" id="L175">            return timeZone;</span>
         }
 
         public void setTimeZone(ZoneId timeZone) {
-<span class="nc" id="L178">            this.timeZone = timeZone;</span>
-<span class="nc" id="L179">        }</span>
+<span class="nc" id="L179">            this.timeZone = timeZone;</span>
+<span class="nc" id="L180">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -68,6 +68,7 @@ class OrderSubmissionAuditIntegrationTest {
     @Autowired AuditEventRepository audit;
     @Autowired JwtService jwt;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AuditTestCleanup cleanup;
     @MockBean MarketDataService market;
     // holdings-service is another process; its answer is all placement needs from it.
     @MockBean HoldingsValidationClient holdings;
@@ -87,13 +88,7 @@ class OrderSubmissionAuditIntegrationTest {
 
     @AfterEach
     void removeOnlyThisTestsCommittedData() {
-        // The disposable PostgreSQL suite also runs other tests; never truncate shared tables.
-        // A trail refused at the access check names no account, so events are found by client too.
-        jdbc.update("DELETE FROM audit_log WHERE client_id=? OR account_id=?", clientId, accountId);
-        jdbc.update("DELETE FROM orders WHERE account_id=?", accountId);
-        jdbc.update("DELETE FROM accounts WHERE account_id=?", accountId);
-        jdbc.update("DELETE FROM addresses WHERE client_id=?", clientId);
-        jdbc.update("DELETE FROM clients WHERE client_id=?", clientId);
+        cleanup.removeClient(username);
         if (nonTradableId != null) {
             jdbc.update("DELETE FROM instruments WHERE instrument_id=?", nonTradableId);
         }

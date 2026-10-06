@@ -10,7 +10,7 @@ Each lifecycle story writes its own audit events, so the audit trail doesn't wai
 | Stored fields (the `audit_log` table) | [AuditEventEntity.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventEntity.java), table reshaped by [010](../database/schema/010_shared_contracts.sql) and [014](../database/schema/014_submission_audit.sql) |
 | The only way to write | [AuditRecorder.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditRecorder.java) |
 | The placement rules a `RULE_CHECKED` event can name, in the order they run | [ValidationRule.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/submission/ValidationRule.java) |
-| Reading a trail | [AuditEventRepository.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventRepository.java) |
+| Reading a trail, and the only operations the app has (insert and read) | [AuditEventRepository.java](../libs/common/src/main/java/com/lemarketjames/common/audit/AuditEventRepository.java) |
 
 Each event records the order, its account, the client, when it happened as a UTC instant taken from the server's clock, and a JSON `details` object.
 
@@ -26,7 +26,7 @@ Each event records the order, its account, the client, when it happened as a UTC
 | `created_at` | When it happened (UTC instant, server clock) | never |
 | `request_id` | The submission the event belongs to | The event isn't a submission event |
 | `event_key` | `<request_id>:<type>`, plus `:<rule>` for `RULE_CHECKED`. Unique in the table | The event isn't a submission event |
-| `archived` | Set once the event is past the online retention window | never (defaults to false) |
+| `archived` | Reserved, always `false`. An event is never updated, so archival is not recorded on the row (see the rules) | never |
 
 Every row has an `order_id` or a `request_id`.
 
@@ -59,6 +59,7 @@ A BUY refused for lack of cash:
 - **A refused order's trail commits on its own.** There is no order to commit with, so [SubmissionRecorder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/submission/SubmissionRecorder.java) writes it in a transaction of its own, before the caller is told the order was refused. If the trail can't be written, the caller gets an error, not the refusal.
 - **Nothing lost, nothing duplicated.** A submission's events are collected while the checks run and written in one transaction, so a restart or failed deployment part-way through leaves the whole trail or none of it. An event exists exactly when the caller could have received a response. `event_key` is unique, so writing a submission's events a second time fails as a whole and stores nothing, including the order.
 - **Written only through `AuditRecorder`.** Never insert into `audit_log` directly. `order_events` from 001 is an unused early draft; don't write to it.
+- **Never changed, never deleted.** No feature or API can update or delete an audit event. `AuditEventRepository` offers only insert and the two reads above, and `AuditEventEntity` is immutable, so there is nothing for a feature to call. Don't add a delete or update method to either, and don't widen the repository to `JpaRepository` or `CrudRepository`. The database enforces the same rule on its own; see [The lockdown](#the-lockdown).
 - **Each service audits what it does:**
 
   | Where | Event types |
@@ -72,7 +73,39 @@ A BUY refused for lack of cash:
   response, `SETTLED` can temporarily exist without `FILLED`. The persisted execution intent is
   retried with the same price; holdings returns its original receipt without moving funds again,
   and buy-sell records `FILLED` once. Thus `SETTLED` precedes `FILLED` in the completed audit trail.
-- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) are marked `archived` rather than removed. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
+- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. If archival ever needs to record more than that, it goes in a table of its own. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
+
+## The lockdown
+
+The database refuses a change to an audit record by itself, whatever the application does ([016](../database/schema/016_audit_lockdown.sql)). It covers `audit_log` and the unused `order_events`.
+
+| Layer | Stops | How it fails |
+|---|---|---|
+| The application account `lemarket_app` holds only `SELECT` and `INSERT` on the audit tables, and owns nothing | Anyone logged in as `lemarket_app` | `permission denied`, SQLSTATE `42501` |
+| Triggers refuse `UPDATE`, `DELETE` and `TRUNCATE` for every role | The owner `lemarket`: a migration, a script, a mistaken grant | `Audit records are immutable`, SQLSTATE `LM001` |
+
+- **Two accounts.** `lemarket` owns the schema and runs migrations, seeding and resets. `lemarket_app` is the restricted account for the services. See [database/README.md](../database/README.md#016--audit-lockdown).
+- **Migrations may not rewrite audit records either.** A new migration that updates or deletes existing audit rows fails on the trigger. Add rows; don't change them.
+- **A new audit table needs its own lockdown.** New tables get ordinary read and write for `lemarket_app` by default. A table that holds audit records must revoke `UPDATE` and `DELETE` and get the same triggers, in the migration that creates it.
+- **Resetting test data.** A whole-database reset (`docker compose down -v`, `setup-db.ps1 -Reset`) is unaffected. A test that must remove its own audit events does it through [AuditTestCleanup](../services/buy-sell-service/src/test/java/com/lemarketjames/orders/AuditTestCleanup.java): as the owner, with the trigger switched off inside the deleting transaction. Don't delete audit rows any other way, and never outside a disposable database.
+- **Proven by** [AuditLockdownIntegrationTest](../services/buy-sell-service/src/test/java/com/lemarketjames/orders/AuditLockdownIntegrationTest.java), which runs on PostgreSQL only.
+
+### Refused attempts are recorded
+
+Every refused attempt is recorded in PostgreSQL's server log, by the server itself:
+
+```
+2026-10-05 20:14:03.112 UTC [412] user=lemarket_app db=lemarket app=psql client=10.0.0.7 ERROR:  permission denied for table audit_log
+2026-10-05 20:14:03.112 UTC [412] user=lemarket_app db=lemarket app=psql client=10.0.0.7 STATEMENT:  DELETE FROM audit_log WHERE audit_id = 1
+```
+
+- **What it holds.** When, which account, which database, the client program and address, the error, and the statement that was refused. The number in brackets is the session, and ties the lines of one attempt together.
+- **Why the log and not a table.** The refused statement's transaction is rolled back, so nothing written inside it would survive. A missing privilege is also refused before any trigger runs, so nothing inside the database sees it. The server log is written outside the transaction and sees every attempt, whoever makes it and with whatever tool.
+- **The account can't switch it off.** The settings that control it can only be changed by a superuser.
+- **Switching a trigger off is recorded too.** DDL is logged, so the one thing the owner could do to get around the triggers leaves a line naming the account.
+- **Where it is set.** The `db` service's `command` in [docker-compose.yml](../docker-compose.yml). On a native Windows install, `setup-db.ps1 -AuditLogging`; without it the attempt is still logged, but the line does not name the account.
+- **Limits.** Values bound as parameters are not logged; the statement shows `$1` in their place. The log is not in the database, so it will not appear in the planned audit views. Keeping it is the deployment's job: a Compose container's log goes when the container is removed, so a real environment must ship the server log somewhere it is retained as long as the audit trail.
+- **Proven by** [verify-audit-lockdown.sh](../scripts/verify-audit-lockdown.sh), a Jenkins stage that makes the attempts against the running stack as both accounts and then finds each one in the server log.
 
 ## Mirrors (change together with `AuditEventType`)
 

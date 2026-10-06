@@ -30,6 +30,10 @@ Internal views (audit, reports, insights) can enforce access now, without waitin
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
 
+The frontend trade-search route also checks `TRADING_OPS` with `tradingOpsGuard`; other signed-in
+roles see Access denied, and only operations see the search navigation link. This UI check
+supplements the owning service's authorization.
+
 ## Mirrors (change together with `Role`)
 
 - The `staff_users.role` CHECK constraint ([010](../database/schema/010_shared_contracts.sql)); it lists every role except `CLIENT`.
