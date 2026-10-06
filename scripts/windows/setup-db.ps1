@@ -8,19 +8,34 @@
     password every service expects), then runs every database/schema/*.sql file in numeric order,
     exactly like docker-entrypoint-initdb.d does on first start.
 
+    Also creates `lemarket_app`, the restricted account of the audit lockdown
+    (database/schema/016_audit_lockdown.sql). `lemarket` owns the database but is no superuser
+    here, so it cannot create that role itself. This part runs even when the database already
+    exists, so an existing database only needs 016 applied afterwards.
+
+    Pass -AuditLogging to make the server log name the account behind every statement it records,
+    the way the Compose db does. That log is the record of refused attempts to change audit
+    records (contracts/C2-audit.md). It is opt-in because the log format is a setting of the
+    whole PostgreSQL install, not just of the lemarket database.
+
     Schema files are only applied to a freshly created database, because they are not safe to
     re-run. Pass -Reset to drop and recreate the database (wipes all data).
 
 .EXAMPLE
     .\scripts\windows\setup-db.ps1
     .\scripts\windows\setup-db.ps1 -Reset
+    .\scripts\windows\setup-db.ps1 -AuditLogging
 #>
 param(
     # Must match SPRING_DATASOURCE_PASSWORD / DB_PASSWORD (services default to 'changeme').
     [string]$DbPassword = 'changeme',
+    # Password of lemarket_app; must match APP_DB_PASSWORD (016 defaults to 'changeme_app').
+    [string]$AppDbPassword = 'changeme_app',
     [string]$PgHost = 'localhost',
     [int]$PgPort = 5432,
-    [switch]$Reset
+    [switch]$Reset,
+    # Changes the log line format of the whole PostgreSQL install; see the description.
+    [switch]$AuditLogging
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,17 +70,33 @@ $secure = Read-Host 'Password for the PostgreSQL "postgres" superuser' -AsSecure
 $superPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
 
-# Create the login, or reset its password so it matches what the services use.
-$escaped = $DbPassword.Replace("'", "''")
-Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', @"
+# Create each login, or reset its password so it matches what the services and scripts use.
+# lemarket owns the database; lemarket_app gets its (restricted) rights from 016.
+foreach ($login in @(@{ Name = 'lemarket'; Password = $DbPassword }, @{ Name = 'lemarket_app'; Password = $AppDbPassword })) {
+    $name = $login.Name
+    $escaped = $login.Password.Replace("'", "''")
+    Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', @"
 DO `$`$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lemarket') THEN
-    CREATE ROLE lemarket LOGIN PASSWORD '$escaped';
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$name') THEN
+    CREATE ROLE $name LOGIN PASSWORD '$escaped';
   ELSE
-    ALTER ROLE lemarket WITH LOGIN PASSWORD '$escaped';
+    ALTER ROLE $name WITH LOGIN PASSWORD '$escaped';
   END IF;
 END `$`$;
 "@)
+}
+
+# Mirrors the db command in docker-compose.yml. The prefix puts the account, database, client
+# program and address on every log line. DDL logging is set on the lemarket database only, so the
+# password statements above, which run in the postgres database, never reach the log.
+function Enable-AuditLogging {
+    if (-not $AuditLogging) { return }
+    Invoke-Psql 'postgres' $superPassword 'postgres' @(
+        '-c', "ALTER SYSTEM SET log_line_prefix = '%m [%p] %quser=%u db=%d app=%a client=%h '",
+        '-c', "ALTER DATABASE lemarket SET log_statement = 'ddl'",
+        '-c', 'SELECT pg_reload_conf()') | Out-Null
+    Write-Host 'Server log now records the account behind each statement, and DDL on lemarket.'
+}
 
 $exists = Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', "SELECT 1 FROM pg_database WHERE datname = 'lemarket'")
 if ($exists -and $Reset) {
@@ -74,14 +105,17 @@ if ($exists -and $Reset) {
     $exists = $null
 }
 if ($exists) {
+    Enable-AuditLogging
     Write-Host 'Database lemarket already exists; schema not re-applied. Use -Reset to recreate it, or apply new files with psql (see database/README.md).'
     return
 }
 
 # The owner can create tables in public (PostgreSQL 15+ no longer lets every role do so).
 Invoke-Psql 'postgres' $superPassword 'postgres' @('-c', 'CREATE DATABASE lemarket OWNER lemarket')
+Enable-AuditLogging
 
-# Apply as lemarket so the tables are owned by the same role the services log in with.
+# Apply as lemarket so it owns the tables: migrations and resets run as the owner, and
+# lemarket_app is only given what 016 grants it.
 Get-ChildItem $schemaDir -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "Applying $($_.Name)"
     Invoke-Psql 'lemarket' $DbPassword 'lemarket' @('-q', '-f', $_.FullName) | Out-Null

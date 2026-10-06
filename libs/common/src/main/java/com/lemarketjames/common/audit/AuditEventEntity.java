@@ -1,14 +1,21 @@
 package com.lemarketjames.common.audit;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.Map;
 
-/** Maps to the `audit_log` table: one row per {@link AuditEventType} an order goes through. */
+/**
+ * Maps to the `audit_log` table: one row per {@link AuditEventType} an order goes through.
+ *
+ * <p>Immutable: once stored, an event is never updated (contract C2), so Hibernate never writes a
+ * change to a loaded event back. There are no setters either.
+ */
 @Entity
+@Immutable
 @Table(name = "audit_log")
 public class AuditEventEntity {
 
