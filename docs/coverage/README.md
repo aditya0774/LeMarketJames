@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `41f04049` on 2026-10-06 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `519930ed` on 2026-10-06 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -56,6 +56,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-06 | `519930ed` | 82.43 | 78.03 | 89.17 | 80.17 |
 | 2026-10-06 | `41f04049` | 82.43 | 78.03 | 89.17 | 80.17 |
 | 2026-10-06 | `71769d7f` | 82.43 | 78.03 | 88.54 | 78.64 |
 | 2026-10-06 | `1e8738e7` | 82.33 | 77.95 | 88.54 | 78.64 |
