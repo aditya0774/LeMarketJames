@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportPeriod.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.period</a> &gt; <span class="el_source">ReportPeriod.java</span></div><h1>ReportPeriod.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.period;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * A stretch of whole report-time-zone days, as the range of stored timestamps it covers. Orders
+ * are stored in UTC without an offset, so {@code start} and {@code end} are UTC too and can be
+ * compared with {@code filled_at} directly.
+ *
+ * &lt;p&gt;The range is half-open: filter with {@code filled_at &gt;= start AND filled_at &lt; end}, so a
+ * trade on a boundary lands in exactly one period.
+ *
+ * @param firstDay the period's first day in the reports time zone; what a report labels the period with
+ * @param start    the first instant of the period, in UTC (inclusive)
+ * @param end      the first instant after the period, in UTC (exclusive)
+ */
+<span class="fc" id="L18">public record ReportPeriod(LocalDate firstDay, LocalDateTime start, LocalDateTime end) {</span>
+
+    /** Whether a stored UTC timestamp falls in this period. */
+    public boolean contains(LocalDateTime utcTimestamp) {
+<span class="fc bfc" id="L22" title="All 4 branches covered.">        return !utcTimestamp.isBefore(start) &amp;&amp; utcTimestamp.isBefore(end);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
