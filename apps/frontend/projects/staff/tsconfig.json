@@ -1,0 +1,19 @@
+/* Staff app TypeScript settings; everything not set here comes from the workspace tsconfig. */
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    /* Replaces the workspace's "@app/*" alias, so staff code can't import the trading app's code by accident. */
+    "paths": {
+      "@staff/*": ["./src/app/*"]
+    }
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}

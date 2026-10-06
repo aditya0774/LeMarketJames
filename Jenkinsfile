@@ -106,7 +106,22 @@ pipeline {
                 dir('apps/frontend') {
                     // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
                     // old folder is removed first so a stale report is never published.
-                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- --watch=false --coverage && npm run build'
+                    // The project is named because a bare `ng test` runs every project in the
+                    // workspace, and the staff app has its own stage below.
+                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- lemarket-ui --watch=false --coverage && npm run build'
+                }
+            }
+        }
+
+        // The staff app is a second project in the same Angular workspace (apps/frontend/projects/staff),
+        // so it reuses the node_modules the stage above installed.
+        stage('Test and build staff Angular app') {
+            when {
+                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                dir('apps/frontend') {
+                    sh 'npm run test:staff -- --watch=false && npm run build:staff'
                 }
             }
         }
@@ -324,6 +339,9 @@ pipeline {
                     done
                     docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
                     docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
+                    # The staff app builds from the same Angular workspace, with its own Dockerfile.
+                    docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
+                    docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
 
                     echo "Built versioned images with tag: $image_tag"
                 '''
