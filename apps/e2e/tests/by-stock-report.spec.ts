@@ -155,28 +155,55 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     }
   });
 
-  test('AC1: Error state displays safely when data cannot be loaded (403 unauthorized)', async ({ page, request }) => {
-    // Create a new user with no holdings
-    const user = { username: 'nodata', email: 'nodata@test.com', password: 'Pass123!' };
-    await loginViaUi(page, user);
+  test('AC1: Error state displays safely when data cannot be loaded (403 unauthorized)', async ({ page }) => {
+    // Log in as user with holdings
+    await loginViaUi(page, seed('seed_active'));
     await expect(page).toHaveURL(/\/dashboard$/);
 
     // Navigate to holdings page
     await page.click('a:has-text("Holdings")');
     await expect(page).toHaveURL(/\/holdings$/);
 
-    // Check if there's an empty state (expected for new user)
-    const emptyState = page.getByText(/no.*holding|start trading|place.*order/i);
     const holdingsTable = page.locator('.holdings-table');
+    await expect(holdingsTable).toBeVisible();
 
-    // Either empty state or table with 0 rows is acceptable
-    const isEmpty = await emptyState.isVisible().catch(() => false);
-    const tableRows = await holdingsTable.locator('tbody tr, tr:not(:first-child)').count().catch(() => 0);
+    // Get first stock symbol
+    const firstRow = holdingsTable.locator('tr').nth(1);
+    const symbolCell = firstRow.locator('td').first();
+    const symbol = await symbolCell.textContent();
+    const symbolText = symbol!.trim();
 
-    if (isEmpty || tableRows === 0) {
-      // AC1: No trade history exists, which is safe
-      expect(isEmpty || tableRows === 0).toBe(true);
-    }
+    // Set up route interception to return 403 for trades API
+    await page.route(`**/api/v1/trades*`, async (route) => {
+      // Mock a 403 Forbidden response
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'Access denied',
+          code: 'FORBIDDEN',
+        }),
+      });
+    });
+
+    // Navigate to by-stock detail page (will trigger mocked 403 error)
+    await firstRow.click();
+    await expect(page).toHaveURL(new RegExp(`/holdings/${symbolText}$`));
+
+    // Wait for error state to be displayed
+    const reportContainer = page.locator('.by-stock-detail-container');
+    await expect(reportContainer).toBeVisible({ timeout: 5000 });
+
+    // AC1: Verify error message is displayed safely (no sensitive data)
+    const errorHeading = page.getByRole('heading').filter({ hasText: 'Unable to Load Trades' });
+    await expect(errorHeading).toBeVisible();
+
+    const errorMessage = page.getByText(/You do not have permission/);
+    await expect(errorMessage).toBeVisible();
+
+    // AC1: Verify retry button is present and functional
+    const retryButton = page.getByRole('button').filter({ hasText: 'Try Again' });
+    await expect(retryButton).toBeVisible();
   });
 
   test('AC2: Sortable table allows column sorting', async ({ page }) => {
@@ -228,23 +255,36 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     const firstRow = holdingsTable.locator('tr').nth(1);
     const symbolCell = firstRow.locator('td').first();
     const symbol = await symbolCell.textContent();
+    const symbolText = symbol!.trim();
     
-    await firstRow.click();
-    await expect(page).toHaveURL(new RegExp(`/holdings/${symbol!.trim()}$`));
+    // Mock the trades API to return empty array for this symbol
+    await page.route(`**/api/v1/trades?*symbol=${symbolText}*`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    });
 
-    // Wait for report to load
-    const reportContainer = page.locator('.by-stock-detail-container, .by-stock-report-container');
+    await firstRow.click();
+    await expect(page).toHaveURL(new RegExp(`/holdings/${symbolText}$`));
+
+    // Wait for report container to be visible
+    const reportContainer = page.locator('.by-stock-detail-container');
     await expect(reportContainer).toBeVisible({ timeout: 5000 });
 
-    // If no trades exist, expect empty state message
-    const emptyState = page.getByText(/no.*trade|no.*activity/i);
-    const tradesTable = page.locator('table, .trades-table');
+    // AC2: Verify empty state message is displayed when no trades exist
+    const emptyStateHeading = page.getByRole('heading').filter({ hasText: 'No Trading Activity' });
+    await expect(emptyStateHeading).toBeVisible();
 
-    // Either empty state is shown OR table is visible with data
-    const hasEmptyState = await emptyState.isVisible().catch(() => false);
-    const hasTable = await tradesTable.isVisible().catch(() => false);
-    
-    expect(hasEmptyState || hasTable).toBe(true);
+    // Verify empty state description mentions the symbol
+    const emptyStateMessage = page.getByText(/no trades recorded/i);
+    await expect(emptyStateMessage).toBeVisible();
+
+    // Verify no trades table is shown
+    const tradesTable = page.locator('table, .trades-table');
+    const isTableVisible = await tradesTable.isVisible().catch(() => false);
+    expect(isTableVisible).toBe(false);
   });
 
   test('AC1, AC2: Loading state shows spinner while report loads', async ({ page }) => {
