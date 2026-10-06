@@ -4,13 +4,18 @@ import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.OrderService;
+import com.lemarketjames.orders.stream.OrderStatusStreamService;
 import com.lemarketjames.orders.submission.SubmissionRequestId;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 @RestController
@@ -18,11 +23,30 @@ import java.util.List;
 public class OrderController {
     
     private final OrderService orderService;
+    private final AccountAccess accountAccess;
+    private final OrderStatusStreamService orderStatusStreamService;
     
     private final com.lemarketjames.orders.execution.OrderExecutionService execution;
-    public OrderController(OrderService orderService, com.lemarketjames.orders.execution.OrderExecutionService execution) {
+    public OrderController(OrderService orderService,
+                           AccountAccess accountAccess,
+                           OrderStatusStreamService orderStatusStreamService,
+                           com.lemarketjames.orders.execution.OrderExecutionService execution) {
         this.orderService = orderService;
+        this.accountAccess = accountAccess;
+        this.orderStatusStreamService = orderStatusStreamService;
         this.execution = execution;
+    }
+
+    /**
+     * Opens a live order-status stream for the signed-in client's own account.
+     */
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamOrderStatus() {
+        Integer accountId = accountAccess.callerAccountId();
+        if (accountId == null) {
+            throw new AccessDeniedException("Account access is not allowed");
+        }
+        return orderStatusStreamService.subscribe(accountId);
     }
     
     /**
