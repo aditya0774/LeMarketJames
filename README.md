@@ -27,6 +27,7 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
    - [Method 1: Local Development (Maven + npm)](#method-1-local-development-maven--npm)
    - [Method 2: Docker Build & Run](#method-2-docker-build--run)
    - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
+   - [Trading App and Staff App](#trading-app-and-staff-app)
    - [Market simulation settings](#market-simulation-settings)
 5. [Testing](#testing)
    - [Backend Tests (Java/JUnit)](#backend-tests-javajunit)
@@ -76,7 +77,8 @@ LeMarketJames/
 │       │   ├── shared/           # Reusable components and models
 │       │   ├── features/         # Feature modules: auth, dashboard, etc.
 │       │   └── [other files]/    # Routing, styles, environment configs
-│       ├── package.json          # npm dependencies
+│       ├── projects/staff/       # Staff app: a second Angular app in this workspace (:4201)
+│       ├── package.json          # npm dependencies (shared by both apps)
 │       └── Dockerfile            # Frontend container image
 ├── database/schema/              # Numbered SQL files (001_, 002_, etc.)
 ├── docker-compose.yml            # Full-stack orchestration
@@ -233,6 +235,7 @@ mvn -pl services/core-service spring-boot:run       # http://localhost:8081
 mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
 cd apps/frontend && npm install && npm start        # http://localhost:4200
+cd apps/frontend && npm run start:staff             # staff app, http://localhost:4201
 ```
 The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
 
@@ -345,6 +348,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    - Holdings service: `http://localhost:8084` (direct access for debugging)
    - PostgreSQL database: `localhost:5432`
    - A production (nginx) build of the frontend: `http://localhost:4200`
+   - A production (nginx) build of the staff app: `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
 
 2. The schema is applied automatically. On first start, Postgres runs every file in `database/schema/` in numeric order, because that folder is mounted into `docker-entrypoint-initdb.d`. This only happens when the `db_data` volume is empty. To pick up new schema files on an existing database, either apply them with `psql` (see [database/README.md](database/README.md)) or wipe and recreate the database:
    ```bash
@@ -417,6 +421,62 @@ A service refuses to start if its account can change audit records, so don't poi
 
 **Database Port:** PostgreSQL is exposed on `localhost:5432` for use with database tools (e.g., pgAdmin, DBeaver).
 
+### Trading App and Staff App
+
+There are two Angular apps. The staff app is separate from the trading app: its own pages, its own port, and its own backend entry point.
+
+| App | For | Source | Port | Backend entry point |
+|---|---|---|---|---|
+| Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway on 8090, not built yet (LMKT-143) |
+
+Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
+
+The staff app is a skeleton for now: placeholder pages, no login, and no API calls.
+
+It is set up the same way as the trading app on both platforms, so it builds and runs natively on Windows (Node only, no Docker) and in Docker on Linux/Jenkins:
+
+| | Trading app | Staff app |
+|---|---|---|
+| Windows: dev server | `npm start` | `npm run start:staff` |
+| Windows: `/api` forwarded by | [proxy.conf.json](apps/frontend/proxy.conf.json) to `localhost:8089` | [projects/staff/proxy.conf.json](apps/frontend/projects/staff/proxy.conf.json) to `localhost:8090` |
+| Windows frontend, backend on a Linux VM | `npm run start:vm` ([proxy.vm.json](apps/frontend/proxy.vm.json)) | `npm run start:staff:vm` ([projects/staff/proxy.vm.json](apps/frontend/projects/staff/proxy.vm.json)) |
+| Linux: image | [Dockerfile](apps/frontend/Dockerfile) | [projects/staff/Dockerfile](apps/frontend/projects/staff/Dockerfile), built with `apps/frontend` as its context |
+| Linux: `/api` forwarded by | [nginx.conf](apps/frontend/nginx.conf) to `gateway-service` | [projects/staff/nginx.conf](apps/frontend/projects/staff/nginx.conf) to `staff-gateway-service:8090` |
+
+Like the trading app, the staff app only ever calls `/api` on its own origin (`apiBaseUrl` in [environment.ts](apps/frontend/projects/staff/src/environments/environment.ts) is empty), so the same build works on any host and needs no CORS setup. Until the staff gateway exists, `/api` on port 4201 answers with an error. LMKT-143 must either name its Compose service `staff-gateway-service` and listen on 8090, or change that one line in the staff `nginx.conf`.
+
+**Run both:**
+
+- **Windows:** `.scriptswindowsstart-all.ps1` opens a window for each app, and `stop-all.ps1` stops both.
+- **Docker Compose:** `docker compose up -d --build` starts both, as the `frontend` and `staff-frontend` services.
+- **By hand**, each in its own terminal:
+  ```bash
+  cd apps/frontend
+  npm install            # once, for both apps
+  npm start              # trading app, http://localhost:4200
+  npm run start:staff    # staff app,   http://localhost:4201
+  ```
+
+**Build and test each app** (from `apps/frontend`):
+
+| | Trading app | Staff app |
+|---|---|---|
+| Build | `npm run build` | `npm run build:staff` |
+| Unit tests | `npm test -- lemarket-ui` | `npm run test:staff` |
+
+`npm test` on its own runs both apps' tests, one after the other.
+
+**Where staff screens go** (under `apps/frontend/projects/staff/src/app`):
+
+| Route | Folder |
+|---|---|
+| `/trading-ops` | `features/trading-ops/` |
+| `/analyst` | `features/analyst/` |
+| `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) |
+
+The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell).
+
 ### Market simulation settings
 
 market-service simulates every stock's price. Its settings (tick rate, seed, speed, market hours, holidays) and the test controls, which can set a price or make the feed stale or unavailable, are described in [contracts/C4-quote-feed.md](contracts/C4-quote-feed.md). The business settings every service shares (lockout, staleness limit, ...) are in [contracts/C5-config.md](contracts/C5-config.md).
@@ -446,12 +506,14 @@ Test results are generated in each module's `target/surefire-reports/` (e.g. `se
 
 ### Frontend Tests (TypeScript/Vitest)
 
-Run all frontend tests:
+Run all frontend tests (the trading app's, then the staff app's):
 
 ```bash
 cd apps/frontend
 npm test
 ```
+
+To run one app's tests, see [Trading App and Staff App](#trading-app-and-staff-app).
 
 ### End-to-End Tests (Playwright)
 
@@ -487,6 +549,7 @@ Once the application is running (via any of the three methods), you can access:
 |---------|-----|---------|
 | **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
 | **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
+| **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts (placeholder pages for now) |
 | **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
 | **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
 | **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |

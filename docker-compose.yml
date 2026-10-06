@@ -7,6 +7,18 @@ services:
     depends_on:
       - gateway-service
 
+  # The staff app (Trading Ops and Analyst): a separate Angular app on its own port. It builds from
+  # the same Angular workspace as the trading frontend, hence the shared context. It depends on
+  # nothing yet: its own backend entry point, the staff gateway, comes with LMKT-143. Its Nginx
+  # already forwards /api to staff-gateway-service:8090 (apps/frontend/projects/staff/nginx.conf).
+  staff-frontend:
+    image: lemarketjames/staff-frontend:${IMAGE_TAG:-dev}
+    build:
+      context: ./apps/frontend
+      dockerfile: projects/staff/Dockerfile
+    ports:
+      - "4201:80"
+
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
   # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
   # /api/v1/{orders,buy-orders}/** to buy-sell-service, everything else to core-service (see

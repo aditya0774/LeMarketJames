@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Runs the whole app natively on Windows: every backend service plus the Angular dev server.
+    Runs the whole app natively on Windows: every backend service plus both Angular dev servers.
 
 .DESCRIPTION
     Windows counterpart of `docker compose up`, for machines that can't run Linux containers.
@@ -53,7 +53,11 @@ Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-ser
 $frontend = Join-Path $repoRoot 'apps\frontend'
 $npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start' } else { 'npm install; npm start' }
 Start-Window 'frontend :4200' $frontend $npm
+# The staff app is a second project in the same Angular workspace. It shares node_modules with
+# the trading frontend, so it waits for the install above instead of running a second one.
+$staff = 'while (-not (Test-Path node_modules\.package-lock.json)) { Start-Sleep 2 }; npm run start:staff'
+Start-Window 'staff-frontend :4201' $frontend $staff
 
 Write-Host ''
-Write-Host 'Services take ~30s to start. Then open http://localhost:4200'
+Write-Host 'Services take ~30s to start. Then open http://localhost:4200 (trading app) or http://localhost:4201 (staff app)'
 Write-Host 'Health check: curl http://localhost:8089/actuator/health'
