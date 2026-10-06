@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
-<coverage lines-valid="1614" lines-covered="1429" line-rate="0.8853" branches-valid="997" branches-covered="784" branch-rate="0.7863" timestamp="1791236296845" complexity="0" version="0.1">
+<coverage lines-valid="1614" lines-covered="1429" line-rate="0.8853" branches-valid="997" branches-covered="784" branch-rate="0.7863" timestamp="1791294410854" complexity="0" version="0.1">
   <sources>
     <source>/home/runner/work/LeMarketJames/LeMarketJames/apps/frontend</source>
   </sources>
@@ -2120,8 +2120,8 @@
             </method>
           </methods>
           <lines>
-            <line number="8" hits="2" branch="false"/>
-            <line number="15" hits="2" branch="false"/>
+            <line number="8" hits="3" branch="false"/>
+            <line number="15" hits="3" branch="false"/>
             <line number="19" hits="25" branch="false"/>
             <line number="23" hits="87" branch="true" condition-coverage="100% (3/3)"/>
             <line number="25" hits="74" branch="false"/>
