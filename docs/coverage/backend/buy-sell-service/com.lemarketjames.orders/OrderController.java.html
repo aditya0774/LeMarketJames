@@ -4,13 +4,18 @@ import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.OrderService;
+import com.lemarketjames.orders.stream.OrderStatusStreamService;
 import com.lemarketjames.orders.submission.SubmissionRequestId;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 @RestController
@@ -18,12 +23,31 @@ import java.util.List;
 public class OrderController {
     
     private final OrderService orderService;
+    private final AccountAccess accountAccess;
+    private final OrderStatusStreamService orderStatusStreamService;
     
     private final com.lemarketjames.orders.execution.OrderExecutionService execution;
-<span class="fc" id="L23">    public OrderController(OrderService orderService, com.lemarketjames.orders.execution.OrderExecutionService execution) {</span>
-<span class="fc" id="L24">        this.orderService = orderService;</span>
-<span class="fc" id="L25">        this.execution = execution;</span>
-<span class="fc" id="L26">    }</span>
+    public OrderController(OrderService orderService,
+                           AccountAccess accountAccess,
+                           OrderStatusStreamService orderStatusStreamService,
+<span class="fc" id="L33">                           com.lemarketjames.orders.execution.OrderExecutionService execution) {</span>
+<span class="fc" id="L34">        this.orderService = orderService;</span>
+<span class="fc" id="L35">        this.accountAccess = accountAccess;</span>
+<span class="fc" id="L36">        this.orderStatusStreamService = orderStatusStreamService;</span>
+<span class="fc" id="L37">        this.execution = execution;</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Opens a live order-status stream for the signed-in client's own account.
+     */
+    @GetMapping(value = &quot;/stream&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamOrderStatus() {
+<span class="fc" id="L45">        Integer accountId = accountAccess.callerAccountId();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (accountId == null) {</span>
+<span class="fc" id="L47">            throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
+        }
+<span class="fc" id="L49">        return orderStatusStreamService.subscribe(accountId);</span>
+    }
     
     /**
      * Create a new order with cash validation
@@ -34,15 +58,15 @@ public class OrderController {
     @PostMapping
     public ResponseEntity&lt;OrderResponse&gt; createOrder(@Valid @RequestBody CreateOrderRequest request,
                                                      HttpServletResponse httpResponse) {
-<span class="fc" id="L37">        OrderResponse response = orderService.createOrder(request, SubmissionRequestId.issue(httpResponse));</span>
+<span class="fc" id="L61">        OrderResponse response = orderService.createOrder(request, SubmissionRequestId.issue(httpResponse));</span>
         
         // If validation failed, return 400 Bad Request
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
-<span class="fc" id="L41">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
+<span class="fc" id="L65">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
         }
         
         // Order created successfully
-<span class="fc" id="L45">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+<span class="fc" id="L69">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
     }
     
     /**
@@ -51,8 +75,8 @@ public class OrderController {
      */
     @GetMapping(&quot;/{orderId}&quot;)
     public ResponseEntity&lt;OrderResponse&gt; getOrderById(@PathVariable Integer orderId) {
-<span class="fc" id="L54">        OrderResponse response = orderService.getOrderById(orderId);</span>
-<span class="fc" id="L55">        return ResponseEntity.ok(response);</span>
+<span class="fc" id="L78">        OrderResponse response = orderService.getOrderById(orderId);</span>
+<span class="fc" id="L79">        return ResponseEntity.ok(response);</span>
     }
     
     /**
@@ -63,8 +87,8 @@ public class OrderController {
     public ResponseEntity&lt;List&lt;OrderResponse&gt;&gt; getOrdersByAccountId(@PathVariable Integer accountId,
             @RequestParam(required = false) String date,
             @RequestParam(required = false) String timeZone) {
-<span class="fc" id="L66">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountId(accountId, date, timeZone);</span>
-<span class="fc" id="L67">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L90">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountId(accountId, date, timeZone);</span>
+<span class="fc" id="L91">        return ResponseEntity.ok(orders);</span>
     }
     
     /**
@@ -77,8 +101,8 @@ public class OrderController {
             @PathVariable Order.OrderStatus status,
             @RequestParam(required = false) String date,
             @RequestParam(required = false) String timeZone) {
-<span class="fc" id="L80">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone);</span>
-<span class="fc" id="L81">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L104">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone);</span>
+<span class="fc" id="L105">        return ResponseEntity.ok(orders);</span>
     }
     
     /**
@@ -87,8 +111,8 @@ public class OrderController {
      */
     @GetMapping(&quot;/instrument/{instrumentId}&quot;)
     public ResponseEntity&lt;List&lt;OrderResponse&gt;&gt; getOrdersByInstrumentId(@PathVariable Integer instrumentId) {
-<span class="fc" id="L90">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByInstrumentId(instrumentId);</span>
-<span class="fc" id="L91">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L114">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByInstrumentId(instrumentId);</span>
+<span class="fc" id="L115">        return ResponseEntity.ok(orders);</span>
     }
     
     /**
@@ -99,13 +123,13 @@ public class OrderController {
     public ResponseEntity&lt;OrderResponse&gt; updateOrderStatus(
             @PathVariable Integer orderId,
             @PathVariable Order.OrderStatus status) {
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
-<span class="fc" id="L103">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
-<span class="fc" id="L104">            execution.execute(orderId, true);</span>
-<span class="fc" id="L105">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
+<span class="fc" id="L127">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
+<span class="fc" id="L128">            execution.execute(orderId, true);</span>
+<span class="fc" id="L129">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
         }
-<span class="nc" id="L107">        OrderResponse response = orderService.updateOrderStatus(orderId, status);</span>
-<span class="nc" id="L108">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L131">        OrderResponse response = orderService.updateOrderStatus(orderId, status);</span>
+<span class="nc" id="L132">        return ResponseEntity.ok(response);</span>
     }
     
     /**
@@ -116,8 +140,8 @@ public class OrderController {
     public ResponseEntity&lt;OrderResponse&gt; rejectOrder(
             @PathVariable Integer orderId,
             @RequestParam(defaultValue = &quot;REJECTED_BY_OPERATIONS&quot;) RejectionReason reason) {
-<span class="nc" id="L119">        OrderResponse response = orderService.rejectOrder(orderId, reason);</span>
-<span class="nc" id="L120">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L143">        OrderResponse response = orderService.rejectOrder(orderId, reason);</span>
+<span class="nc" id="L144">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -142,10 +166,10 @@ public class OrderController {
     public ResponseEntity&lt;List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt;&gt; getOrderTimeline(
             @PathVariable Integer orderId) {
         // Validates order exists and caller has access (TRADING_OPS or owner)
-<span class="fc" id="L145">        orderService.findOwnOrder(orderId);</span>
+<span class="fc" id="L169">        orderService.findOwnOrder(orderId);</span>
     
-<span class="fc" id="L147">        List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt; timeline = orderService.getOrderTimelineEvents(orderId);</span>
-<span class="fc" id="L148">        return ResponseEntity.ok(timeline);</span>
+<span class="fc" id="L171">        List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt; timeline = orderService.getOrderTimelineEvents(orderId);</span>
+<span class="fc" id="L172">        return ResponseEntity.ok(timeline);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
