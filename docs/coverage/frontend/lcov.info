@@ -1898,8 +1898,8 @@ FNDA:25,isOpenStatus
 FNDA:87,matchesFilter
 FNDA:309,statusPillClass
 FNDA:307,statusLabel
-DA:8,2
-DA:15,2
+DA:8,3
+DA:15,3
 DA:19,25
 DA:23,87
 DA:25,74
