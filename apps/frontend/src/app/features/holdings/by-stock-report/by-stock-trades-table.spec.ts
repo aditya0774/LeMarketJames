@@ -236,7 +236,7 @@ describe('ByStockTradesTable', () => {
      */
     it('should show green badge for BUY trades', () => {
       fixture.detectChanges();
-      const buyBadges = compiled.queryAll(By.css('.badge-buy'));
+      const buyBadges = compiled.queryAll(By.css('.pill-buy'));
       expect(buyBadges.length).toBeGreaterThan(0);
     });
 
@@ -246,7 +246,7 @@ describe('ByStockTradesTable', () => {
      */
     it('should show red badge for SELL trades', () => {
       fixture.detectChanges();
-      const sellBadges = compiled.queryAll(By.css('.badge-sell'));
+      const sellBadges = compiled.queryAll(By.css('.pill-sell'));
       expect(sellBadges.length).toBeGreaterThan(0);
     });
 
@@ -256,7 +256,7 @@ describe('ByStockTradesTable', () => {
      */
     it('should display correct side text in badge', () => {
       fixture.detectChanges();
-      const badges = compiled.queryAll(By.css('.badge'));
+      const badges = compiled.queryAll(By.css('.pill'));
       
       expect(badges.some(b => b.nativeElement.textContent.includes('BUY'))).toBe(true);
       expect(badges.some(b => b.nativeElement.textContent.includes('SELL'))).toBe(true);

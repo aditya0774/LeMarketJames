@@ -105,6 +105,6 @@ export class ByStockTradesTable {
    * Get badge class for side (BUY/SELL)
    */
   getSideBadgeClass(side: string): string {
-    return side === 'BUY' ? 'badge badge-buy' : 'badge badge-sell';
+    return side === 'BUY' ? 'pill pill-buy' : 'pill pill-sell';
   }
 }

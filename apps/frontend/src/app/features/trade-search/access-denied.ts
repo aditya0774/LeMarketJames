@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 @Component({
   imports: [RouterLink],
-  template: `<h1>Access denied</h1><p>Trade search is available only to Trading Operations.</p>
-    <a routerLink="/">Return home</a>`,
+  templateUrl: './access-denied.html',
+  styleUrl: './access-denied.css',
 })
 export class AccessDenied {}

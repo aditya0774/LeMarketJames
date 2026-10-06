@@ -5,19 +5,19 @@
 .trades-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--font-base);
   margin-bottom: 15px;
 
   thead {
-    background-color: #f5f5f5;
-    border-bottom: 2px solid #ddd;
+    background-color: var(--purple-deep);
+    border-bottom: 1px solid var(--purple-line);
   }
 
   th {
-    padding: 12px 8px;
+    padding: var(--space-sm) var(--space-xs);
     text-align: left;
     font-weight: 600;
-    color: #333;
+    color: var(--gold);
     user-select: none;
 
     &.sortable {
@@ -25,7 +25,7 @@
       transition: background-color 0.2s ease;
 
       &:hover {
-        background-color: #eee;
+        background-color: rgba(253, 185, 39, 0.06);
       }
     }
 
@@ -35,19 +35,19 @@
 
     .sort-indicator {
       margin-left: 4px;
-      font-size: 12px;
-      color: #999;
+      font-size: var(--font-xs);
+      color: var(--text-faint);
       display: inline-block;
       min-width: 12px;
     }
   }
 
   tbody tr {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--purple-line);
     transition: background-color 0.15s ease;
 
     &:hover:not(.empty-row) {
-      background-color: #fafafa;
+      background-color: rgba(253, 185, 39, 0.04);
     }
 
     &.empty-row {
@@ -64,18 +64,17 @@
   }
 
   td {
-    padding: 10px 8px;
-    color: #333;
+    padding: 10px var(--space-xs);
+    color: var(--text);
 
     &.numeric {
       text-align: right;
-      font-family: 'Courier New', monospace;
     }
 
     &.empty-cell {
       text-align: center;
-      color: #999;
-      padding: 30px 8px;
+      color: var(--text-faint);
+      padding: 30px var(--space-xs);
       font-style: italic;
     }
 
@@ -89,35 +88,14 @@
   }
 }
 
-// Status badges for BUY/SELL
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 12px;
-  min-width: 50px;
-  text-align: center;
-
-  &.badge-buy {
-    background-color: #c8e6c9;
-    color: #2e7d32;
-  }
-
-  &.badge-sell {
-    background-color: #ffcccc;
-    color: #c62828;
-  }
-}
-
 .trades-summary {
   padding: 10px 0;
   text-align: right;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--purple-line);
 
   .summary-text {
     margin: 5px 0;
-    font-size: 12px;
-    color: #666;
+    font-size: var(--font-xs);
+    color: var(--text-faint);
   }
 }

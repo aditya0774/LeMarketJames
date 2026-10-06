@@ -53,8 +53,8 @@
 }
 
 .logo-amber {
-  color: #ffc107;
-  text-shadow: 0 2px 10px rgba(255, 193, 7, 0.3);
+  color: var(--gold);
+  text-shadow: 0 2px 10px rgba(253, 185, 39, 0.3);
 }
 
 .logo-white {
@@ -73,13 +73,13 @@
 }
 
 .tagline-amber {
-  color: #ffc107;
+  color: var(--gold);
 }
 
 /* Description */
 .description {
   font-size: 16px;
-  color: #b8a8d8;
+  color: var(--text-dim);
   max-width: 600px;
   margin: 20px 0 40px;
   line-height: 1.6;
@@ -94,7 +94,11 @@
   flex-wrap: wrap;
 }
 
-.btn {
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
   padding: 12px 32px;
   font-size: 16px;
   font-weight: 600;
@@ -109,23 +113,23 @@
 .btn-login {
   background-color: rgba(255, 255, 255, 0.03);
   color: #ffffff;
-  border: 1.5px solid #6a4fb0;
+  border: 1.5px solid var(--purple-mid);
 }
 
 .btn-login:hover {
-  background-color: rgba(106, 79, 176, 0.15);
-  border-color: #8a6fd0;
+  background-color: rgba(92, 42, 140, 0.15);
+  border-color: var(--purple-mid);
 }
 
 .btn-create {
-  background-color: #ffc107;
-  color: #0f0321;
+  background-color: var(--gold);
+  color: var(--ink);
   border: none;
 }
 
 .btn-create:hover {
-  background-color: #ffed4e;
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+  background-color: var(--gold-soft);
+  box-shadow: 0 4px 12px rgba(253, 185, 39, 0.3);
 }
 
 /* Footer */
@@ -139,16 +143,16 @@
 }
 
 .footer-badge {
-  border: 1px solid rgba(255, 193, 7, 0.6);
+  border: 1px solid rgba(253, 185, 39, 0.6);
   border-radius: 4px;
-  padding: 3px 10px;
-  color: #ffc107;
+  padding: 3px var(--space-sm);
+  color: var(--gold);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--font-2xs);
   letter-spacing: 1px;
 }
 
 .footer-text {
-  color: #8a7ba8;
-  font-size: 12px;
+  color: var(--text-faint);
+  font-size: var(--font-xs);
 }

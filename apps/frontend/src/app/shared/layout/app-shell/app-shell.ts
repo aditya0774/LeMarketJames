@@ -10,6 +10,6 @@ import { Auth } from '../../../core/auth/auth';
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink],
   templateUrl: './app-shell.html',
-  styles: ['nav a { color: var(--gold); font-weight: 600; } nav { margin: 16px 0; }'],
+  styleUrl: './app-shell.css',
 })
 export class AppShell { readonly auth = inject(Auth); }

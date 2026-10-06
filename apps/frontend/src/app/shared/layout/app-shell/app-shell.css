@@ -1,0 +1,29 @@
+.shell-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--purple-line);
+  margin-bottom: var(--space-lg);
+}
+
+.shell-topbar .brand {
+  margin-bottom: 0;
+}
+
+nav {
+  margin: 0;
+}
+
+nav a {
+  color: var(--gold);
+  font-weight: 600;
+  font-size: var(--font-sm);
+  text-decoration: none;
+}
+
+nav a:hover {
+  color: var(--gold-soft);
+}
