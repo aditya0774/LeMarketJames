@@ -130,7 +130,7 @@ public class OrderService {
      * Loads an order the caller may act on: their own, or any order for trading operations staff
      * (contract C7), who manage every client's orders.
      */
-    private Order findOwnOrder(Integer orderId) {
+    public Order findOwnOrder(Integer orderId) {
         accountAccess.authenticatedUsername();
         // Use the same denial for missing and foreign IDs to avoid exposing their existence.
         Order order = orderRepository.findById(orderId)
