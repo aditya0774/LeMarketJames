@@ -119,4 +119,32 @@ public class OrderController {
         OrderResponse response = orderService.rejectOrder(orderId, reason);
         return ResponseEntity.ok(response);
     }
+
+    /**
+    * Get the chronological audit timeline for an order (TRADING_OPS only).
+    * 
+    * <p>Returns all audit events for the order in the order they were recorded.
+    * Each event captures a step in the order's lifecycle: placement, validation, acceptance,
+    * execution, rejection, or settlement. Events include their type, timestamp, and details
+    * (e.g., price, quantity, rejection reason, cash/holdings deltas).
+    * 
+    * <p><strong>Access control:</strong> Only TRADING_OPS staff may call this endpoint.
+    * The order ID must exist and be accessible to the caller (see {@link #findOwnOrder(Integer)}).
+    * 
+    * <p><strong>Response:</strong> Returns 200 with a list of audit events in chronological order (oldest first).
+    * If the order has no events, returns an empty list.
+    * 
+    * @param orderId the order to retrieve the audit timeline for
+    * @return 200 OK with list of {@link com.lemarketjames.orders.dto.AuditEventDto}
+    * @throws AccessDeniedException (403) if caller lacks TRADING_OPS role or order is not found/accessible
+    */
+    @GetMapping("/{orderId}/timeline")
+    public ResponseEntity<List<com.lemarketjames.orders.dto.AuditEventDto>> getOrderTimeline(
+            @PathVariable Integer orderId) {
+        // Validates order exists and caller has access (TRADING_OPS or owner)
+        orderService.findOwnOrder(orderId);
+    
+        List<com.lemarketjames.orders.dto.AuditEventDto> timeline = orderService.getOrderTimelineEvents(orderId);
+        return ResponseEntity.ok(timeline);
+    }
 }

@@ -112,6 +112,70 @@ The two account-history endpoints accept these optional date-filter parameters:
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
+### Order timeline (TRADING_OPS only)
+
+Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills.
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/v1/orders/{orderId}/timeline` | an array of audit events for the order, oldest first |
+
+**Response `200`:**
+
+```json
+[
+  {
+    "eventType": "SUBMITTED",
+    "occurredAt": "2026-09-21T10:30:00Z",
+    "details": {
+      "side": "BUY",
+      "quantity": 10,
+      "price": 244.2366
+    }
+  },
+  {
+    "eventType": "VALIDATED",
+    "occurredAt": "2026-09-21T10:30:01Z",
+    "details": {
+      "validationStatus": "PASSED"
+    }
+  },
+  {
+    "eventType": "ACCEPTED",
+    "occurredAt": "2026-09-21T10:30:02Z",
+    "details": {}
+  },
+  {
+    "eventType": "FILLED",
+    "occurredAt": "2026-09-21T10:30:03Z",
+    "details": {
+      "executionPrice": 244.2366,
+      "quantity": 10
+    }
+  },
+  {
+    "eventType": "SETTLED",
+    "occurredAt": "2026-09-21T10:30:04Z",
+    "details": {
+      "cashDelta": -2442.366,
+      "quantityDelta": 10
+    }
+  }
+]
+```
+
+**Access control and failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 200 | Success | array of events, empty if no events exist |
+| 401 | Not authenticated | see rules above |
+| 403 | Not TRADING_OPS role, or order not found | see ownership rules |
+
+- An unknown or inaccessible order ID returns `403` (no information leak).
+- Clients and other staff roles are denied with `403`, even if they own the order.
+- Events are sourced exclusively from the audit trail ([C2](C2-audit.md)), ensuring immutable and comprehensive order history.
+
 ### Trade search (TRADING_OPS only)
 
 `GET /api/v1/orders/trades/search` (buy-sell-service, through the existing orders gateway route).

@@ -156,7 +156,7 @@ class SubmissionRestartIntegrationTest {
 
     /** A coordinator with nothing in memory from an earlier attempt, as after a restart. */
     private OrderService restartedService() {
-        return new OrderService(orders, accountAccess, validator, submissions, transitions);
+        return new OrderService(orders, accountAccess, validator, submissions, transitions, events);
     }
 
     /** Fails the write of one event, as if the process stopped there; every other write is real. */

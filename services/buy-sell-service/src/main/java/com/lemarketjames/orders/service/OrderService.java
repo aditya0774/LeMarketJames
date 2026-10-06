@@ -1,6 +1,11 @@
 package com.lemarketjames.orders.service;
 
+import com.lemarketjames.common.audit.AuditEventType;
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.AuditEventEntity;
+import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.security.Role;
+import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
@@ -32,17 +37,20 @@ public class OrderService {
     private final SubmissionValidator validator;
     private final SubmissionRecorder submissions;
     private final OrderTransitions transitions;
+    private final AuditEventRepository auditEventRepository;
 
     public OrderService(OrderRepository orderRepository,
                         AccountAccess accountAccess,
                         SubmissionValidator validator,
                         SubmissionRecorder submissions,
-                        OrderTransitions transitions) {
+                        OrderTransitions transitions,
+                        AuditEventRepository auditEventRepository) {
         this.orderRepository = orderRepository;
         this.accountAccess = accountAccess;
         this.validator = validator;
         this.submissions = submissions;
         this.transitions = transitions;
+        this.auditEventRepository = auditEventRepository;
     }
 
     /**
@@ -122,7 +130,7 @@ public class OrderService {
      * Loads an order the caller may act on: their own, or any order for trading operations staff
      * (contract C7), who manage every client's orders.
      */
-    private Order findOwnOrder(Integer orderId) {
+    public Order findOwnOrder(Integer orderId) {
         accountAccess.authenticatedUsername();
         // Use the same denial for missing and foreign IDs to avoid exposing their existence.
         Order order = orderRepository.findById(orderId)
@@ -235,4 +243,34 @@ public class OrderService {
         return new OrderResponse(rejectedOrder);
     }
 
+    /**
+    * Retrieves the chronological audit trail for an order.
+    * 
+    * <p>Returns all audit events (SUBMITTED, VALIDATED, ACCEPTED, FILLED, REJECTED, SETTLED) 
+    * in the order they were recorded. Events are ordered by {@code audit_id} (auto-increment),
+    * which reflects insertion order across all services.
+    * 
+    * <p><strong>Security:</strong> This method does not check ownership or role. Callers must validate
+    * access separately via {@link #findOwnOrder(Integer)} before calling this method.
+    * 
+    * <p><strong>Empty timelines:</strong> If the order has no audit events (which should not occur in normal operation),
+    * returns an empty list rather than throwing an exception.
+    *
+    * @param orderId the order ID to retrieve events for
+    * @return list of {@link AuditEventDto} in chronological order (oldest first); empty list if no events exist
+    * @throws IllegalArgumentException if orderId is null
+    */
+    public List<AuditEventDto> getOrderTimelineEvents(Integer orderId) {
+        if (orderId == null) {
+            throw new IllegalArgumentException("orderId cannot be null");
+        }
+        return auditEventRepository.findByOrderIdOrderByOccurredAtAsc(orderId)
+            .stream()
+            .map(event -> new AuditEventDto(
+                event.getEventType(),
+                event.getOccurredAt(),
+                event.getDetails()
+            ))
+            .toList();
+    }
 }

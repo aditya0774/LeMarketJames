@@ -4,6 +4,8 @@ import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.AuditEventEntity;
+import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.audit.SubmissionAuditEvent;
 import com.lemarketjames.orders.submission.SubmissionRecorder;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +21,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.util.Map;
 import com.lemarketjames.holdings.client.HoldingsSettlementClient;
 import com.lemarketjames.holdings.client.HoldingsValidationClient;
+import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
 import com.lemarketjames.orders.dto.SubmitBuyOrderRequest;
@@ -80,6 +83,9 @@ class OrderServiceTest {
     private AuditRecorder auditRecorder;
 
     @Mock
+    private AuditEventRepository auditEventRepository;
+
+    @Mock
     private ApplicationEventPublisher events;
 
     @Mock private TradingRestrictions restrictions;
@@ -98,7 +104,8 @@ class OrderServiceTest {
             cashValidationService);
         orderService = new OrderService(orderRepository, accountAccess, validator,
             new SubmissionRecorder(orderRepository, auditRecorder),
-            new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events));
+            new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events),
+            auditEventRepository);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -650,5 +657,96 @@ class OrderServiceTest {
         // Assert
         assertEquals(1, responses.size());
         assertEquals(Order.OrderStatus.SUBMITTED, responses.get(0).getOrderStatus());
+    }
+
+    /**
+     * Unit tests for {@link OrderService#getOrderTimelineEvents(Integer)}.
+     * Tests that the service correctly retrieves and maps audit events in chronological order.
+     */
+
+    @Test
+    @DisplayName("getOrderTimelineEvents returns events in chronological order")
+    void getOrderTimelineEventsReturnsChronologicalOrder() {
+        Integer orderId = 42;
+        
+        // Create mock audit events in chronological order
+        AuditEventEntity submitted = new AuditEventEntity(
+            orderId, 7, 1, AuditEventType.SUBMITTED,
+            Map.of("side", "BUY", "quantity", 10, "price", 100.00),
+            java.time.Instant.parse("2026-09-21T10:30:00Z")
+        );
+        AuditEventEntity validated = new AuditEventEntity(
+            orderId, 7, 1, AuditEventType.VALIDATED,
+            Map.of("checks", new String[]{"ACCOUNT", "TRADABLE", "CASH"}),
+            java.time.Instant.parse("2026-09-21T10:30:01Z")
+        );
+        AuditEventEntity filled = new AuditEventEntity(
+            orderId, 7, 1, AuditEventType.FILLED,
+            Map.of("quantity", 10, "price", 100.00),
+            java.time.Instant.parse("2026-09-21T10:30:02Z")
+        );
+        
+        when(auditEventRepository.findByOrderIdOrderByOccurredAtAsc(orderId))
+            .thenReturn(List.of(submitted, validated, filled));
+        
+        List<AuditEventDto> timeline = orderService.getOrderTimelineEvents(orderId);
+        
+        assertEquals(3, timeline.size());
+        assertEquals(AuditEventType.SUBMITTED, timeline.get(0).eventType());
+        assertEquals(AuditEventType.VALIDATED, timeline.get(1).eventType());
+        assertEquals(AuditEventType.FILLED, timeline.get(2).eventType());
+        
+        // Verify timestamps are in order
+        assertTrue(timeline.get(0).occurredAt().isBefore(timeline.get(1).occurredAt()));
+        assertTrue(timeline.get(1).occurredAt().isBefore(timeline.get(2).occurredAt()));
+    }
+
+    @Test
+    @DisplayName("getOrderTimelineEvents includes all event details")
+    void getOrderTimelineEventsIncludesAllDetails() {
+        Integer orderId = 42;
+        
+        Map<String, Object> expectedDetails = Map.of(
+            "side", "BUY",
+            "quantity", 10,
+            "price", 244.2366
+        );
+        
+        AuditEventEntity event = new AuditEventEntity(
+            orderId, 7, 1, AuditEventType.SUBMITTED,
+            expectedDetails,
+            java.time.Instant.parse("2026-09-21T10:30:00Z")
+        );
+        
+        when(auditEventRepository.findByOrderIdOrderByOccurredAtAsc(orderId))
+            .thenReturn(List.of(event));
+        
+        List<AuditEventDto> timeline = orderService.getOrderTimelineEvents(orderId);
+        
+        assertEquals(1, timeline.size());
+        assertEquals(AuditEventType.SUBMITTED, timeline.get(0).eventType());
+        assertEquals(java.time.Instant.parse("2026-09-21T10:30:00Z"), timeline.get(0).occurredAt());
+        assertEquals(expectedDetails, timeline.get(0).details());
+    }
+
+    @Test
+    @DisplayName("getOrderTimelineEvents returns empty list when no events exist")
+    void getOrderTimelineEventsReturnsEmptyListWhenNoEvents() {
+        Integer orderId = 42;
+        
+        when(auditEventRepository.findByOrderIdOrderByOccurredAtAsc(orderId))
+            .thenReturn(List.of());
+        
+        List<AuditEventDto> timeline = orderService.getOrderTimelineEvents(orderId);
+        
+        assertTrue(timeline.isEmpty());
+    }
+
+    @Test
+    @DisplayName("getOrderTimelineEvents throws IllegalArgumentException when orderId is null")
+    void getOrderTimelineEventsThrowsWhenOrderIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            orderService.getOrderTimelineEvents(null);
+        });
     }
 }
