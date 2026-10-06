@@ -7,6 +7,7 @@ import { HoldingsListComponent } from './features/holdings/holdings-list/holding
 import { ByStockDetailComponent } from './features/holdings/by-stock-report/by-stock-detail.component';
 import { AppShell } from './shared/layout/app-shell/app-shell';
 import { authGuard } from './core/auth/auth.guard';
+import { tradingOpsGuard } from './core/auth/trading-ops.guard';
 
 export const routes: Routes = [
   { path: '', component: Home, pathMatch: 'full' },
@@ -21,6 +22,10 @@ export const routes: Routes = [
     path: '',
     component: AppShell,
     canActivate: [authGuard],
-    children: [{ path: 'dashboard', component: Dashboard }],
+    children: [
+      { path: 'dashboard', component: Dashboard },
+      { path: 'trade-search', canActivate: [tradingOpsGuard], loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) },
+      { path: 'access-denied', loadComponent: () => import('./features/trade-search/access-denied').then(m => m.AccessDenied) },
+    ],
   },
 ];

@@ -206,6 +206,12 @@ return `400 { "message": "..." }`. Missing/expired authentication gets `401`; ev
 including a client searching for their own trade, gets `403`. Operations may search any client's
 trades, including closed clients. Existing ownership rules for client history are unchanged.
 
+The frontend `/trade-search` page provides separate order-ID and client/date search modes.
+Trading Operations land there after login and see a navigation link in the signed-in layout.
+Other signed-in roles are redirected to `/access-denied`. The screen labels dates and execution
+times as UTC, preserves four-decimal execution prices, and clears/cancels stale searches when
+criteria change. Component tests mock this endpoint; normal use calls the gateway.
+
 ### Changing an order's status (TRADING_OPS only)
 
 | Method & path | Effect |

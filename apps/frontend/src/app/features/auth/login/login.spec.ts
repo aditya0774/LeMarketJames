@@ -10,7 +10,7 @@ import { Login } from './login';
 describe('Login', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
-  let authMock: { login: (request: { username: string; password: string }) => Promise<{ username: string; message: string }> };
+  let authMock: { hasRole: (role: string) => boolean; login: (request: { username: string; password: string }) => Promise<{ username: string; message: string }> };
   let loginCalls: Array<{ username: string; password: string }>;
   let router: Router;
   let navigateCalls = 0;
@@ -19,6 +19,7 @@ describe('Login', () => {
   beforeEach(async () => {
     loginCalls = [];
     authMock = {
+      hasRole: () => false,
       login: async (request) => {
         loginCalls.push(request);
         return { username: request.username, message: 'Login successful' };
@@ -70,6 +71,13 @@ describe('Login', () => {
     expect(navigateCalls).toBe(1);
     expect(navigateArgs).toEqual([['/dashboard']]);
     expect((component as any).errorMessage()).toBeNull();
+  });
+
+  it('lands Operations on trade search without requiring an account', async () => {
+    authMock.hasRole = role => role === 'TRADING_OPS';
+    (component as any).form.setValue({ username: 'ops@seed.lemarket.com', password: 'Pass123!' });
+    await component.submit();
+    expect(navigateArgs).toEqual([['/trade-search']]);
   });
 
   it('should show error message for invalid credentials', async () => {
