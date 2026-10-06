@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
+import { Auth } from '../../../core/auth/auth';
 
 /**
  * Signed-in layout: LeMarket branding above a centred content area. Everything happens
- * on the dashboard (the buy/sell menu is a popup), so there is no side navigation.
+ * on the dashboard for clients; operations also have a trade-search entry point.
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './app-shell.html',
+  styles: ['nav a { color: var(--gold); font-weight: 600; } nav { margin: 16px 0; }'],
 })
-export class AppShell {}
+export class AppShell { readonly auth = inject(Auth); }
