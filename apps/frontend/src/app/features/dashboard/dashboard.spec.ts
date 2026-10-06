@@ -5,10 +5,9 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
-import { vi } from 'vitest';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
-import { OrderService } from '../../core/orders/order.service';
+import { OrderResponse, OrdersWatchSnapshot, OrderService } from '../../core/orders/order.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { Dashboard } from './dashboard';
 import { TEST_INSTRUMENTS, loadTestInstruments } from '../../core/market/instrument-catalog.testing';
@@ -25,8 +24,9 @@ function quote(symbol: string, price: number) {
   };
 }
 
-function order(orderId: number, orderStatus: string, instrumentId = 1) {
+function order(orderId: number, orderStatus: OrderResponse['orderStatus'], instrumentId = 1): OrderResponse {
   return {
+    success: true,
     orderId, accountId: 7, instrumentId, orderType: 'BUY', quantity: 1, orderStatus,
     submittedAt: `2026-09-0${orderId}T10:00:00`, createdAt: '', updatedAt: '',
   };
@@ -36,9 +36,12 @@ describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let ordersResult: Observable<unknown>;
   let requestedFilters: unknown[];
+  let liveOrders: Subject<OrdersWatchSnapshot>;
+  let liveOrdersSeed: unknown[];
 
   async function setup() {
     requestedFilters = [];
+    liveOrders = new Subject<OrdersWatchSnapshot>();
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
@@ -47,7 +50,16 @@ describe('Dashboard', () => {
         provideRouter([]),
         { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7), logout: async () => {} } },
         { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings }), error: signal(null) } },
-        { provide: OrderService, useValue: { getOrdersByAccountId: (_accountId: number, filter: unknown) => { requestedFilters.push(filter); return ordersResult; } } },
+        {
+          provide: OrderService,
+          useValue: {
+            getOrdersByAccountId: (_accountId: number, filter: unknown) => {
+              requestedFilters.push(filter);
+              return ordersResult;
+            },
+            watchOrdersByAccountId: () => liveOrders.asObservable(),
+          },
+        },
         {
           provide: Quotes,
           useValue: {
@@ -65,33 +77,31 @@ describe('Dashboard', () => {
     // Quote polling starts once the (already loaded) stock list resolves, a microtask later.
     fixture.detectChanges();
     await fixture.whenStable();
+    liveOrders.next({ orders: liveOrdersSeed as any[], connection: 'live' });
+    fixture.detectChanges();
+    await fixture.whenStable();
   }
 
   const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-  it('refreshes history after an open order fills and then stops polling', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    try {
-      ordersResult = of([order(1, 'SUBMITTED')]);
-      await setup();
-      ordersResult = of([order(1, 'FILLED')]);
-      const before = requestedFilters.length;
-      await vi.advanceTimersByTimeAsync(2000);
-      fixture.detectChanges();
-      await fixture.whenStable();
-      expect(requestedFilters.length).toBe(before + 2); // Account-wide status plus the selected history.
-      expect(text()).toContain('Filled');
-      const after = requestedFilters.length;
-      await vi.advanceTimersByTimeAsync(4000);
-      expect(requestedFilters.length).toBe(after);
-    } finally {
-      fixture?.destroy();
-      vi.useRealTimers();
-    }
+  it('refreshes history after an open order fills via live updates', async () => {
+    ordersResult = of([order(1, 'SUBMITTED')]);
+    liveOrdersSeed = [order(1, 'SUBMITTED')];
+    await setup();
+
+    ordersResult = of([order(1, 'FILLED')]);
+    const before = requestedFilters.length;
+    liveOrders.next({ orders: [order(1, 'FILLED')], connection: 'live' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(requestedFilters.length).toBe(before + 1); // Live stream provides account-wide status; history reload adds one request.
+    expect(text()).toContain('Filled');
   });
 
   it('shows portfolio totals and open order count', async () => {
     ordersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
+    liveOrdersSeed = [order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')];
     await setup();
 
     const cards = Array.from(fixture.nativeElement.querySelectorAll('.stat-card .val')).map(
@@ -106,6 +116,7 @@ describe('Dashboard', () => {
 
   it('lists every stock with its live price and a trend graph', async () => {
     ordersResult = of([]);
+    liveOrdersSeed = [];
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
@@ -119,6 +130,7 @@ describe('Dashboard', () => {
 
   it('opens the buy/sell popup when a stock is clicked, and closes it again', async () => {
     ordersResult = of([]);
+    liveOrdersSeed = [];
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
@@ -137,6 +149,7 @@ describe('Dashboard', () => {
 
   it('filters orders by status chip', async () => {
     ordersResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
+    liveOrdersSeed = [order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')];
     await setup();
 
     const chips = fixture.nativeElement.querySelectorAll('.chip') as NodeListOf<HTMLButtonElement>;
@@ -151,12 +164,14 @@ describe('Dashboard', () => {
 
   it('shows the session-expired alert on 401', async () => {
     ordersResult = throwError(() => new HttpErrorResponse({ status: 401 }));
+    liveOrdersSeed = [];
     await setup();
 
     expect(text()).toContain('Your session has expired');
   });
   it('requests the local period, cancels stale requests, and clears without parameters', async () => {
     ordersResult = of([order(1, 'SUBMITTED')]);
+    liveOrdersSeed = [order(1, 'SUBMITTED')];
     await setup();
     const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
     const previous = new Subject<unknown>();
@@ -184,6 +199,7 @@ describe('Dashboard', () => {
 
   it('allows clearing after a filtered request fails', async () => {
     ordersResult = of([]);
+    liveOrdersSeed = [];
     await setup();
     ordersResult = throwError(() => new HttpErrorResponse({ status: 500 }));
     const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');

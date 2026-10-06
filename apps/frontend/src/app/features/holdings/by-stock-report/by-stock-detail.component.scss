@@ -1,0 +1,120 @@
+.by-stock-detail-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: var(--ink);
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Back Button */
+.back-button-wrapper {
+  margin-bottom: 20px;
+}
+
+.back-button {
+  color: var(--gold);
+  
+  &:hover {
+    color: var(--gold-soft);
+  }
+}
+
+/* State Containers */
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-state {
+  gap: 20px;
+  
+  p {
+    font-size: 16px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+}
+
+.error-state {
+  background-color: var(--ink-2);
+  border: 1px solid var(--down);
+  border-radius: 8px;
+  
+  h3 {
+    color: var(--down);
+    margin-top: 0;
+  }
+  
+  .error-message {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin: 10px 0 20px 0;
+  }
+  
+  .retry-button {
+    margin-top: 10px;
+  }
+}
+
+.empty-state {
+  background-color: var(--ink-2);
+  border: 1px solid var(--purple-line);
+  border-radius: 8px;
+  
+  h3 {
+    color: var(--gold);
+    margin-top: 0;
+    font-family: 'Big Shoulders Display', sans-serif;
+    font-weight: 800;
+  }
+  
+  p {
+    color: var(--text-dim);
+    margin: 10px 0 20px 0;
+  }
+}
+
+/* By Stock Card */
+.by-stock-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--ink-2) !important;
+  color: var(--text);
+  
+  mat-card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--purple-line);
+    background-color: var(--ink-2);
+    
+    h2 {
+      font-size: 28px;
+      margin: 0;
+      color: var(--gold);
+      font-weight: 600;
+      font-family: 'Big Shoulders Display', sans-serif;
+    }
+  }
+  
+  mat-card-content {
+    padding: 16px 0;
+    background-color: var(--ink-2);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .by-stock-detail-container {
+    padding: 10px;
+  }
+  
+  .by-stock-card {
+    mat-card-header h2 {
+      font-size: 20px;
+    }
+  }
+}

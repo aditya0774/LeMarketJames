@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubmissionValidator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">SubmissionValidator.java</span></div><h1>SubmissionValidator.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.error.GlobalExceptionHandler;
+import com.lemarketjames.common.instruments.Instrument;
+import com.lemarketjames.common.instruments.InstrumentRepository;
+import com.lemarketjames.holdings.client.HoldingsValidationClient;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.orders.dto.CreateOrderRequest;
+import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.RejectionReason;
+import com.lemarketjames.orders.exception.InsufficientHoldingsException;
+import com.lemarketjames.orders.exception.NotTradableException;
+import com.lemarketjames.orders.service.AccountAccess;
+import com.lemarketjames.orders.service.CashValidationService;
+import com.lemarketjames.orders.service.TradingRestrictions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Optional;
+
+/**
+ * The checks an order must pass before it is saved, in the order of {@link ValidationRule}:
+ * ownership, account status, location, tradability, then holdings for a SELL or price and cash for
+ * a BUY. Kept apart from {@code OrderService} so deciding whether an order may be placed is
+ * separate from saving it.
+ *
+ * &lt;p&gt;Every check that runs is noted on the {@link SubmissionTrail}, pass or fail, before its
+ * result is acted on, so the trail is complete however the submission ends.
+ */
+@Service
+public class SubmissionValidator {
+
+<span class="fc" id="L40">    private static final Logger log = LoggerFactory.getLogger(SubmissionValidator.class);</span>
+
+    private final AccountAccess accountAccess;
+    private final AccountRepository accountRepository;
+    private final ClientRepository clientRepository;
+    private final InstrumentRepository instrumentRepository;
+    private final TradingRestrictions restrictions;
+    private final HoldingsValidationClient holdingsValidationClient;
+    private final MarketDataService marketDataService;
+    private final CashValidationService cashValidationService;
+
+    public SubmissionValidator(AccountAccess accountAccess,
+                               AccountRepository accountRepository,
+                               ClientRepository clientRepository,
+                               InstrumentRepository instrumentRepository,
+                               TradingRestrictions restrictions,
+                               HoldingsValidationClient holdingsValidationClient,
+                               MarketDataService marketDataService,
+<span class="fc" id="L58">                               CashValidationService cashValidationService) {</span>
+<span class="fc" id="L59">        this.accountAccess = accountAccess;</span>
+<span class="fc" id="L60">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L61">        this.clientRepository = clientRepository;</span>
+<span class="fc" id="L62">        this.instrumentRepository = instrumentRepository;</span>
+<span class="fc" id="L63">        this.restrictions = restrictions;</span>
+<span class="fc" id="L64">        this.holdingsValidationClient = holdingsValidationClient;</span>
+<span class="fc" id="L65">        this.marketDataService = marketDataService;</span>
+<span class="fc" id="L66">        this.cashValidationService = cashValidationService;</span>
+<span class="fc" id="L67">    }</span>
+
+    /**
+     * Runs the checks for one order, stopping at the first that fails. SELL orders require
+     * sufficient holdings; BUY orders are priced from the market, never from the browser, and
+     * require sufficient cash at that price.
+     *
+     * @param trail receives the result of every check that runs
+     * @throws AccessDeniedException if the account isn't the caller's
+     * @throws NotTradableException if the instrument is suspended
+     * @throws InsufficientHoldingsException if a SELL exceeds the holding
+     */
+    public ValidationOutcome validate(CreateOrderRequest request, SubmissionTrail trail) {
+<span class="fc" id="L80">        requireOwnAccount(request.getAccountId(), trail);</span>
+
+<span class="fc" id="L82">        trail.begin(ValidationRule.ACCOUNT_STATUS);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!accountMayTrade(request.getAccountId())) {</span>
+<span class="fc" id="L84">            log.warn(&quot;Order refused for restricted accountId={}&quot;, request.getAccountId());</span>
+<span class="fc" id="L85">            return refuse(trail, &quot;This account can't place orders right now. Please contact support.&quot;,</span>
+                RejectionReason.ACCOUNT_RESTRICTED);
+        }
+<span class="fc" id="L88">        trail.pass();</span>
+
+<span class="fc" id="L90">        trail.begin(ValidationRule.LOCATION);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (restrictions.locationRestricted(request.getAccountId())) {</span>
+<span class="fc" id="L92">            return refuse(trail, &quot;Trading is restricted in your location&quot;, RejectionReason.LOCATION_RESTRICTED);</span>
+        }
+<span class="fc" id="L94">        trail.pass();</span>
+
+<span class="fc" id="L96">        requireTradable(request.getInstrumentId(), trail);</span>
+        // Browser validation is advisory; every SELL must be checked again before saving.
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (request.getOrderType() == Order.OrderType.SELL) {</span>
+<span class="fc" id="L99">            requireHoldings(request, trail);</span>
+        }
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (request.getOrderType() == Order.OrderType.BUY) {</span>
+<span class="fc" id="L102">            return priceAndCheckCash(request, trail);</span>
+        }
+<span class="fc" id="L104">        return ValidationOutcome.passed(null);</span>
+    }
+
+    private void requireOwnAccount(Integer accountId, SubmissionTrail trail) {
+<span class="fc" id="L108">        trail.begin(ValidationRule.ACCOUNT_ACCESS);</span>
+        try {
+<span class="fc" id="L110">            accountAccess.requireOwnAccount(accountId);</span>
+<span class="fc" id="L111">        } catch (AccessDeniedException denied) {</span>
+<span class="fc" id="L112">            trail.fail(GlobalExceptionHandler.ACCOUNT_ACCESS_DENIED);</span>
+<span class="fc" id="L113">            throw denied;</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        trail.pass();</span>
+<span class="fc" id="L116">    }</span>
+
+    private void requireTradable(Integer instrumentId, SubmissionTrail trail) {
+<span class="fc" id="L119">        trail.begin(ValidationRule.TRADABLE);</span>
+<span class="fc" id="L120">        Optional&lt;Instrument&gt; instrument = instrumentRepository.findById(instrumentId);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (instrument.isEmpty()) {</span>
+            // An instrument that doesn't exist can't be traded; the caller still gets &quot;not found&quot;.
+<span class="fc" id="L123">            trail.fail(RejectionReason.NOT_TRADABLE.name());</span>
+<span class="fc" id="L124">            throw new IllegalArgumentException(&quot;Instrument not found with ID: &quot; + instrumentId);</span>
+        }
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (!instrument.get().isTradable()) {</span>
+<span class="fc" id="L127">            log.warn(&quot;Tradability check failed for instrumentId={}&quot;, instrumentId);</span>
+<span class="fc" id="L128">            trail.fail(RejectionReason.NOT_TRADABLE.name());</span>
+<span class="fc" id="L129">            throw new NotTradableException(&quot;Instrument is currently not tradable&quot;);</span>
+        }
+<span class="fc" id="L131">        trail.pass();</span>
+<span class="fc" id="L132">    }</span>
+
+    private void requireHoldings(CreateOrderRequest request, SubmissionTrail trail) {
+<span class="fc" id="L135">        trail.begin(ValidationRule.HOLDINGS);</span>
+        try {
+<span class="fc" id="L137">            holdingsValidationClient.validateSufficientHoldings(request.getAccountId(),</span>
+<span class="fc" id="L138">                accountAccess.authenticatedUsername(), request.getInstrumentId(), request.getQuantity());</span>
+<span class="fc" id="L139">        } catch (InsufficientHoldingsException insufficient) {</span>
+<span class="fc" id="L140">            trail.fail(RejectionReason.INSUFFICIENT_HOLDINGS.name());</span>
+<span class="fc" id="L141">            throw insufficient;</span>
+<span class="fc" id="L142">        }</span>
+<span class="fc" id="L143">        trail.pass();</span>
+<span class="fc" id="L144">    }</span>
+
+    private ValidationOutcome priceAndCheckCash(CreateOrderRequest request, SubmissionTrail trail) {
+<span class="fc" id="L147">        trail.begin(ValidationRule.PRICE_AVAILABLE);</span>
+<span class="fc" id="L148">        var quote = marketDataService.findByInstrumentId(request.getInstrumentId());</span>
+        // Match the database scale so validation and the persisted snapshot agree. A price that
+        // rounds to zero is as unusable as none, so it belongs to this check rather than a later one.
+<span class="fc" id="L151">        BigDecimal price = quote</span>
+<span class="fc bfc" id="L152" title="All 4 branches covered.">            .filter(q -&gt; Double.isFinite(q.askPrice()) &amp;&amp; q.askPrice() &gt; 0)</span>
+<span class="fc" id="L153">            .map(q -&gt; BigDecimal.valueOf(q.askPrice()).setScale(4, RoundingMode.HALF_UP))</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            .filter(rounded -&gt; rounded.signum() &gt; 0)</span>
+<span class="fc" id="L155">            .orElse(null);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (price == null) {</span>
+<span class="fc" id="L157">            return refuse(trail, &quot;Market price is unavailable. Please try again.&quot;, RejectionReason.PRICE_UNAVAILABLE);</span>
+        }
+<span class="fc" id="L159">        trail.pass();</span>
+
+<span class="fc" id="L161">        trail.begin(ValidationRule.QUOTE_FRESH);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (restrictions.stale(quote.get())) {</span>
+<span class="fc" id="L163">            return refuse(trail, &quot;Market quote is stale&quot;, RejectionReason.STALE_QUOTE);</span>
+        }
+<span class="fc" id="L165">        trail.pass();</span>
+<span class="fc" id="L166">        trail.priced(price);</span>
+
+<span class="fc" id="L168">        trail.begin(ValidationRule.CASH);</span>
+<span class="fc" id="L169">        BigDecimal orderCost = request.getQuantity().multiply(price);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (!cashValidationService.validateSufficientCash(request.getAccountId(), orderCost)) {</span>
+<span class="fc" id="L171">            BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());</span>
+<span class="fc" id="L172">            return refuse(trail,</span>
+<span class="fc" id="L173">                String.format(&quot;Insufficient balance. Required: $%.2f, Available: $%.2f&quot;, orderCost, availableCash),</span>
+                RejectionReason.INSUFFICIENT_CASH);
+        }
+<span class="fc" id="L176">        trail.pass();</span>
+<span class="fc" id="L177">        return ValidationOutcome.passed(price);</span>
+    }
+
+    /** Fails the open check with the same code the caller is given. */
+    private ValidationOutcome refuse(SubmissionTrail trail, String message, RejectionReason reason) {
+<span class="fc" id="L182">        trail.fail(reason.name());</span>
+<span class="fc" id="L183">        return ValidationOutcome.refused(message, reason);</span>
+    }
+
+    /**
+     * Whether the account may trade: trading enabled on the account and the client ACTIVE (an
+     * EXPIRED client may log in but not trade). Runs after the ownership check, so the account exists.
+     */
+    private boolean accountMayTrade(Integer accountId) {
+<span class="fc" id="L191">        return accountRepository.findById(accountId)</span>
+<span class="fc bfc" id="L192" title="All 4 branches covered.">            .map(account -&gt; account.isTradingEnabled() &amp;&amp; clientMayTrade(account))</span>
+<span class="fc" id="L193">            .orElse(true);</span>
+    }
+
+    private boolean clientMayTrade(AccountEntity account) {
+<span class="fc" id="L197">        return clientRepository.findById(account.getClientId())</span>
+<span class="fc" id="L198">            .map(ClientEntity::getAccountStatus)</span>
+<span class="fc" id="L199">            .map(status -&gt; status.canTrade())</span>
+<span class="fc" id="L200">            .orElse(true);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

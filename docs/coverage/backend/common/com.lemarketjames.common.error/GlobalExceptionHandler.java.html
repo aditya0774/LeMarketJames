@@ -19,37 +19,40 @@ import java.util.Map;
 @RestControllerAdvice
 <span class="nc" id="L20">public class GlobalExceptionHandler {</span>
 
+    /** The code a caller gets when an account isn't theirs; also what the audit trail records for it. */
+    public static final String ACCOUNT_ACCESS_DENIED = &quot;ACCOUNT_ACCESS_DENIED&quot;;
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidation(ValidationException ex) {
-<span class="nc" id="L24">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L25">                .body(Map.of(&quot;errors&quot;, ex.getFieldErrors()));</span>
+<span class="nc" id="L27">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L28">                .body(Map.of(&quot;errors&quot;, ex.getFieldErrors()));</span>
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-<span class="nc" id="L30">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L33">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
 
-<span class="nc bnc" id="L32" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
-<span class="nc" id="L33">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
-<span class="nc" id="L34">        }</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="nc" id="L36">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="nc" id="L37">        }</span>
 
-<span class="nc" id="L36">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L37">                .body(Map.of(&quot;errors&quot;, errors));</span>
+<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L40">                .body(Map.of(&quot;errors&quot;, errors));</span>
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleIllegalArgument(IllegalArgumentException ex) {
-<span class="nc" id="L42">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L43">                .body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
+<span class="nc" id="L45">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L46">                .body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAccessDenied(AccessDeniedException ex) {
-<span class="nc" id="L48">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
-<span class="nc" id="L49">                .body(Map.of(</span>
-<span class="nc" id="L50">                    &quot;success&quot;, false,</span>
+<span class="nc" id="L51">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
+<span class="nc" id="L52">                .body(Map.of(</span>
+<span class="nc" id="L53">                    &quot;success&quot;, false,</span>
                     &quot;error&quot;, &quot;Access denied&quot;,
-                    &quot;code&quot;, &quot;ACCOUNT_ACCESS_DENIED&quot;
+                    &quot;code&quot;, ACCOUNT_ACCESS_DENIED
                 ));
     }
 }

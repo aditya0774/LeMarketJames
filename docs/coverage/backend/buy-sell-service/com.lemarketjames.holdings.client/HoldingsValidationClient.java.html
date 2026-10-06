@@ -26,17 +26,17 @@ public class HoldingsValidationClient {
 
     public void validateSufficientHoldings(Integer accountId, String username,
                                            Integer instrumentId, BigDecimal sellQuantity) {
-<span class="nc" id="L29">        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId, sellQuantity);</span>
+<span class="fc" id="L29">        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId, sellQuantity);</span>
         try {
-<span class="nc" id="L31">            restClient.post()</span>
-<span class="nc" id="L32">                    .uri(&quot;/internal/holdings/validate&quot;)</span>
-<span class="nc" id="L33">                    .body(request)</span>
-<span class="nc" id="L34">                    .retrieve()</span>
+<span class="fc" id="L31">            restClient.post()</span>
+<span class="fc" id="L32">                    .uri(&quot;/internal/holdings/validate&quot;)</span>
+<span class="fc" id="L33">                    .body(request)</span>
+<span class="fc" id="L34">                    .retrieve()</span>
 <span class="nc" id="L35">                    .toBodilessEntity();</span>
 <span class="nc" id="L36">        } catch (HttpClientErrorException.BadRequest e) {</span>
 <span class="nc" id="L37">            throw new InsufficientHoldingsException(extractError(e));</span>
-<span class="nc" id="L38">        } catch (RestClientException e) {</span>
-<span class="nc" id="L39">            throw new IllegalStateException(</span>
+<span class="fc" id="L38">        } catch (RestClientException e) {</span>
+<span class="fc" id="L39">            throw new IllegalStateException(</span>
                 &quot;Failed to validate holdings for accountId &quot; + accountId + &quot; with holdings-service&quot;, e);
 <span class="nc" id="L41">        }</span>
 <span class="nc" id="L42">    }</span>

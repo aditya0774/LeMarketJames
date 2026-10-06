@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubmissionTrail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">SubmissionTrail.java</span></div><h1>SubmissionTrail.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import com.lemarketjames.orders.dto.CreateOrderRequest;
+import com.lemarketjames.orders.entity.Order;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * What happened during one order submission, collected in memory while the checks run and written
+ * to the audit trail afterwards in a single transaction ({@link SubmissionRecorder}). Collecting
+ * first is what lets a refused order's events commit without an order, and means a failure
+ * part-way through a submission never leaves half a trail.
+ */
+public class SubmissionTrail {
+
+    /** How a check ended. ERROR means it could not complete, e.g. holdings-service was unreachable. */
+<span class="fc" id="L20">    public enum Result { PASS, FAIL, ERROR }</span>
+
+    /**
+     * One rule and how it ended.
+     *
+     * @param reason the code the caller was given, on FAIL; otherwise null
+     */
+<span class="fc" id="L27">    public record Check(ValidationRule rule, Result result, String reason) {}</span>
+
+    private final String requestId;
+    private final Integer clientId;
+    private final CreateOrderRequest request;
+<span class="fc" id="L32">    private final List&lt;Check&gt; checks = new ArrayList&lt;&gt;();</span>
+    private ValidationRule open;
+    private BigDecimal price;
+
+    /**
+     * @param requestId the server-generated ID of this submission
+     * @param clientId  the authenticated caller's client; null for a caller who isn't a client
+     */
+<span class="fc" id="L40">    public SubmissionTrail(String requestId, Integer clientId, CreateOrderRequest request) {</span>
+<span class="fc" id="L41">        this.requestId = requestId;</span>
+<span class="fc" id="L42">        this.clientId = clientId;</span>
+<span class="fc" id="L43">        this.request = request;</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Starts a check; it stays open until {@link #pass()}, {@link #fail} or {@link #abandon()}. */
+    public void begin(ValidationRule rule) {
+<span class="fc" id="L48">        open = rule;</span>
+<span class="fc" id="L49">    }</span>
+
+    public void pass() {
+<span class="fc" id="L52">        close(Result.PASS, null);</span>
+<span class="fc" id="L53">    }</span>
+
+    public void fail(String reason) {
+<span class="fc" id="L56">        close(Result.FAIL, reason);</span>
+<span class="fc" id="L57">    }</span>
+
+    /** Ends a check that an unexpected error interrupted, so the trail shows where it stopped. */
+    public void abandon() {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (open != null) {</span>
+<span class="fc" id="L62">            close(Result.ERROR, null);</span>
+        }
+<span class="fc" id="L64">    }</span>
+
+    private void close(Result result, String reason) {
+<span class="fc" id="L67">        checks.add(new Check(Objects.requireNonNull(open, &quot;no check was started&quot;), result, reason));</span>
+<span class="fc" id="L68">        open = null;</span>
+<span class="fc" id="L69">    }</span>
+
+    /** The price the order was valued at, once the market has been asked. */
+    public void priced(BigDecimal price) {
+<span class="fc" id="L73">        this.price = price;</span>
+<span class="fc" id="L74">    }</span>
+
+    public String requestId() {
+<span class="fc" id="L77">        return requestId;</span>
+    }
+
+    public Integer clientId() {
+<span class="fc" id="L81">        return clientId;</span>
+    }
+
+    public List&lt;Check&gt; checks() {
+<span class="fc" id="L85">        return Collections.unmodifiableList(checks);</span>
+    }
+
+    public BigDecimal price() {
+<span class="fc" id="L89">        return price;</span>
+    }
+
+    /**
+     * The account the order is for, once the caller is known to own it. Null until then, so an
+     * event is never attributed to an account that isn't the caller's.
+     */
+    public Integer accountId() {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        return ownsAccount() ? request.getAccountId() : null;</span>
+    }
+
+    public boolean ownsAccount() {
+<span class="fc" id="L101">        return checks.contains(new Check(ValidationRule.ACCOUNT_ACCESS, Result.PASS, null));</span>
+    }
+
+    public Integer requestedAccountId() {
+<span class="fc" id="L105">        return request.getAccountId();</span>
+    }
+
+    public Integer instrumentId() {
+<span class="fc" id="L109">        return request.getInstrumentId();</span>
+    }
+
+    public Order.OrderType side() {
+<span class="fc" id="L113">        return request.getOrderType();</span>
+    }
+
+    public BigDecimal quantity() {
+<span class="fc" id="L117">        return request.getQuantity();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

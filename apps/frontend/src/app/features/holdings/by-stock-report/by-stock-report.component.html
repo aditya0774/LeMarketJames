@@ -1,0 +1,72 @@
+<div class="by-stock-report-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="state-container loading-state">
+    <mat-spinner [diameter]="48"></mat-spinner>
+    <p>Loading trades...</p>
+  </div>
+
+  <!-- Error State -->
+  <ng-container *ngIf="hasError()">
+    <mat-card class="state-container error-state">
+      <mat-card-content>
+        <h3>Unable to Load Trades</h3>
+        <p class="error-message">{{ error()?.message }}</p>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="retry()"
+          class="retry-button">
+          Try Again
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+
+  <!-- Empty State -->
+  <ng-container *ngIf="hasNoTrades()">
+    <mat-card class="state-container empty-state">
+      <mat-card-content>
+        <h3>No Trading Activity</h3>
+        <p>You haven't placed any trades yet. Start trading to see your activity here.</p>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+
+  <!-- Success State -->
+  <ng-container *ngIf="!isLoading() && !hasError() && trades().length > 0">
+    <mat-card class="by-stock-card">
+      <mat-card-header>
+        <h2>By Stock Report</h2>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Stock Selector -->
+        <div class="stock-selector-wrapper">
+          <mat-form-field appearance="outline" class="stock-selector">
+            <mat-label>Select Stock</mat-label>
+            <mat-select 
+              [value]="selectedSymbol()"
+              (selectionChange)="onSymbolChange($event.value)">
+              <mat-option *ngFor="let symbol of symbols()" [value]="symbol">
+                {{ symbol }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Trades Table for Selected Stock -->
+        <ng-container *ngIf="selectedSymbol()">
+          <app-by-stock-trades-table 
+            [trades]="filteredTrades()"
+            [selectedSymbol]="selectedSymbol()">
+          </app-by-stock-trades-table>
+        </ng-container>
+
+        <!-- Empty Selection State -->
+        <ng-container *ngIf="!selectedSymbol() && symbols().length > 0">
+          <p class="empty-selection">Select a stock to view trades.</p>
+        </ng-container>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

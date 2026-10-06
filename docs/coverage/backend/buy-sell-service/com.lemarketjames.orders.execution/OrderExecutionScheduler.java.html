@@ -22,13 +22,13 @@ public class OrderExecutionScheduler {
 <span class="fc" id="L22">    }</span>
     @Scheduled(fixedDelayString = &quot;#{@executionSettings.pollMs}&quot;)
     public void poll() {
-<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (!settings.isEnabled()) return;</span>
-<span class="nc" id="L26">        var open = Arrays.stream(OrderStatus.values()).filter(OrderStatus::isOpen).toList();</span>
-<span class="nc bnc" id="L27" title="All 2 branches missed.">        for (Integer id : orders.findExecutionCandidates(open)) {</span>
-<span class="nc" id="L28">            try { execution.execute(id, false); }</span>
-<span class="nc" id="L29">            catch (RuntimeException failure) { log.warn(&quot;Order {} execution will retry: {}&quot;, id, failure.getMessage()); }</span>
-<span class="nc" id="L30">        }</span>
-<span class="nc" id="L31">    }</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (!settings.isEnabled()) return;</span>
+<span class="fc" id="L26">        var open = Arrays.stream(OrderStatus.values()).filter(OrderStatus::isOpen).toList();</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        for (Integer id : orders.findExecutionCandidates(open)) {</span>
+<span class="fc" id="L28">            try { execution.execute(id, false); }</span>
+<span class="fc" id="L29">            catch (RuntimeException failure) { log.warn(&quot;Order {} execution will retry: {}&quot;, id, failure.getMessage()); }</span>
+<span class="fc" id="L30">        }</span>
+<span class="fc" id="L31">    }</span>
     @Configuration
 <span class="fc" id="L33">    static class TimeConfiguration {</span>
 <span class="fc" id="L34">        @Bean Clock executionClock() { return Clock.systemUTC(); }</span>

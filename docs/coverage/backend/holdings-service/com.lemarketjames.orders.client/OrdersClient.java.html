@@ -34,29 +34,29 @@ public class OrdersClient {
 
     public List&lt;OrderSummary&gt; getOrdersForAccount(int accountId) {
         try {
-<span class="nc" id="L37">            OrderSummary[] orders = restClient.get()</span>
-<span class="nc" id="L38">                    .uri(&quot;/api/v1/orders/account/{accountId}&quot;, accountId)</span>
-<span class="nc" id="L39">                    .header(HttpHeaders.COOKIE, relayedJwtCookieHeader())</span>
-<span class="nc" id="L40">                    .retrieve()</span>
+<span class="fc" id="L37">            OrderSummary[] orders = restClient.get()</span>
+<span class="fc" id="L38">                    .uri(&quot;/api/v1/orders/account/{accountId}&quot;, accountId)</span>
+<span class="fc" id="L39">                    .header(HttpHeaders.COOKIE, relayedJwtCookieHeader())</span>
+<span class="fc" id="L40">                    .retrieve()</span>
 <span class="nc" id="L41">                    .body(OrderSummary[].class);</span>
 <span class="nc bnc" id="L42" title="All 2 branches missed.">            return orders == null ? List.of() : List.of(orders);</span>
-<span class="nc" id="L43">        } catch (RestClientException e) {</span>
-<span class="nc" id="L44">            log.warn(&quot;buy-sell-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
-<span class="nc" id="L45">            return List.of();</span>
+<span class="fc" id="L43">        } catch (RestClientException e) {</span>
+<span class="fc" id="L44">            log.warn(&quot;buy-sell-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
+<span class="fc" id="L45">            return List.of();</span>
         }
     }
 
     private String relayedJwtCookieHeader() {
-<span class="nc" id="L50">        Cookie[] cookies = currentRequest.getCookies();</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
-<span class="nc" id="L52">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
-<span class="nc" id="L53">                .findFirst()</span>
-<span class="nc" id="L54">                .map(Cookie::getValue)</span>
-<span class="nc" id="L55">                .orElse(null);</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (token == null) {</span>
-<span class="nc" id="L57">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to buy-sell-service&quot;);</span>
+<span class="fc" id="L50">        Cookie[] cookies = currentRequest.getCookies();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
+<span class="fc" id="L52">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
+<span class="fc" id="L53">                .findFirst()</span>
+<span class="fc" id="L54">                .map(Cookie::getValue)</span>
+<span class="fc" id="L55">                .orElse(null);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (token == null) {</span>
+<span class="fc" id="L57">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to buy-sell-service&quot;);</span>
         }
-<span class="nc" id="L59">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
+<span class="fc" id="L59">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

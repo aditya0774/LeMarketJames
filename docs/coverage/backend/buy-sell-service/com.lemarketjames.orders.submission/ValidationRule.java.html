@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidationRule.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">ValidationRule.java</span></div><h1>ValidationRule.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+/**
+ * The checks an order goes through before it is saved, in the order they run. Each one that runs
+ * is audited as a {@code RULE_CHECKED} event carrying its name (contract C2), so this enum is the
+ * list the trade timeline displays.
+ *
+ * &lt;p&gt;Mirrors: the seeded checks in database/schema/015.
+ */
+<span class="fc" id="L10">public enum ValidationRule {</span>
+    /** The account belongs to the caller. Fails with {@code ACCOUNT_ACCESS_DENIED}. */
+<span class="fc" id="L12">    ACCOUNT_ACCESS,</span>
+    /** Trading is enabled on the account and the client is ACTIVE. Fails with {@code ACCOUNT_RESTRICTED}. */
+<span class="fc" id="L14">    ACCOUNT_STATUS,</span>
+    /** The client doesn't live somewhere trading is restricted. Fails with {@code LOCATION_RESTRICTED}. */
+<span class="fc" id="L16">    LOCATION,</span>
+    /** The instrument exists and isn't suspended. Fails with {@code NOT_TRADABLE}. */
+<span class="fc" id="L18">    TRADABLE,</span>
+    /** SELL only: the account holds enough shares. Fails with {@code INSUFFICIENT_HOLDINGS}. */
+<span class="fc" id="L20">    HOLDINGS,</span>
+    /** BUY only: the feed has a usable ask price. Fails with {@code PRICE_UNAVAILABLE}. */
+<span class="fc" id="L22">    PRICE_AVAILABLE,</span>
+    /** BUY only: that quote is within the staleness limit. Fails with {@code STALE_QUOTE}. */
+<span class="fc" id="L24">    QUOTE_FRESH,</span>
+    /** BUY only: the account has enough cash at that price. Fails with {@code INSUFFICIENT_CASH}. */
+<span class="fc" id="L26">    CASH</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

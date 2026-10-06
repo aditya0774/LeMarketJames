@@ -1,7 +1,10 @@
 <section class="panel">
   <div class="panel-head">
     <h3>Orders</h3>
-    <div class="filters" role="group" aria-label="Filter orders by status">
+    <span class="live-badge" [class.live-badge-reconnecting]="liveConnection() === 'reconnecting'">
+      {{ liveConnectionLabel() }}
+    </span>
+    <div class="filters" aria-label="Filter orders by status">
       @for (f of filters; track f.value) {
         <button type="button" class="chip" [class.active]="filter() === f.value"
                 [attr.aria-pressed]="filter() === f.value" (click)="setFilter(f.value)">
@@ -11,7 +14,7 @@
     </div>
   </div>
 
-  <div class="date-filters" role="group" aria-label="Filter orders by date">
+  <div class="date-filters" aria-label="Filter orders by date">
     <label>Period
       <select aria-label="Period" [value]="period()" (change)="setPeriod($any($event.target).value)">
         <option value="day">Day</option>
@@ -57,6 +60,14 @@
                 <span class="pill {{ statusPillClass(order.orderStatus) }}" [attr.title]="order.rejectionReason || null">
                   {{ statusLabel(order.orderStatus) }}
                 </span>
+                @if (isFilled(order) && order.pricePerUnit != null) {
+                  <div class="status-detail">
+                    Filled {{ order.quantity | number: '1.0-4' }} @ {{ order.pricePerUnit | currency: 'USD' }}
+                  </div>
+                }
+                @if (order.orderStatus === 'REJECTED' && rejectionReasonLabel(order.rejectionReason); as reason) {
+                  <div class="status-detail" [attr.title]="order.rejectionReason || null">{{ reason }}</div>
+                }
               </td>
               <td class="tabular">{{ order.submittedAt | date: 'MMM d, y' }}</td>
             </tr>

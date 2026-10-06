@@ -125,8 +125,10 @@
             <!-- Table Header Row -->
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             
-            <!-- Table Data Rows -->
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <!-- Table Data Rows (clickable to view stock trades) -->
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+                class="clickable-row"
+                (click)="onStockClick(row.symbol)"></tr>
           </table>
         </div>
       </mat-card-content>
