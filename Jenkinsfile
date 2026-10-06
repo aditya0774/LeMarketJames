@@ -213,6 +213,15 @@ pipeline {
                     }
                 }
 
+                stage('Test reporting service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/reporting-service test
+                        '''
+                    }
+                }
+
                 stage('Test gateway service units') {
                     steps {
                         sh '''
@@ -271,15 +280,15 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
-                    mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service -am \
+                    mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service,services/reporting-service -am \
                         -Dspring.profiles.active=postgres-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml'
                 }
             }
         }
@@ -333,7 +342,7 @@ pipeline {
                     echo "$image_tag" > .image_tag
 
                     # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service gateway-service; do
+                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service; do
                         docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
                         docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
                     done
@@ -449,9 +458,10 @@ pipeline {
                     compose exec -T market-service id
                     compose exec -T holdings-service id
                     compose exec -T buy-sell-service id
+                    compose exec -T reporting-service id
 
                     # Use host-published ports; gateway-service maps host 8089 to container 8080.
-                    for port in 8081 8082 8089 8083 8084 8085; do
+                    for port in 8081 8082 8089 8083 8084 8085 8086; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         status="000"
@@ -467,7 +477,7 @@ pipeline {
                         if [ "$healthy" -ne 1 ]; then
                             echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
-                            compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
+                            compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service
                             exit 1
                         fi
                     done
@@ -478,7 +488,7 @@ pipeline {
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs core-service auth-service market-service holdings-service buy-sell-service gateway-service
+                    compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service
                 '''
             }
         }
@@ -689,9 +699,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
+                    docker compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service db || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service db || true
+                    docker-compose logs --tail=100 gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service db || true
                 fi
             '''
         }
