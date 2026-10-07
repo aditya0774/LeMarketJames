@@ -14,7 +14,7 @@ public class ReportingTrade {
 
     @Id
     @Column(name = "order_id")
-    private Long orderId;
+    private Integer orderId;
 
     @Column(name = "account_id")
     private Integer accountId;
@@ -54,7 +54,7 @@ public class ReportingTrade {
     public ReportingTrade() {
     }
 
-    public Long getOrderId() {
+    public Integer getOrderId() {
         return orderId;
     }
 
