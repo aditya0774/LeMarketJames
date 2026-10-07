@@ -33,7 +33,10 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
    - [Backend Tests (Java/JUnit)](#backend-tests-javajunit)
    - [Frontend Tests (TypeScript/Vitest)](#frontend-tests-typescriptvitest)
 6. [API & Frontend Access](#api--frontend-access)
-7. [Troubleshooting](#troubleshooting)
+7. [Test Logins](#test-logins)
+   - [Trading App Test Logins](#trading-app-test-logins-port-4200)
+   - [Staff App Test Logins](#staff-app-test-logins-port-4201)
+8. [Troubleshooting](#troubleshooting)
    - [Port Already in Use](#port-already-in-use)
    - [Java Version Mismatch](#java-version-mismatch)
    - [Maven Build Fails](#maven-build-fails)
@@ -606,6 +609,38 @@ Once the application is running (via any of the three methods), you can access:
 - `/login` - User login
 
 See [services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java](services/auth-service/src/main/java/com/lemarketjames/auth/AuthController.java) for the auth endpoint definitions and [contracts/C6-api.md](contracts/C6-api.md) for the rest.
+
+---
+
+## Test Logins
+
+Every seed login uses the password: **`Pass123!`**
+
+All test accounts are loaded automatically when the database is initialized (see [database/schema/011_seed_test_data.sql](database/schema/011_seed_test_data.sql)).
+
+### Trading App Test Logins (port 4200)
+
+| Email | Standing | Use to test |
+|---|---|---|
+| `seed_active@seed.lemarket.com` | Active, `RETAIL` | Main demo account: 12 months of monthly fills, closed position, open orders in all states |
+| `seed_trader@seed.lemarket.com` | Active, `ACTIVE_TRADER` | Frequent trading; second account for segment reports |
+| `seed_hnw@seed.lemarket.com` | Active, `HIGH_NET_WORTH` | Large positions and balances |
+| `seed_closed@seed.lemarket.com` | Closed | Login refused; demonstrates closed account error |
+| `seed_expired@seed.lemarket.com` | Expired | Can log in but orders refused with `ACCOUNT_RESTRICTED` |
+| `seed_locked@seed.lemarket.com` | Locked out | Demonstrates account lockout message |
+| `seed_notrading@seed.lemarket.com` | Active, trading disabled | Orders refused with `ACCOUNT_RESTRICTED` |
+
+### Staff App Test Logins (port 4201)
+
+| Email | Role | Access |
+|---|---|---|
+| `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline |
+| `analyst@seed.lemarket.com` | `ANALYST` | Reports dashboard, read-only aggregate reports |
+| `compliance@seed.lemarket.com` | `COMPLIANCE` | Compliance reports (when implemented) |
+
+**Password for all staff logins:** `Pass123!`
+
+---
 
 **Form Validation:**
 All form validation is performed client-side using Zod schema validation before submission to the backend. See [apps/frontend/src/app/features/auth/register/register.schema.ts](apps/frontend/src/app/features/auth/register/register.schema.ts) for validation rules.
