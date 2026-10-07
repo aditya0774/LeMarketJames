@@ -2,7 +2,7 @@
 
 Aggregate, read-only reports for analysts, on port 8086 under `/api/v1/reports/**`. It is a separate service so that a heavy report can never slow down order placement.
 
-It is not behind the trading gateway. Staff browser requests go through the staff gateway on 8090 with the `jwt` cookie from a staff login.
+It is not behind the trading gateway. The staff gateway (8090) is its only caller: staff sign in there and their browser's `staff_jwt` cookie reaches this service as the usual `jwt` ([C7](../../contracts/C7-roles.md#the-staff-session-cookie)). Port 8086 is published for debugging and tests only.
 
 ## Rules for every report endpoint
 

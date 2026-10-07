@@ -1,3 +1,6 @@
+# The trading gateway. The staff gateway is this same module started with the "staff" profile,
+# which replaces the port, the CORS origin, the filters and the whole route list below
+# (application-staff.yml).
 server:
   port: 8080
 
@@ -29,6 +32,8 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
           # Routes are checked in order: the specific auth route must stay before the core catch-all.
           # Add a route here whenever a feature is extracted into its own service.
+          # /api/v1/reports/** gets no route of its own on purpose: reporting-service is reached
+          # only through the staff gateway, so here those paths fall through to core-service.
           routes:
             - id: auth-service
               uri: ${services.auth-url}

@@ -6,12 +6,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Entry point for the API gateway. All routing lives in application.yml; the gateway only
  * forwards requests (and the jwt cookie) and each service still authenticates them itself.
+ *
+ * &lt;p&gt;This one module runs as two gateways. By default it is the trading gateway; started with
+ * the {@code staff} profile it is the staff gateway, with its own port, its own routes
+ * (application-staff.yml) and its own session cookie ({@link StaffSessionCookieGatewayFilterFactory}).
  */
 @SpringBootApplication
-<span class="fc" id="L11">public class GatewayApplication {</span>
+<span class="fc" id="L15">public class GatewayApplication {</span>
 
     public static void main(String[] args) {
-<span class="nc" id="L14">        SpringApplication.run(GatewayApplication.class, args);</span>
-<span class="nc" id="L15">    }</span>
+<span class="nc" id="L18">        SpringApplication.run(GatewayApplication.class, args);</span>
+<span class="nc" id="L19">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
