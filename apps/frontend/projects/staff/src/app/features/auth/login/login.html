@@ -1,0 +1,69 @@
+<div class="auth-wrap">
+  <a class="back-link" routerLink="/">&larr; Back</a>
+
+  <div class="auth-brand">
+    <img src="/lemarket-logo.png" alt="LeMarket logo" />
+    <span class="wordmark"><span class="le-accent">Le</span>Market</span>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-card">
+      <h2>Staff Login</h2>
+      <div class="sub">Enter your staff credentials to access Trading Operations or Analyst tools.</div>
+
+      @if (errorMessage()) {
+        <div class="alert err">
+          <span aria-hidden="true">&#9888;</span>
+          <div><b>Login failed</b> {{ errorMessage() }}</div>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="field">
+          <label for="username">Email address</label>
+          <input
+            id="username"
+            type="email"
+            formControlName="username"
+            placeholder="staff@lemarket.com"
+            autocomplete="username"
+          />
+          @if (form.get('username')?.touched && form.get('username')?.hasError('required')) {
+            <div class="field-error">Email is required.</div>
+          }
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="password">Password</label>
+            <button
+              type="button"
+              class="pw-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Your password"
+            autocomplete="current-password"
+          />
+          @if (form.get('password')?.touched && form.get('password')?.hasError('required')) {
+            <div class="field-error">Password is required.</div>
+          }
+          <div class="hint" style="text-align: right">
+            <a class="link-gold">Forgot password?</a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="margin-top: 6px" [disabled]="submitting()">
+          {{ submitting() ? 'Logging in…' : 'Log in' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
