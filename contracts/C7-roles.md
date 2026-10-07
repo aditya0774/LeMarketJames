@@ -15,7 +15,7 @@ Internal views (audit, reports, insights) can enforce access now, without waitin
 1. **Login.** Clients and staff use the same endpoint (`POST /api/auth/login`, [C6](C6-api.md#auth-auth-service)), each through their own gateway. A client gets `CLIENT`; a staff user gets their one staff role. Nobody is both.
 2. **Token.** The roles go into the JWT's `roles` claim ([JwtService.java](../libs/common/src/main/java/com/lemarketjames/common/security/JwtService.java)). A token issued before roles existed counts as `CLIENT`.
 3. **Services.** Every service's `JwtAuthenticationFilter` turns the roles into `ROLE_<name>` authorities, so endpoints guard with `hasRole("...")` in their `SecurityConfig`. Always enforce roles on the server; the frontend only uses them to decide what to show.
-4. **Frontend.** `/login` and `/me` return `roles`; [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) keeps them in `Auth.roles()` / `Auth.hasRole()`. Staff have no trading account, so they get no `accountId`.
+4. **Frontend.** `/login` and `/me` return `roles`; [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) keeps them in `Auth.roles()` / `Auth.hasRole()`. Staff have no trading account, so they get no `accountId`. The staff app keeps them the same way in its own [auth.ts](../apps/frontend/projects/staff/src/app/core/auth/auth.ts) ([The staff app](#the-staff-app)).
 
 ## The staff session cookie
 
@@ -49,9 +49,27 @@ The frontend trade-search route also checks `TRADING_OPS` with `tradingOpsGuard`
 roles see Access denied, and only operations see the search navigation link. This UI check
 supplements the owning service's authorization.
 
+## The staff app
+
+The staff app opens on its own login page, which signs in through the staff gateway.
+
+| Who signs in | What happens |
+|---|---|
+| A staff role with a section | Lands on that section's dashboard. Where each role lands is one list, [staff-home.ts](../apps/frontend/projects/staff/src/app/core/auth/staff-home.ts) |
+| A staff role without a section yet (`COMPLIANCE`) | Stays signed in and sees Access denied |
+| `CLIENT` | Signed straight out again, with "This login is for staff only". The gateway cannot refuse the sign-in itself, because it checks no role |
+
+Pages are guarded with `requiresRole(...roles)` ([role.guard.ts](../apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), which takes the roles that may open a page:
+
+- a signed-out visitor is sent to the staff login
+- a signed-in account with none of the roles sees Access denied
+- the sidebar links a role only to its own section.
+
+As in the trading app, this decides what is shown and nothing more: the service behind a page enforces the role itself.
+
 ## Mirrors (change together with `Role`)
 
 - The `staff_users.role` CHECK constraint ([010](../database/schema/010_shared_contracts.sql)); it lists every role except `CLIENT`.
-- The frontend `Role` type ([auth.ts](../apps/frontend/src/app/core/auth/auth.ts)).
+- The frontend `Role` type, once per app because the two share no code: the trading app's [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) and the staff app's [auth.ts](../apps/frontend/projects/staff/src/app/core/auth/auth.ts).
 
 One more mirror, of the cookie name rather than of `Role`: `SERVICE_COOKIE` in the staff gateway's `StaffSessionCookieGatewayFilterFactory` repeats `JwtAuthenticationFilter.COOKIE_NAME`, because the gateway is reactive and cannot depend on `libs/common`. Change them together.

@@ -10,19 +10,24 @@ import { Login } from './login';
 describe('Login', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
-  let authMock: { hasRole: (role: string) => boolean; login: (request: { username: string; password: string }) => Promise<{ username: string; message: string }> };
+  let authMock: { hasRole: (role: string) => boolean; login: (request: { username: string; password: string }) => Promise<{ username: string; message: string }>; logout: () => Promise<void> };
   let loginCalls: Array<{ username: string; password: string }>;
+  let logoutCalls = 0;
   let router: Router;
   let navigateCalls = 0;
   let navigateArgs: unknown[] = [];
 
   beforeEach(async () => {
     loginCalls = [];
+    logoutCalls = 0;
     authMock = {
       hasRole: () => false,
       login: async (request) => {
         loginCalls.push(request);
         return { username: request.username, message: 'Login successful' };
+      },
+      logout: async () => {
+        logoutCalls += 1;
       },
     };
 
@@ -73,11 +78,14 @@ describe('Login', () => {
     expect((component as any).errorMessage()).toBeNull();
   });
 
-  it('lands Operations on trade search without requiring an account', async () => {
+  // The trading app is customer-only (LMKT-145): trade search moved to the staff app.
+  it('signs Operations out again and points them to the staff app', async () => {
     authMock.hasRole = role => role === 'TRADING_OPS';
     (component as any).form.setValue({ username: 'ops@seed.lemarket.com', password: 'Pass123!' });
     await component.submit();
-    expect(navigateArgs).toEqual([['/trade-search']]);
+    expect(logoutCalls).toBe(1);
+    expect(navigateCalls).toBe(0);
+    expect((component as any).errorMessage()).toBe('Please use the staff app for operations.');
   });
 
   it('should show error message for invalid credentials', async () => {

@@ -49,6 +49,10 @@ file and nowhere else:
   Compose sets them to the container names ([docker-compose.yml](../docker-compose.yml)).
 - Both apps call `/api` on their own origin, so the CORS origins only matter to a browser that
   calls a gateway's port directly.
+- The staff gateway does not pass the browser's `Origin` header on to the services. They accept
+  only the trading app's origin (`APP_CORS_ALLOWED_ORIGIN`), and a browser sends `Origin` with
+  every `POST`, staff sign-in included. `STAFF_CORS_ALLOWED_ORIGIN` is therefore the only place
+  the staff app's origin is allowed; no service needs to know it.
 - Which paths each gateway serves is in [C6](C6-api.md#which-gateway-serves-which-paths); the
   staff session cookie is in [C7](C7-roles.md#the-staff-session-cookie).
 - The staff app's URLs are the two forwarding files next to it:

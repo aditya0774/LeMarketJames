@@ -19,7 +19,8 @@ describe('Trading Operations access', () => {
       else expect(TestBed.inject(Router).serializeUrl(run() as UrlTree)).toBe('/access-denied');
       const fixture = TestBed.createComponent(AppShell);
       fixture.detectChanges();
-      expect(!!fixture.nativeElement.querySelector('nav a')).toBe(role === 'TRADING_OPS');
+      // The trading app is customer-only (LMKT-145): its layout links no role to trade search.
+      expect(fixture.nativeElement.querySelector('nav a')).toBeNull();
     });
   }
 });

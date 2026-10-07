@@ -23,6 +23,10 @@ spring:
                 allowed-origins: ${STAFF_CORS_ALLOWED_ORIGIN:http://localhost:4201}
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+            # CORS is decided above, once. The services accept only the trading app's origin
+            # (APP_CORS_ALLOWED_ORIGIN) and would refuse the staff app's with 403; a browser
+            # sends Origin with every POST, so that would be every staff sign-in and sign-out.
+            - RemoveRequestHeader=Origin
             # The browser's staff_jwt cookie is the services' jwt cookie (contract C7).
             - StaffSessionCookie
           # Staff routes only. A path that isn't listed has no route and answers 404; each

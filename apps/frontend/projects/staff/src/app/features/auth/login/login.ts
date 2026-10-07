@@ -3,6 +3,10 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
+import { homeFor } from '../../../core/auth/staff-home';
+
+/** Shown to a client who signs in here; their session is ended before it is shown. */
+export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -43,8 +47,15 @@ export class Login {
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.value.username, this.form.value.password);
-      await this.router.navigate([this.auth.hasRole('TRADING_OPS') ? '/trade-search'
-        : this.auth.hasRole('ANALYST') ? '/analyst' : '/access-denied']);
+      if (this.auth.hasRole('CLIENT')) {
+        // Clients and staff share one sign-in endpoint (C7), so a client's credentials work here
+        // and the gateway has already given this browser a staff_jwt. Nothing in this app is
+        // for clients: sign out again so it doesn't keep one.
+        await this.auth.logout();
+        this.errorMessage.set(STAFF_ONLY_MESSAGE);
+        return;
+      }
+      await this.router.navigate([homeFor(this.auth.roles())]);
     } catch (error) {
       const serverMessage =
         error instanceof HttpErrorResponse &&

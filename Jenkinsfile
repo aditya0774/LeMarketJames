@@ -222,7 +222,6 @@ pipeline {
                     }
                 }
 
-<<<<<<< HEAD
                 // Covers both gateways: the staff gateway is this module's "staff" profile.
                 stage('Test gateway service units') {
                     steps {
@@ -464,7 +463,6 @@ pipeline {
                     compose exec -T buy-sell-service id
                     compose exec -T reporting-service id
 
-<<<<<<< HEAD
                     # Use host-published ports; gateway-service maps host 8089 to container 8080,
                     # and 8090 is the staff gateway.
                     for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
@@ -528,6 +526,39 @@ pipeline {
                     junit allowEmptyResults: true, testResults: 'apps/e2e/results/junit.xml'
                     // HTML report plus traces, screenshots and videos of any failed test.
                     archiveArtifacts artifacts: 'apps/e2e/playwright-report/**, apps/e2e/test-results/**', allowEmptyArchive: true
+                }
+            }
+        }
+
+        // The same for the staff app: its nginx frontend on :4201, which proxies /api to the staff
+        // gateway. A separate run with its own configuration (apps/e2e/playwright.staff.config.ts)
+        // and its own report files, so neither suite overwrites the other's results.
+        stage('Run staff app Playwright E2E tests') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    # Same image and options as the stage above; see the notes there.
+                    # E2E_BASE_URL is the trading app, where the trade search tests register
+                    # the clients whose trades they insert and then look up from the staff app.
+                    docker run --rm --network host --ipc=host \
+                        --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_ALLOW_DATABASE_SEED=true \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
+                        -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        mcr.microsoft.com/playwright:v1.63.0-noble \
+                        sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'apps/e2e/results/staff-junit.xml'
+                    archiveArtifacts artifacts: 'apps/e2e/playwright-report-staff/**, apps/e2e/test-results-staff/**', allowEmptyArchive: true
                 }
             }
         }
