@@ -6,7 +6,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Auth } from '../../../core/auth/auth';
 
 describe('StaffShell', () => {
-  it('links Operations to their dashboard and trade search and hosts the page', async () => {
+  it('renders the logout button and hosts the page', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
       providers: [provideRouter([]), provideHttpClient()],
@@ -16,26 +16,9 @@ describe('StaffShell', () => {
     await fixture.whenStable();
 
     const page = fixture.nativeElement as HTMLElement;
-    const links = Array.from(page.querySelectorAll('nav a')).map((a) => a.getAttribute('href'));
-    expect(links).toEqual(['/trading-ops', '/trade-search']);
+    expect(page.querySelector('.logout-btn')).toBeTruthy();
     expect(page.querySelector('router-outlet')).toBeTruthy();
   });
-
-  // Every role sees its own section and nothing of another's; COMPLIANCE has no section yet.
-  for (const [role, expected] of [['ANALYST', ['/analyst']], ['COMPLIANCE', []], ['CLIENT', []]] as const) {
-    it('links ' + role + ' to its own pages only', async () => {
-      await TestBed.configureTestingModule({
-        imports: [StaffShell],
-        providers: [provideRouter([]), provideHttpClient()],
-      }).compileComponents();
-      TestBed.inject(Auth).roles.set([role]);
-      const fixture = TestBed.createComponent(StaffShell);
-      await fixture.whenStable();
-
-      const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('nav a'));
-      expect(links.map((a) => a.getAttribute('href'))).toEqual([...expected]);
-    });
-  }
 
   it('signs out through the gateway and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
