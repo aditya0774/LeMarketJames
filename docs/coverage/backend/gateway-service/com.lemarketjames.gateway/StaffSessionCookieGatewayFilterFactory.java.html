@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaffSessionCookieGatewayFilterFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Gateway Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.gateway</a> &gt; <span class="el_source">StaffSessionCookieGatewayFilterFactory.java</span></div><h1>StaffSessionCookieGatewayFilterFactory.java</h1><pre class="source lang-java linenums">package com.lemarketjames.gateway;
+
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Gives staff their own session cookie, so a staff session and a customer session can exist in
+ * one browser. Browsers share cookies across ports of a host: with both apps on the same host and
+ * both using {@code jwt}, signing in to one would sign the other out.
+ *
+ * &lt;p&gt;The staff gateway is the only place that knows the staff name. The browser holds
+ * {@code staff_jwt}; the services still set and read {@code jwt}, and this filter renames it in
+ * both directions, so no service changes. Applied through the staff profile's
+ * {@code default-filters} (application-staff.yml) as {@code StaffSessionCookie}; the trading
+ * gateway never uses it.
+ */
+@Component
+<span class="fc" id="L27">public class StaffSessionCookieGatewayFilterFactory extends AbstractGatewayFilterFactory&lt;Object&gt; {</span>
+
+    /**
+     * The cookie every service sets and reads. Mirrors {@code JwtAuthenticationFilter.COOKIE_NAME}
+     * in libs/common, which this reactive module can't depend on; change them together.
+     */
+    static final String SERVICE_COOKIE = &quot;jwt&quot;;
+
+    /** The cookie the staff app's browser holds (contract C7). */
+    static final String STAFF_COOKIE = &quot;staff_jwt&quot;;
+
+    @Override
+    public GatewayFilter apply(Object config) {
+<span class="fc" id="L40">        return (exchange, chain) -&gt; {</span>
+<span class="fc" id="L41">            ServerHttpRequest request = exchange.getRequest().mutate()</span>
+<span class="fc" id="L42">                    .headers(headers -&gt; translateRequestCookies(headers, exchange.getRequest().getCookies()))</span>
+<span class="fc" id="L43">                    .build();</span>
+<span class="fc" id="L44">            return chain.filter(exchange.mutate().request(request).build())</span>
+                    // Runs once the service has answered and before the response is written.
+<span class="fc" id="L46">                    .then(Mono.fromRunnable(() -&gt; translateSetCookie(exchange.getResponse().getHeaders())));</span>
+        };
+    }
+
+    /**
+     * Rebuilds the Cookie header for the service. The customer's {@code jwt} is dropped first:
+     * the browser sends it to the staff port too, and it must never count as a staff session.
+     */
+    private static void translateRequestCookies(HttpHeaders headers, MultiValueMap&lt;String, HttpCookie&gt; cookies) {
+<span class="fc" id="L55">        String translated = cookies.values().stream()</span>
+<span class="fc" id="L56">                .flatMap(List::stream)</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                .filter(cookie -&gt; !SERVICE_COOKIE.equals(cookie.getName()))</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                .map(cookie -&gt; (STAFF_COOKIE.equals(cookie.getName()) ? SERVICE_COOKIE : cookie.getName())</span>
+<span class="fc" id="L59">                        + &quot;=&quot; + cookie.getValue())</span>
+<span class="fc" id="L60">                .collect(Collectors.joining(&quot;; &quot;));</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (translated.isEmpty()) {</span>
+<span class="fc" id="L62">            headers.remove(HttpHeaders.COOKIE);</span>
+        } else {
+<span class="fc" id="L64">            headers.set(HttpHeaders.COOKIE, translated);</span>
+        }
+<span class="fc" id="L66">    }</span>
+
+    /** Renames the service's cookie on its way to the browser; its attributes are kept as sent. */
+    private static void translateSetCookie(HttpHeaders headers) {
+<span class="fc" id="L70">        List&lt;String&gt; setCookies = headers.get(HttpHeaders.SET_COOKIE);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (setCookies == null) {</span>
+<span class="nc" id="L72">            return;</span>
+        }
+<span class="fc" id="L74">        String servicePrefix = SERVICE_COOKIE + &quot;=&quot;;</span>
+<span class="fc" id="L75">        headers.put(HttpHeaders.SET_COOKIE, setCookies.stream()</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                .map(value -&gt; value.startsWith(servicePrefix)</span>
+<span class="fc" id="L77">                        ? STAFF_COOKIE + &quot;=&quot; + value.substring(servicePrefix.length())</span>
+<span class="fc" id="L78">                        : value)</span>
+<span class="fc" id="L79">                .toList());</span>
+<span class="fc" id="L80">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

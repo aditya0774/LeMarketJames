@@ -8,9 +8,9 @@ services:
       - gateway-service
 
   # The staff app (Trading Ops and Analyst): a separate Angular app on its own port. It builds from
-  # the same Angular workspace as the trading frontend, hence the shared context. It depends on
-  # nothing yet: its own backend entry point, the staff gateway, comes with LMKT-143. Its Nginx
-  # already forwards /api to staff-gateway-service:8090 (apps/frontend/projects/staff/nginx.conf).
+  # the same Angular workspace as the trading frontend, hence the shared context. Its Nginx
+  # forwards /api to staff-gateway-service:8090 (apps/frontend/projects/staff/nginx.conf), its
+  # only backend entry point; it never calls the trading gateway.
   staff-frontend:
     image: lemarketjames/staff-frontend:${IMAGE_TAG:-dev}
     build:
@@ -18,6 +18,8 @@ services:
       dockerfile: projects/staff/Dockerfile
     ports:
       - "4201:80"
+    depends_on:
+      - staff-gateway-service
 
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
   # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
@@ -44,6 +46,31 @@ services:
       MARKET_SERVICE_URL: http://market-service:8083
       HOLDINGS_SERVICE_URL: http://holdings-service:8084
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+
+  # Single entry point for the staff app (LMKT-143). It is the gateway image above started with
+  # the "staff" profile, which swaps in the staff routes: /api/v1/reports/** to reporting-service,
+  # sign-in, sign-out and /me to auth-service, and the Trading Ops trade search and order
+  # timeline to buy-sell-service; nothing else is routed (see
+  # services/gateway-service/src/main/resources/application-staff.yml). The browser's session
+  # cookie here is staff_jwt, so a staff and a customer session can share a browser
+  # (contracts/C7-roles.md).
+  staff-gateway-service:
+    image: lemarketjames/gateway-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/gateway-service/Dockerfile
+    ports:
+      - "8090:8090"
+    depends_on:
+      - auth-service
+      - buy-sell-service
+      - reporting-service
+    environment:
+      SPRING_PROFILES_ACTIVE: staff
+      AUTH_SERVICE_URL: http://auth-service:8082
+      BUY_SELL_SERVICE_URL: http://buy-sell-service:8085
+      REPORTING_SERVICE_URL: http://reporting-service:8086
+      STAFF_CORS_ALLOWED_ORIGIN: ${STAFF_CORS_ALLOWED_ORIGIN:-http://localhost:4201}
 
   # auth-service and core-service share the same database and the same JWT_SECRET, so a token
   # issued by auth-service is accepted by core-service.
@@ -167,7 +194,7 @@ services:
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Aggregate, read-only reports for analysts (/api/v1/reports/**). The trading gateway has no
-  # route to it on purpose: the staff gateway (LMKT-143) will be its only caller. It shares the
+  # route to it on purpose: the staff gateway (staff-gateway-service) is its only caller. It shares the
   # database with live trading, so its connections are few, read-only and time-limited; see the
   # read-side safeguards in services/reporting-service/src/main/resources/application.properties.
   reporting-service:
@@ -176,7 +203,7 @@ services:
       context: .
       dockerfile: services/reporting-service/Dockerfile
     ports:
-      # Published for direct debugging and tests only; staff browser traffic will go through the staff gateway.
+      # Published for direct debugging and tests only; staff browser traffic goes through the staff gateway.
       - "8086:8086"
     depends_on:
       db:
