@@ -1,0 +1,55 @@
+server:
+  port: 8090
+
+services:
+  auth-url: ${AUTH_SERVICE_URL:http://localhost:8082}
+  buy-sell-url: ${BUY_SELL_SERVICE_URL:http://localhost:8085}
+  reporting-url: ${REPORTING_SERVICE_URL:http://localhost:8086}
+
+spring:
+  application:
+    name: staff-gateway-service
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${STAFF_CORS_ALLOWED_ORIGIN:http://localhost:4201}
+                allowed-methods: [GET, POST, OPTIONS]
+                allowed-headers: "*"
+                allow-credentials: true
+          # CORS is checked here. Upstream services receive a server-to-server request,
+          # so their trading-browser origin policy must not reject the staff browser.
+          default-filters:
+            - RemoveRequestHeader=Origin
+          # Explicit staff routes only; no client registration, order placement or internal APIs.
+          routes:
+            - id: staff-login
+              uri: ${services.auth-url}
+              predicates:
+                - Path=/api/auth/login,/api/auth/logout
+                - Method=POST
+            - id: staff-session
+              uri: ${services.auth-url}
+              predicates:
+                - Path=/api/auth/me
+                - Method=GET
+            - id: trade-search
+              uri: ${services.buy-sell-url}
+              predicates:
+                - Path=/api/v1/orders/trades/search,/api/v1/orders/trades/clients
+                - Method=GET
+            - id: reports
+              uri: ${services.reporting-url}
+              predicates:
+                - Path=/api/v1/reports/**
+                - Method=GET
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

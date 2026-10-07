@@ -2,7 +2,7 @@
 
 Aggregate, read-only reports for analysts, on port 8086 under `/api/v1/reports/**`. It is a separate service so that a heavy report can never slow down order placement.
 
-It is not behind the trading gateway. The staff gateway (LMKT-143) will be its only caller; until then, call it directly on 8086 with the `jwt` cookie from a staff login.
+It is not behind the trading gateway. Staff browser requests go through the staff gateway on 8090 with the `jwt` cookie from a staff login.
 
 ## Rules for every report endpoint
 

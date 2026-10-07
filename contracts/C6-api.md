@@ -216,10 +216,11 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
 Supply exactly one search mode:
 
 - `?orderId=42`: the filled order with that ID.
+- `?clientId=7`: all that client's filled orders across their accounts, without a date filter.
 - `?clientId=7&from=2026-01-01&to=2026-01-31`: that client's filled orders across their accounts.
 
 IDs must be positive integers. `from` and `to` are UTC calendar dates (`YYYY-MM-DD`, positive
-four-digit year), both required for client search. Filtering uses `filledAt`, from midnight on
+four-digit year), supplied together or both omitted for client search. Filtering uses `filledAt`, from midnight on
 `from` through the entire `to` day (exclusive next midnight). Results are newest fill first,
 then descending order ID for equal fill times. Client IDs are not account IDs.
 
@@ -240,7 +241,16 @@ return `400 { "message": "..." }`. Missing/expired authentication gets `401`; ev
 including a client searching for their own trade, gets `403`. Operations may search any client's
 trades, including closed clients. Existing ownership rules for client history are unchanged.
 
-The frontend `/trade-search` page provides separate order-ID and client/date search modes.
+`GET /api/v1/orders/trades/clients?name=Alex` provides a Trading Operations-only client-name
+lookup through the staff gateway. It returns `[{ "clientId": 7, "fullName": "Alex Smith" }]`.
+The trimmed name must contain 2–100 characters; matching is case-insensitive literal substring
+matching (not wildcard matching). Up to 50 matches are returned, sorted by name then client ID.
+No matches returns `[]`; invalid input gets `400`, missing authentication `401`, other roles `403`.
+The staff UI shows each matching name with its ID and asks the operator to select a client,
+then uses the existing client-ID search with an optional date range.
+
+The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
+trading gateway. The staff gateway forwards login/logout, session checks, trade search and reports; owning services enforce roles.
 Trading Operations land there after login and see a navigation link in the signed-in layout.
 Other signed-in roles are redirected to `/access-denied`. The screen labels dates and execution
 times as UTC, preserves four-decimal execution prices, and clears/cancels stale searches when
@@ -313,7 +323,7 @@ How the balance fields are computed:
 
 ## Reports (reporting-service)
 
-Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`, LMKT-143), the staff app's only backend entry point. Until that gateway exists, call reporting-service directly.
+Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`, LMKT-143), the staff app's only backend entry point. The staff gateway forwards these read-only report requests to reporting-service.
 
 Rules for every report (the full list, for whoever builds one, is in the service's [README](../services/reporting-service/README.md#rules-for-every-report-endpoint)):
 
