@@ -1,11 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-
-export interface AuditEvent {
-  eventType: string;
-  occurredAt: string;
-  details: Record<string, any>;
-}
+import { AuditEvent } from '../../../shared/models/audit-event.model';
 
 /**
  * Displays a chronological timeline of audit events for an order.

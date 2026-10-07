@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { TradeTimelineComponent, AuditEvent } from './trade-timeline';
+import { TradeTimelineComponent } from './trade-timeline';
+import { AuditEvent } from '../../../shared/models/audit-event.model';
 
 describe('TradeTimelineComponent', () => {
   const mockEvents: AuditEvent[] = [

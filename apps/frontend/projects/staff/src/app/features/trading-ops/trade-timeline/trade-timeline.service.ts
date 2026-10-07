@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { AuditEvent } from '../trade-timeline/trade-timeline';
+import { AuditEvent } from '../../../shared/models/audit-event.model';
 
 /**
  * Service for fetching trade timeline (audit events) for an order.

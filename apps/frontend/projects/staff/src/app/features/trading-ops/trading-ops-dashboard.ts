@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TradeTimelineComponent } from './trade-timeline/trade-timeline';
 import { TradeTimelineService } from './trade-timeline/trade-timeline.service';
-import { AuditEvent } from './trade-timeline/trade-timeline';
+import { AuditEvent } from '../../shared/models/audit-event.model';
 
 /**
  * Landing page of the TRADING_OPS role, which works on individual client trades.

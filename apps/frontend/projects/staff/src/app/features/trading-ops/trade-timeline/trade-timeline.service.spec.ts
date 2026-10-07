@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TradeTimelineService } from './trade-timeline.service';
 import { firstValueFrom } from 'rxjs';
+import { AuditEvent } from '../../../shared/models/audit-event.model';
 
 describe('TradeTimelineService', () => {
   let service: TradeTimelineService;
