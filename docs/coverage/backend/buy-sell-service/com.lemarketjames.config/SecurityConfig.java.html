@@ -53,7 +53,7 @@ import java.util.List;
 <span class="fc" id="L53">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
 <span class="fc" id="L54">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;).permitAll()</span>
                 // Dispute searches may read any client's fills, so only operations may call them.
-<span class="fc" id="L56">                .requestMatchers(&quot;/api/v1/orders/trades/search&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L56">                .requestMatchers(&quot;/api/v1/orders/trades/search&quot;, &quot;/api/v1/orders/trades/clients&quot;).hasRole(Role.TRADING_OPS.name())</span>
                 // Moving orders through their lifecycle is an operations task (contract C7).
 <span class="fc" id="L58">                .requestMatchers(HttpMethod.PUT, &quot;/api/v1/orders/*/status/*&quot;).hasRole(Role.TRADING_OPS.name())</span>
 <span class="fc" id="L59">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders/*/reject&quot;).hasRole(Role.TRADING_OPS.name())</span>

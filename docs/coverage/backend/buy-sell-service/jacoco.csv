@@ -17,8 +17,9 @@ LeMarketJames Buy Sell Service,com.lemarketjames.orders.exception,NotTradableExc
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.exception,InvalidStatusTransitionException,0,8,0,0,0,2,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.exception,InsufficientHoldingsException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.trades,TradeSearchResult,0,30,0,0,0,1,0,1,0,1
-LeMarketJames Buy Sell Service,com.lemarketjames.trades,TradeSearchController,0,32,0,2,0,8,0,4,0,3
-LeMarketJames Buy Sell Service,com.lemarketjames.trades,TradeSearchService,0,101,1,23,0,21,1,14,0,3
+LeMarketJames Buy Sell Service,com.lemarketjames.trades,TradeSearchController,0,37,0,2,0,9,0,5,0,4
+LeMarketJames Buy Sell Service,com.lemarketjames.trades,TradeSearchService,0,142,3,31,0,25,3,18,0,4
+LeMarketJames Buy Sell Service,com.lemarketjames.trades,ClientSearchResult,0,9,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionTrail,0,109,0,4,0,30,0,19,0,17
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionValidator,0,359,0,28,0,87,0,29,0,15
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionTrail.Result,0,21,0,0,0,1,0,1,0,1
@@ -42,7 +43,7 @@ LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,RejectionReason,0
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,Order.OrderType,0,15,0,0,0,2,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,Order.OrderStatus,0,76,0,7,0,15,0,9,0,4
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,Order,60,169,1,9,16,61,9,35,8,31
-LeMarketJames Buy Sell Service,com.lemarketjames.config,SecurityConfig,0,184,0,0,0,27,0,8,0,8
+LeMarketJames Buy Sell Service,com.lemarketjames.config,SecurityConfig,0,188,0,0,0,27,0,8,0,8
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,OrderExecutionTransactions,14,123,5,15,0,26,5,8,0,3
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,QuoteUsed,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.execution,MarketOrderExecutor,8,188,7,23,1,25,7,11,0,3

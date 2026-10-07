@@ -68,8 +68,8 @@ import java.util.stream.Collectors;
     /** Renames the service's cookie on its way to the browser; its attributes are kept as sent. */
     private static void translateSetCookie(HttpHeaders headers) {
 <span class="fc" id="L70">        List&lt;String&gt; setCookies = headers.get(HttpHeaders.SET_COOKIE);</span>
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (setCookies == null) {</span>
-<span class="nc" id="L72">            return;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (setCookies == null) {</span>
+<span class="fc" id="L72">            return;</span>
         }
 <span class="fc" id="L74">        String servicePrefix = SERVICE_COOKIE + &quot;=&quot;;</span>
 <span class="fc" id="L75">        headers.put(HttpHeaders.SET_COOKIE, setCookies.stream()</span>

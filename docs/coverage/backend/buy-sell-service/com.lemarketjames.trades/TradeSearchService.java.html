@@ -23,29 +23,37 @@ public class TradeSearchService {
             }
 <span class="fc" id="L24">            return trades.findTrade(orderId, OrderStatus.FILLED);</span>
         }
-<span class="fc bfc" id="L26" title="All 8 branches covered.">        if (clientId == null || clientId &lt;= 0 || from == null || to == null) {</span>
-<span class="fc" id="L27">            throw new IllegalArgumentException(&quot;Supply a positive clientId with both from and to, or orderId alone&quot;);</span>
+<span class="fc bfc" id="L26" title="All 10 branches covered.">        if (clientId == null || clientId &lt;= 0 || (from == null) != (to == null)) {</span>
+<span class="fc" id="L27">            throw new IllegalArgumentException(&quot;Supply a positive clientId with either both dates or neither, or orderId alone&quot;);</span>
         }
-<span class="fc" id="L29">        LocalDate start = parseDate(from);</span>
-<span class="fc" id="L30">        LocalDate end = parseDate(to);</span>
-<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (end.isBefore(start)) {</span>
-<span class="fc" id="L32">            throw new IllegalArgumentException(&quot;to must be on or after from&quot;);</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (from == null) return trades.findAllClientTrades(clientId, OrderStatus.FILLED);</span>
+<span class="fc" id="L30">        LocalDate start = parseDate(from);</span>
+<span class="fc" id="L31">        LocalDate end = parseDate(to);</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (end.isBefore(start)) {</span>
+<span class="fc" id="L33">            throw new IllegalArgumentException(&quot;to must be on or after from&quot;);</span>
         }
         // Stored timestamps are UTC. Exclusive next midnight includes the entire final day.
-<span class="fc" id="L35">        return trades.findClientTrades(clientId, start.atStartOfDay(), end.plusDays(1).atStartOfDay(),</span>
+<span class="fc" id="L36">        return trades.findClientTrades(clientId, start.atStartOfDay(), end.plusDays(1).atStartOfDay(),</span>
                 OrderStatus.FILLED);
+    }
+
+    public List&lt;ClientSearchResult&gt; clients(String name) {
+<span class="pc bpc" id="L41" title="2 of 6 branches missed.">        if (name == null || name.trim().length() &lt; 2 || name.trim().length() &gt; 100) {</span>
+<span class="fc" id="L42">            throw new IllegalArgumentException(&quot;Enter a client name between 2 and 100 characters&quot;);</span>
+        }
+<span class="fc" id="L44">        return trades.findClients(name.trim(), org.springframework.data.domain.PageRequest.of(0, 50));</span>
     }
 
     private LocalDate parseDate(String value) {
         try {
-<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (!value.matches(&quot;[0-9]{4}-[0-9]{2}-[0-9]{2}&quot;)) {</span>
-<span class="fc" id="L42">                throw new IllegalArgumentException(&quot;Dates must be YYYY-MM-DD&quot;);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            if (!value.matches(&quot;[0-9]{4}-[0-9]{2}-[0-9]{2}&quot;)) {</span>
+<span class="fc" id="L50">                throw new IllegalArgumentException(&quot;Dates must be YYYY-MM-DD&quot;);</span>
             }
-<span class="fc" id="L44">            LocalDate date = LocalDate.parse(value);</span>
-<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (date.getYear() &lt; 1) throw new IllegalArgumentException(&quot;Date year must be positive&quot;);</span>
-<span class="fc" id="L46">            return date;</span>
-<span class="fc" id="L47">        } catch (DateTimeException ex) {</span>
-<span class="fc" id="L48">            throw new IllegalArgumentException(&quot;Invalid calendar date&quot;, ex);</span>
+<span class="fc" id="L52">            LocalDate date = LocalDate.parse(value);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (date.getYear() &lt; 1) throw new IllegalArgumentException(&quot;Date year must be positive&quot;);</span>
+<span class="fc" id="L54">            return date;</span>
+<span class="fc" id="L55">        } catch (DateTimeException ex) {</span>
+<span class="fc" id="L56">            throw new IllegalArgumentException(&quot;Invalid calendar date&quot;, ex);</span>
         }
     }
 }
