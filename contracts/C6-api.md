@@ -6,11 +6,30 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 
 ## Rules for every public endpoint
 
-- **Entry point.** Browsers call only the gateway (`:8080` in a container, `:8089` on the host), under `/api/**`. Paths under `/internal/**` exist only service-to-service and are never routed by the gateway. Staff reports are the exception: they are served through the staff gateway instead ([Reports](#reports-reporting-service)).
-- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. The cookie carries the caller's roles ([C7](C7-roles.md)).
+- **Entry point.** Browsers call only a gateway, under `/api/**`: the trading app calls the trading gateway (`:8080` in a container, `:8089` on the host) and the staff app calls the staff gateway (`:8090`). Paths under `/internal/**` exist only service-to-service and are never routed by either gateway. See [Which gateway serves which paths](#which-gateway-serves-which-paths).
+- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff gateway the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
 - **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
 - **Validation failures** return `400 { "errors": { "<field>": "<message>" } }`. Other bad input returns `400 { "message": "..." }`.
+
+## Which gateway serves which paths
+
+Each gateway's route list is its configuration file; this table says what they add up to. A path a gateway has no route for answers `404` there, whoever asks.
+
+| Paths | Service | Trading gateway ([application.yml](../services/gateway-service/src/main/resources/application.yml)) | Staff gateway ([application-staff.yml](../services/gateway-service/src/main/resources/application-staff.yml)) |
+|---|---|---|---|
+| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | auth-service | yes | yes |
+| `POST /api/auth/register` | auth-service | yes | no: staff logins are not self-service |
+| `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/{orderId}/timeline` | buy-sell-service | yes, as part of `/api/v1/orders/**` | yes |
+| The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | buy-sell-service | yes | no |
+| Holdings, balance, profile, portfolio, trades | holdings-service | yes | no |
+| `/api/market/**` | market-service | yes | no |
+| `/api/v1/reports/**` | reporting-service | no: these paths fall through to core-service, which has no such endpoint | yes |
+| Everything else under `/api/**` | core-service | yes | no |
+
+- A gateway decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either gateway: a `CLIENT` who signs in through the staff gateway gets `403` on every staff route.
+- The session cookie has a different name at each gateway ([C7](C7-roles.md#the-staff-session-cookie)), so a session from one is not a session at the other.
+- A new staff endpoint needs a route in `application-staff.yml` and a row here.
 
 ## Auth (auth-service)
 
@@ -21,6 +40,7 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 | `POST /api/auth/logout` | none | `200 { message }`; clears the cookie |
 | `GET /api/auth/me` | none | `200 { username, roles, accountId? }` |
 
+- Clients and staff sign in with the same endpoint, each through their own gateway. The staff gateway serves login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
 - Login fails with `400 { message }` for a wrong email or password, a locked login ([C5](C5-config.md) lockout), or a login that isn't allowed in (e.g. a closed client, see [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)).
 - Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
@@ -148,7 +168,7 @@ Access control and failures:
 
 ### Order timeline (TRADING_OPS only)
 
-Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills.
+Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills. The staff app reaches it through the staff gateway ([which gateway](#which-gateway-serves-which-paths)).
 
 | Method & path | Returns |
 |---|---|
@@ -212,7 +232,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
 
 ### Trade search (TRADING_OPS only)
 
-`GET /api/v1/orders/trades/search` (buy-sell-service, through the existing orders gateway route).
+`GET /api/v1/orders/trades/search` (buy-sell-service, through the trading gateway's orders route for the trading app's search screen, and through the staff gateway for the staff app).
 Supply exactly one search mode:
 
 - `?orderId=42`: the filled order with that ID.
@@ -313,7 +333,7 @@ How the balance fields are computed:
 
 ## Reports (reporting-service)
 
-Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`, LMKT-143), the staff app's only backend entry point. Until that gateway exists, call reporting-service directly.
+Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`), the staff app's only backend entry point ([which gateway](#which-gateway-serves-which-paths)).
 
 Rules for every report (the full list, for whoever builds one, is in the service's [README](../services/reporting-service/README.md#rules-for-every-report-endpoint)):
 

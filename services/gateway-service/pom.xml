@@ -14,6 +14,7 @@
     <!--
         Single entry point for the frontend: routes /api/auth/** to auth-service and the rest to
         core-service. Reactive (WebFlux), so it deliberately does not depend on libs/common (servlet-based).
+        The same jar is also the staff gateway, when started with the "staff" profile.
     -->
     <artifactId>gateway-service</artifactId>
     <name>LeMarketJames Gateway Service</name>

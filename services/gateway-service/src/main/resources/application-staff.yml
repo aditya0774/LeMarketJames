@@ -1,0 +1,44 @@
+# The staff gateway (LMKT-143): this same module started with the "staff" profile, as the only
+# backend entry point of the staff app. Everything here replaces its counterpart in
+# application.yml; Spring replaces a list as a whole, so no trading route survives below.
+server:
+  port: 8090
+
+services:
+  # Only the staff gateway knows where reporting-service is; the trading gateway has no such key.
+  reporting-url: ${REPORTING_SERVICE_URL:http://localhost:8086}
+
+spring:
+  application:
+    name: staff-gateway-service
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # The staff app calls /api on its own origin (its dev proxy or Nginx forwards here), so
+          # CORS only matters to a browser calling this port directly.
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${STAFF_CORS_ALLOWED_ORIGIN:http://localhost:4201}
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+            # The browser's staff_jwt cookie is the services' jwt cookie (contract C7).
+            - StaffSessionCookie
+          # Staff routes only. A path that isn't listed has no route and answers 404; each
+          # service still checks the caller's role itself.
+          routes:
+            - id: staff-reports
+              uri: ${services.reporting-url}
+              predicates:
+                - Path=/api/v1/reports/**
+            # Sign-in, sign-out and "who am I". No registration: staff logins are not self-service.
+            - id: staff-auth
+              uri: ${services.auth-url}
+              predicates:
+                - Path=/api/auth/login,/api/auth/logout,/api/auth/me
+            # The Trading Ops reads: trade search and an order's timeline.
+            - id: staff-trading-ops
+              uri: ${services.buy-sell-url}
+              predicates:
+                - Path=/api/v1/orders/trades/search,/api/v1/orders/{orderId}/timeline
