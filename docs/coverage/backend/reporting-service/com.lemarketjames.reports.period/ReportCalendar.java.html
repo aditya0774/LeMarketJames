@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportCalendar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.period</a> &gt; <span class="el_source">ReportCalendar.java</span></div><h1>ReportCalendar.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.period;
+
+import com.lemarketjames.common.config.PlatformSettings;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
+/**
+ * Turns report days, weeks, months and years into ranges of stored timestamps. A report's &quot;day&quot;
+ * is a day in the reports time zone ({@code lmj.reports.time-zone}, contract C5), while orders are
+ * stored in UTC, so a trade late in the evening in New York belongs to that day even though its
+ * UTC timestamp is already on the next one.
+ *
+ * &lt;p&gt;Every report endpoint takes its date ranges from here instead of converting time zones
+ * itself, so all reports agree on where a day starts. The approach is the one order history uses
+ * (buy-sell-service's {@code OrderHistoryPeriod}), with the zone coming from configuration
+ * instead of the caller.
+ */
+@Component
+public class ReportCalendar {
+
+    private final PlatformSettings settings;
+
+<span class="fc" id="L27">    public ReportCalendar(PlatformSettings settings) {</span>
+<span class="fc" id="L28">        this.settings = settings;</span>
+<span class="fc" id="L29">    }</span>
+
+    /** The time zone report days are in. */
+    public ZoneId zone() {
+<span class="fc" id="L33">        return settings.getReports().getTimeZone();</span>
+    }
+
+    /**
+     * The range a report asks for: every day from {@code firstDay} to {@code lastDay}, both included.
+     *
+     * @throws IllegalArgumentException when a day is missing or the range is reversed; the shared
+     *         exception handler answers that with 400
+     */
+    public ReportPeriod between(LocalDate firstDay, LocalDate lastDay) {
+<span class="fc bfc" id="L43" title="All 4 branches covered.">        if (firstDay == null || lastDay == null) {</span>
+<span class="fc" id="L44">            throw new IllegalArgumentException(&quot;Both the first and the last day of the report are required&quot;);</span>
+        }
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (lastDay.isBefore(firstDay)) {</span>
+<span class="fc" id="L47">            throw new IllegalArgumentException(&quot;The report's last day must not be before its first day&quot;);</span>
+        }
+<span class="fc" id="L49">        return period(firstDay, lastDay.plusDays(1));</span>
+    }
+
+    /** The whole day, week, month or year that a report-time-zone day falls in. */
+    public ReportPeriod bucketOf(LocalDate day, ReportBucket bucket) {
+<span class="fc" id="L54">        LocalDate firstDay = bucket.firstDay(day);</span>
+<span class="fc" id="L55">        return period(firstDay, bucket.firstDayOfNext(firstDay));</span>
+    }
+
+    /** The whole day, week, month or year that a stored UTC timestamp (e.g. {@code filled_at}) falls in. */
+    public ReportPeriod bucketContaining(LocalDateTime utcTimestamp, ReportBucket bucket) {
+<span class="fc" id="L60">        return bucketOf(reportDay(utcTimestamp), bucket);</span>
+    }
+
+    /** The day in the reports time zone on which a stored UTC timestamp happened. */
+    public LocalDate reportDay(LocalDateTime utcTimestamp) {
+<span class="fc" id="L65">        return utcTimestamp.atOffset(ZoneOffset.UTC).atZoneSameInstant(zone()).toLocalDate();</span>
+    }
+
+    private ReportPeriod period(LocalDate firstDay, LocalDate dayAfterLast) {
+        // Resolve both local midnights independently: DST days need not contain 24 hours.
+<span class="fc" id="L70">        return new ReportPeriod(firstDay, startInUtc(firstDay), startInUtc(dayAfterLast));</span>
+    }
+
+    private LocalDateTime startInUtc(LocalDate day) {
+<span class="fc" id="L74">        return LocalDateTime.ofInstant(day.atStartOfDay(zone()).toInstant(), ZoneOffset.UTC);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

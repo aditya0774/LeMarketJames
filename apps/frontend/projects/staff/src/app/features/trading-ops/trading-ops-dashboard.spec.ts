@@ -1,0 +1,12 @@
+import { TestBed } from '@angular/core/testing';
+import { TradingOpsDashboard } from './trading-ops-dashboard';
+
+describe('TradingOpsDashboard', () => {
+  it('renders its heading', async () => {
+    await TestBed.configureTestingModule({ imports: [TradingOpsDashboard] }).compileComponents();
+    const fixture = TestBed.createComponent(TradingOpsDashboard);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Trading Ops dashboard');
+  });
+});

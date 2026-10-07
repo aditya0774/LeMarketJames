@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportBucket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.period</a> &gt; <span class="el_source">ReportBucket.java</span></div><h1>ReportBucket.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.period;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+
+/** The calendar periods a report can group trades into. Turn one into a time range with {@link ReportCalendar}. */
+<span class="fc" id="L8">public enum ReportBucket {</span>
+<span class="fc" id="L9">    DAY {</span>
+        @Override
+        LocalDate firstDay(LocalDate day) {
+<span class="fc" id="L12">            return day;</span>
+        }
+
+        @Override
+        LocalDate firstDayOfNext(LocalDate firstDay) {
+<span class="fc" id="L17">            return firstDay.plusDays(1);</span>
+        }
+    },
+    /**
+     * Monday to Sunday (ISO-8601), the same weeks PostgreSQL's {@code date_trunc('week', ...)}
+     * makes, so a report grouped in SQL and one grouped in Java agree.
+     */
+<span class="fc" id="L24">    WEEK {</span>
+        @Override
+        LocalDate firstDay(LocalDate day) {
+<span class="fc" id="L27">            return day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));</span>
+        }
+
+        @Override
+        LocalDate firstDayOfNext(LocalDate firstDay) {
+<span class="fc" id="L32">            return firstDay.plusWeeks(1);</span>
+        }
+    },
+<span class="fc" id="L35">    MONTH {</span>
+        @Override
+        LocalDate firstDay(LocalDate day) {
+<span class="fc" id="L38">            return day.withDayOfMonth(1);</span>
+        }
+
+        @Override
+        LocalDate firstDayOfNext(LocalDate firstDay) {
+<span class="fc" id="L43">            return firstDay.plusMonths(1);</span>
+        }
+    },
+<span class="fc" id="L46">    YEAR {</span>
+        @Override
+        LocalDate firstDay(LocalDate day) {
+<span class="fc" id="L49">            return day.withDayOfYear(1);</span>
+        }
+
+        @Override
+        LocalDate firstDayOfNext(LocalDate firstDay) {
+<span class="fc" id="L54">            return firstDay.plusYears(1);</span>
+        }
+    };
+
+    /** The first day of the bucket that {@code day} falls in. */
+    abstract LocalDate firstDay(LocalDate day);
+
+    /** The first day of the bucket after the one starting on {@code firstDay}. */
+    abstract LocalDate firstDayOfNext(LocalDate firstDay);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

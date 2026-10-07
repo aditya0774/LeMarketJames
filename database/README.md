@@ -18,7 +18,7 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
 | `market_quotes`, `price_candles` | market-service | market-service |
 | `instrument_market_params` | migrations only | market-service |
-| `reporting_trades` (view) | — | reports and insights ([C6](../contracts/C6-api.md#internal-events-and-the-execution-interface-core-service)) |
+| `reporting_trades` (view) | — | reporting-service, as the only data source of its reports ([C6](../contracts/C6-api.md#reports-reporting-service)); insights later |
 
 The shared JPA mappings for `clients`/`addresses`/`accounts`/`staff_users`/`audit_log` live in `libs/common` (`com.lemarketjames.common.domain` and `.audit`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
 

@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Runs the whole app natively on Windows: every backend service plus the Angular dev server.
+    Runs the whole app natively on Windows: every backend service plus both Angular dev servers.
 
 .DESCRIPTION
     Windows counterpart of `docker compose up`, for machines that can't run Linux containers.
     Builds the backend once, then opens one PowerShell window per process so each one's log
     stays readable and closing a window stops that process. Every service's defaults already
-    point at localhost (database on 5432, services on 8081-8085), so no configuration is needed.
+    point at localhost (database on 5432, services on 8081-8086), so no configuration is needed.
 
     Run .\scripts\windows\setup-db.ps1 once first so the lemarket database exists.
 
@@ -47,13 +47,19 @@ Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-servic
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
 Start-Window 'buy-sell-service :8085' $repoRoot 'mvn -B -pl services/buy-sell-service spring-boot:run'
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
+# Not behind the gateway below: only the staff gateway (LMKT-143) will route to it.
+Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'
 # 8089 matches the port Docker Compose publishes the gateway on, which proxy.conf.json targets.
 Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.arguments=--server.port=8089'"
 
 $frontend = Join-Path $repoRoot 'apps\frontend'
 $npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start' } else { 'npm install; npm start' }
 Start-Window 'frontend :4200' $frontend $npm
+# The staff app is a second project in the same Angular workspace. It shares node_modules with
+# the trading frontend, so it waits for the install above instead of running a second one.
+$staff = 'while (-not (Test-Path node_modules\.package-lock.json)) { Start-Sleep 2 }; npm run start:staff'
+Start-Window 'staff-frontend :4201' $frontend $staff
 
 Write-Host ''
-Write-Host 'Services take ~30s to start. Then open http://localhost:4200'
+Write-Host 'Services take ~30s to start. Then open http://localhost:4200 (trading app) or http://localhost:4201 (staff app)'
 Write-Host 'Health check: curl http://localhost:8089/actuator/health'

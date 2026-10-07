@@ -6,7 +6,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 
 | Settings | Defined in | Available to |
 |---|---|---|
-| Business settings: `lmj.*` | [PlatformSettings.java](../libs/common/src/main/java/com/lemarketjames/common/config/PlatformSettings.java) | auth-, core- and holdings-service (anything on `libs/common`) |
+| Business settings: `lmj.*` | [PlatformSettings.java](../libs/common/src/main/java/com/lemarketjames/common/config/PlatformSettings.java) | auth-, core-, holdings-, buy-sell- and reporting-service (anything on `libs/common`) |
 | Market simulation: `sim.*` | [MarketSimulationProperties.java](../services/market-service/src/main/java/com/lemarketjames/market/config/MarketSimulationProperties.java) | market-service |
 | Exchange trading hours | [MarketHours.java](../libs/market-client/src/main/java/com/lemarketjames/market/model/MarketHours.java) constants | market-service and anything using market-client |
 | Supported stock list | the `instruments` table (via migrations), served by `GET /api/v1/instruments` ([C6](C6-api.md#instruments-core-service)) | everyone; the frontend never keeps a copy |
@@ -21,13 +21,22 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 | Market hours and holidays: `MarketHours`, `sim.respect-market-hours`, `sim.holidays` | market-service's simulator |
 | Location restriction list: `PlatformSettings.Orders` | Not yet. For order placement, with the `LOCATION_RESTRICTED` code. |
 | Audit online retention window: `PlatformSettings.Audit` | Not yet. For the audit archival and audit view stories. An event older than the window counts as archived; its row is not changed ([C2](C2-audit.md)). |
-| Overnight report time: `PlatformSettings.Reports` | Not yet. For the reporting story. |
+| Reports time zone: `PlatformSettings.Reports` (`lmj.reports.time-zone`) | reporting-service, through [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the zone a report's days, weeks, months and years are in. Orders are stored in UTC; `ReportCalendar` converts ([C6](C6-api.md#reports-reporting-service)). It is also the zone the overnight report time is in. |
+| Overnight report time: `PlatformSettings.Reports` | Not yet. For the scheduled-reports story. |
 
 ## Changing a value
 
 - **Per environment:** set an environment variable; don't edit code or re-declare the key in `application.properties`. Spring maps `lmj.auth.lockout.max-attempts` to `LMJ_AUTH_LOCKOUT_MAXATTEMPTS`: dots become underscores and dashes are dropped. In Docker, add it under the service's `environment:` in `docker-compose.yml`.
 - **The default itself:** change it in the settings class, where its Javadoc explains it. That is the only place the default is written.
 - **A new setting:** add a field with a default and Javadoc to the settings class that owns it, and add a row here.
+
+## Reporting read-side limits
+
+reporting-service's connection pool size, read-only transactions and query timeout are technical
+limits, not business settings, so they are not in `PlatformSettings`. They are defined, with
+their defaults and environment overrides, in its
+[application.properties](../services/reporting-service/src/main/resources/application.properties)
+and explained in its [README](../services/reporting-service/README.md#read-side-safeguards).
 
 ## Order execution
 

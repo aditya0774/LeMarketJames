@@ -71,6 +71,71 @@
           }
         }
       }
+    },
+    "staff": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/staff",
+      "sourceRoot": "projects/staff/src",
+      "prefix": "staff",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/staff/src/main.ts",
+            "tsConfig": "projects/staff/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "favicon.ico",
+                "input": "public"
+              }
+            ],
+            "styles": ["projects/staff/src/material-theme.scss", "projects/staff/src/styles.css"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.3MB",
+                  "maximumError": "2MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": { "port": 4201, "proxyConfig": "projects/staff/proxy.conf.json" },
+          "configurations": {
+            "production": {
+              "buildTarget": "staff:build:production"
+            },
+            "development": {
+              "buildTarget": "staff:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/staff/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

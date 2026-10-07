@@ -7,6 +7,18 @@ services:
     depends_on:
       - gateway-service
 
+  # The staff app (Trading Ops and Analyst): a separate Angular app on its own port. It builds from
+  # the same Angular workspace as the trading frontend, hence the shared context. It depends on
+  # nothing yet: its own backend entry point, the staff gateway, comes with LMKT-143. Its Nginx
+  # already forwards /api to staff-gateway-service:8090 (apps/frontend/projects/staff/nginx.conf).
+  staff-frontend:
+    image: lemarketjames/staff-frontend:${IMAGE_TAG:-dev}
+    build:
+      context: ./apps/frontend
+      dockerfile: projects/staff/Dockerfile
+    ports:
+      - "4201:80"
+
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
   # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
   # /api/v1/{orders,buy-orders}/** to buy-sell-service, everything else to core-service (see
@@ -154,6 +166,27 @@ services:
       ORDERS_SERVICE_URL: http://buy-sell-service:8085
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
+  # Aggregate, read-only reports for analysts (/api/v1/reports/**). The trading gateway has no
+  # route to it on purpose: the staff gateway (LMKT-143) will be its only caller. It shares the
+  # database with live trading, so its connections are few, read-only and time-limited; see the
+  # read-side safeguards in services/reporting-service/src/main/resources/application.properties.
+  reporting-service:
+    image: lemarketjames/reporting-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/reporting-service/Dockerfile
+    ports:
+      # Published for direct debugging and tests only; staff browser traffic will go through the staff gateway.
+      - "8086:8086"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
+
   db:
     image: postgres:16-alpine
     # The server log is the record of every refused attempt to change an audit record
@@ -183,7 +216,7 @@ services:
     ports:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (the frontend and gateway never call db directly;
-      # only auth-service, core-service, market-service, and holdings-service talk to it).
+      # only the backend services other than the gateway talk to it).
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data

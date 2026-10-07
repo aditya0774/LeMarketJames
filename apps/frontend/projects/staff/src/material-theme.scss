@@ -1,0 +1,23 @@
+// Angular Material theme for the staff app, so Material components work in new screens.
+// The cyan palette keeps it visibly apart from the trading app's azure/blue theme.
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$cyan-palette,
+        tertiary: mat.$spring-green-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+body {
+  color-scheme: light;
+  margin: 0;
+  height: 100%;
+}

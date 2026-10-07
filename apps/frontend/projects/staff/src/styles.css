@@ -1,0 +1,39 @@
+/* Staff app look: a light, neutral back-office palette, deliberately unlike the trading app's
+   dark purple and gold, so nobody mistakes one app for the other. */
+
+:root {
+  --staff-bg: #f4f6f8;
+  --staff-surface: #ffffff;
+  --staff-line: #d9dee5;
+  --staff-sidebar: #16212e;
+  --staff-sidebar-text: #c5cfdb;
+  --staff-accent: #0e8f8f;
+  --staff-text: #1b2633;
+  --staff-text-dim: #5d6b7c;
+  --staff-radius: 8px;
+}
+
+body {
+  background-color: var(--staff-bg);
+  color: var(--staff-text);
+  font-family: 'Inter', sans-serif;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+h2 {
+  margin: 28px 0 8px;
+  font-size: 16px;
+}
+
+a {
+  color: var(--staff-accent);
+}
+
+/* Marks a page that is still a placeholder; drop the class once the real screen is built. */
+.staff-placeholder {
+  color: var(--staff-text-dim);
+}
