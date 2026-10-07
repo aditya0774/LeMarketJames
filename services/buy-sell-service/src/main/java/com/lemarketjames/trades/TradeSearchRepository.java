@@ -10,6 +10,25 @@ import org.springframework.data.repository.query.Param;
 /** A read-only projection keeps staff search separate from order execution and client history. */
 public interface TradeSearchRepository extends Repository<Order, Integer> {
     @Query("""
+        SELECT new com.lemarketjames.trades.ClientSearchResult(c.clientId, c.fullName)
+        FROM ClientEntity c WHERE LOCATE(LOWER(:name), LOWER(c.fullName)) > 0
+        ORDER BY c.fullName, c.clientId
+        """)
+    List<ClientSearchResult> findClients(@Param("name") String name, org.springframework.data.domain.Pageable page);
+
+    @Query("""
+        SELECT new com.lemarketjames.trades.TradeSearchResult(
+            o.orderId, a.clientId, o.accountId, o.instrumentId, i.ticker,
+            o.orderType, o.quantity, o.pricePerUnit, o.filledAt)
+        FROM Order o JOIN AccountEntity a ON a.accountId = o.accountId
+        JOIN Instrument i ON i.instrumentId = o.instrumentId
+        WHERE o.orderStatus = :status AND a.clientId = :clientId
+        ORDER BY o.filledAt DESC, o.orderId DESC
+        """)
+    List<TradeSearchResult> findAllClientTrades(@Param("clientId") Integer clientId,
+            @Param("status") Order.OrderStatus status);
+
+    @Query("""
         SELECT new com.lemarketjames.trades.TradeSearchResult(
             o.orderId, a.clientId, o.accountId, o.instrumentId, i.ticker,
             o.orderType, o.quantity, o.pricePerUnit, o.filledAt)

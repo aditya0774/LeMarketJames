@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/actuator/health").permitAll()
                 // Dispute searches may read any client's fills, so only operations may call them.
-                .requestMatchers("/api/v1/orders/trades/search").hasRole(Role.TRADING_OPS.name())
+                .requestMatchers("/api/v1/orders/trades/search", "/api/v1/orders/trades/clients").hasRole(Role.TRADING_OPS.name())
                 // Moving orders through their lifecycle is an operations task (contract C7).
                 .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status/*").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/reject").hasRole(Role.TRADING_OPS.name())

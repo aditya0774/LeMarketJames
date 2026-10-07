@@ -1,11 +1,22 @@
 <div class="staff-shell">
   <aside class="staff-sidebar">
-    <div class="staff-brand">LeMarket <span class="staff-badge">Staff</span></div>
+    <div class="staff-brand">
+      <img src="/lemarket-logo.png" alt="LeMarket" class="brand-icon" />
+      <span>LeMarket <span class="staff-badge">Staff</span></span>
+    </div>
     <nav aria-label="Staff sections">
-      <a routerLink="/trading-ops" routerLinkActive="active">Trading Ops</a>
-      <a routerLink="/analyst" routerLinkActive="active">Analyst</a>
+      @if (auth.hasRole('TRADING_OPS')) {
+        <a routerLink="/trading-ops" routerLinkActive="active">Trading Ops</a>
+        <a routerLink="/trade-search" routerLinkActive="active">Trade search</a>
+      }
+      @if (auth.hasRole('ANALYST')) {
+        <a routerLink="/analyst" routerLinkActive="active">Analyst</a>
+      }
     </nav>
-    <p class="staff-note">Internal use only</p>
+    <div class="staff-footer">
+      <p class="staff-note">Internal use only</p>
+      <button class="logout-btn" (click)="logout()">Log out</button>
+    </div>
   </aside>
   <main class="staff-main">
     <router-outlet />

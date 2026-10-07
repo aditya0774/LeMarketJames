@@ -22,6 +22,12 @@ class TradeSearchServiceTest {
     }
 
     @Test
+    void omittedDatesSearchAllClientHistory() {
+        service.search(null, 7, null, null);
+        verify(repository).findAllClientTrades(7, OrderStatus.FILLED);
+    }
+
+    @Test
     void includesEntireFinalDateAcrossYearBoundary() {
         service.search(null, 7, "2025-12-31", "2025-12-31");
         verify(repository).findClientTrades(7, LocalDateTime.parse("2025-12-31T00:00:00"),

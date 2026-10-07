@@ -23,9 +23,10 @@ public class TradeSearchService {
             }
             return trades.findTrade(orderId, OrderStatus.FILLED);
         }
-        if (clientId == null || clientId <= 0 || from == null || to == null) {
-            throw new IllegalArgumentException("Supply a positive clientId with both from and to, or orderId alone");
+        if (clientId == null || clientId <= 0 || (from == null) != (to == null)) {
+            throw new IllegalArgumentException("Supply a positive clientId with either both dates or neither, or orderId alone");
         }
+        if (from == null) return trades.findAllClientTrades(clientId, OrderStatus.FILLED);
         LocalDate start = parseDate(from);
         LocalDate end = parseDate(to);
         if (end.isBefore(start)) {
@@ -34,6 +35,13 @@ public class TradeSearchService {
         // Stored timestamps are UTC. Exclusive next midnight includes the entire final day.
         return trades.findClientTrades(clientId, start.atStartOfDay(), end.plusDays(1).atStartOfDay(),
                 OrderStatus.FILLED);
+    }
+
+    public List<ClientSearchResult> clients(String name) {
+        if (name == null || name.trim().length() < 2 || name.trim().length() > 100) {
+            throw new IllegalArgumentException("Enter a client name between 2 and 100 characters");
+        }
+        return trades.findClients(name.trim(), org.springframework.data.domain.PageRequest.of(0, 50));
     }
 
     private LocalDate parseDate(String value) {
