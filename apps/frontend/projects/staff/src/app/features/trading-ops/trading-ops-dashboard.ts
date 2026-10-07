@@ -1,16 +1,17 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 /**
  * Landing page of the TRADING_OPS role, which works on individual client trades.
- * Placeholder: trade search and the trade timeline are built here.
  */
 @Component({
   selector: 'staff-trading-ops-dashboard',
+  imports: [RouterLink],
   template: `
     <h1>Trading Ops dashboard</h1>
-    <p class="staff-placeholder">
-      Placeholder. Trade search and the trade timeline for individual client trades go here.
-    </p>
+    <nav>
+      <a routerLink="/trade-search">Trade search</a>
+    </nav>
   `,
 })
 export class TradingOpsDashboard {}
