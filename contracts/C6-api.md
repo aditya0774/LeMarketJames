@@ -363,48 +363,62 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
 
-### GET /api/v1/reports/trades-by-stock
+### GET /api/v1/reports/trades
 
-Aggregate all filled trades grouped by stock symbol across all clients. Sorted alphabetically by symbol. Returns totals (quantity, gross amount) and counts (BUY and SELL trades separately) for each symbol. No individual client, account, or order IDs are exposed (see the "Aggregates only" rule above).
+Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.
 
-**Query parameters:**
-- `startDate` (optional, `YYYY-MM-DD`): First day (inclusive) of the report range, in the report time zone. Default: 30 days ago.
-- `endDate` (optional, `YYYY-MM-DD`): Last day (inclusive) of the report range, in the report time zone. Default: today.
-- If both are missing, defaults to the last 30 days.
-- If only one is provided, the other defaults to the same value (single-day report) or returns a 400 bad request if the intention is ambiguous.
+**Parameters** (all optional except `periodType`):
+
+- `periodType` (required): `DAY`, `WEEK`, `MONTH`, or `YEAR`
+- `from` (optional): start date in `YYYY-MM-DD` format; defaults to 365 days ago
+- `to` (optional): end date in `YYYY-MM-DD` format; defaults to today
+- `timeZone` (optional): IANA time zone ID (e.g., `America/New_York`); defaults to the reports time zone
+
+Dates are interpreted in the specified time zone. The `from` day is included; the `to` day is included. Date validation: `from` may not be after `to`.
 
 **Response `200`:**
 
 ```json
 {
-  "success": true,
   "data": [
     {
-      "symbol": "AAPL",
-      "totalQuantity": 150,
-      "totalGrossAmount": 22500.75,
-      "buyCount": 8,
-      "sellCount": 5
+      "period": "2026-10-01",
+      "tradeCount": 5,
+      "buyCount": 3,
+      "sellCount": 2,
+      "totalValue": 1250.50
     },
     {
-      "symbol": "MSFT",
-      "totalQuantity": 200,
-      "totalGrossAmount": 50200.00,
-      "buyCount": 10,
-      "sellCount": 3
+      "period": "2026-10-02",
+      "tradeCount": 2,
+      "buyCount": 1,
+      "sellCount": 1,
+      "totalValue": 500.00
     }
-  ]
+  ],
+  "generatedAt": "2026-10-07T20:15:30.123Z"
 }
 ```
 
-- `totalQuantity` is the sum of all shares (BUY and SELL combined) filled within the date range.
-- `totalGrossAmount` is the sum of (quantity × price_per_unit) for all trades in that symbol within the date range.
-- `buyCount` and `sellCount` are the number of BUY and SELL trades respectively within the date range.
-- `data` is an empty array if no trades exist in the date range.
-- Response is `400` if `startDate` is after `endDate`, or if date format is invalid.
-- Response is `401` for missing/expired JWT, `403` for non-ANALYST roles.
+Period format depends on `periodType`:
+- `DAY`: `YYYY-MM-DD` (e.g., `2026-10-01`)
+- `WEEK`: `YYYY-Www` ISO 8601 week format (e.g., `2026-W40` for week 40)
+- `MONTH`: `YYYY-MM` (e.g., `2026-10`)
+- `YEAR`: `YYYY` (e.g., `2026`)
 
-**Performance SLA:** Must respond within 10 seconds.
+Each period aggregates:
+- `tradeCount`: total number of filled orders (trades)
+- `buyCount`: number of BUY orders
+- `sellCount`: number of SELL orders
+- `totalValue`: sum of gross amounts (quantity × price), all orders
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | Missing `periodType`, invalid format, or `from` > `to` | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role | see access rules above |
 
 ## Quotes (core-service, reading market-service)
 
@@ -442,7 +456,8 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (COMPLIANCE):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades-by-stock` are built; see [Reports](#reports-reporting-service). The instruments report is still planned and needs prices that `reporting_trades` doesn't have:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades` are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
+  - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
