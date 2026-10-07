@@ -13,12 +13,11 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
   imports: [TradeTimelineComponent],
   template: `
     <div class="dashboard">
-      <h1>Trading Ops dashboard</h1>
+      <h1>Trading Ops Dashboard</h1>
       
       <!-- Trade search placeholder (LMKT-139) -->
       <div class="trade-search-section">
         <p class="staff-placeholder">
-          Trade search will appear here when LMKT-139 lands.
           Click a trade result to view its timeline below.
         </p>
       </div>
