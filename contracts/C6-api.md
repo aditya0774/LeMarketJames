@@ -333,6 +333,42 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
 
+### GET /api/v1/reports/trades-by-stock
+
+Aggregate all filled trades grouped by stock symbol across all clients. Sorted alphabetically by symbol. Returns totals (quantity, gross amount) and counts (BUY and SELL trades separately) for each symbol. No individual client, account, or order IDs are exposed (see the "Aggregates only" rule above).
+
+**Response `200`:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "symbol": "AAPL",
+      "totalQuantity": 150,
+      "totalGrossAmount": 22500.75,
+      "buyCount": 8,
+      "sellCount": 5
+    },
+    {
+      "symbol": "MSFT",
+      "totalQuantity": 200,
+      "totalGrossAmount": 50200.00,
+      "buyCount": 10,
+      "sellCount": 3
+    }
+  ]
+}
+```
+
+- `totalQuantity` is the sum of all shares (BUY and SELL combined).
+- `totalGrossAmount` is the sum of (quantity × price_per_unit) for all trades in that symbol.
+- `buyCount` and `sellCount` are the number of BUY and SELL trades respectively.
+- `data` is an empty array if no trades exist.
+- Response is `401` for missing/expired JWT, `403` for non-ANALYST roles.
+
+**Performance SLA:** Must respond within 10 seconds.
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -369,8 +405,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (COMPLIANCE):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule and `GET /api/v1/reports/ping` are built; see [Reports](#reports-reporting-service), whose rules apply to the two reports below. These two are still planned. Their response shapes were agreed before those rules (`activity` lists single trades, and `instruments` needs prices that `reporting_trades` doesn't have), so the story that builds each one must first reconcile it with the rules and update this section:
-  - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades-by-stock` are built; see [Reports](#reports-reporting-service). The instruments report is still planned and needs prices that `reporting_trades` doesn't have:
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
