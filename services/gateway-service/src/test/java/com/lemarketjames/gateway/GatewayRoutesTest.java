@@ -53,4 +53,19 @@ class GatewayRoutesTest {
         org.junit.jupiter.api.Assertions.assertTrue(routes.stream().noneMatch(route ->
             Boolean.TRUE.equals(reactor.core.publisher.Mono.from(route.getPredicate().apply(exchange)).block())));
     }
+
+    /** Reports are served by the staff gateway only (LMKT-143); here they fall through to core. */
+    @Test
+    void reportsAreNeverSentToReportingService() {
+        List<Route> routes = routeLocator.getRoutes().collectList().block();
+        var exchange = org.springframework.mock.web.server.MockServerWebExchange.from(
+            org.springframework.mock.http.server.reactive.MockServerHttpRequest.get("/api/v1/reports/ping"));
+        assertEquals("core-service", routes.stream()
+            .filter(route -> Boolean.TRUE.equals(reactor.core.publisher.Mono.from(route.getPredicate().apply(exchange)).block()))
+            .findFirst().orElseThrow().getId());
+
+        // No trading route may point at reporting-service at all, and no staff route may exist here.
+        org.junit.jupiter.api.Assertions.assertTrue(routes.stream().noneMatch(route ->
+            route.getUri().getPort() == 8086 || route.getId().startsWith("staff-")));
+    }
 }

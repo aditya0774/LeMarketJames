@@ -19,9 +19,9 @@ $ErrorActionPreference = 'Stop'
 $titles = @(
     'market-service :8083', 'auth-service :8082', 'core-service :8081',
     'buy-sell-service :8085', 'holdings-service :8084', 'reporting-service :8086',
-    'gateway-service :8089', 'frontend :4200', 'staff-frontend :4201'
+    'gateway-service :8089', 'staff-gateway-service :8090', 'frontend :4200', 'staff-frontend :4201'
 )
-$ports = 8083, 8082, 8081, 8084, 8085, 8086, 8089, 4200, 4201
+$ports = 8083, 8082, 8081, 8084, 8085, 8086, 8089, 8090, 4200, 4201
 
 # Kills a process and all its descendants. Stop-Process alone would leave the JVM or Node
 # child of a window running and still holding its port.

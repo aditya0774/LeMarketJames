@@ -30,6 +30,32 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 - **The default itself:** change it in the settings class, where its Javadoc explains it. That is the only place the default is written.
 - **A new setting:** add a field with a default and Javadoc to the settings class that owns it, and add a row here.
 
+## Gateways: ports and URLs
+
+There are two backend entry points, both the `gateway-service` module. Where each one listens and
+where it sends requests are technical settings, defined with their defaults in its configuration
+file and nowhere else:
+
+| | Trading gateway | Staff gateway |
+|---|---|---|
+| Started with | no profile | the `staff` profile (`SPRING_PROFILES_ACTIVE=staff`) |
+| Defined in | [application.yml](../services/gateway-service/src/main/resources/application.yml) | [application-staff.yml](../services/gateway-service/src/main/resources/application-staff.yml), over `application.yml` |
+| Port | `server.port` there; Docker Compose publishes it on host port 8089, and the native Windows scripts start it on 8089 too | `server.port` there (8090), the same in Docker and natively |
+| Used by | the trading app (4200), through its dev proxy or Nginx | the staff app (4201), through its dev proxy or Nginx |
+| Service locations | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `CORE_SERVICE_URL`, `MARKET_SERVICE_URL`, `HOLDINGS_SERVICE_URL` | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `REPORTING_SERVICE_URL` |
+| Browser origin allowed to call it directly (CORS) | `APP_CORS_ALLOWED_ORIGIN` | `STAFF_CORS_ALLOWED_ORIGIN` |
+
+- The defaults point at `localhost`, so a native stack needs none of these variables; Docker
+  Compose sets them to the container names ([docker-compose.yml](../docker-compose.yml)).
+- Both apps call `/api` on their own origin, so the CORS origins only matter to a browser that
+  calls a gateway's port directly.
+- Which paths each gateway serves is in [C6](C6-api.md#which-gateway-serves-which-paths); the
+  staff session cookie is in [C7](C7-roles.md#the-staff-session-cookie).
+- The staff app's URLs are the two forwarding files next to it:
+  [proxy.conf.json](../apps/frontend/projects/staff/proxy.conf.json) (dev server) and
+  [nginx.conf](../apps/frontend/projects/staff/nginx.conf) (Docker). Change the staff gateway's
+  port or Compose name and those two change with it.
+
 ## Reporting read-side limits
 
 reporting-service's connection pool size, read-only transactions and query timeout are technical

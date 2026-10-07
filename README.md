@@ -62,9 +62,10 @@ LeMarketJames/
 ├── libs/
 │   └── common/                    # Shared jar: JWT security, account entities, error handling
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
-│   ├── gateway-service/           # :8080 Spring Cloud Gateway, the only backend entry point
+│   ├── gateway-service/           # :8080 Spring Cloud Gateway, the trading app's only backend entry point;
+│   │                              #       with the "staff" profile, :8090, the staff app's (the staff gateway)
 │   ├── auth-service/              # :8082 register, login, logout, /api/auth/me
-│   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); not behind the trading gateway
+│   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); behind the staff gateway only
 │   └── core-service/              # :8081 instruments, quotes, sessions
 │       ├── src/main/java/com/lemarketjames/
 │       │   ├── common/            # Core-specific exception handler
@@ -104,20 +105,29 @@ graph LR
     G -->|"/api/** (everything else)"| CO["🔧 Core Service<br/>(port 8081)"]
     AU -->|"JDBC"| C["🗄️ PostgreSQL Database<br/>(port 5432, shared)"]
     CO -->|"JDBC"| C
+    S["🌐 Staff App<br/>(port 4201)"] -->|"REST + JSON<br/>staff_jwt cookie"| SG["🚪 Staff Gateway<br/>(port 8090)"]
+    SG -->|"sign-in, sign-out, /me"| AU
+    SG -->|"/api/v1/reports/**"| RE["📊 Reporting Service<br/>(port 8086)"]
+    SG -->|"trade search, order timeline"| BS["🔁 Buy-sell Service<br/>(port 8085)"]
+    RE -->|"JDBC"| C
+    BS -->|"JDBC"| C
 
     classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
     classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
     classDef database fill:#FF6B6B,stroke:#A91D3A,color:#fff
 
-    class A frontend
-    class G,AU,CO backend
+    class A,S frontend
+    class G,SG,AU,CO,RE,BS backend
     class C database
 ```
+
+The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
 - **Unidirectional data flow:** Browser → Gateway → Auth/Core service → Database (only services talk to the database)
 - **Shared JWT secret:** auth-service issues the `jwt` cookie; every service validates it with the same `JWT_SECRET` (`libs/common`)
+- **Separate staff session:** in the staff app's browser the same cookie is named `staff_jwt`; the staff gateway renames it both ways, so a staff session and a customer session can share a browser ([C7](contracts/C7-roles.md#the-staff-session-cookie))
 - **Containerized:** Each service can run independently or together via Docker Compose
 - **Separation of concerns:** Frontend handles UI/UX; backend handles business logic and security; database stores persistent state
 
@@ -234,16 +244,18 @@ mvn -pl services/market-service spring-boot:run     # http://localhost:8083
 mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
 mvn -pl services/core-service spring-boot:run       # http://localhost:8081
 mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
-mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; not behind the gateway)
+mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; behind the staff gateway only)
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
+mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.profiles=staff"                 # staff gateway, http://localhost:8090; the staff app talks to this one
 cd apps/frontend && npm install && npm start        # http://localhost:4200
 cd apps/frontend && npm run start:staff             # staff app, http://localhost:4201
 ```
-The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
+The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. The staff gateway is the same module with the `staff` profile, which sets its port (8090) and its routes. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
 
 **Confirm it's up** (services take about 30 seconds):
 ```bash
 curl http://localhost:8089/actuator/health
+curl http://localhost:8090/actuator/health   # staff gateway
 ```
 Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
 
@@ -344,11 +356,12 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
 
    This starts:
    - Gateway (backend entry point): `http://localhost:8089` (container port 8080 is published on host port 8089)
+   - Staff gateway (the staff app's backend entry point): `http://localhost:8090` (the gateway image again, with `SPRING_PROFILES_ACTIVE=staff`)
    - Core service: `http://localhost:8081` (direct access for debugging)
    - Auth service: `http://localhost:8082` (direct access for debugging)
    - Market service: `http://localhost:8083` (direct access for debugging)
    - Holdings service: `http://localhost:8084` (direct access for debugging)
-   - Reporting service: `http://localhost:8086` (direct access; the trading gateway has no route to it)
+   - Reporting service: `http://localhost:8086` (direct access for debugging; only the staff gateway routes to it)
    - PostgreSQL database: `localhost:5432`
    - A production (nginx) build of the frontend: `http://localhost:4200`
    - A production (nginx) build of the staff app: `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
@@ -367,13 +380,14 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    curl http://localhost:8083/actuator/health
    curl http://localhost:8084/actuator/health
    curl http://localhost:8086/actuator/health
+   curl http://localhost:8090/actuator/health
    ```
 
 4. Open `http://localhost:4200` and log in or register.
 
 5. View logs:
    ```bash
-   docker compose logs -f gateway-service auth-service core-service market-service holdings-service reporting-service
+   docker compose logs -f gateway-service staff-gateway-service auth-service core-service market-service holdings-service reporting-service
    ```
 
 6. Stop all services:
@@ -432,7 +446,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Backend entry point |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway on 8090, not built yet (LMKT-143). It will route `/api/v1/reports/**` to [reporting-service](#reporting-service) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, and the Trading Ops trade search and order timeline to buy-sell-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -448,7 +462,9 @@ It is set up the same way as the trading app on both platforms, so it builds and
 | Linux: image | [Dockerfile](apps/frontend/Dockerfile) | [projects/staff/Dockerfile](apps/frontend/projects/staff/Dockerfile), built with `apps/frontend` as its context |
 | Linux: `/api` forwarded by | [nginx.conf](apps/frontend/nginx.conf) to `gateway-service` | [projects/staff/nginx.conf](apps/frontend/projects/staff/nginx.conf) to `staff-gateway-service:8090` |
 
-Like the trading app, the staff app only ever calls `/api` on its own origin (`apiBaseUrl` in [environment.ts](apps/frontend/projects/staff/src/environments/environment.ts) is empty), so the same build works on any host and needs no CORS setup. Until the staff gateway exists, `/api` on port 4201 answers with an error. LMKT-143 must either name its Compose service `staff-gateway-service` and listen on 8090, or change that one line in the staff `nginx.conf`.
+Like the trading app, the staff app only ever calls `/api` on its own origin (`apiBaseUrl` in [environment.ts](apps/frontend/projects/staff/src/environments/environment.ts) is empty), so the same build works on any host and needs no CORS setup. The staff gateway is `gateway-service` started with the `staff` profile ([application-staff.yml](services/gateway-service/src/main/resources/application-staff.yml)); the staff `nginx.conf` reaches it by its Compose name, `staff-gateway-service`, on 8090.
+
+**Two sessions in one browser.** A browser shares cookies between the ports of one host, so the two apps cannot both keep their session in a cookie named `jwt`: signing in to one would sign the other out. The staff gateway therefore gives the browser `staff_jwt` instead and turns it back into `jwt` for the services, which are unchanged. A customer on 4200 and a staff member on 4201 can be signed in at the same time, and each signs out alone ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
 
 **Run both:**
 
@@ -539,7 +555,9 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 - The same database access as the order-history suite, to read the audit trail, which has no API yet.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
 
-`reporting-access.spec.ts` checks who may read reports, with the seed logins. The trading gateway has no route to reporting-service, so the suite calls it directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
+`reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls reporting-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
+
+`staff-gateway.spec.ts` goes through the staff gateway the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
 
 `execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished. Playwright skips it when an earlier test failed.
 
@@ -559,8 +577,10 @@ Once the application is running (via any of the three methods), you can access:
 | **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
 | **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
 | **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |
-| **Health Checks** | `GET http://localhost:{8089,8081,8082,8083,8084,8086}/actuator/health` | Gateway / core / auth / market / holdings / reporting liveness (`UP`/`DOWN`) |
-| **Reports (staff)** | `GET http://localhost:8086/api/v1/reports/ping` | reporting-service, called directly until the staff gateway exists; `ANALYST` login only |
+| **Staff Gateway** | `http://localhost:8090` | Single entry point for the staff app's API calls: reports, staff sign-in, trade search and order timeline |
+| **Staff Login API** | `POST http://localhost:8090/api/auth/login` | Staff sign-in (routed to auth-service); sets the `staff_jwt` cookie |
+| **Health Checks** | `GET http://localhost:{8089,8090,8081,8082,8083,8084,8086}/actuator/health` | Gateway / staff gateway / core / auth / market / holdings / reporting liveness (`UP`/`DOWN`) |
+| **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/ping` | reporting-service, through the staff gateway; `ANALYST` login only |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 
 **Frontend Routes:**
@@ -964,14 +984,14 @@ in Compose. On native Windows set both `SIM_RESPECT_MARKET_HOURS=false` and
 
 `services/reporting-service` runs on port 8086 and owns `/api/v1/reports/**`: aggregate,
 read-only reports for analysts, built on the `reporting_trades` view. The trading gateway does
-not route to it; the staff gateway (LMKT-143) will. Until then, call it directly with the `jwt`
-cookie from a staff login (seed logins: [C3](contracts/C3-seed-data.md)):
+not route to it; the staff gateway (8090) does. Sign in there as staff and call it with the
+`staff_jwt` cookie that sign-in sets (seed logins: [C3](contracts/C3-seed-data.md)):
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
      -d '{"username":"analyst@seed.lemarket.com","password":"Pass123!"}' \
-     http://localhost:8089/api/auth/login
-curl -b cookies.txt http://localhost:8086/api/v1/reports/ping
+     http://localhost:8090/api/auth/login
+curl -b cookies.txt http://localhost:8090/api/v1/reports/ping
 ```
 
 Only `ANALYST` gets `200`; no cookie gets `401` and every other role `403`. It needs no new
