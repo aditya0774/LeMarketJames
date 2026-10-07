@@ -1,15 +1,14 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { Auth } from '../../../core/auth/auth';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 /**
- * Signed-in layout: LeMarket branding above a centred content area. Everything happens
- * on the dashboard for clients; operations also have a trade-search entry point.
+ * Signed-in layout: LeMarket branding above a centred content area. The trading app is
+ * customer-only (LMKT-145), so the layout links nothing else; staff use the staff app.
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.css',
 })
-export class AppShell { readonly auth = inject(Auth); }
+export class AppShell {}
