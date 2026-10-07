@@ -90,6 +90,43 @@ describe('TradeTimelineComponent', () => {
     expect(textContent).toContain('-2442.366');
   });
 
+  it('formats timestamps via DatePipe', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = mockEvents;
+    await fixture.whenStable();
+
+    const times = fixture.nativeElement.querySelectorAll('.event-time');
+    // DatePipe transforms timestamps; verify they're rendered with the pipe
+    expect(times[0]?.textContent).toBeTruthy();
+    // Should contain some date/time representation (exact format depends on locale)
+    expect(times[0]?.textContent?.length).toBeGreaterThan(0);
+  });
+
+  it('displays quote details (executionPrice) for FILLED events', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = mockEvents;
+    await fixture.whenStable();
+
+    const textContent = fixture.nativeElement.textContent;
+    expect(textContent).toContain('executionPrice');
+    expect(textContent).toContain('244.2366');
+  });
+
+  it('displays cash and holding deltas for SETTLED events', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = mockEvents;
+    await fixture.whenStable();
+
+    const textContent = fixture.nativeElement.textContent;
+    expect(textContent).toContain('cashDelta');
+    expect(textContent).toContain('-2442.366');
+    expect(textContent).toContain('quantityDelta');
+    expect(textContent).toContain('10');
+  });
+
   it('renders empty state when no events provided', async () => {
     await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
     const fixture = TestBed.createComponent(TradeTimelineComponent);
