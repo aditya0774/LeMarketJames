@@ -39,8 +39,8 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Place orders; own dashboard, holdings, balance, profile, trades | `CLIENT` (own data only) | Enforced: needs the caller's own account |
 | Move an order through its lifecycle, reject orders | `TRADING_OPS` (any client's orders) | Enforced in buy-sell-service `SecurityConfig` |
 | Search trades by order ID or client and date range | `TRADING_OPS` (any client's filled orders) | Enforced in buy-sell-service `SecurityConfig`; [C6](C6-api.md#trade-search-trading_ops-only) |
-| Audit trail | `COMPLIANCE` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
-| Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role, `COMPLIANCE` included, gets `403` ([C6](C6-api.md#reports-reporting-service)) |
+| Audit trail | `TRADING_OPS` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
+| Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-reporting-service)) |
 | Insights | `ANALYST` | Planned; guard with this role |
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
