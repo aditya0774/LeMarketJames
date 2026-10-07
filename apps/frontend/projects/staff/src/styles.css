@@ -424,22 +424,17 @@ body {
   box-shadow: inset 3px 0 0 var(--gold);
 }
 
-.staff-footer {
+.staff-header {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--purple-line);
-}
-
-.staff-note {
-  font-size: 12px;
-  opacity: 0.6;
-  margin: 0;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 16px 34px;
+  border-bottom: 1px solid var(--purple-line);
+  margin-bottom: 28px;
 }
 
 .logout-btn {
-  padding: 8px 10px;
+  padding: 8px 12px;
   background: none;
   border: 1px solid rgba(253, 185, 39, 0.3);
   border-radius: var(--radius);
@@ -448,6 +443,7 @@ body {
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 14px;
 }
 
 .logout-btn:hover {
@@ -459,7 +455,14 @@ body {
 .staff-main {
   flex: 1;
   min-width: 0;
-  padding: 28px 34px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-content {
+  flex: 1;
+  padding: 0 34px 60px;
+  overflow-y: auto;
 }
 
 /* ---------- Panels & tables ---------- */
