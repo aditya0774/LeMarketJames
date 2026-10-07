@@ -1,20 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { TradeTimelineComponent } from './trade-timeline/trade-timeline';
+import { TradeSearch } from '../trade-search/trade-search';
 import { TradeTimelineService } from './trade-timeline/trade-timeline.service';
 import { Auth } from '../../core/auth/auth';
 import { AuditEvent } from '../../shared/models/audit-event.model';
 
 /**
  * Landing page of the TRADING_OPS role, which works on individual client trades.
- * Displays the trade timeline component; once LMKT-139 (trade search) lands,
- * the timeline will be triggered by clicking a trade search result.
+ * Displays trade search (LMKT-139) and the trade timeline component (LMKT-40).
+ * When a trade is selected from search results, its timeline is displayed.
  * 
  * Access control: TRADING_OPS role required (AC3).
  * Non-TRADING_OPS users see access denied message.
  */
 @Component({
   selector: 'staff-trading-ops-dashboard',
-  imports: [TradeTimelineComponent],
+  imports: [TradeSearch, TradeTimelineComponent],
   template: `
     <div class="dashboard">
       <h1>Trading Ops Dashboard</h1>
@@ -24,12 +25,8 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
           <p>Access denied. You must have the TRADING_OPS role to view this page.</p>
         </div>
       } @else {
-        <!-- Trade search placeholder (LMKT-139) -->
-        <div class="trade-search-section">
-          <p class="staff-placeholder">
-            Click a trade result to view its timeline below.
-          </p>
-        </div>
+        <!-- Trade search (LMKT-139) -->
+        <staff-trade-search (tradeSelected)="selectOrder($event)"></staff-trade-search>
 
         <!-- Trade timeline (LMKT-40) -->
         @if (selectedOrderId) {
@@ -50,23 +47,16 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
       padding: 16px;
     }
 
-    .trade-search-section,
     .timeline-section {
-      margin-bottom: 24px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
     }
 
     h2 {
       font-size: 16px;
       font-weight: 500;
       margin-bottom: 12px;
-    }
-
-    .staff-placeholder {
-      color: #999;
-      font-style: italic;
-      padding: 12px;
-      background-color: #f5f5f5;
-      border-radius: 4px;
     }
 
     .access-denied {
@@ -93,12 +83,6 @@ export class TradingOpsDashboard implements OnInit {
   ngOnInit() {
     // AC3: Check TRADING_OPS role; deny CLIENT and ANALYST
     this.hasAccess = this.auth.hasRole('TRADING_OPS');
-    
-    if (this.hasAccess) {
-      // TODO: Set selectedOrderId from TradeSearchComponent result click (LMKT-139)
-      // For now, hardcoded to 42 to demonstrate timeline display
-      this.selectOrder(42);
-    }
   }
 
   selectOrder(orderId: number) {

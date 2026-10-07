@@ -48,21 +48,17 @@ describe('TradingOpsDashboard', () => {
   it('renders its heading', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     fixture.detectChanges();
-    const req = httpMock.expectOne('/api/v1/orders/42/timeline');
-    req.flush(mockEvents);
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Trading Ops Dashboard');
   });
 
-  it('displays trade search placeholder when TRADING_OPS role is granted', async () => {
+  it('displays trade search when TRADING_OPS role is granted', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     fixture.detectChanges();
-    const req = httpMock.expectOne('/api/v1/orders/42/timeline');
-    req.flush(mockEvents);
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.textContent).toContain('Click a trade result to view its timeline below');
+    expect(fixture.nativeElement.querySelector('staff-trade-search')).toBeTruthy();
   });
 
   it('displays access denied when user lacks TRADING_OPS role', async () => {
@@ -75,49 +71,55 @@ describe('TradingOpsDashboard', () => {
     expect(component.hasAccess).toBe(false);
     expect(fixture.nativeElement.textContent).toContain('Access denied');
     expect(fixture.nativeElement.textContent).toContain('TRADING_OPS role');
-    httpMock.expectNone('/api/v1/orders/42/timeline');
+    expect(fixture.nativeElement.querySelector('staff-trade-search')).toBeFalsy();
   });
 
-  it('loads and displays trade timeline on init', async () => {
-    const fixture = TestBed.createComponent(TradingOpsDashboard);
-    fixture.detectChanges();
-    const req = httpMock.expectOne('/api/v1/orders/42/timeline');
-    req.flush(mockEvents);
-    await fixture.whenStable();
-
-    expect(fixture.nativeElement.textContent).toContain('Order Timeline #42');
-    expect(fixture.nativeElement.querySelector('staff-trade-timeline')).toBeTruthy();
-  });
-
-  it('sets selectedOrderId on init when TRADING_OPS role is granted', async () => {
+  it('loads and displays trade timeline when trade is selected', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     const component = fixture.componentInstance;
     fixture.detectChanges();
-    const req = httpMock.expectOne('/api/v1/orders/42/timeline');
-    req.flush(mockEvents);
-
     await fixture.whenStable();
 
+    // Simulate selecting a trade
+    component.selectOrder(42);
+    
+    const req = httpMock.expectOne('/api/v1/orders/42/timeline');
+    req.flush(mockEvents);
+    
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.events.length).toBe(2);
     expect(component.selectedOrderId).toBe(42);
   });
 
-  it('does not load timeline when TRADING_OPS role is denied', async () => {
-    (authMock.hasRole as any).mockReturnValue(false);
+  it('does not load timeline on init when TRADING_OPS role is granted', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     const component = fixture.componentInstance;
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.hasAccess).toBe(false);
+    expect(component.hasAccess).toBe(true);
     expect(component.selectedOrderId).toBeNull();
-    httpMock.expectNone('/api/v1/orders/42/timeline');
+    httpMock.expectNone('/api/v1/orders');
+  });
+
+  it('does not display trade search when TRADING_OPS role is denied', async () => {
+    (authMock.hasRole as any).mockReturnValue(false);
+    const fixture = TestBed.createComponent(TradingOpsDashboard);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('staff-trade-search')).toBeFalsy();
   });
 
   it('shows loading state while fetching timeline', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     const component = fixture.componentInstance;
     fixture.detectChanges();
+    await fixture.whenStable();
 
+    component.selectOrder(42);
     expect(component.isLoading).toBe(true);
 
     const req = httpMock.expectOne('/api/v1/orders/42/timeline');
@@ -129,23 +131,29 @@ describe('TradingOpsDashboard', () => {
 
   it('displays error message on 403 Forbidden', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
+    const component = fixture.componentInstance;
     fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selectOrder(42);
     const req = httpMock.expectOne('/api/v1/orders/42/timeline');
     req.flush({ message: 'Access denied' }, { status: 403, statusText: 'Forbidden' });
     await fixture.whenStable();
 
-    const component = fixture.componentInstance;
     expect(component.error).toContain('TRADING_OPS');
   });
 
   it('displays error message on 404 Not Found', async () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
+    const component = fixture.componentInstance;
     fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selectOrder(42);
     const req = httpMock.expectOne('/api/v1/orders/42/timeline');
     req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     await fixture.whenStable();
 
-    const component = fixture.componentInstance;
     expect(component.error).toContain('Order not found');
   });
 });
