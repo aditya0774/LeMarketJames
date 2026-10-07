@@ -17,9 +17,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for TradesReportController.
  * Verifies role enforcement (ANALYST only), role-based access control,
- * and response structure using WebMvcTest (web layer only, no full app context).
+ * date range parameter handling, and response structure using WebMvcTest.
  */
 @WebMvcTest(TradesReportController.class)
 @Import({SecurityConfig.class, JwtService.class, PlatformSettings.class})
@@ -73,11 +76,12 @@ class TradesReportControllerTest {
     @Test
     void analystGetsTradesAggregateSuccessfully() throws Exception {
         // Arrange: Mock the service to return sample aggregate data
+        // Using untyped any() to match both null and LocalDate values
         List<TradesByStockReportRow> sampleData = List.of(
                 new TradesByStockReportRow("AAPL", new BigDecimal("150"), new BigDecimal("22500.75"), 8, 5),
                 new TradesByStockReportRow("MSFT", new BigDecimal("200"), new BigDecimal("50200.00"), 10, 3)
         );
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(sampleData);
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(sampleData);
 
         // Act & Assert
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))
@@ -95,9 +99,46 @@ class TradesReportControllerTest {
     }
 
     @Test
+    void acceptsDateRangeQueryParameters() throws Exception {
+        // Arrange
+        List<TradesByStockReportRow> sampleData = List.of(
+                new TradesByStockReportRow("AAPL", new BigDecimal("100"), new BigDecimal("15000.00"), 5, 3)
+        );
+        when(tradesReportService.getTradesAggregateByStock(
+                LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 10, 7)))
+                .thenReturn(sampleData);
+
+        // Act & Assert
+        mvc.perform(get(TRADES_BY_STOCK)
+                .param("startDate", "2026-10-01")
+                .param("endDate", "2026-10-07")
+                .cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1));
+    }
+
+    @Test
+    void rejectInvalidDateRange() throws Exception {
+        // Arrange: Mock the service to throw an exception for invalid date range
+        when(tradesReportService.getTradesAggregateByStock(
+                LocalDate.of(2026, 10, 7),
+                LocalDate.of(2026, 10, 1)))
+                .thenThrow(new IllegalArgumentException("Start date must not be after end date"));
+
+        // Act & Assert
+        mvc.perform(get(TRADES_BY_STOCK)
+                .param("startDate", "2026-10-07")
+                .param("endDate", "2026-10-01")
+                .cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void analystGetsEmptyListWhenNoTradesExist() throws Exception {
         // Arrange: Mock the service to return empty list
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(List.of());
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(List.of());
 
         // Act & Assert
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))
@@ -113,7 +154,7 @@ class TradesReportControllerTest {
         List<TradesByStockReportRow> data = List.of(
                 new TradesByStockReportRow("GOOGL", new BigDecimal("50"), new BigDecimal("8500.50"), 2, 1)
         );
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(data);
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(data);
 
         // Act & Assert: Verify only aggregate fields are in response
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))

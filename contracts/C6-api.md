@@ -337,6 +337,12 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 
 Aggregate all filled trades grouped by stock symbol across all clients. Sorted alphabetically by symbol. Returns totals (quantity, gross amount) and counts (BUY and SELL trades separately) for each symbol. No individual client, account, or order IDs are exposed (see the "Aggregates only" rule above).
 
+**Query parameters:**
+- `startDate` (optional, `YYYY-MM-DD`): First day (inclusive) of the report range, in the report time zone. Default: 30 days ago.
+- `endDate` (optional, `YYYY-MM-DD`): Last day (inclusive) of the report range, in the report time zone. Default: today.
+- If both are missing, defaults to the last 30 days.
+- If only one is provided, the other defaults to the same value (single-day report) or returns a 400 bad request if the intention is ambiguous.
+
 **Response `200`:**
 
 ```json
@@ -361,10 +367,11 @@ Aggregate all filled trades grouped by stock symbol across all clients. Sorted a
 }
 ```
 
-- `totalQuantity` is the sum of all shares (BUY and SELL combined).
-- `totalGrossAmount` is the sum of (quantity × price_per_unit) for all trades in that symbol.
-- `buyCount` and `sellCount` are the number of BUY and SELL trades respectively.
-- `data` is an empty array if no trades exist.
+- `totalQuantity` is the sum of all shares (BUY and SELL combined) filled within the date range.
+- `totalGrossAmount` is the sum of (quantity × price_per_unit) for all trades in that symbol within the date range.
+- `buyCount` and `sellCount` are the number of BUY and SELL trades respectively within the date range.
+- `data` is an empty array if no trades exist in the date range.
+- Response is `400` if `startDate` is after `endDate`, or if date format is invalid.
 - Response is `401` for missing/expired JWT, `403` for non-ANALYST roles.
 
 **Performance SLA:** Must respond within 10 seconds.

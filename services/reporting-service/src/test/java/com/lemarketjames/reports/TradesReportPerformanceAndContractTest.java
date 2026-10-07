@@ -16,10 +16,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,7 +59,7 @@ class TradesReportPerformanceAndContractTest {
                 new TradesByStockReportRow("AAPL", new BigDecimal("150"), new BigDecimal("22500.75"), 8, 5),
                 new TradesByStockReportRow("MSFT", new BigDecimal("200"), new BigDecimal("50200.00"), 10, 3)
         );
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(sampleData);
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(sampleData);
 
         // Act & Assert
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))
@@ -81,7 +83,7 @@ class TradesReportPerformanceAndContractTest {
         List<TradesByStockReportRow> sampleData = List.of(
                 new TradesByStockReportRow("AAPL", new BigDecimal("150"), new BigDecimal("22500.75"), 8, 5)
         );
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(sampleData);
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(sampleData);
 
         // Act: Call endpoint and measure time
         long startTime = System.currentTimeMillis();
@@ -99,7 +101,7 @@ class TradesReportPerformanceAndContractTest {
     @Test
     void emptyListResponseIsValid() throws Exception {
         // Arrange: Mock service to return empty list
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(List.of());
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(List.of());
 
         // Act & Assert
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))
@@ -115,7 +117,7 @@ class TradesReportPerformanceAndContractTest {
         List<TradesByStockReportRow> data = List.of(
                 new TradesByStockReportRow("GOOGL", new BigDecimal("50"), new BigDecimal("8500.50"), 2, 1)
         );
-        when(tradesReportService.getTradesAggregateByStock()).thenReturn(data);
+        when(tradesReportService.getTradesAggregateByStock(any(), any())).thenReturn(data);
 
         // Act & Assert: Verify response contains only aggregate fields
         mvc.perform(get(TRADES_BY_STOCK).cookie(tokenFor(Role.ANALYST)))

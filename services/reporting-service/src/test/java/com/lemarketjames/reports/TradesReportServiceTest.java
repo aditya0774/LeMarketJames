@@ -1,6 +1,8 @@
 package com.lemarketjames.reports;
 
 import com.lemarketjames.reports.dto.TradesByStockReportRow;
+import com.lemarketjames.reports.period.ReportCalendar;
+import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.TradesAggregateProjection;
 import com.lemarketjames.reports.repository.TradesReportRepository;
 import org.junit.jupiter.api.Test;
@@ -10,16 +12,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for TradesReportService.
- * Verifies mapping from repository projections to DTOs and edge cases.
+ * Verifies mapping from repository projections to DTOs, date range filtering, and edge cases.
  */
 @ExtendWith(MockitoExtension.class)
 class TradesReportServiceTest {
@@ -27,18 +30,29 @@ class TradesReportServiceTest {
     @Mock
     private TradesReportRepository repository;
 
+    @Mock
+    private ReportCalendar reportCalendar;
+
     @InjectMocks
     private TradesReportService service;
 
     @Test
     void mapsAggregateProjectionsToDto() {
         // Arrange: Mock projection data for two stocks
+        LocalDate startDate = LocalDate.of(2026, 10, 1);
+        LocalDate endDate = LocalDate.of(2026, 10, 7);
+        LocalDateTime startUtc = LocalDateTime.of(2026, 10, 1, 0, 0);
+        LocalDateTime endUtc = LocalDateTime.of(2026, 10, 8, 0, 0);
+        ReportPeriod period = new ReportPeriod(startDate, startUtc, endUtc);
+
+        when(reportCalendar.between(startDate, endDate)).thenReturn(period);
+
         TradesAggregateProjection aapl = mockProjection("AAPL", 150, "22500.75", 8, 5);
         TradesAggregateProjection msft = mockProjection("MSFT", 200, "50200.00", 10, 3);
-        when(repository.aggregateTradesBySymbol()).thenReturn(List.of(aapl, msft));
+        when(repository.aggregateTradesBySymbol(startUtc, endUtc)).thenReturn(List.of(aapl, msft));
 
         // Act
-        List<TradesByStockReportRow> result = service.getTradesAggregateByStock();
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
 
         // Assert
         assertEquals(2, result.size());
@@ -61,23 +75,74 @@ class TradesReportServiceTest {
     @Test
     void returnsEmptyListWhenNoTradesExist() {
         // Arrange
-        when(repository.aggregateTradesBySymbol()).thenReturn(List.of());
+        LocalDate startDate = LocalDate.of(2026, 10, 1);
+        LocalDate endDate = LocalDate.of(2026, 10, 7);
+        LocalDateTime startUtc = LocalDateTime.of(2026, 10, 1, 0, 0);
+        LocalDateTime endUtc = LocalDateTime.of(2026, 10, 8, 0, 0);
+        ReportPeriod period = new ReportPeriod(startDate, startUtc, endUtc);
+
+        when(reportCalendar.between(startDate, endDate)).thenReturn(period);
+        when(repository.aggregateTradesBySymbol(startUtc, endUtc)).thenReturn(List.of());
 
         // Act
-        List<TradesByStockReportRow> result = service.getTradesAggregateByStock();
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
 
         // Assert
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void handlesSingleStock() {
-        // Arrange
-        TradesAggregateProjection googl = mockProjection("GOOGL", 50, "8500.50", 2, 1);
-        when(repository.aggregateTradesBySymbol()).thenReturn(List.of(googl));
+    void appliesDefaultsWhenDatesAreNull() {
+        // Arrange: Service should apply defaults when dates are null
+        LocalDate today = LocalDate.now();
+        LocalDate thirtyDaysAgo = today.minusDays(30);
+        LocalDateTime startUtc = LocalDateTime.of(2026, 9, 7, 0, 0);
+        LocalDateTime endUtc = LocalDateTime.of(2026, 10, 8, 0, 0);
+        ReportPeriod period = new ReportPeriod(thirtyDaysAgo, startUtc, endUtc);
+
+        when(reportCalendar.between(thirtyDaysAgo, today)).thenReturn(period);
+
+        TradesAggregateProjection aapl = mockProjection("AAPL", 150, "22500.75", 8, 5);
+        when(repository.aggregateTradesBySymbol(startUtc, endUtc)).thenReturn(List.of(aapl));
 
         // Act
-        List<TradesByStockReportRow> result = service.getTradesAggregateByStock();
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(null, null);
+
+        // Assert
+        assertEquals(1, result.size());
+        verify(reportCalendar).between(thirtyDaysAgo, today);
+    }
+
+    @Test
+    void throwsExceptionWhenStartDateIsAfterEndDate() {
+        // Arrange
+        LocalDate startDate = LocalDate.of(2026, 10, 7);
+        LocalDate endDate = LocalDate.of(2026, 10, 1);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.getTradesAggregateByStock(startDate, endDate)
+        );
+        assertTrue(exception.getMessage().contains("Start date must not be after end date"));
+    }
+
+    @Test
+    void handlesSingleStock() {
+        // Arrange
+        LocalDate startDate = LocalDate.of(2026, 10, 1);
+        LocalDate endDate = LocalDate.of(2026, 10, 7);
+        LocalDateTime startUtc = LocalDateTime.of(2026, 10, 1, 0, 0);
+        LocalDateTime endUtc = LocalDateTime.of(2026, 10, 8, 0, 0);
+        ReportPeriod period = new ReportPeriod(startDate, startUtc, endUtc);
+
+        when(reportCalendar.between(startDate, endDate)).thenReturn(period);
+
+        TradesAggregateProjection googl = mockProjection("GOOGL", 50, "8500.50", 2, 1);
+        when(repository.aggregateTradesBySymbol(startUtc, endUtc)).thenReturn(List.of(googl));
+
+        // Act
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
 
         // Assert
         assertEquals(1, result.size());
@@ -89,13 +154,21 @@ class TradesReportServiceTest {
     @Test
     void preservesOrderFromRepository() {
         // Arrange: Repository returns alphabetically sorted by symbol
+        LocalDate startDate = LocalDate.of(2026, 10, 1);
+        LocalDate endDate = LocalDate.of(2026, 10, 7);
+        LocalDateTime startUtc = LocalDateTime.of(2026, 10, 1, 0, 0);
+        LocalDateTime endUtc = LocalDateTime.of(2026, 10, 8, 0, 0);
+        ReportPeriod period = new ReportPeriod(startDate, startUtc, endUtc);
+
+        when(reportCalendar.between(startDate, endDate)).thenReturn(period);
+
         TradesAggregateProjection aaa = mockProjection("AAA", 10, "100.00", 1, 0);
         TradesAggregateProjection zzz = mockProjection("ZZZ", 20, "500.00", 0, 1);
         TradesAggregateProjection mmm = mockProjection("MMM", 30, "300.00", 2, 1);
-        when(repository.aggregateTradesBySymbol()).thenReturn(List.of(aaa, zzz, mmm));
+        when(repository.aggregateTradesBySymbol(startUtc, endUtc)).thenReturn(List.of(aaa, zzz, mmm));
 
         // Act
-        List<TradesByStockReportRow> result = service.getTradesAggregateByStock();
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
 
         // Assert: Order matches repository order (which is sorted in the SQL query)
         assertEquals("AAA", result.get(0).symbol());
