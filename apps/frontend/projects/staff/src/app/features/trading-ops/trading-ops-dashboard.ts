@@ -23,13 +23,15 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
       </div>
 
       <!-- Trade timeline (LMKT-40) -->
-      @if (selectedOrderId && events.length > 0) {
+      @if (selectedOrderId) {
         <div class="timeline-section">
           <h2>Order Timeline #{{ selectedOrderId }}</h2>
-          <staff-trade-timeline [events]="events"></staff-trade-timeline>
+          <staff-trade-timeline
+            [events]="events"
+            [isLoading]="isLoading"
+            [error]="error">
+          </staff-trade-timeline>
         </div>
-      } @else if (selectedOrderId) {
-        <p class="staff-placeholder">Loading timeline...</p>
       }
     </div>
   `,
@@ -61,6 +63,8 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
 export class TradingOpsDashboard implements OnInit {
   selectedOrderId: number | null = null;
   events: AuditEvent[] = [];
+  isLoading = false;
+  error: string | null = null;
 
   constructor(private timelineService: TradeTimelineService) {}
 
@@ -72,8 +76,26 @@ export class TradingOpsDashboard implements OnInit {
 
   selectOrder(orderId: number) {
     this.selectedOrderId = orderId;
-    this.timelineService.getOrderTimeline(orderId).subscribe((events) => {
-      this.events = events;
+    this.events = [];
+    this.error = null;
+    this.isLoading = true;
+
+    this.timelineService.getOrderTimeline(orderId).subscribe({
+      next: (events) => {
+        this.events = events;
+        this.isLoading = false;
+        this.error = null;
+      },
+      error: (error) => {
+        this.isLoading = false;
+        if (error.status === 403) {
+          this.error = 'Access denied: TRADING_OPS role required to view this timeline';
+        } else if (error.status === 404) {
+          this.error = 'Order not found';
+        } else {
+          this.error = `Error loading timeline: ${error.statusText || 'Unknown error'}`;
+        }
+      },
     });
   }
 }

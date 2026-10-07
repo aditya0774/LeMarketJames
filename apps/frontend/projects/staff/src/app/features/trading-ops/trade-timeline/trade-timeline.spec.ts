@@ -127,6 +127,59 @@ describe('TradeTimelineComponent', () => {
     expect(textContent).toContain('10');
   });
 
+  it('shows loading spinner when isLoading is true', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.isLoading = true;
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.loading-state')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.spinner')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Loading timeline...');
+  });
+
+  it('shows error message when error is set', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.error = 'Access denied: TRADING_OPS role required';
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.error-state')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Access denied: TRADING_OPS role required');
+  });
+
+  it('hides events when isLoading is true', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = mockEvents;
+    fixture.componentInstance.isLoading = true;
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelectorAll('.timeline-event').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.loading-state')).toBeTruthy();
+  });
+
+  it('hides events when error is set', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = mockEvents;
+    fixture.componentInstance.error = 'Error loading timeline';
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelectorAll('.timeline-event').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.error-state')).toBeTruthy();
+  });
+
+  it('shows empty state when no events', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = [];
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.empty-state')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('No events found');
+  });
+
   it('renders empty state when no events provided', async () => {
     await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
     const fixture = TestBed.createComponent(TradeTimelineComponent);
