@@ -45,4 +45,4 @@ spring:
             - id: staff-trading-ops
               uri: ${services.buy-sell-url}
               predicates:
-                - Path=/api/v1/orders/trades/search,/api/v1/orders/{orderId}/timeline
+                - Path=/api/v1/orders/trades/search,/api/v1/orders/trades/clients,/api/v1/orders/{orderId}/timeline

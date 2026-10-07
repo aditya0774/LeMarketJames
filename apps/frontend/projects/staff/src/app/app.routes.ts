@@ -1,7 +1,6 @@
 import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { StaffShell } from './shared/layout/staff-shell/staff-shell';
-import { TradingOpsDashboard } from './features/trading-ops/trading-ops-dashboard';
 import { AnalystDashboard } from './features/analyst/analyst-dashboard';
 import { ANALYST_REPORTS } from './features/analyst/reports/analyst-reports';
 import { Auth } from './core/auth/auth';
@@ -11,7 +10,6 @@ import { homeFor } from './core/auth/staff-home';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login/login').then(m => m.Login) },
-  { path: 'trade-search', title: 'Trade search', canActivate: [requiresRole('TRADING_OPS')], loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) },
   {
     path: '',
     component: StaffShell,
@@ -29,9 +27,9 @@ export const routes: Routes = [
       // Each role's section is one parent route that carries the guard, so a page added as its
       // child is guarded without repeating it.
       {
-        path: 'trading-ops',
+        path: 'trade-search',
         canActivate: [requiresRole('TRADING_OPS')],
-        children: [{ path: '', title: 'Trading Ops', component: TradingOpsDashboard }],
+        children: [{ path: '', title: 'Trade search', loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) }],
       },
       {
         path: 'analyst',
