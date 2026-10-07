@@ -7,7 +7,7 @@ describe('TradingOpsDashboard', () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Trading Ops dashboard');
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Trading Ops Dashboard');
   });
 
   it('displays trade search placeholder', async () => {
@@ -15,7 +15,7 @@ describe('TradingOpsDashboard', () => {
     const fixture = TestBed.createComponent(TradingOpsDashboard);
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.textContent).toContain('Trade search will appear here when LMKT-139 lands');
+    expect(fixture.nativeElement.textContent).toContain('Click a trade result to view its timeline below');
   });
 
   it('loads and displays trade timeline on init', async () => {
