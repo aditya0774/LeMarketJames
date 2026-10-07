@@ -7,7 +7,7 @@
       <div class="sub">Enter your staff credentials to access Trading Operations or Analyst tools.</div>
 
       @if (errorMessage()) {
-        <div class="alert err">
+        <div class="alert err" role="alert">
           <span aria-hidden="true">&#9888;</span>
           <div><b>Login failed</b> {{ errorMessage() }}</div>
         </div>

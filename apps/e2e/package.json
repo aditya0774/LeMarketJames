@@ -6,7 +6,10 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "test:staff": "playwright test -c playwright.staff.config.ts",
+    "test:staff:headed": "playwright test -c playwright.staff.config.ts --headed",
+    "report:staff": "playwright show-report playwright-report-staff"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

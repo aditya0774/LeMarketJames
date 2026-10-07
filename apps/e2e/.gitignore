@@ -3,3 +3,6 @@ node_modules/
 test-results/
 playwright-report/
 results/
+# The same for the staff suite (playwright.staff.config.ts); its JUnit file is in results/ too.
+test-results-staff/
+playwright-report-staff/
