@@ -6,10 +6,11 @@ describe('ByStockAggregateTable', () => {
   let component: ByStockAggregateTable;
   let fixture: any;
 
+  // Real seed_active persona trades aggregated from database/schema/011_seed_test_data.sql
   const mockTradesData: TradesByStockRow[] = [
-    { symbol: 'AAPL', totalQuantity: 150, totalGrossAmount: 22500.75, buyCount: 8, sellCount: 5 },
-    { symbol: 'MSFT', totalQuantity: 200, totalGrossAmount: 50200.00, buyCount: 10, sellCount: 3 },
-    { symbol: 'TSLA', totalQuantity: 100, totalGrossAmount: 15000.00, buyCount: 5, sellCount: 2 },
+    { symbol: 'AAPL', totalQuantity: 20, totalGrossAmount: 6950.00, buyCount: 2, sellCount: 1 }, // Highest gross
+    { symbol: 'MSFT', totalQuantity: 6, totalGrossAmount: 5820.00, buyCount: 1, sellCount: 1 },
+    { symbol: 'V', totalQuantity: 0, totalGrossAmount: 5250.00, buyCount: 1, sellCount: 1 }, // Closed position
   ];
 
   beforeEach(async () => {
@@ -64,10 +65,10 @@ describe('ByStockAggregateTable', () => {
       const firstRow = rows[0];
 
       expect(firstRow.querySelector('.symbol').textContent).toContain('AAPL');
-      expect(firstRow.textContent).toContain('150'); // totalQuantity
-      expect(firstRow.textContent).toContain('22500.75'); // totalGrossAmount
-      expect(firstRow.textContent).toContain('8'); // buyCount
-      expect(firstRow.textContent).toContain('5'); // sellCount
+      expect(firstRow.textContent).toContain('20'); // totalQuantity
+      expect(firstRow.textContent).toContain('6950'); // totalGrossAmount (formatted as $6,950.00)
+      expect(firstRow.textContent).toContain('2'); // buyCount
+      expect(firstRow.textContent).toContain('1'); // sellCount
     });
   });
 
@@ -77,9 +78,9 @@ describe('ByStockAggregateTable', () => {
       fixture.detectChanges();
 
       const sortedData = component['sortedData']();
-      expect(sortedData[0].symbol).toBe('MSFT'); // Highest gross amount
-      expect(sortedData[1].symbol).toBe('AAPL');
-      expect(sortedData[2].symbol).toBe('TSLA');
+      expect(sortedData[0].symbol).toBe('AAPL'); // Highest gross amount ($6,950.00)
+      expect(sortedData[1].symbol).toBe('MSFT'); // $5,820.00
+      expect(sortedData[2].symbol).toBe('V');    // $5,250.00 (closed position)
     });
 
     it('sorts by symbol ascending when clicked', () => {

@@ -19,9 +19,10 @@ describe('ActivityByStock Component', () => {
   let component: ActivityByStock;
   let fixture: any;
 
+  // Real seed_active persona trades aggregated from database/schema/011_seed_test_data.sql
   const mockTradesData: TradesByStockRow[] = [
-    { symbol: 'AAPL', totalQuantity: 150, totalGrossAmount: 22500.75, buyCount: 8, sellCount: 5 },
-    { symbol: 'MSFT', totalQuantity: 200, totalGrossAmount: 50200.00, buyCount: 10, sellCount: 3 },
+    { symbol: 'AAPL', totalQuantity: 20, totalGrossAmount: 6950.00, buyCount: 2, sellCount: 1 },
+    { symbol: 'MSFT', totalQuantity: 6, totalGrossAmount: 5820.00, buyCount: 1, sellCount: 1 },
   ];
 
   beforeEach(async () => {

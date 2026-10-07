@@ -1,0 +1,170 @@
+<div class="trade-activity-container">
+  <!-- Header -->
+  <div class="report-header">
+    <h1>Trade Activity by Period</h1>
+    <p class="report-subtitle">Aggregate trade counts and values by stock symbol</p>
+  </div>
+
+  <!-- Period Type Selector -->
+  <mat-card class="controls-card">
+    <mat-card-content>
+      <div class="period-selector">
+        <label class="period-label">Period Type:</label>
+        <div class="period-buttons">
+          <button 
+            mat-raised-button 
+            [color]="periodType() === 'DAY' ? 'primary' : ''"
+            (click)="onPeriodTypeChange('DAY')"
+            [disabled]="isLoading()">
+            Day
+          </button>
+          <button 
+            mat-raised-button 
+            [color]="periodType() === 'WEEK' ? 'primary' : ''"
+            (click)="onPeriodTypeChange('WEEK')"
+            [disabled]="isLoading()">
+            Week
+          </button>
+          <button 
+            mat-raised-button 
+            [color]="periodType() === 'MONTH' ? 'primary' : ''"
+            (click)="onPeriodTypeChange('MONTH')"
+            [disabled]="isLoading()">
+            Month
+          </button>
+          <button 
+            mat-raised-button 
+            [color]="periodType() === 'YEAR' ? 'primary' : ''"
+            (click)="onPeriodTypeChange('YEAR')"
+            [disabled]="isLoading()">
+            Year
+          </button>
+        </div>
+      </div>
+
+      <!-- Date Range Picker -->
+      <div class="date-range-picker">
+        <label class="date-label">Date Range:</label>
+        <form [formGroup]="dateRangeForm" class="date-inputs">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input 
+              matInput 
+              [matDatepicker]="startPicker"
+              formControlName="startDate"
+              readonly />
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input 
+              matInput 
+              [matDatepicker]="endPicker"
+              formControlName="endDate"
+              readonly />
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+
+          <button 
+            mat-raised-button 
+            color="primary"
+            (click)="onDateRangeChange()"
+            [disabled]="isLoading()">
+            <mat-icon>search</mat-icon>
+            Apply
+          </button>
+        </form>
+      </div>
+
+      <!-- Refresh Button -->
+      <div class="refresh-container">
+        <button 
+          mat-icon-button 
+          (click)="refresh()"
+          [disabled]="isLoading()"
+          matTooltip="Refresh report">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Error Message -->
+  <mat-card class="error-card" *ngIf="error()">
+    <mat-card-content class="error-message">
+      <mat-icon class="error-icon">error</mat-icon>
+      <span>{{ error() }}</span>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Spinner -->
+  <div class="loading-container" *ngIf="isLoading()">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading report...</p>
+  </div>
+
+  <!-- Empty State -->
+  <mat-card class="empty-card" *ngIf="showEmpty()">
+    <mat-card-content class="empty-message">
+      <mat-icon class="empty-icon">inbox</mat-icon>
+      <p>No trades found in this period.</p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Data Table -->
+  <mat-card class="table-card" *ngIf="hasData()">
+    <mat-card-content>
+      <div class="table-wrapper">
+        <table mat-table [dataSource]="reportData()" class="trades-table">
+          <!-- Symbol Column -->
+          <ng-container matColumnDef="symbol">
+            <th mat-header-cell *matHeaderCellDef>Symbol</th>
+            <td mat-cell *matCellDef="let element" class="cell-symbol">{{ element.symbol }}</td>
+          </ng-container>
+
+          <!-- Total Quantity Column -->
+          <ng-container matColumnDef="totalQuantity">
+            <th mat-header-cell *matHeaderCellDef class="numeric-header">Total Quantity</th>
+            <td mat-cell *matCellDef="let element" class="cell-numeric">
+              {{ element.totalQuantity | number: '1.0-0' }}
+            </td>
+          </ng-container>
+
+          <!-- Total Gross Amount Column -->
+          <ng-container matColumnDef="totalGrossAmount">
+            <th mat-header-cell *matHeaderCellDef class="numeric-header">Total Gross Amount</th>
+            <td mat-cell *matCellDef="let element" class="cell-numeric">
+              {{ formatCurrency(element.totalGrossAmount) }}
+            </td>
+          </ng-container>
+
+          <!-- Buy Count Column -->
+          <ng-container matColumnDef="buyCount">
+            <th mat-header-cell *matHeaderCellDef class="numeric-header">Buy Count</th>
+            <td mat-cell *matCellDef="let element" class="cell-numeric">
+              {{ element.buyCount | number: '1.0-0' }}
+            </td>
+          </ng-container>
+
+          <!-- Sell Count Column -->
+          <ng-container matColumnDef="sellCount">
+            <th mat-header-cell *matHeaderCellDef class="numeric-header">Sell Count</th>
+            <td mat-cell *matCellDef="let element" class="cell-numeric">
+              {{ element.sellCount | number: '1.0-0' }}
+            </td>
+          </ng-container>
+
+          <!-- Header and Row Definition -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+      <div class="table-info">
+        <p>Showing {{ reportData().length }} stocks</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
