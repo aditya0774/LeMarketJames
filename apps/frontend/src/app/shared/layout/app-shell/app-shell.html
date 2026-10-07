@@ -4,9 +4,6 @@
       <img src="/lemarket-logo.png" alt="" />
       <span class="wordmark"><span class="le-accent">Le</span>Market</span>
     </div>
-    @if (auth.hasRole('TRADING_OPS')) {
-      <nav aria-label="Operations"><a routerLink="/trade-search">Trade search</a></nav>
-    }
     <router-outlet />
   </main>
 </div>
