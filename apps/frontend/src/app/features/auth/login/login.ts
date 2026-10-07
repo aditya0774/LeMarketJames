@@ -45,7 +45,13 @@ export class Login {
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
-      await this.router.navigate([this.auth.hasRole('TRADING_OPS') ? '/trade-search' : '/dashboard']);
+      // Trading app is customer-only; staff accounts must use the staff app.
+      if (this.auth.hasRole('TRADING_OPS')) {
+        this.auth.logout();
+        this.errorMessage.set('Please use the staff app for operations.');
+        return;
+      }
+      await this.router.navigate(['/dashboard']);
     } catch (error) {
       const serverMessage =
         error instanceof HttpErrorResponse &&

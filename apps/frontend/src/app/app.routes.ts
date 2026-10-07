@@ -7,7 +7,7 @@ import { HoldingsListComponent } from './features/holdings/holdings-list/holding
 import { ByStockDetailComponent } from './features/holdings/by-stock-report/by-stock-detail.component';
 import { AppShell } from './shared/layout/app-shell/app-shell';
 import { authGuard } from './core/auth/auth.guard';
-import { tradingOpsGuard } from './core/auth/trading-ops.guard';
+import { clientGuard } from './core/auth/client.guard';
 
 export const routes: Routes = [
   { path: '', component: Home, pathMatch: 'full' },
@@ -15,16 +15,15 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   // Keep existing bookmarks on the supported, authenticated trading flow.
   { path: 'orders', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'holdings', component: HoldingsListComponent },
-  { path: 'holdings/:symbol', component: ByStockDetailComponent },
+  { path: 'holdings', component: HoldingsListComponent, canActivate: [clientGuard] },
+  { path: 'holdings/:symbol', component: ByStockDetailComponent, canActivate: [clientGuard] },
   // Signed-in pages share the sidebar layout from the LeUI mockup.
   {
     path: '',
     component: AppShell,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: Dashboard },
-      { path: 'trade-search', canActivate: [tradingOpsGuard], loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) },
+      { path: 'dashboard', component: Dashboard, canActivate: [clientGuard] },
       { path: 'access-denied', loadComponent: () => import('./features/trade-search/access-denied').then(m => m.AccessDenied) },
     ],
   },

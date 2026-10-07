@@ -19,7 +19,7 @@ services:
     ports:
       - "4201:80"
     depends_on:
-      - staff-gateway-service
+      - gateway-service
 
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
   # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
@@ -194,7 +194,7 @@ services:
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Aggregate, read-only reports for analysts (/api/v1/reports/**). The trading gateway has no
-  # route to it on purpose: the staff gateway (staff-gateway-service) is its only caller. It shares the
+  # route to it on purpose: the staff gateway routes staff requests to it. It shares the
   # database with live trading, so its connections are few, read-only and time-limited; see the
   # read-side safeguards in services/reporting-service/src/main/resources/application.properties.
   reporting-service:

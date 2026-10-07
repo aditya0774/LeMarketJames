@@ -20,6 +20,11 @@ public class TradeSearchController {
         return trades.search(parseId(orderId), parseId(clientId), from, to);
     }
 
+    @GetMapping("/api/v1/orders/trades/clients")
+    public List<ClientSearchResult> clients(@RequestParam String name) {
+        return trades.clients(name);
+    }
+
     private Integer parseId(String value) {
         if (value == null) return null;
         try {

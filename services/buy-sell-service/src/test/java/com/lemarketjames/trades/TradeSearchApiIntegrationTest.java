@@ -80,6 +80,40 @@ class TradeSearchApiIntegrationTest {
     }
 
     @Test
+    void clientWithoutDatesIncludesHistoryButExcludesUnfilledAndOtherClients() throws Exception {
+        order(accountId, "2020-01-01T00:00:00", Order.OrderStatus.FILLED);
+        order(accountId, null, Order.OrderStatus.SUBMITTED);
+        order(createAccount(), "2026-01-10T00:00:00", Order.OrderStatus.FILLED);
+        mvc.perform(get(PATH).param("clientId", clientId.toString()).with(user("ops").roles("TRADING_OPS")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void nameLookupIsCaseInsensitiveAndDistinguishesDuplicateNames() throws Exception {
+        createAccount();
+        mvc.perform(get("/api/v1/orders/trades/clients").param("name", " sEaRcH t ")
+                .with(user("ops").roles("TRADING_OPS")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].fullName").value("Search Test"))
+            .andExpect(jsonPath("$[0].clientId").value(clientId))
+            .andExpect(jsonPath("$[0].email").doesNotExist());
+        for (String name : new String[]{"", "x"})
+            mvc.perform(get("/api/v1/orders/trades/clients").param("name", name)
+                .with(user("ops").roles("TRADING_OPS"))).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/orders/trades/clients").param("name", "%_" )
+            .with(user("ops").roles("TRADING_OPS"))).andExpect(content().json("[]"));
+    }
+
+    @Test
+    void nameLookupRequiresOperations() throws Exception {
+        mvc.perform(get("/api/v1/orders/trades/clients").param("name", "Search"))
+            .andExpect(status().isUnauthorized());
+        for (String role : new String[]{"CLIENT", "ANALYST", "COMPLIANCE"})
+            mvc.perform(get("/api/v1/orders/trades/clients").param("name", "Search")
+                .with(user("user").roles(role))).andExpect(status().isForbidden());
+    }
+
+    @Test
     void operationsFindsTradeByOrderId() throws Exception {
         mvc.perform(get(PATH).param("orderId", tradeId.toString()).with(user("ops").roles("TRADING_OPS")))
             .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
@@ -142,7 +176,7 @@ class TradeSearchApiIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "?orderId=", "?orderId=abc", "?orderId=2147483648", "?orderId=0",
-        "?orderId=1&clientId=2", "?clientId=1", "?clientId=1&from=2026-02-30&to=2026-03-01",
+        "?orderId=1&clientId=2", "?clientId=1&from=2026-02-30&to=2026-03-01",
         "?clientId=1&from=2026-02-02&to=2026-02-01", "?clientId=1&from=&to=2026-02-01"})
     void badInputReturnsContractError(String query) throws Exception {
         mvc.perform(get(PATH + query).with(user("ops").roles("TRADING_OPS")))

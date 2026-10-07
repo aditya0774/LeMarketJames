@@ -222,6 +222,7 @@ pipeline {
                     }
                 }
 
+<<<<<<< HEAD
                 // Covers both gateways: the staff gateway is this module's "staff" profile.
                 stage('Test gateway service units') {
                     steps {
@@ -463,6 +464,7 @@ pipeline {
                     compose exec -T buy-sell-service id
                     compose exec -T reporting-service id
 
+<<<<<<< HEAD
                     # Use host-published ports; gateway-service maps host 8089 to container 8080,
                     # and 8090 is the staff gateway.
                     for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
