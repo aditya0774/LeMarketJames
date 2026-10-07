@@ -17,7 +17,7 @@ export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
 /**
  * Staff Login Component
  *
- * Renders the login form for staff (Trading Ops, Analyst, Compliance roles).
+ * Renders the login form for staff (Trading Ops and Analyst roles).
  * Uses the same LeMarket auth styles as the trading app.
  */
 export class Login {

@@ -636,7 +636,6 @@ All test accounts are loaded automatically when the database is initialized (see
 |---|---|---|
 | `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline |
 | `analyst@seed.lemarket.com` | `ANALYST` | Reports dashboard, read-only aggregate reports |
-| `compliance@seed.lemarket.com` | `COMPLIANCE` | Compliance reports (when implemented) |
 
 **Password for all staff logins:** `Pass123!`
 

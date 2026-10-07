@@ -129,14 +129,6 @@ class OrderTimelineApiIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC3: COMPLIANCE role denied (403)")
-    void complianceRoleDeniedFromTimeline() throws Exception {
-        mvc.perform(get("/api/v1/orders/{orderId}/timeline", orderId)
-                .with(user("compliance").roles("COMPLIANCE")))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test
     @DisplayName("AC3: Unknown order returns 403 (no info leak)")
     void unknownOrderReturns403() throws Exception {
         mvc.perform(get("/api/v1/orders/{orderId}/timeline", 99999)

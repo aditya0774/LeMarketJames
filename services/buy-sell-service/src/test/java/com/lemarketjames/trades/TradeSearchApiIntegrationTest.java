@@ -108,7 +108,7 @@ class TradeSearchApiIntegrationTest {
     void nameLookupRequiresOperations() throws Exception {
         mvc.perform(get("/api/v1/orders/trades/clients").param("name", "Search"))
             .andExpect(status().isUnauthorized());
-        for (String role : new String[]{"CLIENT", "ANALYST", "COMPLIANCE"})
+        for (String role : new String[]{"CLIENT", "ANALYST"})
             mvc.perform(get("/api/v1/orders/trades/clients").param("name", "Search")
                 .with(user("user").roles(role))).andExpect(status().isForbidden());
     }
@@ -160,7 +160,7 @@ class TradeSearchApiIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"CLIENT", "ANALYST", "COMPLIANCE"})
+    @ValueSource(strings = {"CLIENT", "ANALYST"})
     void otherRolesDeniedEvenForOwnTrade(String role) throws Exception {
         mvc.perform(get(PATH).param("orderId", tradeId.toString()).with(user(username).roles(role)))
             .andExpect(status().isForbidden());
