@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 
-import { ReportingService, TradesByStockRow } from '../../../core/reports/reporting.service';
+import { ReportingService, TradesByStockRow } from '@staff/core/reports/reporting.service';
 import { ByStockAggregateTable } from './by-stock-aggregate-table';
 
 /**

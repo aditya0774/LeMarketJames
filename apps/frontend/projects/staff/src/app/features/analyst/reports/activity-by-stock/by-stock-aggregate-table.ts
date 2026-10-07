@@ -1,7 +1,7 @@
 import { Component, input, signal, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { TradesByStockRow } from '../../../core/reports/reporting.service';
+import { TradesByStockRow } from '@staff/core/reports/reporting.service';
 
 type SortableColumn = 'symbol' | 'totalQuantity' | 'totalGrossAmount' | 'buyCount' | 'sellCount';
 

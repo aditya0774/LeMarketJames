@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Auth } from '../../../src/app/core/auth/auth';
+import { Auth } from '@app/core/auth/auth';
 
 /**
  * UI access check for ANALYST role.
