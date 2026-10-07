@@ -9,7 +9,7 @@ services:
 
   # The staff app (Trading Ops and Analyst): a separate Angular app on its own port. It builds from
   # the same Angular workspace as the trading frontend, hence the shared context. It depends on
-  # nothing yet: its own backend entry point, the staff gateway, comes with LMKT-143. Its Nginx
+  # the staff gateway. Its Nginx
   # already forwards /api to staff-gateway-service:8090 (apps/frontend/projects/staff/nginx.conf).
   staff-frontend:
     image: lemarketjames/staff-frontend:${IMAGE_TAG:-dev}
@@ -18,6 +18,25 @@ services:
       dockerfile: projects/staff/Dockerfile
     ports:
       - "4201:80"
+    depends_on:
+      - staff-gateway-service
+
+  staff-gateway-service:
+    image: lemarketjames/staff-gateway-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/staff-gateway-service/Dockerfile
+    ports:
+      - "8090:8090"
+    depends_on:
+      - auth-service
+      - buy-sell-service
+      - reporting-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8082
+      BUY_SELL_SERVICE_URL: http://buy-sell-service:8085
+      REPORTING_SERVICE_URL: http://reporting-service:8086
+      STAFF_CORS_ALLOWED_ORIGIN: ${STAFF_CORS_ALLOWED_ORIGIN:-http://localhost:4201}
 
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
   # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
@@ -167,7 +186,7 @@ services:
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Aggregate, read-only reports for analysts (/api/v1/reports/**). The trading gateway has no
-  # route to it on purpose: the staff gateway (LMKT-143) will be its only caller. It shares the
+  # route to it on purpose: the staff gateway routes staff requests to it. It shares the
   # database with live trading, so its connections are few, read-only and time-limited; see the
   # read-side safeguards in services/reporting-service/src/main/resources/application.properties.
   reporting-service:

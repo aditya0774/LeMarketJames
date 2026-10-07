@@ -47,12 +47,13 @@ Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-servic
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
 Start-Window 'buy-sell-service :8085' $repoRoot 'mvn -B -pl services/buy-sell-service spring-boot:run'
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
-# Not behind the gateway below: only the staff gateway (LMKT-143) will route to it.
+# Reporting is reached only through the staff gateway.
 Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'
 # 8089 matches the port Docker Compose publishes the gateway on, which proxy.conf.json targets.
 Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.arguments=--server.port=8089'"
 
 $frontend = Join-Path $repoRoot 'apps\frontend'
+Start-Window 'staff-gateway-service :8090' $repoRoot 'mvn -B -pl services/staff-gateway-service spring-boot:run'
 $npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start' } else { 'npm install; npm start' }
 Start-Window 'frontend :4200' $frontend $npm
 # The staff app is a second project in the same Angular workspace. It shares node_modules with

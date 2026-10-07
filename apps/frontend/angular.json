@@ -86,7 +86,7 @@
             "tsConfig": "projects/staff/tsconfig.app.json",
             "assets": [
               {
-                "glob": "favicon.ico",
+                "glob": "**/*",
                 "input": "public"
               }
             ],
