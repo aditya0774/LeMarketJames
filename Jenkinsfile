@@ -222,7 +222,6 @@ pipeline {
                     }
                 }
 
-<<<<<<< HEAD
                 // Covers both gateways: the staff gateway is this module's "staff" profile.
                 stage('Test gateway service units') {
                     steps {
@@ -464,7 +463,6 @@ pipeline {
                     compose exec -T buy-sell-service id
                     compose exec -T reporting-service id
 
-<<<<<<< HEAD
                     # Use host-published ports; gateway-service maps host 8089 to container 8080,
                     # and 8090 is the staff gateway.
                     for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
@@ -528,6 +526,34 @@ pipeline {
                     junit allowEmptyResults: true, testResults: 'apps/e2e/results/junit.xml'
                     // HTML report plus traces, screenshots and videos of any failed test.
                     archiveArtifacts artifacts: 'apps/e2e/playwright-report/**, apps/e2e/test-results/**', allowEmptyArchive: true
+                }
+            }
+        }
+
+        // The same for the staff app: its nginx frontend on :4201, which proxies /api to the staff
+        // gateway. A separate run with its own configuration (apps/e2e/playwright.staff.config.ts)
+        // and its own report files, so neither suite overwrites the other's results.
+        stage('Run staff app Playwright E2E tests') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    # Same image and options as the stage above; see the notes there. The staff
+                    # tests only sign in with the seed logins, so they need no database access.
+                    docker run --rm --network host --ipc=host \
+                        --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        mcr.microsoft.com/playwright:v1.63.0-noble \
+                        sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'apps/e2e/results/staff-junit.xml'
+                    archiveArtifacts artifacts: 'apps/e2e/playwright-report-staff/**, apps/e2e/test-results-staff/**', allowEmptyArchive: true
                 }
             }
         }

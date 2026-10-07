@@ -450,7 +450,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
-The staff app is a skeleton for now: placeholder pages, no login, and no API calls.
+The staff app opens on its own login page. Staff sign in with a staff login ([seed logins](contracts/C3-seed-data.md#staff)) and each role gets its own section; a client who signs in there is signed straight out ([C7](contracts/C7-roles.md#the-staff-app)).
 
 It is set up the same way as the trading app on both platforms, so it builds and runs natively on Windows (Node only, no Docker) and in Docker on Linux/Jenkins:
 
@@ -489,13 +489,23 @@ Like the trading app, the staff app only ever calls `/api` on its own origin (`a
 
 **Where staff screens go** (under `apps/frontend/projects/staff/src/app`):
 
-| Route | Folder |
-|---|---|
-| `/trading-ops` | `features/trading-ops/` |
-| `/analyst` | `features/analyst/` |
-| `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) |
+| Route | Folder | Who may open it |
+|---|---|---|
+| `/login` | `features/auth/login/` | Anyone; it is the start page |
+| `/trading-ops` | `features/trading-ops/` | `TRADING_OPS` |
+| `/trade-search` | `features/trade-search/` | `TRADING_OPS` |
+| `/analyst` | `features/analyst/` | `ANALYST` |
+| `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) | `ANALYST` |
 
-The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell).
+The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell), which also holds the sign-out action.
+
+**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trading-ops` and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
+
+- A page for one role goes in as a child of that role's section and needs no guard of its own. A report added to `analyst-reports.ts` is such a child already.
+- A page outside the sections takes the guard itself, as `/trade-search` does with `requiresRole('TRADING_OPS')`. Several roles can share one: `requiresRole('TRADING_OPS', 'ANALYST')` lets either in.
+- To show or hide part of a page, use `Auth.hasRole('<ROLE>')`.
+
+The guard only decides what the app shows; the endpoint behind the screen still needs its `hasRole` rule in the owning service ([C7](contracts/C7-roles.md)).
 
 ### Market simulation settings
 
@@ -561,7 +571,15 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 
 `execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished. Playwright skips it when an earlier test failed.
 
-Jenkins runs the suite in the stage **Run Playwright E2E tests**, right after the smoke test. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
+**The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `http://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It needs no database access.
+
+```bash
+cd apps/e2e
+npm run test:staff                # or: npm run test:staff:headed
+npm run report:staff              # open the HTML report from the last staff run
+```
+
+Jenkins runs the trading suite in the stage **Run Playwright E2E tests**, right after the smoke test, and the staff suite in **Run staff app Playwright E2E tests**, right after that. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
 
 ---
 
@@ -573,7 +591,7 @@ Once the application is running (via any of the three methods), you can access:
 |---------|-----|---------|
 | **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
 | **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
-| **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts (placeholder pages for now) |
+| **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
 | **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
 | **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
 | **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |

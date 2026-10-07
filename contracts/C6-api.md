@@ -271,8 +271,8 @@ then uses the existing client-ID search with an optional date range.
 
 The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
 trading gateway. The staff gateway forwards login/logout, session checks, trade search and reports; owning services enforce roles.
-Trading Operations land there after login and see a navigation link in the signed-in layout.
-Other signed-in roles are redirected to `/access-denied`. The screen labels dates and execution
+Trading Operations land on their dashboard after login and reach it from a navigation link in the
+signed-in layout. Other signed-in roles are redirected to `/access-denied` ([C7](C7-roles.md#the-staff-app)). The screen labels dates and execution
 times as UTC, preserves four-decimal execution prices, and clears/cancels stale searches when
 criteria change. Component tests mock this endpoint; normal use calls the gateway.
 
