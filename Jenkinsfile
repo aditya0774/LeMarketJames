@@ -540,11 +540,16 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    # Same image and options as the stage above; see the notes there. The staff
-                    # tests only sign in with the seed logins, so they need no database access.
+                    # Same image and options as the stage above; see the notes there.
+                    # E2E_BASE_URL is the trading app, where the trade search tests register
+                    # the clients whose trades they insert and then look up from the staff app.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
                         -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_ALLOW_DATABASE_SEED=true \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
+                        -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
