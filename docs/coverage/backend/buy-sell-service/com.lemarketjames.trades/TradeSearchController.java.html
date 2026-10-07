@@ -20,12 +20,17 @@ public class TradeSearchController {
 <span class="fc" id="L20">        return trades.search(parseId(orderId), parseId(clientId), from, to);</span>
     }
 
+    @GetMapping(&quot;/api/v1/orders/trades/clients&quot;)
+    public List&lt;ClientSearchResult&gt; clients(@RequestParam String name) {
+<span class="fc" id="L25">        return trades.clients(name);</span>
+    }
+
     private Integer parseId(String value) {
-<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (value == null) return null;</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (value == null) return null;</span>
         try {
-<span class="fc" id="L26">            return Integer.valueOf(value);</span>
-<span class="fc" id="L27">        } catch (NumberFormatException ex) {</span>
-<span class="fc" id="L28">            throw new IllegalArgumentException(&quot;IDs must be positive integers&quot;, ex);</span>
+<span class="fc" id="L31">            return Integer.valueOf(value);</span>
+<span class="fc" id="L32">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L33">            throw new IllegalArgumentException(&quot;IDs must be positive integers&quot;, ex);</span>
         }
     }
 }

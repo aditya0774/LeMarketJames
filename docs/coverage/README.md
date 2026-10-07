@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `c533c809` on 2026-10-07 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `1baab938` on 2026-10-07 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -11,15 +11,16 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 44.57 | 42.86 | 199 / 359 |
 | [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 76.34 | 72.73 | 22 / 93 |
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 95.65 | 81.82 | 12 / 276 |
-| [buy-sell-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/buy-sell-service/index.html) | 93.65 | 85.77 | 54 / 851 |
+| [buy-sell-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/buy-sell-service/index.html) | 93.70 | 85.54 | 54 / 857 |
 | [core-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/core-service/index.html) | 83.19 | 75.00 | 38 / 226 |
-| [gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/gateway-service/index.html) | 92.11 | 90.00 | 3 / 38 |
+| [gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/gateway-service/index.html) | 94.74 | 100.00 | 2 / 38 |
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 84.32 | 77.14 | 82 / 523 |
 | [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 82.70 | 70.00 | 77 / 445 |
 | [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 96.36 | 100.00 | 2 / 55 |
-| **Back end (all modules)** | 82.94 | 78.69 | 489 / 2866 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.17 | 80.17 | 185 / 1708 |
-| **Everything** | 85.26 | 79.67 | 674 / 4574 |
+| [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
+| **Back end (all modules)** | 83.00 | 78.89 | 490 / 2883 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.53 | 80.31 | 179 / 1710 |
+| **Everything** | 85.43 | 79.83 | 669 / 4593 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -48,15 +49,16 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | `src/app/core/orders/orders.service.ts` | 9 | 30.77 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 91.84 |
-| `src/app/core/orders/order.service.ts` | 7 | 80.00 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
 | `src/app/features/auth/login/login.html` | 5 | 86.11 |
 | `src/app/features/holdings/by-stock-report/by-stock-detail.component.ts` | 5 | 87.50 |
+| `src/app/features/holdings/by-stock-report/by-stock-report.component.html` | 5 | 85.71 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-07 | `1baab938` | 83.00 | 78.89 | 89.53 | 80.31 |
 | 2026-10-07 | `c533c809` | 82.94 | 78.69 | 89.17 | 80.17 |
 | 2026-10-07 | `08d6d8ee` | 82.94 | 78.69 | 89.52 | 80.35 |
 | 2026-10-06 | `61af0a91` | 82.81 | 78.48 | 89.52 | 80.35 |
