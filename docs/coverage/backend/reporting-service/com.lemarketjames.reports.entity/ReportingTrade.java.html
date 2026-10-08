@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportingTrade.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.entity</a> &gt; <span class="el_source">ReportingTrade.java</span></div><h1>ReportingTrade.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.entity;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * Read-only entity mapped to the reporting_trades database view.
+ * Represents a single settled trade ready for aggregation and reporting.
+ *
+ * Each row corresponds to one filled order: aggregates account, client, instrument,
+ * and order execution data for convenient reporting queries.
+ */
+@Entity
+@Table(name = &quot;reporting_trades&quot;)
+<span class="fc" id="L16">public class ReportingTrade {</span>
+
+    /**
+     * Order identifier (read-only from view; no primary key since this is a view).
+     */
+    @Id
+    @Column(name = &quot;order_id&quot;)
+    private Integer orderId;
+
+    /**
+     * Account ID for the trade.
+     */
+    @Column(name = &quot;account_id&quot;)
+    private Integer accountId;
+
+    /**
+     * Client ID; parent of the account.
+     */
+    @Column(name = &quot;client_id&quot;)
+    private Integer clientId;
+
+    /**
+     * Client segment (e.g., &quot;Retail&quot;, &quot;Institutional&quot;, &quot;VIP&quot;).
+     */
+    @Column(name = &quot;segment&quot;)
+    private String segment;
+
+    /**
+     * Stock ticker symbol (e.g., &quot;AAPL&quot;, &quot;GOOG&quot;).
+     */
+    @Column(name = &quot;symbol&quot;)
+    private String symbol;
+
+    /**
+     * Full instrument name (e.g., &quot;Apple Inc&quot;).
+     */
+    @Column(name = &quot;instrument_name&quot;)
+    private String instrumentName;
+
+    /**
+     * Trade side: BUY or SELL.
+     */
+    @Column(name = &quot;side&quot;)
+    private String side;
+
+    /**
+     * Quantity traded.
+     */
+    @Column(name = &quot;quantity&quot;, precision = 14, scale = 4)
+    private BigDecimal quantity;
+
+    /**
+     * Execution price per unit.
+     */
+    @Column(name = &quot;price_per_unit&quot;, precision = 19, scale = 4)
+    private BigDecimal pricePerUnit;
+
+    /**
+     * Total trade value: quantity * price_per_unit.
+     */
+    @Column(name = &quot;gross_amount&quot;, precision = 19, scale = 2)
+    private BigDecimal grossAmount;
+
+    /**
+     * When the trade was submitted.
+     */
+    @Column(name = &quot;submitted_at&quot;)
+    private LocalDateTime submittedAt;
+
+    /**
+     * When the trade was filled/executed.
+     */
+    @Column(name = &quot;filled_at&quot;)
+    private LocalDateTime filledAt;
+
+    // Getters
+
+    public Integer getOrderId() {
+<span class="nc" id="L94">        return orderId;</span>
+    }
+
+    public Integer getAccountId() {
+<span class="nc" id="L98">        return accountId;</span>
+    }
+
+    public Integer getClientId() {
+<span class="nc" id="L102">        return clientId;</span>
+    }
+
+    public String getSegment() {
+<span class="nc" id="L106">        return segment;</span>
+    }
+
+    public String getSymbol() {
+<span class="nc" id="L110">        return symbol;</span>
+    }
+
+    public String getInstrumentName() {
+<span class="nc" id="L114">        return instrumentName;</span>
+    }
+
+    public String getSide() {
+<span class="fc" id="L118">        return side;</span>
+    }
+
+    public BigDecimal getQuantity() {
+<span class="nc" id="L122">        return quantity;</span>
+    }
+
+    public BigDecimal getPricePerUnit() {
+<span class="nc" id="L126">        return pricePerUnit;</span>
+    }
+
+    public BigDecimal getGrossAmount() {
+<span class="fc" id="L130">        return grossAmount;</span>
+    }
+
+    public LocalDateTime getSubmittedAt() {
+<span class="nc" id="L134">        return submittedAt;</span>
+    }
+
+    public LocalDateTime getFilledAt() {
+<span class="fc" id="L138">        return filledAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

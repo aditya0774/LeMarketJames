@@ -2,6 +2,7 @@
 
 import com.lemarketjames.orders.events.OrderFilled;
 import com.lemarketjames.orders.events.OrderStatusChanged;
+import com.lemarketjames.orders.events.OrderSubmitted;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -12,28 +13,34 @@ import org.springframework.transaction.event.TransactionalEventListener;
  */
 @Component
 public class OrderEventForwarder {
+    public static final String SUBMITTED_TOPIC = &quot;lemarket.orders.submitted&quot;;
     public static final String STATUS_CHANGED_TOPIC = &quot;lemarket.orders.status-changed&quot;;
     public static final String FILLED_TOPIC = &quot;lemarket.orders.filled&quot;;
 
     private final OrderEventPublisher publisher;
 
-<span class="fc" id="L20">    public OrderEventForwarder(OrderEventPublisher publisher) {</span>
-<span class="fc" id="L21">        this.publisher = publisher;</span>
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L22">    public OrderEventForwarder(OrderEventPublisher publisher) {</span>
+<span class="fc" id="L23">        this.publisher = publisher;</span>
+<span class="fc" id="L24">    }</span>
+
+    @TransactionalEventListener(fallbackExecution = true)
+    public void onSubmitted(OrderSubmitted event) {
+<span class="fc" id="L28">        publisher.publish(SUBMITTED_TOPIC, key(event.orderId()), event);</span>
+<span class="fc" id="L29">    }</span>
 
     @TransactionalEventListener(fallbackExecution = true)
     public void onStatusChanged(OrderStatusChanged event) {
-<span class="fc" id="L26">        publisher.publish(STATUS_CHANGED_TOPIC, key(event.orderId()), event);</span>
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L33">        publisher.publish(STATUS_CHANGED_TOPIC, key(event.orderId()), event);</span>
+<span class="fc" id="L34">    }</span>
 
     @TransactionalEventListener(fallbackExecution = true)
     public void onFilled(OrderFilled event) {
-<span class="fc" id="L31">        publisher.publish(FILLED_TOPIC, key(event.orderId()), event);</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L38">        publisher.publish(FILLED_TOPIC, key(event.orderId()), event);</span>
+<span class="fc" id="L39">    }</span>
 
     /** Keyed by order so one order's events stay in sequence on a partitioned topic. */
     private static String key(Integer orderId) {
-<span class="fc" id="L36">        return String.valueOf(orderId);</span>
+<span class="fc" id="L43">        return String.valueOf(orderId);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
