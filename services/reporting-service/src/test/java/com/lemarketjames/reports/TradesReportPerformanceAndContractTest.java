@@ -41,7 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TradesReportPerformanceAndContractTest {
 
     private static final String TRADES_BY_STOCK = "/api/v1/reports/trades-by-stock";
-    private static final long PERFORMANCE_BASELINE_MS = 100L;  // Should be much faster than this
+    // Generous on purpose: Jenkins runs stages in parallel, so a tight wall-clock limit on a mocked
+    // call fails from machine load alone. It only has to catch a hang; the 10 s SLA is checked elsewhere.
+    private static final long PERFORMANCE_BASELINE_MS = 2000L;
 
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
