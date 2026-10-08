@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -404,7 +404,7 @@ export class TradeActivityByPeriod implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(private tradeReportService: TradeReportService) {
+  constructor(private tradeReportService: TradeReportService, private ngZone: NgZone) {
     // Initialize dates to last 7 days
     this.initializeDateRange();
   }
@@ -462,12 +462,19 @@ export class TradeActivityByPeriod implements OnInit {
       .getTradeReport(this.periodType, this.fromDate, this.toDate)
       .subscribe({
         next: (response) => {
-          this.data = response.data;
-          this.loading = false;
+          // Run state updates in Angular zone to ensure change detection
+          this.ngZone.run(() => {
+            this.data = response.data;
+            this.loading = false;
+            console.log('Trade report loaded:', response);
+          });
         },
         error: (err) => {
-          this.loading = false;
-          this.error = this.getErrorMessage(err);
+          this.ngZone.run(() => {
+            this.loading = false;
+            this.error = this.getErrorMessage(err);
+            console.error('Trade report error:', err);
+          });
         },
       });
   }
