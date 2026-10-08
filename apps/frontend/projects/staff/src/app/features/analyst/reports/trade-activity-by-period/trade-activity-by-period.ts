@@ -13,6 +13,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
   template: `
     <div class="trade-report-container">
       <h1>Trade activity by period</h1>
+      <p class="subtitle">View aggregated trade statistics by day, week, month, or year</p>
 
       <!-- Period Type Selector (Tabs) -->
       <div class="period-selector">
@@ -23,6 +24,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
               [class.active]="periodType === type"
               (click)="onPeriodTypeChange(type)"
               class="tab-button"
+              [title]="getPeriodTypeHint(type)"
             >
               {{ type }}
             </button>
@@ -33,30 +35,38 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
       <!-- Date Range Inputs -->
       <div class="date-range">
         <div class="form-group">
-          <label for="fromDate">From:</label>
+          <label for="fromDate">Start Date:</label>
           <input
             type="date"
             id="fromDate"
             [(ngModel)]="fromDate"
             (change)="onDateChange()"
             class="date-input"
+            aria-label="Start date for report"
           />
         </div>
         <div class="form-group">
-          <label for="toDate">To:</label>
+          <label for="toDate">End Date:</label>
           <input
             type="date"
             id="toDate"
             [(ngModel)]="toDate"
             (change)="onDateChange()"
             class="date-input"
+            aria-label="End date for report"
           />
+        </div>
+        <div class="preset-buttons">
+          <button (click)="setPresetDates('week')" class="preset-btn">Last 7 days</button>
+          <button (click)="setPresetDates('month')" class="preset-btn">This month</button>
+          <button (click)="setPresetDates('quarter')" class="preset-btn">This quarter</button>
         </div>
       </div>
 
       <!-- Loading State -->
       @if (loading) {
         <div class="loading">
+          <div class="spinner"></div>
           <p>Loading trade data...</p>
         </div>
       }
@@ -72,12 +82,17 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
       <!-- Results Table -->
       @if (!loading && !error && data.length === 0) {
         <div class="empty-state">
-          <p>No trades found in this period.</p>
+          <p>📊 No trades found in this period.</p>
+          <small>Try adjusting your date range or period type.</small>
         </div>
       }
 
       @if (!loading && !error && data.length > 0) {
-        <div class="table-container">
+        <div class="results-section">
+          <div class="results-header">
+            <h2>Results: {{ data.length }} periods, {{ totalTradeCount }} trades</h2>
+          </div>
+          <div class="table-container">
           <table class="results-table">
             <thead>
               <tr>
@@ -102,6 +117,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
               }
             </tbody>
           </table>
+          </div>
         </div>
       }
 
@@ -118,8 +134,16 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
 
     h1 {
-      margin-bottom: 20px;
-      color: #333;
+      margin-bottom: 8px;
+      color: #222;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin-bottom: 24px;
+      color: #666;
+      font-size: 14px;
+      font-style: italic;
     }
 
     .period-selector {
@@ -136,31 +160,40 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
       display: flex;
       gap: 8px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     .tab-button {
-      padding: 8px 16px;
-      border: 1px solid #ddd;
+      padding: 10px 20px;
+      border: 2px solid #ddd;
       background: #f5f5f5;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 6px;
       transition: all 0.2s;
+      font-weight: 500;
+      font-size: 14px;
+      min-width: 70px;
+      text-align: center;
     }
 
     .tab-button:hover {
       background: #e8e8e8;
+      border-color: #bbb;
     }
 
     .tab-button.active {
       background: #007bff;
       color: white;
-      border-color: #007bff;
+      border-color: #0056b3;
+      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
     }
 
     .date-range {
       display: flex;
       gap: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      align-items: flex-end;
+      flex-wrap: wrap;
     }
 
     .form-group {
@@ -169,22 +202,74 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
 
     .form-group label {
-      margin-bottom: 4px;
-      font-weight: 500;
-    }
-
-    .date-input {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #222;
       font-size: 14px;
     }
 
+    .date-input {
+      padding: 10px 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      min-width: 180px;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .preset-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 10px 14px;
+      background: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      color: #0056b3;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: #cce5ff;
+      border-color: #80b3ff;
+    }
+
     .loading {
-      padding: 40px;
+      padding: 60px 40px;
       text-align: center;
       color: #666;
-      font-style: italic;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      margin: 0;
+      color: #666;
     }
 
     .error-alert {
@@ -214,14 +299,44 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
 
     .empty-state {
-      padding: 40px;
+      padding: 60px 40px;
       text-align: center;
       color: #666;
+    }
+
+    .empty-state p {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .empty-state small {
+      display: block;
+      color: #999;
+      font-size: 13px;
+    }
+
+    .results-section {
+      margin-bottom: 20px;
+    }
+
+    .results-header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .results-header h2 {
+      margin: 0;
+      font-size: 16px;
+      color: #222;
+      font-weight: 600;
     }
 
     .table-container {
       margin-bottom: 20px;
       overflow-x: auto;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
     }
 
     .results-table {
@@ -231,7 +346,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
 
     .results-table thead {
-      background: #f5f5f5;
+      background: #f8f9fa;
       border-bottom: 2px solid #ddd;
     }
 
@@ -260,7 +375,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
 
     .currency {
-      font-weight: 500;
+      font-weight: 600;
       color: #007bff;
     }
 
@@ -378,5 +493,52 @@ export class TradeActivityByPeriod implements OnInit {
       }
     }
     return 'Failed to load trade report. Please try again.';
+  }
+
+  /**
+   * Get tooltip hint for each period type.
+   */
+  getPeriodTypeHint(type: string): string {
+    const hints: { [key: string]: string } = {
+      DAY: 'Daily: Aggregates trades by individual calendar day',
+      WEEK: 'Weekly: Aggregates trades by ISO 8601 week (Mon–Sun)',
+      MONTH: 'Monthly: Aggregates trades by calendar month',
+      YEAR: 'Yearly: Aggregates trades by calendar year',
+    };
+    return hints[type] || '';
+  }
+
+  /**
+   * Set date range using preset options.
+   */
+  setPresetDates(preset: string): void {
+    const today = new Date();
+    const startDate = new Date();
+
+    switch (preset) {
+      case 'week':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(today.getMonth());
+        startDate.setDate(1);
+        break;
+      case 'quarter':
+        const quarter = Math.floor(today.getMonth() / 3);
+        startDate.setMonth(quarter * 3);
+        startDate.setDate(1);
+        break;
+    }
+
+    this.fromDate = this.formatDateForInput(startDate);
+    this.toDate = this.formatDateForInput(today);
+    this.loadReport();
+  }
+
+  /**
+   * Computed property: total trade count across all periods.
+   */
+  get totalTradeCount(): number {
+    return this.data.reduce((sum, period) => sum + period.tradeCount, 0);
   }
 }
