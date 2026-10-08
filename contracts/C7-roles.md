@@ -42,6 +42,9 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Audit trail | `TRADING_OPS` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-reporting-service)) |
 | Insights | `ANALYST` | Planned; guard with this role |
+| Notifications about one's own orders (`/api/v1/notifications/**`) | `CLIENT` (own account only) | Enforced in notification-service `SecurityConfig`; staff get `403` ([C6](C6-api.md#get-apiv1notifications-client-only)) |
+| Large-order alerts (`/api/v1/surveillance/**`) | `TRADING_OPS` | Enforced in surveillance-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)) |
+| Market activity (`/api/v1/market-activity/**`) | every signed-in role | Enforced in activity-service `SecurityConfig`: signed in, any role. It holds aggregates only ([C6](C6-api.md#get-apiv1market-activity)) |
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
 

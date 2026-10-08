@@ -11,6 +11,10 @@ services:
   core-url: ${CORE_SERVICE_URL:http://localhost:8081}
   market-url: ${MARKET_SERVICE_URL:http://localhost:8083}
   holdings-url: ${HOLDINGS_SERVICE_URL:http://localhost:8084}
+  # The two Kafka consumers clients read from. surveillance-service, the third, is for staff and
+  # is known to the staff gateway only (application-staff.yml).
+  notification-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+  activity-url: ${ACTIVITY_SERVICE_URL:http://localhost:8091}
 
 spring:
   application:
@@ -51,6 +55,14 @@ spring:
               uri: ${services.buy-sell-url}
               predicates:
                 - Path=/api/v1/orders/**,/api/v1/buy-orders/**
+            - id: notification-service
+              uri: ${services.notification-url}
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: activity-service
+              uri: ${services.activity-url}
+              predicates:
+                - Path=/api/v1/market-activity/**
             - id: core-service
               uri: ${services.core-url}
               predicates:

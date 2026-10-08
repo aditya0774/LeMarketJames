@@ -71,6 +71,9 @@ LeMarketJames/
 │   │                              #       with the "staff" profile, :8090, the staff app's (the staff gateway)
 │   ├── auth-service/              # :8082 register, login, logout, /api/auth/me
 │   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); behind the staff gateway only
+│   ├── notification-service/      # :8087 Kafka consumer: tells clients what happened to their orders
+│   ├── surveillance-service/      # :8088 Kafka consumer: alerts Trading Ops to large orders; staff gateway only
+│   ├── activity-service/          # :8091 Kafka consumer: traded volume per stock
 │   └── core-service/              # :8081 instruments, quotes, sessions
 │       ├── src/main/java/com/lemarketjames/
 │       │   ├── common/            # Core-specific exception handler
@@ -117,6 +120,15 @@ graph LR
     RE -->|"JDBC"| C
     BS -->|"JDBC"| C
     BS -->|"order events"| K["📨 Kafka<br/>(port 9092)"]
+    K -->|"status changes"| NO["🔔 Notification Service<br/>(port 8087)"]
+    K -->|"new orders"| SU["🚨 Surveillance Service<br/>(port 8088)"]
+    K -->|"fills"| AC["📈 Activity Service<br/>(port 8091)"]
+    G -->|"/api/v1/notifications"| NO
+    G -->|"/api/v1/market-activity"| AC
+    SG -->|"/api/v1/surveillance/**"| SU
+    NO -->|"JDBC"| C
+    SU -->|"JDBC"| C
+    AC -->|"JDBC"| C
 
     classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
     classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
@@ -124,14 +136,14 @@ graph LR
     classDef broker fill:#F5A623,stroke:#B9770E,color:#fff
 
     class A,S frontend
-    class G,SG,AU,CO,RE,BS backend
+    class G,SG,AU,CO,RE,BS,NO,SU,AC backend
     class C database
     class K broker
 ```
 
 The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
 
-buy-sell-service publishes every new order, order status change and fill to Kafka, where other services can consume them; see [Kafka (order events)](#kafka-order-events). Nothing consumes them yet.
+buy-sell-service publishes every new order, order status change and fill to Kafka, and three small services consume them, one topic each: notification-service tells a client what happened to their orders, surveillance-service alerts Trading Ops to large orders, and activity-service keeps the traded volume per stock. See [Kafka (order events)](#kafka-order-events).
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
@@ -176,7 +188,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 | | JUnit 5 | Unit and integration testing | 5 |
 | **Database** | PostgreSQL | Relational database | 16 |
 | | Raw SQL | Schema definition (no migration tool) | SQL |
-| **Messaging** | Apache Kafka | Order events from buy-sell-service (single node, KRaft mode, no ZooKeeper) | 4.3 |
+| **Messaging** | Apache Kafka | Order events from buy-sell-service to three consumer services (single node, KRaft mode, no ZooKeeper) | 4.3 |
 | **Deployment** | Docker | Container runtime | Latest |
 | | Docker Compose | Multi-container orchestration | v2+ |
 
@@ -256,6 +268,9 @@ mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
 mvn -pl services/core-service spring-boot:run       # http://localhost:8081
 mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
 mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; behind the staff gateway only)
+mvn -pl services/notification-service spring-boot:run   # http://localhost:8087 (Kafka consumer: order notifications)
+mvn -pl services/surveillance-service spring-boot:run   # http://localhost:8088 (Kafka consumer: large-order alerts; behind the staff gateway only)
+mvn -pl services/activity-service spring-boot:run       # http://localhost:8091 (Kafka consumer: traded volume per stock)
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.profiles=staff"                 # staff gateway, http://localhost:8090; the staff app talks to this one
 cd apps/frontend && npm install && npm start        # http://localhost:4200
@@ -263,7 +278,7 @@ cd apps/frontend && npm run start:staff             # staff app, http://localhos
 ```
 The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. The staff gateway is the same module with the `staff` profile, which sets its port (8090) and its routes. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
 
-No Kafka broker is needed for this method: buy-sell-service logs its order events instead of publishing them. To publish them to a broker you run yourself, see [Kafka (order events)](#kafka-order-events).
+No Kafka broker is needed for this method: buy-sell-service logs its order events instead of publishing them, and the three consumer services start without a listener. To publish and consume them through a broker you run yourself, see [Kafka (order events)](#kafka-order-events).
 
 **Confirm it's up** (services take about 30 seconds):
 ```bash
@@ -375,6 +390,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    - Market service: `http://localhost:8083` (direct access for debugging)
    - Holdings service: `http://localhost:8084` (direct access for debugging)
    - Reporting service: `http://localhost:8086` (direct access for debugging; only the staff gateway routes to it)
+   - Notification, surveillance and activity services: `http://localhost:8087`, `8088`, `8091` (direct access for debugging; the three [Kafka consumers](#the-three-consumers))
    - PostgreSQL database: `localhost:5432`
    - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
    - A production (nginx) build of the frontend: `http://localhost:4200`
@@ -394,6 +410,9 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    curl http://localhost:8083/actuator/health
    curl http://localhost:8084/actuator/health
    curl http://localhost:8086/actuator/health
+   curl http://localhost:8087/actuator/health
+   curl http://localhost:8088/actuator/health
+   curl http://localhost:8091/actuator/health
    curl http://localhost:8090/actuator/health
    ```
    Kafka has no HTTP health endpoint; `docker compose ps kafka` shows `healthy` once the broker answers.
@@ -402,7 +421,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
 
 5. View logs:
    ```bash
-   docker compose logs -f gateway-service staff-gateway-service auth-service core-service market-service holdings-service reporting-service
+   docker compose logs -f gateway-service staff-gateway-service auth-service core-service market-service holdings-service reporting-service notification-service surveillance-service activity-service
    ```
 
 6. Stop all services:
@@ -461,7 +480,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Backend entry point |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, and the Trading Ops trade search and order timeline to buy-sell-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, the Trading Ops trade search and order timeline to buy-sell-service, and `/api/v1/surveillance/**` to surveillance-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -530,7 +549,7 @@ table — see [database/README.md](database/README.md#tuning-the-market).
 
 ### Kafka (order events)
 
-buy-sell-service announces every new order, every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where any service can consume them. What each event means and carries is in [C6](contracts/C6-api.md#the-order-events), with the topics, the record key (the order id) and the JSON format; the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
+buy-sell-service announces every new order, every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where [three services consume them](#the-three-consumers). What each event means and carries is in [C6](contracts/C6-api.md#the-order-events), with the topics, the record key (the order id) and the JSON format; the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
 
 | Where | What publishes the events | Broker |
 |---|---|---|
@@ -553,9 +572,28 @@ LMJ_EVENTS_PUBLISHER=kafka mvn -pl services/buy-sell-service spring-boot:run
 ```
 In PowerShell, set the variable first: `$env:LMJ_EVENTS_PUBLISHER = 'kafka'`.
 
-**Native Windows, no Docker:** `start-all.ps1` starts no broker and the stub is used, which is enough for everything except consuming the events. If you run a broker yourself on `localhost:9092` (the [Apache Kafka download](https://kafka.apache.org/downloads) runs on Windows with the JDK you already have), start the stack with `.\scripts\windows\start-all.ps1 -Kafka`. Set `KAFKA_BOOTSTRAP_SERVERS` if the broker is somewhere else. Don't delete a topic on a Windows broker: Kafka can't rename the topic's folder there and shuts down; wipe its data folder and start again instead.
+**Native Windows, no Docker:** `start-all.ps1` starts no broker and the stub is used, which is enough for everything except consuming the events. If you run a broker yourself on `localhost:9092` (the [Apache Kafka download](https://kafka.apache.org/downloads) runs on Windows with the JDK you already have), start the stack with `.\scripts\windows\start-all.ps1 -Kafka`, which switches on both the publisher and the three consumers. Set `KAFKA_BOOTSTRAP_SERVERS` if the broker is somewhere else. Don't delete a topic on a Windows broker: Kafka can't rename the topic's folder there and shuts down; wipe its data folder and start again instead.
 
 The events are test data: the broker keeps them in its container, so `docker compose down` removes them. Publishing is best effort; an event that can't be sent is logged by buy-sell-service and not sent again.
+
+#### The three consumers
+
+Each is a small service in its own container. It listens to one topic in a consumer group of its own, stores what it makes of each event in a table of its own, and serves that from one read-only endpoint. The rules they share (reading an event, the same event arriving twice, a bad record) are in [C6](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service).
+
+| Service | Listens to | Business scenario | Read it with |
+|---|---|---|---|
+| notification-service (8087) | `lemarket.orders.status-changed` | A client is told every status their order reaches, including a fill or a rejection that happened while they were signed out | `GET /api/v1/notifications` as that client, through the trading gateway |
+| surveillance-service (8088) | `lemarket.orders.submitted` | Trading Ops are alerted to an order of at least the large-order quantity, a setting ([C5](contracts/C5-config.md)), the moment it is placed | `GET /api/v1/surveillance/alerts` as Trading Ops, through the staff gateway |
+| activity-service (8091) | `lemarket.orders.filled` | Anyone signed in sees how much of each stock traded in the last 24 hours | `GET /api/v1/market-activity`, through the trading gateway |
+
+To see them work with Docker Compose, place an order in the trading app (make it at least the large-order quantity, which the alerts endpoint returns, to raise an alert too), then:
+```bash
+docker compose logs --tail=20 notification-service surveillance-service activity-service
+docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --all-groups
+```
+The second command is the broker's own list: each service's group, the topic it reads, and how far behind it is (`LAG`, 0 when it has caught up). Jenkins runs the whole scenario in its **Verify Kafka consumers** stage ([scripts/verify-kafka-consumers.sh](scripts/verify-kafka-consumers.sh)).
+
+A consumer listens only where `LMJ_EVENTS_CONSUMER=kafka` is set, which Compose does ([C5](contracts/C5-config.md#order-events)). Started natively without `-Kafka`, the three run without a listener: their endpoints answer, and nothing new arrives.
 
 ---
 
@@ -646,10 +684,13 @@ Once the application is running (via any of the three methods), you can access:
 | **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |
 | **Staff Gateway** | `http://localhost:8090` | Single entry point for the staff app's API calls: reports, staff sign-in, trade search and order timeline |
 | **Staff Login API** | `POST http://localhost:8090/api/auth/login` | Staff sign-in (routed to auth-service); sets the `staff_jwt` cookie |
-| **Health Checks** | `GET http://localhost:{8089,8090,8081,8082,8083,8084,8086}/actuator/health` | Gateway / staff gateway / core / auth / market / holdings / reporting liveness (`UP`/`DOWN`) |
+| **Health Checks** | `GET http://localhost:{8089,8090,8081,8082,8083,8084,8086,8087,8088,8091}/actuator/health` | Gateway / staff gateway / core / auth / market / holdings / reporting / notification / surveillance / activity liveness (`UP`/`DOWN`) |
+| **Notifications** | `GET http://localhost:8089/api/v1/notifications` | notification-service: the signed-in client's order notifications, built from Kafka events |
+| **Market activity** | `GET http://localhost:8089/api/v1/market-activity` | activity-service: traded volume per stock over the last 24 hours, built from Kafka events |
+| **Large-order alerts (staff)** | `GET http://localhost:8090/api/v1/surveillance/alerts` | surveillance-service, through the staff gateway; `TRADING_OPS` login only, built from Kafka events |
 | **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/ping` | reporting-service, through the staff gateway; `ANALYST` login only |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
-| **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service (Method 3 only; not HTTP) |
+| **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service to the three consumer services (Method 3 only; not HTTP) |
 
 **Frontend Routes:**
 - `/register` - User registration page with comprehensive form
@@ -814,10 +855,11 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 2. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below.
 3. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
 4. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube))
-5. Builds the Docker image
-6. Runs the containerized application
+5. Builds the Docker images
+6. Runs the containerized application and prints `docker ps` once every container is up (**Show running containers**), failing if any Compose service is not running
 7. Verifies the output, including that a filled order's event is on its Kafka topic
-8. Cleans up resources
+8. Places a large order and checks that each of the three Kafka consumers acted on its events: the client's notification, the Trading Ops alert and the fill in market activity. The stage (**Verify Kafka consumers**) ends by printing the broker's consumer groups
+9. Cleans up resources
 
 The Jenkins agent requires:
 - Java 21
