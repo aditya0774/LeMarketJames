@@ -3,6 +3,7 @@ package com.lemarketjames.common.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -32,6 +33,7 @@ public class PlatformSettings {
     private final Orders orders = new Orders();
     private final Audit audit = new Audit();
     private final Reports reports = new Reports();
+    private final Surveillance surveillance = new Surveillance();
 
     public Session getSession() {
         return session;
@@ -55,6 +57,10 @@ public class PlatformSettings {
 
     public Reports getReports() {
         return reports;
+    }
+
+    public Surveillance getSurveillance() {
+        return surveillance;
     }
 
     /** Logged-in sessions. */
@@ -177,6 +183,23 @@ public class PlatformSettings {
 
         public void setTimeZone(ZoneId timeZone) {
             this.timeZone = timeZone;
+        }
+    }
+
+    /** Order surveillance: which new orders Trading Operations are alerted to. */
+    public static class Surveillance {
+        /**
+         * Shares in one order at which it counts as large. An order of this many shares or more
+         * raises an alert for Trading Operations when it is placed; a smaller one raises none.
+         */
+        private BigDecimal largeOrderQuantity = new BigDecimal("100");
+
+        public BigDecimal getLargeOrderQuantity() {
+            return largeOrderQuantity;
+        }
+
+        public void setLargeOrderQuantity(BigDecimal largeOrderQuantity) {
+            this.largeOrderQuantity = largeOrderQuantity;
         }
     }
 }

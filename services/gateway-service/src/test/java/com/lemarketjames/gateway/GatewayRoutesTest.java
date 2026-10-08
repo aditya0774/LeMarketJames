@@ -16,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(properties = {
         "services.auth-url=http://auth-service:8082",
         "services.core-url=http://core-service:8081",
-        "services.buy-sell-url=http://buy-sell-service:8085"
+        "services.buy-sell-url=http://buy-sell-service:8085",
+        "services.notification-url=http://notification-service:8087",
+        "services.activity-url=http://activity-service:8091"
 })
 class GatewayRoutesTest {
 
@@ -52,6 +54,38 @@ class GatewayRoutesTest {
             org.springframework.mock.http.server.reactive.MockServerHttpRequest.post("/internal/holdings/settle"));
         org.junit.jupiter.api.Assertions.assertTrue(routes.stream().noneMatch(route ->
             Boolean.TRUE.equals(reactor.core.publisher.Mono.from(route.getPredicate().apply(exchange)).block())));
+    }
+
+    /** The two Kafka consumers clients read from have their own routes, ahead of the core catch-all. */
+    @Test
+    void notificationsAndMarketActivityReachTheirConsumers() {
+        List<Route> routes = routeLocator.getRoutes().collectList().block();
+        Map<String, String> uriById = routes.stream()
+                .collect(Collectors.toMap(Route::getId, route -> route.getUri().toString()));
+        assertEquals("http://notification-service:8087", uriById.get("notification-service"));
+        assertEquals("http://activity-service:8091", uriById.get("activity-service"));
+
+        for (Map.Entry<String, String> expected : Map.of(
+                "/api/v1/notifications", "notification-service",
+                "/api/v1/market-activity", "activity-service").entrySet()) {
+            var exchange = org.springframework.mock.web.server.MockServerWebExchange.from(
+                org.springframework.mock.http.server.reactive.MockServerHttpRequest.get(expected.getKey()));
+            assertEquals(expected.getValue(), routes.stream()
+                .filter(route -> Boolean.TRUE.equals(reactor.core.publisher.Mono.from(route.getPredicate().apply(exchange)).block()))
+                .findFirst().orElseThrow().getId());
+        }
+    }
+
+    /** Surveillance alerts are for staff: like reports, they fall through to core here. */
+    @Test
+    void surveillanceIsNeverSentToSurveillanceService() {
+        List<Route> routes = routeLocator.getRoutes().collectList().block();
+        var exchange = org.springframework.mock.web.server.MockServerWebExchange.from(
+            org.springframework.mock.http.server.reactive.MockServerHttpRequest.get("/api/v1/surveillance/alerts"));
+        assertEquals("core-service", routes.stream()
+            .filter(route -> Boolean.TRUE.equals(reactor.core.publisher.Mono.from(route.getPredicate().apply(exchange)).block()))
+            .findFirst().orElseThrow().getId());
+        org.junit.jupiter.api.Assertions.assertTrue(routes.stream().noneMatch(route -> route.getUri().getPort() == 8088));
     }
 
     /** Reports are served by the staff gateway only (LMKT-143); here they fall through to core. */

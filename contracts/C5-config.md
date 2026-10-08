@@ -6,7 +6,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 
 | Settings | Defined in | Available to |
 |---|---|---|
-| Business settings: `lmj.*` | [PlatformSettings.java](../libs/common/src/main/java/com/lemarketjames/common/config/PlatformSettings.java) | auth-, core-, holdings-, buy-sell- and reporting-service (anything on `libs/common`) |
+| Business settings: `lmj.*` | [PlatformSettings.java](../libs/common/src/main/java/com/lemarketjames/common/config/PlatformSettings.java) | auth-, core-, holdings-, buy-sell-, reporting-, notification-, surveillance- and activity-service (anything on `libs/common`) |
 | Market simulation: `sim.*` | [MarketSimulationProperties.java](../services/market-service/src/main/java/com/lemarketjames/market/config/MarketSimulationProperties.java) | market-service |
 | Exchange trading hours | [MarketHours.java](../libs/market-client/src/main/java/com/lemarketjames/market/model/MarketHours.java) constants | market-service and anything using market-client |
 | Supported stock list | the `instruments` table (via migrations), served by `GET /api/v1/instruments` ([C6](C6-api.md#instruments-core-service)) | everyone; the frontend never keeps a copy |
@@ -23,6 +23,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 | Audit online retention window: `PlatformSettings.Audit` | Not yet. For the audit archival and audit view stories. An event older than the window counts as archived; its row is not changed ([C2](C2-audit.md)). |
 | Reports time zone: `PlatformSettings.Reports` (`lmj.reports.time-zone`) | reporting-service, through [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the zone a report's days, weeks, months and years are in. Orders are stored in UTC; `ReportCalendar` converts ([C6](C6-api.md#reports-reporting-service)). It is also the zone the overnight report time is in. |
 | Overnight report time: `PlatformSettings.Reports` | Not yet. For the scheduled-reports story. |
+| Large-order quantity: `PlatformSettings.Surveillance` (`lmj.surveillance.large-order-quantity`) | surveillance-service: an order placed for at least this many shares raises an alert for Trading Ops ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). The alerts endpoint returns the value in use. |
 
 ## Changing a value
 
@@ -42,7 +43,7 @@ file and nowhere else:
 | Defined in | [application.yml](../services/gateway-service/src/main/resources/application.yml) | [application-staff.yml](../services/gateway-service/src/main/resources/application-staff.yml), over `application.yml` |
 | Port | `server.port` there; Docker Compose publishes it on host port 8089, and the native Windows scripts start it on 8089 too | `server.port` there (8090), the same in Docker and natively |
 | Used by | the trading app (4200), through its dev proxy or Nginx | the staff app (4201), through its dev proxy or Nginx |
-| Service locations | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `CORE_SERVICE_URL`, `MARKET_SERVICE_URL`, `HOLDINGS_SERVICE_URL` | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `REPORTING_SERVICE_URL` |
+| Service locations | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `CORE_SERVICE_URL`, `MARKET_SERVICE_URL`, `HOLDINGS_SERVICE_URL`, `NOTIFICATION_SERVICE_URL`, `ACTIVITY_SERVICE_URL` | `AUTH_SERVICE_URL`, `BUY_SELL_SERVICE_URL`, `REPORTING_SERVICE_URL`, `SURVEILLANCE_SERVICE_URL` |
 | Browser origin allowed to call it directly (CORS) | `APP_CORS_ALLOWED_ORIGIN` | `STAFF_CORS_ALLOWED_ORIGIN` |
 
 - The defaults point at `localhost`, so a native stack needs none of these variables; Docker
@@ -97,4 +98,23 @@ Its key, its two values and the default are defined in
   Compose sets it to the container name and the broker's internal port, `kafka:29092`.
 - The broker itself, its ports and its listeners are defined in
   [docker-compose.yml](../docker-compose.yml). Port 9092 is the one published to the host.
-- The topic names are not settings: they are constants in `OrderEventForwarder`.
+- The topic names are not settings: they are constants in
+  [OrderEventTopicNames.java](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventTopicNames.java), shared by the publisher
+  and the consumers.
+
+The consuming side has the matching setting. Whether notification-, surveillance- and
+activity-service listen to those events
+([C6](C6-api.md#the-consumers-notification--surveillance--and-activity-service)) is one setting
+for all three, whose key and value are defined in
+[OrderEventConsumerSwitch.java](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventConsumerSwitch.java):
+
+| | Listening | Not listening (the default) |
+|---|---|---|
+| Set with | `LMJ_EVENTS_CONSUMER=kafka` | nothing |
+| Used in | Docker Compose and Jenkins ([docker-compose.yml](../docker-compose.yml)); `start-all.ps1 -Kafka` | unit tests, the native Windows scripts, any stack with no broker |
+| Needs a broker | yes, at `KAFKA_BOOTSTRAP_SERVERS` | no; none is contacted, and the endpoints answer with what is already stored |
+
+- Each consumer's broker address and its default are in its own `application.properties`, next to
+  the reason a new consumer group starts at the oldest record. Compose sets the address to
+  `kafka:29092`, as for the publisher.
+- A consumer's group name is a constant in its listener class; it is the service's name.

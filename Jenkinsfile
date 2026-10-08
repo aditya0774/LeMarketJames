@@ -1,5 +1,11 @@
 pipeline {
     agent any
+    options {
+        // One build of this job at a time; a second one waits in the queue. Every build starts
+        // the same Compose stack on the same host ports (5432, 9092, 4200, ...), so two at once
+        // collide, and together they take the memory SonarQube needs on this host.
+        disableConcurrentBuilds()
+    }
     tools {
         jdk 'JDK21'
         nodejs 'NodeJS'
@@ -223,6 +229,19 @@ pipeline {
                     }
                 }
 
+                // The three Kafka consumers. Their tests need no broker: each hands the record
+                // value to its listener directly and reads the result back from its endpoint.
+                // One lane for the three, one after the other: they are small, and three more
+                // lanes would each start a JVM alongside the eight already running here.
+                stage('Test Kafka consumer service units') {
+                    steps {
+                        sh '''
+                            set -eu
+                            mvn -B -pl services/notification-service,services/surveillance-service,services/activity-service test
+                        '''
+                    }
+                }
+
                 // Covers both gateways: the staff gateway is this module's "staff" profile.
                 stage('Test gateway service units') {
                     steps {
@@ -253,7 +272,8 @@ pipeline {
         }
 
         // Also where Kafka starts, once per run: the full-stack stage further down finds the same
-        // container already running. The unit-test lanes above need no broker (stub publisher).
+        // container already running, and that is where the three consumers attach to it. The
+        // unit-test lanes above need no broker (stub publisher, listeners switched off).
         stage('Run backend integration tests on shared PostgreSQL') {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
@@ -406,7 +426,7 @@ pipeline {
                     # Backend images build from the repo root so Maven can see the parent pom and libs/common.
                     # staff-gateway-service has no image of its own: Compose runs gateway-service's
                     # image a second time with the "staff" profile.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service; do
+                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
                         docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
                         docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
                     done
@@ -523,6 +543,9 @@ pipeline {
                     compose exec -T holdings-service id
                     compose exec -T buy-sell-service id
                     compose exec -T reporting-service id
+                    compose exec -T notification-service id
+                    compose exec -T surveillance-service id
+                    compose exec -T activity-service id
 
                     # Kafka has no HTTP health endpoint, so Compose's own health check is the test:
                     # it passes once the broker answers a client (see docker-compose.yml).
@@ -535,8 +558,8 @@ pipeline {
                     fi
 
                     # Use host-published ports; gateway-service maps host 8089 to container 8080,
-                    # and 8090 is the staff gateway.
-                    for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
+                    # and 8090 is the staff gateway. 8087, 8088 and 8091 are the Kafka consumers.
+                    for port in 8081 8082 8089 8083 8084 8085 8086 8087 8088 8091 8090; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         status="000"
@@ -552,7 +575,7 @@ pipeline {
                         if [ "$healthy" -ne 1 ]; then
                             echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
-                            compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service staff-gateway-service kafka
+                            compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service staff-gateway-service kafka
                             exit 1
                         fi
                     done
@@ -563,7 +586,38 @@ pipeline {
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
                     echo "Spring Boot container logs:"
-                    compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service staff-gateway-service
+                    compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service staff-gateway-service
+                '''
+            }
+        }
+
+        // The stack as Docker sees it, in the build log: every container with its image, state and
+        // ports. The cleanup at the end of the build removes them all, so this is where to look.
+        stage('Show running containers') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    docker ps
+
+                    if docker compose version >/dev/null 2>&1; then
+                        compose() { docker compose "$@"; }
+                    else
+                        compose() { docker-compose "$@"; }
+                    fi
+                    # Every service in the Compose file must be running, not only the ones the
+                    # smoke test probes over HTTP. Asked of Docker itself, so that it reads the
+                    # same with either Compose version.
+                    for service in $(compose config --services); do
+                        container=$(compose ps -q "$service")
+                        if [ -z "$container" ] || [ "$(docker inspect --format '{{.State.Running}}' "$container")" != "true" ]; then
+                            echo "Compose service $service is not running"
+                            compose ps
+                            exit 1
+                        fi
+                    done
                 '''
             }
         }
@@ -646,6 +700,29 @@ pipeline {
                 expression { env.CI_RUN_FULL_STACK == 'true' }
             }
             steps { sh 'bash scripts/verify-sell-order.sh' }
+        }
+
+        // Against the running stack: one large order is placed and filled, and each of the three
+        // Kafka consumers must show what it made of the order's events (a notification for the
+        // client, an alert for Trading Ops, the fill in market activity). Ends by printing the
+        // broker's consumer groups.
+        stage('Verify Kafka consumers') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-kafka-consumers.sh' }
+            post {
+                always {
+                    // What each consumer logged while handling the events, whether or not the check passed.
+                    sh '''
+                        if docker compose version >/dev/null 2>&1; then
+                            docker compose logs --tail=40 notification-service surveillance-service activity-service || true
+                        elif command -v docker-compose >/dev/null 2>&1; then
+                            docker-compose logs --tail=40 notification-service surveillance-service activity-service || true
+                        fi
+                    '''
+                }
+            }
         }
 
         // Against the running stack: nobody can change an audit record, and each refused attempt
@@ -807,9 +884,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service db kafka || true
+                    docker compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service db kafka || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service db kafka || true
+                    docker-compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service db kafka || true
                 fi
             '''
         }

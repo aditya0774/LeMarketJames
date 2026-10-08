@@ -7,6 +7,8 @@ server:
 services:
   # Only the staff gateway knows where reporting-service is; the trading gateway has no such key.
   reporting-url: ${REPORTING_SERVICE_URL:http://localhost:8086}
+  # Likewise surveillance-service: its alerts are for Trading Ops, so only this gateway routes to it.
+  surveillance-url: ${SURVEILLANCE_SERVICE_URL:http://localhost:8088}
 
 spring:
   application:
@@ -46,3 +48,8 @@ spring:
               uri: ${services.buy-sell-url}
               predicates:
                 - Path=/api/v1/orders/trades/search,/api/v1/orders/trades/clients,/api/v1/orders/{orderId}/timeline
+            # The Trading Ops alerts that surveillance-service raises from the order events on Kafka.
+            - id: staff-surveillance
+              uri: ${services.surveillance-url}
+              predicates:
+                - Path=/api/v1/surveillance/**

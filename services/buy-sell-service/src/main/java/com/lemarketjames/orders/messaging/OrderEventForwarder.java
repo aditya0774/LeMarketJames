@@ -1,5 +1,6 @@
 package com.lemarketjames.orders.messaging;
 
+import com.lemarketjames.common.events.OrderEventTopicNames;
 import com.lemarketjames.orders.events.OrderFilled;
 import com.lemarketjames.orders.events.OrderStatusChanged;
 import com.lemarketjames.orders.events.OrderSubmitted;
@@ -13,9 +14,10 @@ import org.springframework.transaction.event.TransactionalEventListener;
  */
 @Component
 public class OrderEventForwarder {
-    public static final String SUBMITTED_TOPIC = "lemarket.orders.submitted";
-    public static final String STATUS_CHANGED_TOPIC = "lemarket.orders.status-changed";
-    public static final String FILLED_TOPIC = "lemarket.orders.filled";
+    // The names themselves are in libs/common, where the consuming services read them too.
+    public static final String SUBMITTED_TOPIC = OrderEventTopicNames.SUBMITTED;
+    public static final String STATUS_CHANGED_TOPIC = OrderEventTopicNames.STATUS_CHANGED;
+    public static final String FILLED_TOPIC = OrderEventTopicNames.FILLED;
 
     private final OrderEventPublisher publisher;
 
