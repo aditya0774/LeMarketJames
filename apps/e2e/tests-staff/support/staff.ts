@@ -19,5 +19,8 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.locator('#username').fill(user.email);
   await page.locator('#password').fill(user.password);
-  await page.getByRole('button', { name: 'Log in' }).click();
+  await Promise.all([
+    page.waitForNavigation(),
+    page.getByRole('button', { name: 'Log in' }).click(),
+  ]);
 }
