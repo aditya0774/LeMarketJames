@@ -363,6 +363,63 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
 
+### GET /api/v1/reports/trades
+
+Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.
+
+**Parameters** (all optional except `periodType`):
+
+- `periodType` (required): `DAY`, `WEEK`, `MONTH`, or `YEAR`
+- `from` (optional): start date in `YYYY-MM-DD` format; defaults to 365 days ago
+- `to` (optional): end date in `YYYY-MM-DD` format; defaults to today
+- `timeZone` (optional): IANA time zone ID (e.g., `America/New_York`); defaults to the reports time zone
+
+Dates are interpreted in the specified time zone. The `from` day is included; the `to` day is included. Date validation: `from` may not be after `to`.
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "period": "2026-10-01",
+      "tradeCount": 5,
+      "buyCount": 3,
+      "sellCount": 2,
+      "totalValue": 1250.50
+    },
+    {
+      "period": "2026-10-02",
+      "tradeCount": 2,
+      "buyCount": 1,
+      "sellCount": 1,
+      "totalValue": 500.00
+    }
+  ],
+  "generatedAt": "2026-10-07T20:15:30.123Z"
+}
+```
+
+Period format depends on `periodType`:
+- `DAY`: `YYYY-MM-DD` (e.g., `2026-10-01`)
+- `WEEK`: `YYYY-Www` ISO 8601 week format (e.g., `2026-W40` for week 40)
+- `MONTH`: `YYYY-MM` (e.g., `2026-10`)
+- `YEAR`: `YYYY` (e.g., `2026`)
+
+Each period aggregates:
+- `tradeCount`: total number of filled orders (trades)
+- `buyCount`: number of BUY orders
+- `sellCount`: number of SELL orders
+- `totalValue`: sum of gross amounts (quantity × price), all orders
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | Missing `periodType`, invalid format, or `from` > `to` | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role | see access rules above |
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -390,7 +447,12 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 ## Internal events and the execution interface (buy-sell-service)
 
 - **Events.** [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) is published after every status transition. [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) is published in addition when an order fills, and carries the quote used (price, source, quote time) and the fill time. Both are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the transition commits.
-- **Outbound events (Kafka stub).** After the transition commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands both events to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java), keyed by order id; the topic names are defined in the forwarder. The only implementation today is [KafkaStubOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java), which logs the record and sends nothing, so events still do not reach other services.
+- **Outbound events (Kafka).** After the transition commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands both events to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java). With Kafka switched on, as in Docker Compose and Jenkins, [KafkaOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaOrderEventPublisher.java) publishes them to the broker, so other services can consume them:
+  - **Topics.** One for status changes and one for fills. Their names are defined in the forwarder and nowhere else; [OrderEventTopics](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventTopics.java) creates them on the broker when buy-sell-service starts.
+  - **Key.** The order id, as text. One order's events share a partition, so a consumer reads them in the order they happened.
+  - **Value.** The event record as plain JSON, UTF-8: the fields of `OrderStatusChanged` or `OrderFilled` under their own names, enums as their names, and times as ISO-8601 UTC text as in the REST API. There are no type headers, so a consumer needs none of this service's classes.
+  - **Delivery is best effort.** An order is committed before its events are sent. If the broker can't be reached the event is logged as an error and dropped; nothing replays it later (there is no outbox). A consumer that must not miss a fill should reconcile against the REST API or the `reporting_trades` view.
+  - **Without Kafka.** Where no broker runs (unit tests, the native Windows scripts), [KafkaStubOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java) logs each record and sends nothing. This is the default; the setting that switches is in [C5](C5-config.md#order-events).
 - **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a quote ([QuoteUsed](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/QuoteUsed.java)), reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
 - **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves; for reports it is the only source ([Reports](#reports-reporting-service)).
 
@@ -399,7 +461,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule and `GET /api/v1/reports/ping` are built; see [Reports](#reports-reporting-service), whose rules apply to the two reports below. These two are still planned. Their response shapes were agreed before those rules (`activity` lists single trades, and `instruments` needs prices that `reporting_trades` doesn't have), so the story that builds each one must first reconcile it with the rules and update this section:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades` are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.

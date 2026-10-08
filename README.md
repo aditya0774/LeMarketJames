@@ -29,6 +29,7 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
    - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
    - [Trading App and Staff App](#trading-app-and-staff-app)
    - [Market simulation settings](#market-simulation-settings)
+   - [Kafka (order events)](#kafka-order-events)
 5. [Testing](#testing)
    - [Backend Tests (Java/JUnit)](#backend-tests-javajunit)
    - [Frontend Tests (TypeScript/Vitest)](#frontend-tests-typescriptvitest)
@@ -114,17 +115,22 @@ graph LR
     SG -->|"trade search, order timeline"| BS["🔁 Buy-sell Service<br/>(port 8085)"]
     RE -->|"JDBC"| C
     BS -->|"JDBC"| C
+    BS -->|"order events"| K["📨 Kafka<br/>(port 9092)"]
 
     classDef frontend fill:#4A90E2,stroke:#2E5C8A,color:#fff
     classDef backend fill:#50C878,stroke:#2D7A4A,color:#fff
     classDef database fill:#FF6B6B,stroke:#A91D3A,color:#fff
+    classDef broker fill:#F5A623,stroke:#B9770E,color:#fff
 
     class A,S frontend
     class G,SG,AU,CO,RE,BS backend
     class C database
+    class K broker
 ```
 
 The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
+
+buy-sell-service publishes every order status change and fill to Kafka, where other services can consume them; see [Kafka (order events)](#kafka-order-events). Nothing consumes them yet.
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
@@ -169,6 +175,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
 | | JUnit 5 | Unit and integration testing | 5 |
 | **Database** | PostgreSQL | Relational database | 16 |
 | | Raw SQL | Schema definition (no migration tool) | SQL |
+| **Messaging** | Apache Kafka | Order events from buy-sell-service (single node, KRaft mode, no ZooKeeper) | 4.3 |
 | **Deployment** | Docker | Container runtime | Latest |
 | | Docker Compose | Multi-container orchestration | v2+ |
 
@@ -254,6 +261,8 @@ cd apps/frontend && npm install && npm start        # http://localhost:4200
 cd apps/frontend && npm run start:staff             # staff app, http://localhost:4201
 ```
 The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. The staff gateway is the same module with the `staff` profile, which sets its port (8090) and its routes. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
+
+No Kafka broker is needed for this method: buy-sell-service logs its order events instead of publishing them. To publish them to a broker you run yourself, see [Kafka (order events)](#kafka-order-events).
 
 **Confirm it's up** (services take about 30 seconds):
 ```bash
@@ -366,6 +375,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    - Holdings service: `http://localhost:8084` (direct access for debugging)
    - Reporting service: `http://localhost:8086` (direct access for debugging; only the staff gateway routes to it)
    - PostgreSQL database: `localhost:5432`
+   - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
    - A production (nginx) build of the frontend: `http://localhost:4200`
    - A production (nginx) build of the staff app: `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
 
@@ -385,6 +395,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    curl http://localhost:8086/actuator/health
    curl http://localhost:8090/actuator/health
    ```
+   Kafka has no HTTP health endpoint; `docker compose ps kafka` shows `healthy` once the broker answers.
 
 4. Open `http://localhost:4200` and log in or register.
 
@@ -517,6 +528,35 @@ market-service simulates every stock's price. Its settings (tick rate, seed, spe
 Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
 table — see [database/README.md](database/README.md#tuning-the-market).
 
+### Kafka (order events)
+
+buy-sell-service announces every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where any service can consume them. The topics, the record key (the order id) and the JSON format are in [C6](contracts/C6-api.md#internal-events-and-the-execution-interface-buy-sell-service); the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
+
+| Where | What publishes the events | Broker |
+|---|---|---|
+| Docker Compose, Jenkins | Kafka publisher | the `kafka` service in [docker-compose.yml](docker-compose.yml): one node, KRaft mode, no ZooKeeper |
+| Native Windows scripts, unit tests | Stub publisher: logs each event, sends nothing | none needed |
+
+**With Docker Compose** there is nothing to do: `docker compose up -d --build` starts the broker, waits until it is healthy and then starts buy-sell-service, which creates its two topics. The broker listens on `localhost:9092` for programs on your machine and on `kafka:29092` for other containers.
+
+To watch the events arrive, place an order in the app and read a topic (Ctrl+C to stop):
+```bash
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+    --topic lemarket.orders.status-changed --from-beginning
+```
+
+**Only the broker, with buy-sell-service run from your IDE or Maven** (needs Docker):
+```bash
+docker compose up -d kafka
+LMJ_EVENTS_PUBLISHER=kafka mvn -pl services/buy-sell-service spring-boot:run
+```
+In PowerShell, set the variable first: `$env:LMJ_EVENTS_PUBLISHER = 'kafka'`.
+
+**Native Windows, no Docker:** `start-all.ps1` starts no broker and the stub is used, which is enough for everything except consuming the events. If you run a broker yourself on `localhost:9092` (the [Apache Kafka download](https://kafka.apache.org/downloads) runs on Windows with the JDK you already have), start the stack with `.\scripts\windows\start-all.ps1 -Kafka`. Set `KAFKA_BOOTSTRAP_SERVERS` if the broker is somewhere else. Don't delete a topic on a Windows broker: Kafka can't rename the topic's folder there and shuts down; wipe its data folder and start again instead.
+
+The events are test data: the broker keeps them in its container, so `docker compose down` removes them. Publishing is best effort; an event that can't be sent is logged by buy-sell-service and not sent again.
+
 ---
 
 ## Testing
@@ -536,6 +576,12 @@ mvn -pl services/auth-service -am test
 ```
 
 Test results are generated in each module's `target/surefire-reports/` (e.g. `services/core-service/target/surefire-reports/`).
+
+None of these need a Kafka broker. `OrderEventKafkaIntegrationTest` is the one test that does: it fills an order and reads its events back from the topics. It is skipped unless the `kafka-test` profile is given, which is how Jenkins runs it. To run it yourself, start a broker on `localhost:9092` ([Kafka (order events)](#kafka-order-events)), then:
+
+```bash
+mvn -pl services/buy-sell-service -am "-Dspring.profiles.active=kafka-test" "-Dtest=OrderEventKafkaIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+```
 
 ### Frontend Tests (TypeScript/Vitest)
 
@@ -603,6 +649,7 @@ Once the application is running (via any of the three methods), you can access:
 | **Health Checks** | `GET http://localhost:{8089,8090,8081,8082,8083,8084,8086}/actuator/health` | Gateway / staff gateway / core / auth / market / holdings / reporting liveness (`UP`/`DOWN`) |
 | **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/ping` | reporting-service, through the staff gateway; `ANALYST` login only |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
+| **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service (Method 3 only; not HTTP) |
 
 **Frontend Routes:**
 - `/register` - User registration page with comprehensive form
@@ -664,6 +711,8 @@ If you see an error like "Address already in use" or "Port X is already allocate
   ```
 
 - **Port 5432 (PostgreSQL):** Choose a different port in `docker-compose.yml` or stop other PostgreSQL instances.
+
+- **Port 9092 (Kafka):** Stop the other broker, or publish the container on another host port in `docker-compose.yml`. Programs on the host are sent back to the address the broker advertises, so change `localhost:9092` in `KAFKA_ADVERTISED_LISTENERS` to the same port. Containers use `kafka:29092` and are not affected.
 
 ### Java Version Mismatch
 
@@ -762,11 +811,12 @@ Common causes:
 This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 
 1. Runs Maven tests (`mvn test`) and the Angular unit tests
-2. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
-3. Builds the Docker image
-4. Runs the containerized application
-5. Verifies the output
-6. Cleans up resources
+2. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below.
+3. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
+4. Builds the Docker image
+5. Runs the containerized application
+6. Verifies the output, including that a filled order's event is on its Kafka topic
+7. Cleans up resources
 
 The Jenkins agent requires:
 - Java 21
@@ -1031,6 +1081,8 @@ starting this version. New Docker databases apply them automatically. Execution 
 by default; for a disposable, always-open test stack set `SIM_RESPECT_MARKET_HOURS=false`
 in Compose. On native Windows set both `SIM_RESPECT_MARKET_HOURS=false` and
 `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`. See contracts C1, C5 and C6 for recovery and settings.
+It publishes its order events to Kafka when a broker is configured, and logs them otherwise; see
+[Kafka (order events)](#kafka-order-events).
 
 ### Reporting service
 
