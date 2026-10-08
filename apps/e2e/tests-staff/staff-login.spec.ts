@@ -19,17 +19,17 @@ test.describe('Staff login', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole('heading', { name: 'Staff Login' })).toBeVisible();
 
-    for (const address of ['/trading-ops', '/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
+    for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
       await page.goto(address);
       await expect(page, address).toHaveURL(/\/login$/);
     }
   });
 
-  test('Trading Ops lands on Trade search', async ({ page }) => {
+  test('Trading Ops lands on trade search', async ({ page }) => {
     await signIn(page, TRADING_OPS);
 
     await expect(page).toHaveURL(/\/trade-search$/);
-    await expect(page.getByRole('heading', { name: 'Trade search' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toBeVisible();
   });
 
   test('an Analyst lands on the Analyst dashboard and sees the report list', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Staff login', () => {
 
     await page.goto('/trade-search');
     await expectAccessDenied(page);
-    await expect(page.getByRole('heading', { name: 'Trade search' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
 
     // /trading-ops is no longer a page: it falls through to the start page, the Analyst's own dashboard.
     await page.goto('/trading-ops');
