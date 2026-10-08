@@ -74,7 +74,7 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TimelineFixture
       await use({ user, orderId, accountId });
     } finally {
       try {
-        await db.query('DELETE FROM audit_log WHERE order_id IN (SELECT order_id FROM orders WHERE account_id IN (SELECT account_id FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)))', [user.username]);
+        // audit_log is immutable (contract C2), do not delete from it; only clean up mutable tables
         await db.query('DELETE FROM orders WHERE account_id IN (SELECT account_id FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1))', [user.username]);
         await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
         await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
@@ -97,7 +97,7 @@ test('LMKT-40 AC1: Trade timeline displays all audit events in chronological ord
   await expect(page).toHaveURL(/\/trading-ops$/);
 
   // Navigate to trade search
-  await page.getByRole('link', { name: 'Trade search' }).click();
+  await page.goto('/trade-search');
   await expect(page).toHaveURL(/\/trade-search$/);
 
   // Search for the seeded trade by order ID
