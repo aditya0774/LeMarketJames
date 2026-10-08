@@ -2,19 +2,24 @@
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Stands in for a Kafka producer until a broker exists: it logs the record it would have sent and
- * sends nothing. Replace it with a KafkaTemplate-backed {@link OrderEventPublisher} to go live.
+ * Stands in for the Kafka producer where no broker is running: it logs the record it would have
+ * sent and sends nothing. It is the default, so unit tests and a stack started without Kafka need
+ * no broker; {@link KafkaOrderEventPublisher} replaces it when
+ * {@value OrderEventPublisher#PUBLISHER_PROPERTY} is {@value OrderEventPublisher#KAFKA}.
  */
 @Component
-<span class="fc" id="L12">public class KafkaStubOrderEventPublisher implements OrderEventPublisher {</span>
-<span class="fc" id="L13">    private static final Logger log = LoggerFactory.getLogger(KafkaStubOrderEventPublisher.class);</span>
+@ConditionalOnProperty(name = OrderEventPublisher.PUBLISHER_PROPERTY, havingValue = OrderEventPublisher.STUB,
+    matchIfMissing = true)
+<span class="fc" id="L17">public class KafkaStubOrderEventPublisher implements OrderEventPublisher {</span>
+<span class="fc" id="L18">    private static final Logger log = LoggerFactory.getLogger(KafkaStubOrderEventPublisher.class);</span>
 
     @Override
     public void publish(String topic, String key, Object event) {
-<span class="fc" id="L17">        log.info(&quot;Kafka stub: would publish topic={} key={} event={}&quot;, topic, key, event);</span>
-<span class="fc" id="L18">    }</span>
+<span class="fc" id="L22">        log.info(&quot;Kafka stub: would publish topic={} key={} event={}&quot;, topic, key, event);</span>
+<span class="fc" id="L23">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

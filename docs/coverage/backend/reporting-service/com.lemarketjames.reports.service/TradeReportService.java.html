@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TradeReportService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.service</a> &gt; <span class="el_source">TradeReportService.java</span></div><h1>TradeReportService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.service;
+
+import com.lemarketjames.reports.dto.PeriodAggregation;
+import com.lemarketjames.reports.dto.TradeReportRequest;
+import com.lemarketjames.reports.dto.TradeReportResponse;
+import com.lemarketjames.reports.entity.ReportingTrade;
+import com.lemarketjames.reports.period.ReportBucket;
+import com.lemarketjames.reports.period.ReportCalendar;
+import com.lemarketjames.reports.period.ReportPeriod;
+import com.lemarketjames.reports.repository.ReportingTradeRepository;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Business logic for trade aggregation reports.
+ * Groups settled trades by period (day, week, month, year) and aggregates counts and values.
+ */
+@Service
+public class TradeReportService {
+
+    private final ReportingTradeRepository tradeRepository;
+    private final ReportCalendar reportCalendar;
+    private final Clock clock;
+
+<span class="fc" id="L35">    public TradeReportService(ReportingTradeRepository tradeRepository, ReportCalendar reportCalendar, Clock clock) {</span>
+<span class="fc" id="L36">        this.tradeRepository = tradeRepository;</span>
+<span class="fc" id="L37">        this.reportCalendar = reportCalendar;</span>
+<span class="fc" id="L38">        this.clock = clock;</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Generate a trade aggregation report.
+     *
+     * @param request contains periodType (required), from/to (optional), timeZone (optional)
+     * @return response with aggregated data by period and generation timestamp
+     * @throws IllegalArgumentException if periodType is missing or invalid, or date range is invalid
+     */
+    public TradeReportResponse generateReport(TradeReportRequest request) {
+        // Validate periodType
+<span class="fc" id="L50">        String periodTypeStr = request.getPeriodType();</span>
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        if (periodTypeStr == null || periodTypeStr.isBlank()) {</span>
+<span class="fc" id="L52">            throw new IllegalArgumentException(&quot;periodType is required (DAILY, WEEKLY, MONTHLY, YEARLY)&quot;);</span>
+        }
+
+        ReportBucket periodType;
+        try {
+<span class="fc" id="L57">            periodType = ReportBucket.valueOf(periodTypeStr.toUpperCase());</span>
+<span class="fc" id="L58">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L59">            throw new IllegalArgumentException(&quot;Invalid periodType: &quot; + periodTypeStr + </span>
+                    &quot;. Valid values: DAILY, WEEKLY, MONTHLY, YEARLY&quot;);
+<span class="fc" id="L61">        }</span>
+
+        // Apply defaults
+<span class="fc" id="L64">        LocalDate from = request.getFrom();</span>
+<span class="fc" id="L65">        LocalDate to = request.getTo();</span>
+<span class="fc" id="L66">        String timeZoneStr = request.getTimeZone();</span>
+
+<span class="pc bpc" id="L68" title="2 of 4 branches missed.">        if (from == null || to == null) {</span>
+<span class="nc" id="L69">            LocalDate today = LocalDate.now(reportCalendar.zone());</span>
+<span class="nc" id="L70">            from = today.minusDays(365);</span>
+<span class="nc" id="L71">            to = today;</span>
+        }
+
+        // Get query time zone (report zone, not for display)
+<span class="fc" id="L75">        ZoneId queryZone = reportCalendar.zone();</span>
+
+        // Query trades within the date range
+<span class="fc" id="L78">        ReportPeriod queryRange = reportCalendar.between(from, to);</span>
+<span class="fc" id="L79">        List&lt;ReportingTrade&gt; trades = tradeRepository.findByFilledAtBetween(queryRange.start(), queryRange.end());</span>
+
+        // Aggregate trades by period
+<span class="fc" id="L82">        Map&lt;String, PeriodAggregation&gt; aggregations = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (ReportingTrade trade : trades) {</span>
+            // Determine which period this trade belongs to
+<span class="fc" id="L86">            LocalDate tradeLocalDate = trade.getFilledAt().atZone(queryZone).toLocalDate();</span>
+<span class="fc" id="L87">            LocalDate bucketFirstDay = calculateBucketFirstDay(tradeLocalDate, periodType);</span>
+            
+            // Format period key
+<span class="fc" id="L90">            String periodKey = formatPeriod(bucketFirstDay, periodType);</span>
+
+            // Get or create aggregation for this period
+<span class="fc" id="L93">            aggregations.computeIfAbsent(periodKey, key -&gt; </span>
+<span class="fc" id="L94">                new PeriodAggregation(key, 0, 0, 0, BigDecimal.ZERO)</span>
+            );
+
+            // Update aggregation
+<span class="fc" id="L98">            PeriodAggregation agg = aggregations.get(periodKey);</span>
+<span class="fc" id="L99">            agg.setTradeCount(agg.getTradeCount() + 1);</span>
+            
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (&quot;BUY&quot;.equals(trade.getSide())) {</span>
+<span class="fc" id="L102">                agg.setBuyCount(agg.getBuyCount() + 1);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">            } else if (&quot;SELL&quot;.equals(trade.getSide())) {</span>
+<span class="fc" id="L104">                agg.setSellCount(agg.getSellCount() + 1);</span>
+            }
+
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            BigDecimal tradeValue = trade.getGrossAmount() != null ? trade.getGrossAmount() : BigDecimal.ZERO;</span>
+<span class="fc" id="L108">            agg.setTotalValue(agg.getTotalValue().add(tradeValue));</span>
+<span class="fc" id="L109">        }</span>
+
+        // Build response
+<span class="fc" id="L112">        List&lt;PeriodAggregation&gt; data = new ArrayList&lt;&gt;(aggregations.values());</span>
+<span class="fc" id="L113">        LocalDateTime generatedAt = LocalDateTime.now(clock);</span>
+
+<span class="fc" id="L115">        return new TradeReportResponse(data, generatedAt);</span>
+    }
+
+    /**
+     * Calculate the first day of the bucket that the given day falls in.
+     * Mirrors ReportBucket logic without accessing private methods.
+     */
+    private LocalDate calculateBucketFirstDay(LocalDate day, ReportBucket bucket) {
+<span class="fc bfc" id="L123" title="All 4 branches covered.">        return switch (bucket) {</span>
+<span class="fc" id="L124">            case DAY -&gt; day;</span>
+<span class="fc" id="L125">            case WEEK -&gt; day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));</span>
+<span class="fc" id="L126">            case MONTH -&gt; day.withDayOfMonth(1);</span>
+<span class="fc" id="L127">            case YEAR -&gt; day.withDayOfYear(1);</span>
+        };
+    }
+
+    /**
+     * Format a period's first day according to the bucket type.
+     *
+     * @param firstDay the first day of the period in the report time zone
+     * @param bucket   the period type (DAY, WEEK, MONTH, YEAR)
+     * @return formatted period string (YYYY-MM-DD, YYYY-Www, YYYY-MM, YYYY)
+     */
+    private String formatPeriod(LocalDate firstDay, ReportBucket bucket) {
+<span class="fc bfc" id="L139" title="All 4 branches covered.">        return switch (bucket) {</span>
+<span class="fc" id="L140">            case DAY -&gt; firstDay.toString();</span>
+            case WEEK -&gt; {
+<span class="fc" id="L142">                int week = firstDay.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);</span>
+<span class="fc" id="L143">                yield String.format(&quot;%d-W%02d&quot;, firstDay.getYear(), week);</span>
+            }
+<span class="fc" id="L145">            case MONTH -&gt; String.format(&quot;%d-%02d&quot;, firstDay.getYear(), firstDay.getMonthValue());</span>
+<span class="fc" id="L146">            case YEAR -&gt; String.valueOf(firstDay.getYear());</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
