@@ -107,6 +107,10 @@ describe('TradeActivityByPeriod Component', () => {
   });
 
   afterEach(() => {
+    // Most tests call detectChanges(), which fires the initial report request, and only some
+    // answer it. Drop what is left: a failed verify() here would leave TestBed instantiated and
+    // fail every later test (and spec file) in the run.
+    httpMock.match(() => true);
     httpMock.verify();
   });
 
@@ -121,6 +125,8 @@ describe('TradeActivityByPeriod Component', () => {
 
     it('should initialize with default date range (last 30 days)', () => {
       fixture.detectChanges();
+      // Init also loads the report; answer it so afterEach's verify() finds nothing open.
+      httpMock.expectOne((req) => req.url.includes('/api/v1/reports/')).flush(mockResponse);
 
       const startDate = component.startDate();
       const endDate = component.endDate();

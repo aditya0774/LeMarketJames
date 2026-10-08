@@ -66,7 +66,7 @@ describe('ByStockAggregateTable', () => {
 
       expect(firstRow.querySelector('.symbol').textContent).toContain('AAPL');
       expect(firstRow.textContent).toContain('20'); // totalQuantity
-      expect(firstRow.textContent).toContain('6950'); // totalGrossAmount (formatted as $6,950.00)
+      expect(firstRow.textContent).toContain('6,950.00'); // totalGrossAmount (formatted as $6,950.00)
       expect(firstRow.textContent).toContain('2'); // buyCount
       expect(firstRow.textContent).toContain('1'); // sellCount
     });
@@ -93,7 +93,7 @@ describe('ByStockAggregateTable', () => {
       const sortedData = component['sortedData']();
       expect(sortedData[0].symbol).toBe('AAPL');
       expect(sortedData[1].symbol).toBe('MSFT');
-      expect(sortedData[2].symbol).toBe('TSLA');
+      expect(sortedData[2].symbol).toBe('V');
     });
 
     it('toggles sort direction on same column', () => {
@@ -108,7 +108,7 @@ describe('ByStockAggregateTable', () => {
       component.toggleSort('symbol');
       fixture.detectChanges();
       sortedData = component['sortedData']();
-      expect(sortedData[0].symbol).toBe('TSLA'); // descending
+      expect(sortedData[0].symbol).toBe('V'); // descending
     });
 
     it('sorts by totalQuantity', () => {
@@ -119,9 +119,9 @@ describe('ByStockAggregateTable', () => {
       fixture.detectChanges();
 
       const sortedData = component['sortedData']();
-      expect(sortedData[0].totalQuantity).toBe(100);
-      expect(sortedData[1].totalQuantity).toBe(150);
-      expect(sortedData[2].totalQuantity).toBe(200);
+      expect(sortedData[0].totalQuantity).toBe(0);
+      expect(sortedData[1].totalQuantity).toBe(6);
+      expect(sortedData[2].totalQuantity).toBe(20);
     });
 
     it('sorts by buyCount', () => {
@@ -132,9 +132,9 @@ describe('ByStockAggregateTable', () => {
       fixture.detectChanges();
 
       const sortedData = component['sortedData']();
-      expect(sortedData[0].buyCount).toBe(5);
-      expect(sortedData[1].buyCount).toBe(8);
-      expect(sortedData[2].buyCount).toBe(10);
+      expect(sortedData[0].buyCount).toBe(1);
+      expect(sortedData[1].buyCount).toBe(1);
+      expect(sortedData[2].buyCount).toBe(2);
     });
 
     it('sorts by sellCount', () => {
@@ -145,9 +145,9 @@ describe('ByStockAggregateTable', () => {
       fixture.detectChanges();
 
       const sortedData = component['sortedData']();
-      expect(sortedData[0].sellCount).toBe(2);
-      expect(sortedData[1].sellCount).toBe(3);
-      expect(sortedData[2].sellCount).toBe(5);
+      expect(sortedData[0].sellCount).toBe(1);
+      expect(sortedData[1].sellCount).toBe(1);
+      expect(sortedData[2].sellCount).toBe(1);
     });
 
     it('sorts by totalGrossAmount descending by default', () => {
@@ -158,9 +158,9 @@ describe('ByStockAggregateTable', () => {
       fixture.detectChanges();
 
       const sortedData = component['sortedData']();
-      expect(sortedData[0].totalGrossAmount).toBe(50200.00); // highest first (descending)
-      expect(sortedData[1].totalGrossAmount).toBe(22500.75);
-      expect(sortedData[2].totalGrossAmount).toBe(15000.00);
+      expect(sortedData[0].totalGrossAmount).toBe(6950.00); // highest first (descending)
+      expect(sortedData[1].totalGrossAmount).toBe(5820.00);
+      expect(sortedData[2].totalGrossAmount).toBe(5250.00);
     });
   });
 

@@ -62,6 +62,8 @@ describe('ActivityByStock Component', () => {
       thirtyDaysAgo.setDate(today.getDate() - 30);
 
       fixture.detectChanges(); // triggers ngOnInit
+      // Init also loads the report; answer it so afterEach's verify() finds nothing open.
+      httpTestingController.expectOne(req => req.url.includes('/api/v1/reports/trades-by-stock')).flush({ success: true, data: [] });
 
       const startDate = component.dateRangeForm.get('startDate')?.value;
       const endDate = component.dateRangeForm.get('endDate')?.value;
