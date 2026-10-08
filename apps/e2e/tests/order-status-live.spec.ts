@@ -4,6 +4,30 @@ import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 const OPS = { email: 'ops@seed.lemarket.com', password: 'Pass123!' };
 
+async function rejectOpenOrder(
+  client: import('@playwright/test').APIRequestContext,
+  ops: import('@playwright/test').APIRequestContext,
+  accountId: number,
+  instrumentId: number,
+): Promise<number> {
+  // The execution worker can occasionally finalize an order before operations acts on it.
+  // Retry with a fresh order until one is rejected through the operations endpoint.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const order = await placeOrder(client, accountId, instrumentId, 'BUY');
+    const reject = await ops.post(`/api/v1/orders/${order.orderId}/reject`, {
+      params: { reason: 'REJECTED_BY_OPERATIONS' },
+      data: {},
+    });
+    if (reject.status() === 200) {
+      return order.orderId;
+    }
+    if (reject.status() !== 409) {
+      expect(reject.status(), await reject.text()).toBe(200);
+    }
+  }
+  throw new Error('Could not reject an open order before execution finalized it.');
+}
+
 /**
  * LMKT-77: dashboard uses the real order-status stream. A backend status change must reach
  * the client view quickly enough to feel live.
@@ -23,26 +47,22 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
 
   const accountId = await loginViaApi(request, user);
   const instrumentId = await instrumentIdOf(request, 'AAPL');
-  const order = await placeOrder(request, accountId, instrumentId, 'BUY');
 
   const ops = await playwright.request.newContext({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
   });
+  let orderId = 0;
   try {
     const login = await ops.post('/api/auth/login', {
       data: { username: OPS.email, password: OPS.password },
     });
     expect(login.status(), await login.text()).toBe(200);
 
-    const reject = await ops.post(`/api/v1/orders/${order.orderId}/reject`, {
-      params: { reason: 'REJECTED_BY_OPERATIONS' },
-      data: {},
-    });
-    expect(reject.status(), await reject.text()).toBe(200);
+    orderId = await rejectOpenOrder(request, ops, accountId, instrumentId);
   } finally {
     await ops.dispose();
   }
 
-  const statusPill = page.locator(`tr[data-order-id="${order.orderId}"] td:nth-child(5) .pill`);
+  const statusPill = page.locator(`tr[data-order-id="${orderId}"] td:nth-child(5) .pill`);
   await expect(statusPill).toContainText('Rejected', { timeout: 2000 });
 });
