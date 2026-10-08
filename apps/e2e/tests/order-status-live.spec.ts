@@ -4,6 +4,20 @@ import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 const OPS = { email: 'ops@seed.lemarket.com', password: 'Pass123!' };
 
+async function registerFreshUser(request: import('@playwright/test').APIRequestContext) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const user = newUser('liveord');
+    try {
+      await registerViaApi(request, user);
+      return user;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 async function rejectOpenOrder(
   client: import('@playwright/test').APIRequestContext,
   ops: import('@playwright/test').APIRequestContext,
@@ -37,13 +51,13 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
   request,
   playwright,
 }) => {
+  const user = await registerFreshUser(request);
+
   const streamResponsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return url.pathname.endsWith('/api/v1/orders/stream') && response.status() === 200;
   });
 
-  const user = newUser('liveord');
-  await registerViaApi(request, user);
   await loginViaUi(page, user);
   await expect(page).toHaveURL(/\/dashboard$/);
 

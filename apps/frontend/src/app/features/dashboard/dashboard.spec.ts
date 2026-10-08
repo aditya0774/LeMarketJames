@@ -138,7 +138,7 @@ describe('Dashboard', () => {
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
-    expect(rows.length).toBe(TEST_INSTRUMENTS.length);
+    expect(Array.from(rows)).toHaveLength(TEST_INSTRUMENTS.length);
     const tsla = Array.from(rows).find((r) => r.textContent?.includes('TSLA'))!;
     expect(tsla.textContent).toContain('$248.90');
     expect(tsla.textContent).toContain('▼');
@@ -174,7 +174,7 @@ describe('Dashboard', () => {
     await fixture.whenStable();
 
     const rows = fixture.nativeElement.querySelectorAll('app-orders-panel tbody tr');
-    expect(rows.length).toBe(1);
+    expect(Array.from(rows)).toHaveLength(1);
     expect(rows[0].textContent).toContain('Rejected');
   });
 
