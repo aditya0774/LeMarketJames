@@ -37,10 +37,18 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
   request,
   playwright,
 }) => {
+  const streamResponsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/api/v1/orders/stream') && response.status() === 200;
+  });
+
   const user = newUser('liveord');
   await registerViaApi(request, user);
   await loginViaUi(page, user);
   await expect(page).toHaveURL(/\/dashboard$/);
+
+  const streamResponse = await streamResponsePromise;
+  expect(streamResponse.headers()['content-type']).toContain('text/event-stream');
 
   // Wait for the SSE channel to finish connecting before triggering any status changes.
   await expect(page.locator('app-orders-panel .live-badge')).toHaveText('Live');
