@@ -38,7 +38,8 @@ class OrderEventPublisherSelectionTest {
                 assertThat(started).getBean(OrderEventPublisher.class).isInstanceOf(KafkaOrderEventPublisher.class);
                 var topics = started.getBeansOfType(NewTopic.class).values();
                 assertThat(topics.stream().map(NewTopic::name).collect(Collectors.toSet()))
-                    .isEqualTo(Set.of(OrderEventForwarder.STATUS_CHANGED_TOPIC, OrderEventForwarder.FILLED_TOPIC));
+                    .isEqualTo(Set.of(OrderEventForwarder.SUBMITTED_TOPIC, OrderEventForwarder.STATUS_CHANGED_TOPIC,
+                        OrderEventForwarder.FILLED_TOPIC));
                 assertThat(topics).allSatisfy(topic -> {
                     assertThat(topic.numPartitions()).isEqualTo(OrderEventTopics.PARTITIONS);
                     assertThat(topic.replicationFactor()).isEqualTo((short) OrderEventTopics.REPLICAS);

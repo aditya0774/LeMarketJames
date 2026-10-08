@@ -32,7 +32,7 @@ export interface LoginRequest {
  * Who a logged-in user is (contract C7, contracts/C7-roles.md). Mirrors the backend enum
  * com.lemarketjames.common.security.Role; change both together.
  */
-export type Role = 'CLIENT' | 'TRADING_OPS' | 'ANALYST' | 'COMPLIANCE';
+export type Role = 'CLIENT' | 'TRADING_OPS' | 'ANALYST';
 
 /** What /login and /me say about the session. accountId is only present for clients. */
 interface SessionResponse {

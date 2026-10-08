@@ -4,9 +4,12 @@ import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.audit.SubmissionAuditEvent;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.events.OrderSubmitted;
 import com.lemarketjames.orders.repository.OrderRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,13 +24,18 @@ public class SubmissionRecorder {
 
     private final OrderRepository orders;
     private final AuditRecorder audit;
+    private final ApplicationEventPublisher events;
 
-    public SubmissionRecorder(OrderRepository orders, AuditRecorder audit) {
+    public SubmissionRecorder(OrderRepository orders, AuditRecorder audit, ApplicationEventPublisher events) {
         this.orders = orders;
         this.audit = audit;
+        this.events = events;
     }
 
-    /** Saves an order that passed its checks: SUBMITTED, one RULE_CHECKED per rule, then VALIDATED. */
+    /**
+     * Saves an order that passed its checks: SUBMITTED, one RULE_CHECKED per rule, then VALIDATED.
+     * The new order is also announced with an {@link OrderSubmitted} (contract C6).
+     */
     @Transactional
     public Order accept(Order order, SubmissionTrail trail) {
         Order saved = orders.save(order);
@@ -35,6 +43,10 @@ public class SubmissionRecorder {
         recordSubmittedAndChecks(trail, orderId);
         record(trail, AuditEventType.VALIDATED, null, orderId, Map.of("checks",
             trail.checks().stream().map(check -> check.rule().name()).toList()));
+        // Published inside this transaction, so listeners that wait for the commit never hear of an
+        // order whose save was rolled back.
+        events.publishEvent(new OrderSubmitted(orderId, saved.getAccountId(), saved.getInstrumentId(),
+            saved.getOrderType(), saved.getQuantity(), saved.getPricePerUnit(), Instant.now()));
         return saved;
     }
 

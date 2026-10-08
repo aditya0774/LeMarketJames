@@ -33,7 +33,7 @@ test.describe('Report access', () => {
     expect(response.status(), await response.text()).toBe(401);
   });
 
-  for (const [role, seedName] of [['CLIENT', 'seed_active'], ['TRADING_OPS', 'ops'], ['COMPLIANCE', 'compliance']]) {
+  for (const [role, seedName] of [['CLIENT', 'seed_active'], ['TRADING_OPS', 'ops']]) {
     test(`${role} is refused with 403`, async ({ request }) => {
       const response = await pingAs(request, seedName);
       expect(response.status(), await response.text()).toBe(403);

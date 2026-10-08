@@ -21,6 +21,11 @@ public class OrderEventTopics {
     static final int REPLICAS = 1;
 
     @Bean
+    NewTopic orderSubmittedTopic() {
+        return topic(OrderEventForwarder.SUBMITTED_TOPIC);
+    }
+
+    @Bean
     NewTopic orderStatusChangedTopic() {
         return topic(OrderEventForwarder.STATUS_CHANGED_TOPIC);
     }
