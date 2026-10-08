@@ -47,7 +47,7 @@ export class Login {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
       // Trading app is customer-only; staff accounts must use the staff app.
       if (this.auth.hasRole('TRADING_OPS')) {
-        this.auth.logout();
+        await this.auth.logout().catch(() => undefined);
         this.errorMessage.set('Please use the staff app for operations.');
         return;
       }

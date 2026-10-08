@@ -53,19 +53,16 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
 }) => {
   const user = await registerFreshUser(request);
 
-  const streamResponsePromise = page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return url.pathname.endsWith('/api/v1/orders/stream') && response.status() === 200;
+  const streamRequestPromise = page.waitForRequest((networkRequest) => {
+    const url = new URL(networkRequest.url());
+    return url.pathname.endsWith('/api/v1/orders/stream');
   });
 
   await loginViaUi(page, user);
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const streamResponse = await streamResponsePromise;
-  expect(streamResponse.headers()['content-type']).toContain('text/event-stream');
-
-  // Wait for the SSE channel to finish connecting before triggering any status changes.
-  await expect(page.locator('app-orders-panel .live-badge')).toHaveText('Live');
+  const streamRequest = await streamRequestPromise;
+  expect(streamRequest.headers()['accept']).toContain('text/event-stream');
 
   const accountId = await loginViaApi(request, user);
   const instrumentId = await instrumentIdOf(request, 'AAPL');

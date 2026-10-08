@@ -1,4 +1,5 @@
 import { APIRequestContext, Page, expect } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
 export interface TestUser {
   username: string;
@@ -12,7 +13,7 @@ export interface TestUser {
  * .com as the registration form requires.
  */
 export function newUser(prefix = 'e2e'): TestUser {
-  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
   const username = `${prefix}${suffix}`.slice(0, 20);
   return { username, email: `${username}@example.com`, password: 'Pass123!' };
 }
