@@ -4,7 +4,7 @@
   <p>Find completed trades to investigate a client enquiry.</p>
 </header>
 <section class="search-panel" aria-label="Search trades">
-  <form (ngSubmit)="search()" novalidate>
+  <form method="post" (ngSubmit)="search()" novalidate>
     <fieldset>
       <legend>Search by</legend>
       <label><input type="radio" name="mode" value="order" [(ngModel)]="mode" (ngModelChange)="clearResults()"> Order search</label>

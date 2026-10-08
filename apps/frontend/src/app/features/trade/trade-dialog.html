@@ -20,7 +20,7 @@
         </div>
       }
       <div class="order-grid">
-        <form class="order-form-card" (submit)="$event.preventDefault(); submit()">
+        <form method="post" class="order-form-card" (submit)="$event.preventDefault(); submit()">
           <div class="type-toggle" role="group" aria-label="Order side">
             <button type="button" class="opt" [class.buy-active]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">Buy</button>
             <button type="button" class="opt" [class.sell-active]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">Sell</button>

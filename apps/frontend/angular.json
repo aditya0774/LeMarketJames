@@ -132,7 +132,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/staff/tsconfig.spec.json"
+            "tsConfig": "projects/staff/tsconfig.spec.json",
+            "coverageReporters": ["lcovonly", "text-summary"]
           }
         }
       }

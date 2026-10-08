@@ -43,6 +43,7 @@ A full-stack web application built with **Spring Boot 3** (Java 21) backend, **A
    - [Quote Prices Are Not Changing](#quote-prices-are-not-changing)
    - [Container Exits Immediately](#container-exits-immediately-docker)
 8. [CI/CD Pipeline](#cicd-pipeline)
+   - [SonarQube](#sonarqube)
 9. [Javadocs](#javadocs)
 10. [ER Diagram](#er-diagram)
 11. [UML Diagrams](#uml-diagrams)
@@ -779,18 +780,54 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 1. Runs Maven tests (`mvn test`) and the Angular unit tests
 2. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below.
 3. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
-4. Builds the Docker image
-5. Runs the containerized application
-6. Verifies the output, including that a filled order's event is on its Kafka topic
-7. Cleans up resources
+4. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube))
+5. Builds the Docker image
+6. Runs the containerized application
+7. Verifies the output, including that a filled order's event is on its Kafka topic
+8. Cleans up resources
 
 The Jenkins agent requires:
 - Java 21
 - Maven 3.9.9+
 - Docker daemon
 - Permission to run Docker commands
+- The SonarQube set-up in [SonarQube](#sonarqube)
 
 To set up the pipeline, create a **Pipeline job** in Jenkins and point it to this repository with "Pipeline script from SCM" selected.
+
+### SonarQube
+
+After the coverage stage the pipeline analyses the whole repo as one SonarQube project (**SonarQube Analysis**) and waits for the result (**Quality Gate**); a failed gate stops the build there. The project settings are in [sonar-project.properties](sonar-project.properties). The project key and name, `LeMarketJames-Project`, were assigned by the instructor and must stay as they are.
+
+Jenkins needs this once. The names are the ones the Jenkinsfile uses:
+
+| Where in Jenkins | What |
+|---|---|
+| Plugins | **SonarQube Scanner** |
+| Credentials | A **Secret text** credential with ID `sonarqube-token`, holding a SonarQube analysis token for the project |
+| Manage Jenkins → System → SonarQube servers | A server named `SonarQube`: the server URL and the credential above |
+| Manage Jenkins → Tools → SonarQube Scanner installations | A scanner named `SonarScanner` (version 8.1) |
+
+The SonarQube server needs this once:
+
+- The course quality profiles (`texoma-*`, from the course repository's SonarQube Configuration folder) for CSS, Docker, HTML, Java, JavaScript, Python and TypeScript, restored and assigned to the project. Other languages use the built-in "Sonar way".
+- The `Classroom Quality Gate` from the course set-up guide, assigned to the project.
+- A webhook named `Jenkins` that posts to `<jenkins-url>/sonarqube-webhook/`. The Quality Gate stage waits for it, so without it (or without the Jenkins plugin above, which receives it) that stage times out after 5 minutes.
+
+Never put a SonarQube token or password in the repo, the Jenkinsfile or these docs.
+
+**Coverage** reaches SonarQube as one file, written by [scripts/coverage/build-sonar-coverage.mjs](scripts/coverage/build-sonar-coverage.mjs) from every module's JaCoCo report and both Angular apps' lcov reports. The reports are not given to SonarQube directly because they name files by partial paths, and several files share one: five services have a `config/SecurityConfig.java`, and the two Angular apps share paths such as `src/app/app.ts`. SonarQube would credit the coverage to whichever file it found first.
+
+**Skipped tests** count against the gate (more than 5 fails it). The integration tests skip themselves without PostgreSQL and Kafka, so the analysis runs after the stage that runs them for real.
+
+To analyse from a workstation you need the [SonarScanner CLI](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner) and a token for the project. Run the tests with coverage as in [Code Coverage](#locally) (`ng test` without a project name covers both apps), then from the repo root:
+
+```bash
+node scripts/coverage/build-sonar-coverage.mjs
+SONAR_HOST_URL=http://<sonarqube-host>:9000 SONAR_TOKEN=<token> sonar-scanner
+```
+
+That publishes an analysis to the shared project. Without the integration tests it reports 17 skipped tests and fails the gate on that condition alone; to avoid that, first run the `mvn` command from the Jenkinsfile's integration-test stage against a local PostgreSQL (leave out `kafka-test` if no broker is running).
 
 ## Javadocs
 
