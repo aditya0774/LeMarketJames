@@ -313,7 +313,8 @@ Network errors and unknown failures retain the intent for retry without repricin
 outcome becomes FILLED or REJECTED; a subsequent worker sees the final status and does nothing.
 
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
-The dashboard polls while orders are open and refreshes holdings/history when statuses change.
+The dashboard opens `GET /api/v1/orders/stream` for live order-status events and refreshes
+orders, holdings and history whenever a status-change event arrives.
 Holdings reads order history and buying-power data from buy-sell, never core.
 
 ## Holdings, balance, profile, trades (holdings-service)

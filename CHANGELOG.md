@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- LMKT-77: Switch dashboard live order-status updates to the real `GET /api/v1/orders/stream`
+  SSE channel (`order-status-changed` events) and add an end-to-end test that triggers a
+  backend status transition and asserts the dashboard reflects it within 2 seconds.
 - LMKT-137: Add a single-node Kafka broker (KRaft, port 9092) to Docker Compose and Jenkins.
   `buy-sell-service` publishes `OrderStatusChanged` and `OrderFilled` to it as JSON, keyed by
   order id, when `LMJ_EVENTS_PUBLISHER=kafka` (set in Compose); without it the stub publisher
