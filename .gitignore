@@ -33,6 +33,3 @@ error.txt
 
 # SonarScanner working folder
 .scannerwork/
-
-# Playwright container npm cache (Jenkins)
-.npm-e2e/
