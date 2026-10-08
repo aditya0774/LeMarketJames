@@ -98,35 +98,6 @@ pipeline {
             }
         }
 
-        stage('Test and build Angular') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                dir('apps/frontend') {
-                    // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
-                    // old folder is removed first so a stale report is never published.
-                    // The project is named because a bare `ng test` runs every project in the
-                    // workspace, and the staff app has its own stage below.
-                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- lemarket-ui --watch=false --coverage && npm run build'
-                }
-            }
-        }
-
-        // The staff app is a second project in the same Angular workspace (apps/frontend/projects/staff),
-        // so it reuses the node_modules the stage above installed.
-        stage('Test and build staff Angular app') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                dir('apps/frontend') {
-                    // --coverage writes coverage/staff/lcov.info, which the SonarQube stage reads.
-                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
-                }
-            }
-        }
-
         // Disposable testing database: remove -v here and in post cleanup before keeping real data.
         stage('Clean up stale volumes') {
             steps {
@@ -144,6 +115,41 @@ pipeline {
             }
         }
 
+        // Frontend tests, backend tests and the Docker image builds share nothing, so they run side
+        // by side. The integration tests (inside Backend) start the db and Kafka containers that the
+        // full-stack stages below reuse.
+        stage('Build and test (parallel)') {
+            parallel {
+            stage('Frontend') {
+                when {
+                    expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                }
+                steps {
+                    dir('apps/frontend') {
+                        // One install: the staff app is a second project in the same workspace and
+                        // reuses node_modules. The old coverage folder is removed first so a stale
+                        // report is never published.
+                        sh 'rm -rf coverage && npm ci --no-audit --no-fund'
+                        script {
+                            // The two apps write to separate folders (coverage/lemarket-ui, coverage/staff,
+                            // separate dist folders), so they run side by side.
+                            parallel(
+                                'trading app': {
+                                    // The project is named because a bare `ng test` runs every project
+                                    // in the workspace, and the staff app has its own lane.
+                                    sh 'npm test -- lemarket-ui --watch=false --coverage && npm run build'
+                                },
+                                'staff app': {
+                                    // --coverage writes coverage/staff/lcov.info, which SonarQube reads.
+                                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            stage('Backend') {
+                stages {
         stage('Prepare backend test dependencies') {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
@@ -164,72 +170,22 @@ pipeline {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
             }
-            parallel {
-                stage('Test libs') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl libs/common,libs/market-client test
-                        '''
-                    }
-                }
-
-                stage('Test core service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/core-service test
-                        '''
-                    }
-                }
-
-                stage('Test buy-sell service units') {
-                    steps { sh 'mvn -B -pl services/buy-sell-service test' }
-                }
-
-                stage('Test auth service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/auth-service test
-                        '''
-                    }
-                }
-
-                stage('Test market service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/market-service test
-                        '''
-                    }
-                }
-
-                stage('Test holdings service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/holdings-service test
-                        '''
-                    }
-                }
-
-                stage('Test reporting service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/reporting-service test
-                        '''
-                    }
-                }
-
-                // Covers both gateways: the staff gateway is this module's "staff" profile.
-                stage('Test gateway service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/gateway-service test
-                        '''
+            steps {
+                script {
+                    // One lane per module, each its own Maven run. The staff gateway is gateway-service's
+                    // "staff" profile, so the gateway lane covers both gateways.
+                    def lanes = [
+                        'libs'             : 'libs/common,libs/market-client',
+                        'core service'     : 'services/core-service',
+                        'buy-sell service' : 'services/buy-sell-service',
+                        'auth service'     : 'services/auth-service',
+                        'market service'   : 'services/market-service',
+                        'holdings service' : 'services/holdings-service',
+                        'reporting service': 'services/reporting-service',
+                        'gateway service'  : 'services/gateway-service'
+                    ]
+                    parallel lanes.collectEntries { laneName, modules ->
+                        [(laneName): { sh "set -eu; mvn -B -pl ${modules} test" }]
                     }
                 }
             }
@@ -319,6 +275,46 @@ pipeline {
                 }
             }
         }
+                }
+            }
+            stage('Build Docker images') {
+                when {
+                    expression { env.CI_RUN_FULL_STACK == 'true' }
+                }
+                steps {
+                    sh '''
+                        set -eu
+                        short_sha=$(git rev-parse --short=8 HEAD)
+                        echo "${BUILD_NUMBER:-local}-${short_sha}" > .image_tag
+                    '''
+                    script {
+                        def imageTag = readFile('.image_tag').trim()
+                        // The images need neither the tests nor Sonar, so they build beside them. BuildKit
+                        // cache mounts (see the Dockerfiles) keep Maven and npm downloads between builds.
+                        // Backend images build from the repo root so Maven can see the parent pom and
+                        // libs/common. staff-gateway-service has no image of its own: Compose runs
+                        // gateway-service's image a second time with the "staff" profile.
+                        def builds = [:]
+                        ['core-service', 'auth-service', 'market-service', 'holdings-service',
+                         'buy-sell-service', 'reporting-service', 'gateway-service'].each { service ->
+                            builds[service] = {
+                                sh "DOCKER_BUILDKIT=1 docker build -t lemarketjames/${service}:${imageTag} -f services/${service}/Dockerfile . && docker image inspect lemarketjames/${service}:${imageTag} >/dev/null"
+                            }
+                        }
+                        builds['frontend'] = {
+                            sh "DOCKER_BUILDKIT=1 docker build -t lemarketjames/frontend:${imageTag} ./apps/frontend && docker image inspect lemarketjames/frontend:${imageTag} >/dev/null"
+                        }
+                        // The staff app builds from the same Angular workspace, with its own Dockerfile.
+                        builds['staff-frontend'] = {
+                            sh "DOCKER_BUILDKIT=1 docker build -t lemarketjames/staff-frontend:${imageTag} -f apps/frontend/projects/staff/Dockerfile ./apps/frontend && docker image inspect lemarketjames/staff-frontend:${imageTag} >/dev/null"
+                        }
+                        parallel builds
+                        echo "Built versioned images with tag: ${imageTag}"
+                    }
+                }
+            }
+            }
+        }
 
         // Publishes coverage on the build page and enforces the baseline, using only the HTML
         // Publisher plugin (no coverage plugin to install). Runs after the integration tests,
@@ -375,49 +371,6 @@ pipeline {
                         sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
                     }
                 }
-            }
-        }
-
-        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
-        // build here when the Classroom Quality Gate fails.
-        stage('Quality Gate') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
-        stage('Build versioned Docker images') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps {
-                sh '''
-                    set -eu
-
-                    short_sha=$(git rev-parse --short=8 HEAD)
-                    image_tag="${BUILD_NUMBER:-local}-${short_sha}"
-                    echo "$image_tag" > .image_tag
-
-                    # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    # staff-gateway-service has no image of its own: Compose runs gateway-service's
-                    # image a second time with the "staff" profile.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service; do
-                        docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
-                        docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
-                    done
-                    docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
-                    docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
-                    # The staff app builds from the same Angular workspace, with its own Dockerfile.
-                    docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
-                    docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
-
-                    echo "Built versioned images with tag: $image_tag"
-                '''
             }
         }
 
@@ -535,27 +488,35 @@ pipeline {
                     fi
 
                     # Use host-published ports; gateway-service maps host 8089 to container 8080,
-                    # and 8090 is the staff gateway.
-                    for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
-                        echo "Waiting for health endpoint on port $port"
-                        healthy=0
+                    # and 8090 is the staff gateway. All ports are polled at once.
+                    wait_for_port() {
+                        port="$1"
                         status="000"
                         for attempt in $(seq 1 "$CI_HEALTH_RETRIES"); do
                             status=$(curl --silent --output /dev/null --write-out "%{http_code}" "http://localhost:$port/actuator/health" || true)
                             if [ "$status" = "200" ]; then
-                                healthy=1
-                                break
+                                echo "Port $port is healthy"
+                                return 0
                             fi
                             sleep "$CI_HEALTH_SLEEP_SECONDS"
                         done
-
-                        if [ "$healthy" -ne 1 ]; then
-                            echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
-                            compose ps
-                            compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service staff-gateway-service kafka
-                            exit 1
-                        fi
+                        echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
+                        return 1
+                    }
+                    pids=""
+                    for port in 8081 8082 8089 8083 8084 8085 8086 8090; do
+                        wait_for_port "$port" &
+                        pids="$pids $!"
                     done
+                    unhealthy=0
+                    for pid in $pids; do
+                        wait "$pid" || unhealthy=1
+                    done
+                    if [ "$unhealthy" -ne 0 ]; then
+                        compose ps
+                        compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service gateway-service staff-gateway-service kafka
+                        exit 1
+                    fi
 
                     # Through the gateway, so routing to core-service is exercised too.
                     response=$(curl --fail --silent --show-error http://localhost:8089/)
@@ -577,6 +538,8 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+                    # npm's download cache (HOME=/tmp in the container) is kept between builds.
+                    mkdir -p "$PWD/.npm-e2e"
                     # The official image ships Chromium and its OS libraries, so the agent needs only
                     # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
                     # --network host lets the browser reach localhost:4200 on the agent; running as
@@ -587,7 +550,7 @@ pipeline {
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
-                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        -v "$PWD/apps/e2e:/e2e" -v "$PWD/.npm-e2e:/tmp/.npm" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test'
                 '''
@@ -601,6 +564,14 @@ pipeline {
             }
         }
 
+        // The staff E2E suite and the two curl contract smokes only need the healthy stack, and each
+        // registers its own users. They wait for the trading E2E run above, whose feed-failure tests
+        // make the shared quote feed stale for a while.
+        stage('Staff E2E and API contract smokes (parallel)') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            parallel {
         // The same for the staff app: its nginx frontend on :4201, which proxies /api to the staff
         // gateway. A separate run with its own configuration (apps/e2e/playwright.staff.config.ts)
         // and its own report files, so neither suite overwrites the other's results.
@@ -611,6 +582,8 @@ pipeline {
             steps {
                 sh '''
                     set -eu
+                    # npm's download cache (HOME=/tmp in the container) is kept between builds.
+                    mkdir -p "$PWD/.npm-e2e"
                     # Same image and options as the stage above; see the notes there.
                     # E2E_BASE_URL is the trading app, where the trade search tests register
                     # the clients whose trades they insert and then look up from the staff app.
@@ -621,7 +594,7 @@ pipeline {
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
-                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        -v "$PWD/apps/e2e:/e2e" -v "$PWD/.npm-e2e:/tmp/.npm" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
                 '''
@@ -632,29 +605,6 @@ pipeline {
                     archiveArtifacts artifacts: 'apps/e2e/playwright-report-staff/**, apps/e2e/test-results-staff/**', allowEmptyArchive: true
                 }
             }
-        }
-
-        stage('Verify buy order survives restart') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps { sh 'bash scripts/verify-buy-order.sh' }
-        }
-
-        stage('Verify sell order survives restart') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps { sh 'bash scripts/verify-sell-order.sh' }
-        }
-
-        // Against the running stack: nobody can change an audit record, and each refused attempt
-        // is in the database's server log with the account and the statement (LMKT-100).
-        stage('Verify audit lockdown') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps { sh 'bash scripts/verify-audit-lockdown.sh' }
         }
 
         stage('Run quote API contract smoke test') {
@@ -797,6 +747,45 @@ JSON
                     grep -q '"success":false' "$order_error_file"
                     grep -q '"code":"NOT_TRADABLE"' "$order_error_file"
                 '''
+            }
+        }
+            }
+        }
+
+        stage('Verify buy order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-buy-order.sh' }
+        }
+
+        stage('Verify sell order survives restart') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-sell-order.sh' }
+        }
+
+        // Against the running stack: nobody can change an audit record, and each refused attempt
+        // is in the database's server log with the account and the statement (LMKT-100).
+        stage('Verify audit lockdown') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' }
+            }
+            steps { sh 'bash scripts/verify-audit-lockdown.sh' }
+        }
+
+        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and fails the
+        // build when the Classroom Quality Gate fails. It is the last stage on purpose: the scan
+        // runs while the stack starts and the E2E tests run, and only the verdict is waited for here.
+        stage('Quality Gate') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 

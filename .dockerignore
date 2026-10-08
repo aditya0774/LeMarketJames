@@ -10,3 +10,9 @@ database
 *.pdf
 *.xlsx
 *.png
+
+# Local caches and CI workspace folders; never part of an image.
+.m2
+.npm
+.npm-e2e
+**/node_modules

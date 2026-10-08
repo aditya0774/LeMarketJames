@@ -5,7 +5,8 @@ WORKDIR /app
 COPY pom.xml .
 COPY libs libs
 COPY services services
-RUN mvn -q -B -pl services/core-service -am package -DskipTests
+# The cache mount keeps downloaded dependencies between builds (BuildKit).
+RUN --mount=type=cache,target=/root/.m2 mvn -q -B -pl services/core-service -am package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
