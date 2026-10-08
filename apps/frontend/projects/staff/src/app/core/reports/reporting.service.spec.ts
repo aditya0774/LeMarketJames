@@ -105,7 +105,7 @@ describe('ReportingService', () => {
 
   it('should handle error response', () => {
     service.getTradesByStock().subscribe(
-      () => fail('should have failed'),
+      () => { throw new Error('should have failed'); },
       error => {
         expect(error.status).toBe(403);
       }

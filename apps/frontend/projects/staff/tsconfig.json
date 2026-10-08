@@ -2,20 +2,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    /* Replaces the workspace's "@app/*" alias, so staff code can't import the trading app's code by accident.
-       However, "@app/*" is re-mapped to the trading app to allow importing the shared Auth service. */
+    /* Staff app uses @staff/* for its own code. The trading app's Auth service is imported via relative path. */
     "paths": {
-      "@staff/*": ["./src/app/*"],
-      "@app/*": ["../../src/app/*"]
+      "@staff/*": ["./src/app/*"]
     }
   },
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.app.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
-    }
-  ]
+  "files": []
+  /* "references" removed: causes TypeScript composite project issues with incremental compilation */
 }

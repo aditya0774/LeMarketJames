@@ -84,8 +84,8 @@ describe('ActivityByStock Component', () => {
       req.flush({ success: true, data: mockTradesData });
       fixture.detectChanges();
 
-      expect(component.tradesData()).toEqual(mockTradesData);
-      expect(component.error()).toBeNull();
+      expect((component as any).tradesData()).toEqual(mockTradesData);
+      expect((component as any).error()).toBeNull();
     });
   });
 
@@ -114,7 +114,7 @@ describe('ActivityByStock Component', () => {
 
       let req = httpTestingController.expectOne(req => req.url.includes('/api/v1/reports/trades-by-stock'));
       req.flush({ success: true, data: mockTradesData });
-      expect(component.tradesData().length).toBe(2);
+      expect((component as any).tradesData().length).toBe(2);
 
       const newData: TradesByStockRow[] = [
         { symbol: 'TSLA', totalQuantity: 100, totalGrossAmount: 15000.00, buyCount: 5, sellCount: 2 },
@@ -130,7 +130,7 @@ describe('ActivityByStock Component', () => {
       req.flush({ success: true, data: newData });
       fixture.detectChanges();
 
-      expect(component.tradesData()).toEqual(newData);
+      expect((component as any).tradesData()).toEqual(newData);
     });
   });
 
@@ -142,8 +142,8 @@ describe('ActivityByStock Component', () => {
       req.flush('Forbidden', { status: 403, statusText: 'Forbidden' });
       fixture.detectChanges();
 
-      expect(component.error()).toContain('do not have permission');
-      expect(component.isLoading()).toBe(false);
+      expect((component as any).error()).toContain('do not have permission');
+      expect((component as any).isLoading()).toBe(false);
     });
 
     it('displays 401 error message for expired session', () => {
@@ -153,8 +153,8 @@ describe('ActivityByStock Component', () => {
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
       fixture.detectChanges();
 
-      expect(component.error()).toContain('session has expired');
-      expect(component.isLoading()).toBe(false);
+      expect((component as any).error()).toContain('session has expired');
+      expect((component as any).isLoading()).toBe(false);
     });
 
     it('displays 400 error message for invalid date range', () => {
@@ -164,8 +164,8 @@ describe('ActivityByStock Component', () => {
       req.flush('Bad Request', { status: 400, statusText: 'Bad Request' });
       fixture.detectChanges();
 
-      expect(component.error()).toContain('Invalid date range');
-      expect(component.isLoading()).toBe(false);
+      expect((component as any).error()).toContain('Invalid date range');
+      expect((component as any).isLoading()).toBe(false);
     });
 
     it('displays generic error for network errors', () => {
@@ -175,8 +175,8 @@ describe('ActivityByStock Component', () => {
       req.flush('Network error', { status: 500, statusText: 'Internal Server Error' });
       fixture.detectChanges();
 
-      expect(component.error()).toContain('Unable to load report');
-      expect(component.isLoading()).toBe(false);
+      expect((component as any).error()).toContain('Unable to load report');
+      expect((component as any).isLoading()).toBe(false);
     });
 
     it('clears error on successful retry', () => {
@@ -186,7 +186,7 @@ describe('ActivityByStock Component', () => {
       req.flush('Error', { status: 500, statusText: 'Internal Server Error' });
       fixture.detectChanges();
 
-      expect(component.error()).toBeTruthy();
+      expect((component as any).error()).toBeTruthy();
 
       component['onRetry']();
 
@@ -194,21 +194,21 @@ describe('ActivityByStock Component', () => {
       req.flush({ success: true, data: mockTradesData });
       fixture.detectChanges();
 
-      expect(component.error()).toBeNull();
-      expect(component.tradesData()).toEqual(mockTradesData);
+      expect((component as any).error()).toBeNull();
+      expect((component as any).tradesData()).toEqual(mockTradesData);
     });
   });
 
   describe('Loading State', () => {
     it('sets loading state while fetching', () => {
       fixture.detectChanges();
-      expect(component.isLoading()).toBe(true);
+      expect((component as any).isLoading()).toBe(true);
 
       const req = httpTestingController.expectOne(req => req.url.includes('/api/v1/reports/trades-by-stock'));
       req.flush({ success: true, data: mockTradesData });
       fixture.detectChanges();
 
-      expect(component.isLoading()).toBe(false);
+      expect((component as any).isLoading()).toBe(false);
     });
   });
 
@@ -220,7 +220,7 @@ describe('ActivityByStock Component', () => {
       req.flush({ success: true, data: mockTradesData });
       fixture.detectChanges();
 
-      expect(component.tradesData()).toEqual(mockTradesData);
+      expect((component as any).tradesData()).toEqual(mockTradesData);
     });
 
     it('handles empty data response', () => {
@@ -230,7 +230,7 @@ describe('ActivityByStock Component', () => {
       req.flush({ success: true, data: [] });
       fixture.detectChanges();
 
-      expect(component.tradesData()).toEqual([]);
+      expect((component as any).tradesData()).toEqual([]);
     });
   });
 });

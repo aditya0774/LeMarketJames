@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ByStockAggregateTable } from './by-stock-aggregate-table';
-import { TradesByStockRow } from '../../../core/reports/reporting.service';
+import { TradesByStockRow } from '../../../../core/reports/reporting.service';
 
 describe('ByStockAggregateTable', () => {
   let component: ByStockAggregateTable;
