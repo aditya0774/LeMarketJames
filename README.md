@@ -808,7 +808,7 @@ Jenkins needs this once. The names are the ones the Jenkinsfile uses:
 | Manage Jenkins → System → SonarQube servers | A server named `SonarQube`: the server URL and the credential above |
 | Manage Jenkins → Tools → SonarQube Scanner installations | A scanner named `SonarScanner` (version 8.1) |
 
-The SonarQube server needs this once:
+The SonarQube server needs this once. Running `bash scripts/sonarqube/configure-sonarqube.sh` on the Linux box sets up all three (it asks for the SonarQube admin password and can be run again safely):
 
 - The course quality profiles (`texoma-*`, from the course repository's SonarQube Configuration folder) for CSS, Docker, HTML, Java, JavaScript, Python and TypeScript, restored and assigned to the project. Other languages use the built-in "Sonar way".
 - The `Classroom Quality Gate` from the course set-up guide, assigned to the project.
