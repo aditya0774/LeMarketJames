@@ -8,10 +8,48 @@ import { HoldingsService } from '../holdings/holdings.service';
 import { OrderService } from './order.service';
 
 describe('BUY order HTTP integration', () => {
+  class FakeEventSource {
+    static instances: FakeEventSource[] = [];
+
+    readonly listeners = new Map<string, Array<(event: MessageEvent<string>) => void>>();
+    onopen: ((this: EventSource, ev: Event) => any) | null = null;
+    onerror: ((this: EventSource, ev: Event) => any) | null = null;
+    closed = false;
+
+    constructor(readonly url: string) {
+      FakeEventSource.instances.push(this);
+    }
+
+    addEventListener(type: string, listener: (event: MessageEvent<string>) => void): void {
+      this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+    }
+
+    close(): void {
+      this.closed = true;
+    }
+
+    emitOpen(): void {
+      this.onopen?.call(this as unknown as EventSource, new Event('open'));
+    }
+
+    emitError(): void {
+      this.onerror?.call(this as unknown as EventSource, new Event('error'));
+    }
+
+    emit(type: string, data: unknown): void {
+      const event = { data: JSON.stringify(data) } as MessageEvent<string>;
+      for (const listener of this.listeners.get(type) ?? []) {
+        listener(event);
+      }
+    }
+  }
+
   let http: HttpTestingController;
   let service: OrderService;
 
   beforeEach(() => {
+    FakeEventSource.instances = [];
+    vi.stubGlobal('EventSource', FakeEventSource);
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), provideHttpClientTesting(), OrderService,
       { provide: Auth, useValue: {} },
@@ -21,7 +59,10 @@ describe('BUY order HTTP integration', () => {
     service = TestBed.inject(OrderService);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.unstubAllGlobals();
+  });
 
   it('posts a typed BUY without a client price and returns the created order', () => {
     const request = { accountId: 7, instrumentId: 5, orderType: 'BUY' as const, quantity: 2 };
@@ -92,5 +133,53 @@ describe('BUY order HTTP integration', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('opens the SSE stream and emits live snapshots on order-status events', () => {
+    const states: string[] = [];
+    const changed: Array<{ orderId: number; to: string }> = [];
+
+    const subscription = service.watchOrderStatusStream().subscribe((snapshot) => {
+      states.push(snapshot.connection);
+      if (snapshot.event) {
+        changed.push({ orderId: snapshot.event.orderId, to: snapshot.event.to });
+      }
+    });
+
+    expect(FakeEventSource.instances).toHaveSize(1);
+    const stream = FakeEventSource.instances[0];
+    expect(stream.url).toBe(`${environment.apiBaseUrl}/api/v1/orders/stream`);
+    expect(states[0]).toBe('connecting');
+
+    stream.emitOpen();
+    expect(states.at(-1)).toBe('live');
+
+    stream.emit('order-status-changed', {
+      orderId: 42,
+      accountId: 7,
+      from: 'SUBMITTED',
+      to: 'FILLED',
+      occurredAt: '2026-10-08T08:30:00Z',
+    });
+    expect(states.at(-1)).toBe('live');
+    expect(changed).toEqual([{ orderId: 42, to: 'FILLED' }]);
+
+    subscription.unsubscribe();
+    expect(stream.closed).toBe(true);
+  });
+
+  it('emits reconnecting when the SSE stream errors', () => {
+    const states: string[] = [];
+
+    const subscription = service.watchOrderStatusStream().subscribe((snapshot) => {
+      states.push(snapshot.connection);
+    });
+
+    const stream = FakeEventSource.instances[0];
+    stream.emitOpen();
+    stream.emitError();
+
+    expect(states).toEqual(['connecting', 'live', 'reconnecting']);
+    subscription.unsubscribe();
   });
 });
