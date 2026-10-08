@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RecordedFill.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Activity Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.activity</a> &gt; <span class="el_source">RecordedFill.java</span></div><h1>RecordedFill.java</h1><pre class="source lang-java linenums">package com.lemarketjames.activity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * One fill, as far as market activity needs it: which stock, how many shares, at what price and
+ * when. The order id is the key, because an order fills once; there is no account, because
+ * activity never says who traded. Written once from the event and never changed.
+ */
+@Entity
+@Table(name = &quot;trade_activity&quot;)
+public class RecordedFill {
+
+    @Id
+    private Integer orderId;
+
+    @Column(nullable = false)
+    private Integer instrumentId;
+
+    @Column(nullable = false, length = 10)
+    private String side;
+
+    @Column(nullable = false, precision = 14, scale = 4)
+    private BigDecimal quantity;
+
+    @Column(nullable = false, precision = 14, scale = 4)
+    private BigDecimal price;
+
+    @Column(nullable = false)
+    private Instant filledAt;
+
+    /** For JPA. */
+<span class="fc" id="L39">    protected RecordedFill() {</span>
+<span class="fc" id="L40">    }</span>
+
+    /** @param fill the fill, as read from Kafka */
+<span class="fc" id="L43">    public RecordedFill(OrderFilledMessage fill) {</span>
+<span class="fc" id="L44">        this.orderId = fill.orderId();</span>
+<span class="fc" id="L45">        this.instrumentId = fill.instrumentId();</span>
+<span class="fc" id="L46">        this.side = fill.side();</span>
+<span class="fc" id="L47">        this.quantity = fill.quantity();</span>
+<span class="fc" id="L48">        this.price = fill.price();</span>
+<span class="fc" id="L49">        this.filledAt = fill.filledAt();</span>
+<span class="fc" id="L50">    }</span>
+
+    public Integer getOrderId() {
+<span class="fc" id="L53">        return orderId;</span>
+    }
+
+    public Integer getInstrumentId() {
+<span class="fc" id="L57">        return instrumentId;</span>
+    }
+
+    public String getSide() {
+<span class="fc" id="L61">        return side;</span>
+    }
+
+    public BigDecimal getQuantity() {
+<span class="fc" id="L65">        return quantity;</span>
+    }
+
+    public BigDecimal getPrice() {
+<span class="fc" id="L69">        return price;</span>
+    }
+
+    public Instant getFilledAt() {
+<span class="fc" id="L73">        return filledAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

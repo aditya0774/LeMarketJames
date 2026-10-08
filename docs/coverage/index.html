@@ -9,24 +9,27 @@
 <body>
 <main>
 <h1>Code coverage</h1>
-<p class="meta">Generated at commit <code>b487e4a0</code> on 2026-10-08. Click an area to open its full report.</p>
+<p class="meta">Generated at commit <code>7e204ecf</code> on 2026-10-08. Click an area to open its full report.</p>
 <h2>Summary</h2>
 <div class="scroll"><table>
 <thead><tr><th>Area</th><th class="num">Line %</th><th class="num">Branch %</th><th class="num">Lines missed / total</th></tr></thead>
 <tbody>
-<tr><td><a href="backend/common/index.html">common</a></td><td class="num"><progress max="100" value="44.4"></progress>44.41</td><td class="num"><progress max="100" value="42.9"></progress>42.86</td><td class="num">199 / 358</td></tr>
+<tr><td><a href="backend/common/index.html">common</a></td><td class="num"><progress max="100" value="47.1"></progress>47.07</td><td class="num"><progress max="100" value="50.0"></progress>50.00</td><td class="num">199 / 376</td></tr>
 <tr><td><a href="backend/market-client/index.html">market-client</a></td><td class="num"><progress max="100" value="76.3"></progress>76.34</td><td class="num"><progress max="100" value="72.7"></progress>72.73</td><td class="num">22 / 93</td></tr>
+<tr><td><a href="backend/activity-service/index.html">activity-service</a></td><td class="num"><progress max="100" value="95.5"></progress>95.52</td><td class="num"><progress max="100" value="100.0"></progress>100.00</td><td class="num">3 / 67</td></tr>
 <tr><td><a href="backend/auth-service/index.html">auth-service</a></td><td class="num"><progress max="100" value="95.7"></progress>95.65</td><td class="num"><progress max="100" value="81.8"></progress>81.82</td><td class="num">12 / 276</td></tr>
 <tr><td><a href="backend/buy-sell-service/index.html">buy-sell-service</a></td><td class="num"><progress max="100" value="93.9"></progress>93.90</td><td class="num"><progress max="100" value="85.7"></progress>85.66</td><td class="num">54 / 885</td></tr>
 <tr><td><a href="backend/core-service/index.html">core-service</a></td><td class="num"><progress max="100" value="83.2"></progress>83.19</td><td class="num"><progress max="100" value="75.0"></progress>75.00</td><td class="num">38 / 226</td></tr>
 <tr><td><a href="backend/gateway-service/index.html">gateway-service</a></td><td class="num"><progress max="100" value="94.7"></progress>94.74</td><td class="num"><progress max="100" value="100.0"></progress>100.00</td><td class="num">2 / 38</td></tr>
 <tr><td><a href="backend/holdings-service/index.html">holdings-service</a></td><td class="num"><progress max="100" value="84.3"></progress>84.32</td><td class="num"><progress max="100" value="77.1"></progress>77.14</td><td class="num">82 / 523</td></tr>
 <tr><td><a href="backend/market-service/index.html">market-service</a></td><td class="num"><progress max="100" value="82.7"></progress>82.70</td><td class="num"><progress max="100" value="70.0"></progress>70.00</td><td class="num">77 / 445</td></tr>
+<tr><td><a href="backend/notification-service/index.html">notification-service</a></td><td class="num"><progress max="100" value="97.3"></progress>97.30</td><td class="num"><progress max="100" value="100.0"></progress>100.00</td><td class="num">2 / 74</td></tr>
 <tr><td><a href="backend/reporting-service/index.html">reporting-service</a></td><td class="num"><progress max="100" value="76.6"></progress>76.63</td><td class="num"><progress max="100" value="85.3"></progress>85.29</td><td class="num">43 / 184</td></tr>
 <tr><td><a href="backend/staff-gateway-service/index.html">staff-gateway-service</a></td><td class="num"><progress max="100" value="81.8"></progress>81.82</td><td class="num"><progress max="100" value="100.0"></progress>100.00</td><td class="num">2 / 11</td></tr>
-<tr class="total"><td>Back end (all modules)</td><td class="num"><progress max="100" value="82.5"></progress>82.53</td><td class="num"><progress max="100" value="79.0"></progress>78.97</td><td class="num">531 / 3039</td></tr>
-<tr class="total"><td><a href="frontend/index.html">Front end (Angular)</a></td><td class="num"><progress max="100" value="89.2"></progress>89.18</td><td class="num"><progress max="100" value="80.1"></progress>80.13</td><td class="num">185 / 1710</td></tr>
-<tr class="total"><td>Everything</td><td class="num"><progress max="100" value="84.9"></progress>84.92</td><td class="num"><progress max="100" value="79.7"></progress>79.72</td><td class="num">716 / 4749</td></tr>
+<tr><td><a href="backend/surveillance-service/index.html">surveillance-service</a></td><td class="num"><progress max="100" value="97.4"></progress>97.40</td><td class="num"><progress max="100" value="100.0"></progress>100.00</td><td class="num">2 / 77</td></tr>
+<tr class="total"><td>Back end (all modules)</td><td class="num"><progress max="100" value="83.6"></progress>83.57</td><td class="num"><progress max="100" value="80.7"></progress>80.69</td><td class="num">538 / 3275</td></tr>
+<tr class="total"><td><a href="frontend/index.html">Front end (Angular)</a></td><td class="num"><progress max="100" value="89.5"></progress>89.53</td><td class="num"><progress max="100" value="80.3"></progress>80.31</td><td class="num">179 / 1710</td></tr>
+<tr class="total"><td>Everything</td><td class="num"><progress max="100" value="85.6"></progress>85.62</td><td class="num"><progress max="100" value="80.5"></progress>80.45</td><td class="num">717 / 4985</td></tr>
 </tbody>
 </table></div>
 <p class="note">JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported.</p>
@@ -56,16 +59,17 @@
 <tr><td><code>src/app/core/orders/orders.service.ts</code></td><td class="num">9</td><td class="num">30.77</td></tr>
 <tr><td><code>src/app/features/orders/order-form/order-form.html</code></td><td class="num">9</td><td class="num">86.15</td></tr>
 <tr><td><code>src/app/features/trade/trade-dialog.ts</code></td><td class="num">8</td><td class="num">91.84</td></tr>
-<tr><td><code>src/app/core/orders/order.service.ts</code></td><td class="num">7</td><td class="num">80.00</td></tr>
 <tr><td><code>src/app/core/holdings/holdings.service.ts</code></td><td class="num">5</td><td class="num">92.19</td></tr>
 <tr><td><code>src/app/features/auth/login/login.html</code></td><td class="num">5</td><td class="num">86.11</td></tr>
 <tr><td><code>src/app/features/holdings/by-stock-report/by-stock-detail.component.ts</code></td><td class="num">5</td><td class="num">87.50</td></tr>
+<tr><td><code>src/app/features/holdings/by-stock-report/by-stock-report.component.html</code></td><td class="num">5</td><td class="num">85.71</td></tr>
 </tbody>
 </table></div>
 <h2>History</h2>
 <div class="scroll"><table>
 <thead><tr><th>Date</th><th>Commit</th><th class="num">Back-end line %</th><th class="num">Back-end branch %</th><th class="num">Front-end line %</th><th class="num">Front-end branch %</th></tr></thead>
 <tbody>
+<tr><td>2026-10-08</td><td><code>7e204ecf</code></td><td class="num">83.57</td><td class="num">80.69</td><td class="num">89.53</td><td class="num">80.31</td></tr>
 <tr><td>2026-10-08</td><td><code>b487e4a0</code></td><td class="num">82.53</td><td class="num">78.97</td><td class="num">89.18</td><td class="num">80.13</td></tr>
 <tr><td>2026-10-08</td><td><code>c8a1e914</code></td><td class="num">82.53</td><td class="num">78.97</td><td class="num">89.18</td><td class="num">80.13</td></tr>
 <tr><td>2026-10-07</td><td><code>1baab938</code></td><td class="num">83.00</td><td class="num">78.89</td><td class="num">89.53</td><td class="num">80.31</td></tr>

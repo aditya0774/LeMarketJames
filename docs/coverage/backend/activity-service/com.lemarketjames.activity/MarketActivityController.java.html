@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketActivityController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Activity Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.activity</a> &gt; <span class="el_source">MarketActivityController.java</span></div><h1>MarketActivityController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.activity;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
+import java.util.List;
+
+/** Market activity for anyone who is signed in (contract C6): how much of each stock traded lately. */
+@RestController
+@RequestMapping(&quot;/api/v1/market-activity&quot;)
+public class MarketActivityController {
+
+    private final MarketActivityService activity;
+
+<span class="fc" id="L17">    public MarketActivityController(MarketActivityService activity) {</span>
+<span class="fc" id="L18">        this.activity = activity;</span>
+<span class="fc" id="L19">    }</span>
+
+    /** @return the traded volume of every stock that traded in the window ending now */
+    @GetMapping
+    public MarketActivity latest() {
+<span class="fc" id="L24">        Instant since = activity.windowStart();</span>
+<span class="fc" id="L25">        return new MarketActivity(true, MarketActivityService.WINDOW.toHours(), since, activity.activitySince(since));</span>
+    }
+
+    /**
+     * The response body.
+     *
+     * @param success     always true
+     * @param windowHours how many hours back the figures look
+     * @param since       the start of that window (UTC)
+     * @param activity    one entry per stock that traded in it; a stock that did not trade has none
+     */
+<span class="fc" id="L36">    public record MarketActivity(boolean success, long windowHours, Instant since, List&lt;InstrumentActivity&gt; activity) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

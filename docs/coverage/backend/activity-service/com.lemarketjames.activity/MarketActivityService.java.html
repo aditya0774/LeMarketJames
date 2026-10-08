@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarketActivityService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Activity Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.activity</a> &gt; <span class="el_source">MarketActivityService.java</span></div><h1>MarketActivityService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.activity;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Records fills and sums them into market activity.
+ *
+ * &lt;p&gt;Kafka can deliver a record more than once, after a restart or a failed commit. Recording is
+ * therefore idempotent: a fill is stored under its order id and an order fills once, so a fill
+ * that is already stored is left alone and no trade is ever counted twice.
+ */
+@Service
+public class MarketActivityService {
+<span class="fc" id="L22">    private static final Logger log = LoggerFactory.getLogger(MarketActivityService.class);</span>
+
+    /**
+     * How far back market activity looks. A rolling day rather than a calendar day, so the
+     * figures need no time zone and never drop to zero at midnight.
+     */
+<span class="fc" id="L28">    public static final Duration WINDOW = Duration.ofHours(24);</span>
+
+    private final RecordedFillRepository fills;
+    private final Clock clock;
+
+<span class="fc" id="L33">    public MarketActivityService(RecordedFillRepository fills, Clock clock) {</span>
+<span class="fc" id="L34">        this.fills = fills;</span>
+<span class="fc" id="L35">        this.clock = clock;</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Stores one fill.
+     *
+     * @param fill the fill, as read from Kafka
+     * @return whether it was stored; false for a fill that was already recorded or an event that
+     *         lacks a field the record needs
+     */
+    @Transactional
+    public boolean record(OrderFilledMessage fill) {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (!fill.isComplete()) {</span>
+<span class="fc" id="L48">            log.warn(&quot;Kafka: skipped an incomplete fill: {}&quot;, fill);</span>
+<span class="fc" id="L49">            return false;</span>
+        }
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (fills.existsById(fill.orderId())) {</span>
+<span class="fc" id="L52">            log.info(&quot;Kafka: the fill of order {} was already recorded&quot;, fill.orderId());</span>
+<span class="fc" id="L53">            return false;</span>
+        }
+<span class="fc" id="L55">        fills.save(new RecordedFill(fill));</span>
+<span class="fc" id="L56">        log.info(&quot;Fill recorded: order={} instrument={} quantity={} price={}&quot;, fill.orderId(), fill.instrumentId(),</span>
+<span class="fc" id="L57">            fill.quantity(), fill.price());</span>
+<span class="fc" id="L58">        return true;</span>
+    }
+
+    /** @return when the activity window that ends now began */
+    public Instant windowStart() {
+<span class="fc" id="L63">        return clock.instant().minus(WINDOW);</span>
+    }
+
+    /**
+     * @param since the start of the window, included
+     * @return the activity of every stock that traded from then on, in instrument id order
+     */
+    @Transactional(readOnly = true)
+    public List&lt;InstrumentActivity&gt; activitySince(Instant since) {
+<span class="fc" id="L72">        return fills.summarizeSince(since);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
