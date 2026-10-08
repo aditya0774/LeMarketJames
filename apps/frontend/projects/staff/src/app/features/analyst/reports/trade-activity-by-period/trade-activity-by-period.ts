@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Subject } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { TradeReportService } from '../../../../shared/services/trade-report.service';
 import { PeriodAggregation } from '../../../../shared/models/trade-report.model';
 import { formatPeriod } from '../../../../shared/utils/period-formatter';
@@ -395,7 +397,7 @@ import { formatPeriod } from '../../../../shared/utils/period-formatter';
     }
   `,
 })
-export class TradeActivityByPeriod implements OnInit {
+export class TradeActivityByPeriod implements OnInit, OnDestroy {
   periodTypes = ['DAY', 'WEEK', 'MONTH', 'YEAR'];
   periodType = 'DAY';
   fromDate = '';
@@ -404,13 +406,45 @@ export class TradeActivityByPeriod implements OnInit {
   loading = false;
   error: string | null = null;
 
+  // Subject to manage request cancellation
+  private loadReport$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
+
   constructor(private tradeReportService: TradeReportService) {
     // Initialize dates to last 7 days
     this.initializeDateRange();
+
+    // When loadReport$ emits, fetch data and cancel previous requests (switchMap)
+    this.loadReport$
+      .pipe(
+        switchMap(() => {
+          console.log('Fetching data for:', { periodType: this.periodType, fromDate: this.fromDate, toDate: this.toDate });
+          return this.tradeReportService.getTradeReport(this.periodType, this.fromDate, this.toDate);
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Data received:', response.data.length, 'periods');
+          this.data = response.data;
+          this.loading = false;
+          this.error = null;
+        },
+        error: (err) => {
+          console.error('❌ Error:', err);
+          this.loading = false;
+          this.error = this.getErrorMessage(err);
+        },
+      });
   }
 
   ngOnInit(): void {
     this.loadReport();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**
@@ -457,19 +491,7 @@ export class TradeActivityByPeriod implements OnInit {
     this.loading = true;
     this.error = null;
     this.data = [];
-
-    this.tradeReportService
-      .getTradeReport(this.periodType, this.fromDate, this.toDate)
-      .subscribe({
-        next: (response) => {
-          this.data = response.data;
-          this.loading = false;
-        },
-        error: (err) => {
-          this.loading = false;
-          this.error = this.getErrorMessage(err);
-        },
-      });
+    this.loadReport$.next(); // Emit to trigger the request (previous requests are auto-cancelled)
   }
 
   /**
