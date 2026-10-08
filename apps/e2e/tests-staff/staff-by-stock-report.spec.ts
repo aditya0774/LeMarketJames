@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { TestUser, loginViaUi } from './support/users';
+import { expect, Page, test } from '@playwright/test';
+import { ANALYST, CLIENT, signIn } from './support/staff';
 
 /**
  * LMKT-42 Staff App: Report trading activity by stock (analyst view)
@@ -12,30 +12,27 @@ import { TestUser, loginViaUi } from './support/users';
  * - Default sort: highest gross amount first
  * - Reports within 10 seconds
  *
- * Note: Staff app runs on :4201 (separate from trading app :4200)
+ * Note: Staff app runs on :4201 (separate from trading app :4200); this suite uses playwright.staff.config.ts
  */
 
-const STAFF_APP_URL = process.env.E2E_STAFF_APP_URL ?? 'http://localhost:4201';
-const SEED_PASSWORD = 'Pass123!';
-const seed = (name: string): TestUser => ({
-  username: name,
-  email: `${name}@seed.lemarket.com`,
-  password: SEED_PASSWORD,
-});
+const REPORT = '/analyst/reports/activity-by-stock';
+
+/** Signs in as the analyst through the staff login, then opens the report. */
+async function openReport(page: Page): Promise<void> {
+  await signIn(page, ANALYST);
+  await expect(page).toHaveURL(/\/analyst$/);
+  await page.goto(REPORT);
+}
 
 test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   test('AC1: ANALYST can access report and see aggregate table', async ({ page }) => {
-    // Navigate to staff app
-    await page.goto(STAFF_APP_URL);
+    await signIn(page, ANALYST);
 
-    // Login as analyst
-    await loginViaUi(page, seed('analyst'));
-    
     // Should be able to access analyst dashboard
     await expect(page).toHaveURL(/\/analyst$/);
 
-    // Navigate to by-stock report
-    await page.click('a:has-text("Activity by stock")');
+    // Navigate to by-stock report (the dashboard lists each report as a card)
+    await page.locator('.report-card', { hasText: 'Activity by Stock' }).click();
     
     // Verify page loaded
     await expect(page).toHaveURL(/\/analyst\/reports\/activity-by-stock$/);
@@ -68,8 +65,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Date range filtering updates report', async ({ page }) => {
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
+    await openReport(page);
 
     // Wait for initial load
     const table = page.locator('table, .aggregate-table');
@@ -107,8 +103,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Table columns are sortable', async ({ page }) => {
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
+    await openReport(page);
 
     // Wait for table to load
     const table = page.locator('table, .aggregate-table');
@@ -134,8 +129,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Default sort is by gross amount (highest first)', async ({ page }) => {
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
+    await openReport(page);
 
     // Wait for table
     const table = page.locator('table, .aggregate-table');
@@ -159,8 +153,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   test('AC1: Report loads within 10 seconds', async ({ page }) => {
     const startTime = Date.now();
 
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
+    await openReport(page);
 
     // Measure time to load and render table
     const table = page.locator('table, .aggregate-table');
@@ -174,11 +167,8 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Error state displays safely when API returns 403', async ({ page }) => {
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
-
-    // Intercept and mock a 403 error
-    await page.route('**/api/v1/reports/trades-by-stock', async (route) => {
+    // Mock the 403 before the report is opened, so its first load gets it
+    await page.route('**/api/v1/reports/trades-by-stock*', async (route) => {
       await route.fulfill({
         status: 403,
         contentType: 'application/json',
@@ -186,8 +176,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       });
     });
 
-    // Refresh to trigger the mocked error
-    await page.reload();
+    await openReport(page);
 
     // Wait for error message to appear
     const errorHeading = page.getByRole('heading').filter({ hasText: 'Unable to Load' });
@@ -200,11 +189,10 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
 
   test('AC1: Non-ANALYST roles cannot access report', async ({ page }) => {
     // Login as CLIENT role
-    await page.goto(STAFF_APP_URL);
-    await loginViaUi(page, seed('seed_active')); // Client role
+    await signIn(page, CLIENT);
 
     // Try to navigate to analyst report
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
+    await page.goto(REPORT);
 
     // Should be redirected (guard prevents access)
     // Expected: redirect to /access-denied or /login
@@ -212,11 +200,8 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Empty state message when no data', async ({ page }) => {
-    await page.goto(`${STAFF_APP_URL}/analyst/reports/activity-by-stock`);
-    await loginViaUi(page, seed('analyst'));
-
-    // Set date range to future (no trades)
-    await page.route('**/api/v1/reports/trades-by-stock', async (route) => {
+    // Mock an empty answer before the report is opened
+    await page.route('**/api/v1/reports/trades-by-stock*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -224,8 +209,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       });
     });
 
-    // Refresh to load empty data
-    await page.reload();
+    await openReport(page);
 
     // Wait for empty state message
     const emptyState = page.locator('.empty-state');
