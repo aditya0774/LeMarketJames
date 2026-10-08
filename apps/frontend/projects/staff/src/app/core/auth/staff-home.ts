@@ -5,7 +5,7 @@ import { Role } from './auth';
  * the start page both read it. A role that is not listed has no section in this app.
  */
 const STAFF_HOME: Partial<Record<Role, string>> = {
-  TRADING_OPS: '/trade-search',
+  TRADING_OPS: '/trading-ops',
   ANALYST: '/analyst',
 };
 

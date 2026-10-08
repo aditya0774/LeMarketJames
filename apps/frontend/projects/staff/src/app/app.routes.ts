@@ -27,6 +27,15 @@ export const routes: Routes = [
       // Each role's section is one parent route that carries the guard, so a page added as its
       // child is guarded without repeating it.
       {
+        path: 'trading-ops',
+        canActivate: [requiresRole('TRADING_OPS')],
+        children: [
+          { path: '', title: 'Trading Ops Dashboard', loadComponent: () => import('./features/trading-ops/trading-ops-dashboard').then(m => m.TradingOpsDashboard) },
+          { path: 'trade-search', title: 'Trade search', loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) },
+        ],
+      },
+      // Also allow direct access to trade-search for backward compatibility
+      {
         path: 'trade-search',
         canActivate: [requiresRole('TRADING_OPS')],
         children: [{ path: '', title: 'Trade search', loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) }],
