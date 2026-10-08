@@ -17,7 +17,7 @@ Every order story codes against the same order shape and lifecycle, so validatio
 - **`FILLED` and `REJECTED` are final.** `OrderStatus.isOpen()` tells open from final; use it rather than your own list.
 - **`rejection_reason` holds a `RejectionReason` code**, never free text.
 - **Filling settles first.** Moving to `FILLED` needs a price and settles cash and holdings through holdings-service before the status is saved, so an order is never FILLED without its side effects.
-- **Every transition is audited and announced.** It writes its audit event in the same transaction ([C2](C2-audit.md)) and publishes `OrderStatusChanged`, plus `OrderFilled` on a fill ([C6](C6-api.md#internal-events-and-the-execution-interface-buy-sell-service)).
+- **Every transition is audited and announced.** It writes its audit event in the same transaction ([C2](C2-audit.md)) and publishes `OrderStatusChanged`, plus `OrderFilled` on a fill ([C6](C6-api.md#the-order-events)). Placing an order isn't a transition; it is announced once with `OrderSubmitted`.
 
 ## Who moves orders
 

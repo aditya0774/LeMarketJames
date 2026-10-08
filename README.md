@@ -130,7 +130,7 @@ graph LR
 
 The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
 
-buy-sell-service publishes every order status change and fill to Kafka, where other services can consume them; see [Kafka (order events)](#kafka-order-events). Nothing consumes them yet.
+buy-sell-service publishes every new order, order status change and fill to Kafka, where other services can consume them; see [Kafka (order events)](#kafka-order-events). Nothing consumes them yet.
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
@@ -530,14 +530,14 @@ table — see [database/README.md](database/README.md#tuning-the-market).
 
 ### Kafka (order events)
 
-buy-sell-service announces every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where any service can consume them. The topics, the record key (the order id) and the JSON format are in [C6](contracts/C6-api.md#internal-events-and-the-execution-interface-buy-sell-service); the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
+buy-sell-service announces every new order, every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where any service can consume them. What each event means and carries is in [C6](contracts/C6-api.md#the-order-events), with the topics, the record key (the order id) and the JSON format; the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
 
 | Where | What publishes the events | Broker |
 |---|---|---|
 | Docker Compose, Jenkins | Kafka publisher | the `kafka` service in [docker-compose.yml](docker-compose.yml): one node, KRaft mode, no ZooKeeper |
 | Native Windows scripts, unit tests | Stub publisher: logs each event, sends nothing | none needed |
 
-**With Docker Compose** there is nothing to do: `docker compose up -d --build` starts the broker, waits until it is healthy and then starts buy-sell-service, which creates its two topics. The broker listens on `localhost:9092` for programs on your machine and on `kafka:29092` for other containers.
+**With Docker Compose** there is nothing to do: `docker compose up -d --build` starts the broker, waits until it is healthy and then starts buy-sell-service, which creates its three topics. The broker listens on `localhost:9092` for programs on your machine and on `kafka:29092` for other containers.
 
 To watch the events arrive, place an order in the app and read a topic (Ctrl+C to stop):
 ```bash

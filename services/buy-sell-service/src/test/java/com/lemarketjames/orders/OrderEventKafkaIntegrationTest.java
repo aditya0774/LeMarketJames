@@ -86,15 +86,16 @@ class OrderEventKafkaIntegrationTest {
         when(market.findByInstrumentId(instrumentId)).thenReturn(Optional.of(
             new QuoteSnapshot(null, 101.00, 100.76543, 101.23456, 100, 102, 99, 100, 0, Instant.now(), null)));
 
-        // A consumer of its own, as another service would have. It starts at the end of both topics,
+        // A consumer of its own, as another service would have. It starts at the end of every topic,
         // so it sees only what this test publishes, whatever earlier runs left on the broker.
         consumer = new KafkaConsumer<>(Map.of(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers,
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class));
         List<TopicPartition> partitions = new ArrayList<>();
-        for (String topic : List.of(OrderEventForwarder.STATUS_CHANGED_TOPIC, OrderEventForwarder.FILLED_TOPIC)) {
-            // The service created both topics when it started (OrderEventTopics).
+        for (String topic : List.of(OrderEventForwarder.SUBMITTED_TOPIC, OrderEventForwarder.STATUS_CHANGED_TOPIC,
+                OrderEventForwarder.FILLED_TOPIC)) {
+            // The service created the topics when it started (OrderEventTopics).
             consumer.partitionsFor(topic).forEach(part -> partitions.add(new TopicPartition(topic, part.partition())));
         }
         consumer.assign(partitions);
@@ -123,6 +124,8 @@ class OrderEventKafkaIntegrationTest {
         }
 
         List<ConsumerRecord<String, String>> arrived = arrivalsFor(orderId);
+
+        assertPlacementWasAnnouncedOnce(orderId, on(OrderEventForwarder.SUBMITTED_TOPIC, arrived));
 
         // Every transition from SUBMITTED to FILLED is there, whichever statuses execution passes
         // through on the way (contract C1); placement itself isn't a transition (contract C6).
@@ -159,21 +162,39 @@ class OrderEventKafkaIntegrationTest {
         assertNotNull(Instant.parse(fill.get("quoteTime").asText()));
     }
 
+    /** The order's first event: one record on the submitted topic, saying what was ordered. */
+    private void assertPlacementWasAnnouncedOnce(int orderId, List<ConsumerRecord<String, String>> submissions)
+            throws Exception {
+        assertEquals(1, submissions.size(), "submissions on " + OrderEventForwarder.SUBMITTED_TOPIC);
+        JsonNode submission = json.readTree(submissions.get(0).value());
+        assertEquals(orderId, submission.get("orderId").asInt());
+        assertEquals(accountId, submission.get("accountId").asInt());
+        assertEquals(instrumentId, submission.get("instrumentId").asInt());
+        assertEquals("BUY", submission.get("side").asText());
+        assertEquals(0, new BigDecimal("2").compareTo(submission.get("quantity").decimalValue()));
+        // A BUY is placed at the ask, rounded to four decimals.
+        assertEquals(0, new BigDecimal("101.2346").compareTo(submission.get("price").decimalValue()));
+        assertNotNull(Instant.parse(submission.get("submittedAt").asText()));
+    }
+
     /**
-     * Reads until the order's last events have arrived, the fill and the change to FILLED, or the
-     * timeout passes. The two topics are read independently, so both are waited for; the earlier
-     * status changes sit before the last one in the same partition. Other orders' records are ignored.
+     * Reads until the order's submission and its last events have arrived, the fill and the change
+     * to FILLED, or the timeout passes. The topics are read independently, so each is waited for; the
+     * earlier status changes sit before the last one in the same partition. Other orders' records are
+     * ignored.
      */
     private List<ConsumerRecord<String, String>> arrivalsFor(int orderId) {
         List<ConsumerRecord<String, String>> arrived = new ArrayList<>();
+        boolean submitted = false;
         boolean filled = false;
         boolean changedToFilled = false;
         long deadline = System.nanoTime() + ARRIVAL_TIMEOUT.toNanos();
-        while (!(filled && changedToFilled) && System.nanoTime() < deadline) {
+        while (!(submitted && filled && changedToFilled) && System.nanoTime() < deadline) {
             for (ConsumerRecord<String, String> received : consumer.poll(Duration.ofMillis(250))) {
                 if (!String.valueOf(orderId).equals(received.key())) continue;
                 arrived.add(received);
-                if (received.topic().equals(OrderEventForwarder.FILLED_TOPIC)) filled = true;
+                if (received.topic().equals(OrderEventForwarder.SUBMITTED_TOPIC)) submitted = true;
+                else if (received.topic().equals(OrderEventForwarder.FILLED_TOPIC)) filled = true;
                 else if (received.value().contains("\"to\":\"FILLED\"")) changedToFilled = true;
             }
         }
