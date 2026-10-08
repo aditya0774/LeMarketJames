@@ -24,6 +24,11 @@ describe('TradeActivityByPeriod', () => {
   });
 
   afterEach(() => {
+    // If a test triggered ngOnInit via fixture.detectChanges(), respond to the HTTP request
+    const requests = httpMock.match(req => req.url.includes('/api/v1/reports/trades'));
+    requests.forEach(req => {
+      req.flush({ data: [], generatedAt: new Date().toISOString() });
+    });
     httpMock.verify();
   });
 
@@ -85,22 +90,14 @@ describe('TradeActivityByPeriod', () => {
   });
 
   it('should render heading in template', () => {
-    // Don't call fixture.detectChanges() yet because it will trigger ngOnInit
-    // and make HTTP requests. Just render the template.
     fixture.detectChanges();
     const heading = fixture.nativeElement.querySelector('h1');
     expect(heading?.textContent).toContain('Trade activity by period');
-    // Respond to the HTTP request that ngOnInit triggered
-    const req = httpMock.expectOne(req => req.url.includes('/api/v1/reports/trades'));
-    req.flush({ data: [], generatedAt: new Date().toISOString() });
   });
 
   it('should render period type buttons', () => {
     fixture.detectChanges();
     const buttons = fixture.nativeElement.querySelectorAll('.tab-button');
     expect(buttons.length).toBe(4);
-    // Respond to the HTTP request
-    const req = httpMock.expectOne(req => req.url.includes('/api/v1/reports/trades'));
-    req.flush({ data: [], generatedAt: new Date().toISOString() });
   });
 });
