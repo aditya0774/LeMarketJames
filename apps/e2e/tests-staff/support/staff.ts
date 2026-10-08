@@ -19,8 +19,10 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.locator('#username').fill(user.email);
   await page.locator('#password').fill(user.password);
+  // For valid staff logins, wait for navigation. For clients/invalid logins, the page may stay on /login.
+  // Use waitForNavigation with a short timeout, and ignore timeouts (some logins don't navigate).
   await Promise.all([
-    page.waitForNavigation(),
+    page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
     page.getByRole('button', { name: 'Log in' }).click(),
   ]);
 }
