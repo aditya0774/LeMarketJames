@@ -1,6 +1,6 @@
 package com.lemarketjames.reports.repository;
 
-import com.lemarketjames.reports.domain.ReportingTrade;
+import com.lemarketjames.reports.entity.ReportingTrade;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +14,7 @@ import java.util.List;
  * All queries are read-only aggregates; filtering and ownership validation happen in the service layer.
  */
 @Repository
-public interface TradesReportRepository extends JpaRepository<ReportingTrade, Long> {
+public interface TradesReportRepository extends JpaRepository<ReportingTrade, Integer> {
 
     /**
      * Aggregate all FILLED trades by symbol across all clients, filtered by date range.
