@@ -11,13 +11,20 @@
 
     Run .\scripts\windows\setup-db.ps1 once first so the lemarket database exists.
 
+    Kafka is not started: this script only runs what needs no container. Without -Kafka,
+    buy-sell-service logs its order events instead of publishing them (its stub publisher), so
+    nothing here needs a broker. See "Kafka (order events)" in the README.
+
 .EXAMPLE
     .\scripts\windows\start-all.ps1
     .\scripts\windows\start-all.ps1 -SkipBuild
+    .\scripts\windows\start-all.ps1 -Kafka
 #>
 param(
     # Skip `mvn install` when nothing under libs/ or services/ changed since the last run.
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    # Publish order events to a Kafka broker you already have running on localhost:9092.
+    [switch]$Kafka
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,7 +53,10 @@ function Start-Window([string]$Title, [string]$WorkingDir, [string]$Command) {
 Start-Window 'market-service :8083'   $repoRoot '$env:SIM_CONTROL_ENABLED = ''true''; mvn -B -pl services/market-service spring-boot:run'
 Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
-Start-Window 'buy-sell-service :8085' $repoRoot 'mvn -B -pl services/buy-sell-service spring-boot:run'
+# The same setting Docker Compose gives it; the broker address defaults to localhost:9092.
+$buySell = 'mvn -B -pl services/buy-sell-service spring-boot:run'
+if ($Kafka) { $buySell = '$env:LMJ_EVENTS_PUBLISHER = ''kafka''; ' + $buySell }
+Start-Window 'buy-sell-service :8085' $repoRoot $buySell
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
 # Not behind the trading gateway below: only the staff gateway routes to it.
 Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'

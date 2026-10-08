@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- LMKT-137: Add a single-node Kafka broker (KRaft, port 9092) to Docker Compose and Jenkins.
+  `buy-sell-service` publishes `OrderStatusChanged` and `OrderFilled` to it as JSON, keyed by
+  order id, when `LMJ_EVENTS_PUBLISHER=kafka` (set in Compose); without it the stub publisher
+  still only logs them. `scripts/verify-buy-order.sh` now reads the fill from the topic.
 - LMKT-138: Add `reporting-service` (port 8086) for analyst reports under `/api/v1/reports/**`,
   with `GET /api/v1/reports/ping`, `ANALYST`-only access, a shared report date-range helper in
   the `lmj.reports.time-zone` zone, and read-side limits (small pool, read-only, query timeout).
