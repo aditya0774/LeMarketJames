@@ -29,25 +29,22 @@ describe('Staff routes', () => {
     expect(page.querySelector('h2')?.textContent).toContain('Staff Login');
   });
 
-  for (const address of ['/trading-ops', '/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
+  for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
     it(`sends a signed-out visitor from ${address} to the staff login`, async () => {
       expect((await open(address)).url).toBe('/login');
     });
   }
 
   it('starts each signed-in role on its own dashboard', async () => {
-    expect((await open('/', 'TRADING_OPS')).url).toBe('/trading-ops');
+    expect((await open('/', 'TRADING_OPS')).url).toBe('/trade-search');
     TestBed.resetTestingModule();
     expect((await open('/', 'ANALYST')).url).toBe('/analyst');
   });
 
   it('opens the Trading Ops pages for Trading Ops', async () => {
-    const dashboard = await open('/trading-ops', 'TRADING_OPS');
-    expect(dashboard.url).toBe('/trading-ops');
-    expect(dashboard.page.textContent).toContain('Trading Ops Dashboard');
-
-    TestBed.resetTestingModule();
-    expect((await open('/trade-search', 'TRADING_OPS')).url).toBe('/trade-search');
+    const tradeSearch = await open('/trade-search', 'TRADING_OPS');
+    expect(tradeSearch.url).toBe('/trade-search');
+    expect(tradeSearch.page.textContent).toContain('Trade search');
   });
 
   it('opens the Analyst pages for an Analyst', async () => {
@@ -70,7 +67,7 @@ describe('Staff routes', () => {
     expect((await open('/analyst/reports/activity-by-stock', 'TRADING_OPS')).url).toBe('/access-denied');
   });
 
-  for (const address of ['/trading-ops', '/trade-search']) {
+  for (const address of ['/trade-search']) {
     it(`refuses an Analyst on ${address}`, async () => {
       expect((await open(address, 'ANALYST')).url).toBe('/access-denied');
     });

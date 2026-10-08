@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
 
 /**
@@ -8,7 +8,7 @@ import { Auth } from '../../../core/auth/auth';
  */
 @Component({
   selector: 'staff-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet],
   templateUrl: './staff-shell.html',
   styleUrl: './staff-shell.css',
 })
