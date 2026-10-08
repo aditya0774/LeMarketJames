@@ -14,7 +14,7 @@ import { TradeReportResponse } from '../models/trade-report.model';
 export class TradeReportService {
   private readonly apiUrl = '/api/v1/reports/trades';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Fetch trade aggregation report for the given period type and optional date range.
