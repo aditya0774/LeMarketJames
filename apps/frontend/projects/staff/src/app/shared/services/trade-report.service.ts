@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { TradeReportResponse } from '../models/trade-report.model';
 
 /**
@@ -38,6 +39,8 @@ export class TradeReportService {
       params = params.set('to', to);
     }
 
-    return this.http.get<TradeReportResponse>(this.apiUrl, { params });
+    return this.http.get<TradeReportResponse>(this.apiUrl, { params }).pipe(
+      timeout(10000) // 10 second timeout to prevent infinite loading
+    );
   }
 }
