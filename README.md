@@ -870,7 +870,7 @@ https://aditya0774.github.io/LeMarketJames/
 
 ## ER Diagram
 
-![ER Diagram](lebron_erd.png)
+![ER Diagram](lebron_erd_v2.png)
 
 ---
 
