@@ -3,8 +3,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/rou
 import { Auth } from '../../../core/auth/auth';
 
 /**
- * Layout of every staff page: a fixed sidebar with one entry per staff role's section, and the
- * page beside it. Uses LeMarket branding to match the trading app's professional appearance.
+ * Layout of every staff page: a header with logout button in the top right, and the
+ * main content area below. Uses LeMarket branding to match the trading app's professional appearance.
  */
 @Component({
   selector: 'staff-shell',

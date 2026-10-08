@@ -78,3 +78,23 @@ defines sessions. Compose supplies the same `SIM_RESPECT_MARKET_HOURS` and `SIM_
 to market and buy-sell so simulation and execution agree. Tests can disable polling while
 exercising the coordinator explicitly. Never disable polling in a live deployment that needs
 automatic recovery of unfinished settlements.
+
+## Order events
+
+Whether buy-sell-service publishes its order events to Kafka or only logs them
+([C6](C6-api.md#internal-events-and-the-execution-interface-buy-sell-service)) is one setting.
+Its key, its two values and the default are defined in
+[OrderEventPublisher.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java):
+
+| | Kafka | Stub (the default) |
+|---|---|---|
+| Set with | `LMJ_EVENTS_PUBLISHER=kafka` | nothing |
+| Used in | Docker Compose and Jenkins ([docker-compose.yml](../docker-compose.yml)); the `kafka-test` profile of buy-sell-service's tests | unit tests, the native Windows scripts, any stack with no broker |
+| Needs a broker | yes, at `KAFKA_BOOTSTRAP_SERVERS` | no; none is contacted |
+
+- The broker address and its default (`localhost:9092`) are in buy-sell-service's
+  [application.properties](../services/buy-sell-service/src/main/resources/application.properties).
+  Compose sets it to the container name and the broker's internal port, `kafka:29092`.
+- The broker itself, its ports and its listeners are defined in
+  [docker-compose.yml](../docker-compose.yml). Port 9092 is the one published to the host.
+- The topic names are not settings: they are constants in `OrderEventForwarder`.

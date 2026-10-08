@@ -54,21 +54,23 @@ for attempt in $(seq 1 60); do
     sleep 1
 done
 test "$filled" = 1
-# LMKT-23 AC3: the fill was announced. Until a broker exists the Kafka stub's log line is the only
-# place an OrderFilled event shows outside the service, so that is where it is checked. Forwarding
-# runs just after the fill commits, hence the short wait.
+# LMKT-23 AC3: the fill was announced. In this stack buy-sell-service publishes OrderFilled to Kafka
+# (LMKT-137), so the record is read back from the topic rather than from the service's log.
+# Publishing runs just after the fill commits, hence the retries. Each read takes the whole topic
+# and ends once no record has arrived for 5 seconds, which the tool reports as a timeout.
 announced=0
-for attempt in $(seq 1 10); do
-    if compose logs --no-color buy-sell-service \
-        | grep -F "topic=lemarket.orders.filled key=$order_id event=OrderFilled[" > "$scratch/filled-event.log"; then
+for attempt in $(seq 1 5); do
+    compose exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+        --topic lemarket.orders.filled --from-beginning --timeout-ms 5000 \
+        > "$scratch/filled-topic.log" 2>/dev/null || true
+    if grep -E "\"orderId\":$order_id[,}]" "$scratch/filled-topic.log" > "$scratch/filled-event.log"; then
         announced=1
         break
     fi
-    sleep 1
 done
 test "$announced" = 1
 # The event carries the quote used: where it came from and when the feed produced it.
-grep -Eq 'quoteSource=[A-Z_]+, quoteTime=[0-9]{4}-' "$scratch/filled-event.log"
+grep -Eq '"quoteSource":"[A-Z_]+","quoteTime":"[0-9]{4}-' "$scratch/filled-event.log"
 cash_before=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cash_balance FROM accounts WHERE account_id=$account_id;")
 count=$(compose exec -T db psql -At -U lemarket -d lemarket \
     -c "SELECT count(*) FROM orders WHERE order_id=$order_id AND account_id=$account_id AND order_type='BUY' AND order_status='FILLED' AND price_per_unit>0;")

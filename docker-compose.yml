@@ -129,12 +129,19 @@ services:
         condition: service_healthy
       market-service:
         condition: service_started
+      # It creates the order event topics when it starts, so the broker must be answering first.
+      kafka:
+        condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       MARKET_SERVICE_URL: http://market-service:8083
+      # Order events go to the broker below instead of only being logged (contracts/C6-api.md).
+      # Without this setting the service uses its stub publisher and needs no broker.
+      LMJ_EVENTS_PUBLISHER: kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       LMJ_EXECUTION_RESPECT_MARKET_HOURS: ${SIM_RESPECT_MARKET_HOURS:-true}
       LMJ_EXECUTION_HOLIDAYS: ${SIM_HOLIDAYS:-}
       # No depends_on here: buy-sell-service calls holdings-service (settlement) and holdings-service
@@ -213,6 +220,52 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
+
+  # Message broker for order events (LMKT-137): buy-sell-service publishes OrderSubmitted,
+  # OrderStatusChanged and OrderFilled to it (contracts/C6-api.md). One node in KRaft mode, acting
+  # as broker and controller at once, so there is no ZooKeeper.
+  # The topics are not listed here: buy-sell-service declares them from the names in its
+  # OrderEventForwarder and creates them when it starts. The broker's own auto-creation is off, so
+  # a mistyped topic name fails instead of quietly making a new topic.
+  # Events are disposable test data, so there is no volume; removing this container removes them,
+  # and the topics come back the next time buy-sell-service starts.
+  kafka:
+    image: apache/kafka:4.3.1
+    ports:
+      # For clients on the host: Jenkins' integration tests and a service run outside Docker.
+      # Containers use kafka:29092 instead. No other service in this file uses 9092.
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # A client is sent on to the address the listener it reached advertises. So there is one
+      # listener per kind of client: INTERNAL advertises the Compose name, EXTERNAL advertises
+      # localhost on the published port. CONTROLLER (9093) is the node talking to itself and is
+      # not published.
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      # Kafka's internal topics default to three copies, which a single node can't hold.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      # A consumer group with one member needn't wait for others to join.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # The default heap is 1 GB, far more than a test stack's few events need.
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    healthcheck:
+      # Healthy once the broker answers a client, not merely once the port is open.
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 15s
 
   db:
     image: postgres:16-alpine
