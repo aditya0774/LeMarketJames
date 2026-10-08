@@ -42,6 +42,13 @@ describe('BUY order HTTP integration', () => {
         listener(event);
       }
     }
+
+    emitRaw(type: string, raw: string): void {
+      const event = { data: raw } as MessageEvent<string>;
+      for (const listener of this.listeners.get(type) ?? []) {
+        listener(event);
+      }
+    }
   }
 
   let http: HttpTestingController;
@@ -146,7 +153,7 @@ describe('BUY order HTTP integration', () => {
       }
     });
 
-    expect(FakeEventSource.instances.length).toBe(1);
+    expect(FakeEventSource.instances).toHaveLength(1);
     const stream = FakeEventSource.instances[0];
     expect(stream.url).toBe(`${environment.apiBaseUrl}/api/v1/orders/stream`);
     expect(states[0]).toBe('connecting');
@@ -180,6 +187,30 @@ describe('BUY order HTTP integration', () => {
     stream.emitError();
 
     expect(states).toEqual(['connecting', 'live', 'reconnecting']);
+    subscription.unsubscribe();
+  });
+
+  it('ignores malformed SSE payloads and keeps listening for the next valid event', () => {
+    const changed: Array<{ orderId: number; to: string }> = [];
+
+    const subscription = service.watchOrderStatusStream().subscribe((snapshot) => {
+      if (snapshot.event) {
+        changed.push({ orderId: snapshot.event.orderId, to: snapshot.event.to });
+      }
+    });
+
+    const stream = FakeEventSource.instances[0];
+    stream.emitOpen();
+    stream.emitRaw('order-status-changed', '{bad json');
+    stream.emit('order-status-changed', {
+      orderId: 99,
+      accountId: 7,
+      from: 'SUBMITTED',
+      to: 'REJECTED',
+      occurredAt: '2026-10-08T10:00:00Z',
+    });
+
+    expect(changed).toEqual([{ orderId: 99, to: 'REJECTED' }]);
     subscription.unsubscribe();
   });
 });

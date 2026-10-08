@@ -146,8 +146,12 @@ export class OrderService {
       stream.onopen = () => subscriber.next({ connection: 'live' });
       stream.onerror = () => subscriber.next({ connection: 'reconnecting' });
       stream.addEventListener('order-status-changed', (event) => {
-        const payload = JSON.parse((event as MessageEvent<string>).data) as OrderStatusChangedEvent;
-        subscriber.next({ connection: 'live', event: payload });
+        try {
+          const payload = JSON.parse((event as MessageEvent<string>).data) as OrderStatusChangedEvent;
+          subscriber.next({ connection: 'live', event: payload });
+        } catch {
+          // Ignore malformed payloads; keep the stream open for the next valid event.
+        }
       });
 
       return () => stream.close();
