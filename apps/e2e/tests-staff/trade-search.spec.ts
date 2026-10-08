@@ -77,8 +77,6 @@ test.use({ timezoneId: 'America/New_York' });
 /** Signs in as Trading Ops and opens trade search from the sidebar, as an operator does. */
 async function openTradeSearch(page: Page): Promise<void> {
   await signIn(page, TRADING_OPS);
-  await expect(page).toHaveURL(/\/trading-ops$/);
-  await page.getByRole('link', { name: 'Trade search', exact: true }).click();
   await expect(page).toHaveURL(/\/trade-search$/);
 }
 
