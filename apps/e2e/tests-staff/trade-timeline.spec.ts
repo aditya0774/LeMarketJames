@@ -33,9 +33,9 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TimelineFixture
   },
   trade: async ({ tradingApp }, use) => {
     const db = await connectDatabase();
-    const user = newUser('timeline');
+    // Use seed user (ops = TRADING_OPS) so tests can sign in and see the orders
+    const user = TRADING_OPS;
     try {
-      await registerViaApi(tradingApp, user);
       const result = await db.query(
         'SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1',
         [user.username]
@@ -43,7 +43,7 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TimelineFixture
       expect(result.rows).toHaveLength(1);
       const accountId = result.rows[0].account_id as number;
 
-      // Insert a complete trade with all audit events (seeded by migrations 012-015)
+      // Insert a complete trade with all audit events
       const orderResult = await db.query(
         "INSERT INTO orders (account_id,instrument_id,order_type,quantity,price_per_unit,order_status,submitted_at,filled_at,created_at,updated_at) " +
         "SELECT $1,instrument_id,'BUY',10,244.2366,'FILLED','2026-01-15T10:30:00Z','2026-01-15T10:30:03Z','2026-01-15T10:30:00Z','2026-01-15T10:30:04Z' " +
@@ -73,15 +73,9 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TimelineFixture
 
       await use({ user, orderId, accountId });
     } finally {
-      try {
-        // audit_log is immutable (contract C2), do not delete from it; only clean up mutable tables
-        await db.query('DELETE FROM orders WHERE account_id IN (SELECT account_id FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1))', [user.username]);
-        await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-        await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-        await db.query('DELETE FROM clients WHERE username=$1', [user.username]);
-      } finally {
-        await db.end();
-      }
+      // Seed data (ops, analyst) must never be deleted. Audit_log is immutable (contract C2),
+      // so cleanup would fail on FK constraints. Just close the connection.
+      await db.end();
     }
   },
 });
