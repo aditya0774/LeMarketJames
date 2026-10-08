@@ -1,5 +1,11 @@
 pipeline {
     agent any
+    options {
+        // One build of this job at a time; a second one waits in the queue. Every build starts
+        // the same Compose stack on the same host ports (5432, 9092, 4200, ...), so two at once
+        // collide, and together they take the memory SonarQube needs on this host.
+        disableConcurrentBuilds()
+    }
     tools {
         jdk 'JDK21'
         nodejs 'NodeJS'

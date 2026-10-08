@@ -261,6 +261,9 @@ services:
       # setting the service starts no listener and needs no broker.
       LMJ_EVENTS_CONSUMER: kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
 
   # Reads lemarket.orders.submitted and raises an alert for Trading Ops on each large order
   # (GET /api/v1/surveillance/alerts, through the staff gateway only).
@@ -290,6 +293,9 @@ services:
       # setting the service starts no listener and needs no broker.
       LMJ_EVENTS_CONSUMER: kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
 
   # Reads lemarket.orders.filled and sums the fills into traded volume per stock
   # (GET /api/v1/market-activity, through the trading gateway).
@@ -319,6 +325,9 @@ services:
       # setting the service starts no listener and needs no broker.
       LMJ_EVENTS_CONSUMER: kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
 
   # Message broker for order events (LMKT-137): buy-sell-service publishes OrderSubmitted,
   # OrderStatusChanged and OrderFilled to it, and the three consumers above read them
