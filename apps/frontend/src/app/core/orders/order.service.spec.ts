@@ -146,7 +146,7 @@ describe('BUY order HTTP integration', () => {
       }
     });
 
-    expect(FakeEventSource.instances).toHaveSize(1);
+    expect(FakeEventSource.instances.length).toBe(1);
     const stream = FakeEventSource.instances[0];
     expect(stream.url).toBe(`${environment.apiBaseUrl}/api/v1/orders/stream`);
     expect(states[0]).toBe('connecting');
