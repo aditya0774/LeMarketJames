@@ -58,7 +58,7 @@
       
       <mat-card-content>
         <div class="table-wrapper">
-          <table mat-table [dataSource]="(holdings$ | async)?.holdings || []" class="holdings-table">
+          <table mat-table [dataSource]="(holdings$ | async)?.holdings || []" class="holdings-table" aria-label="My holdings">
             
             <!-- Symbol Column -->
             <ng-container matColumnDef="symbol">

@@ -121,7 +121,8 @@ pipeline {
             }
             steps {
                 dir('apps/frontend') {
-                    sh 'npm run test:staff -- --watch=false && npm run build:staff'
+                    // --coverage writes coverage/staff/lcov.info, which the SonarQube stage reads.
+                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
                 }
             }
         }
@@ -352,6 +353,41 @@ pipeline {
                 ])
                 // Fails the build when coverage drops below scripts/coverage/coverage-baseline.json.
                 sh 'node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json'
+            }
+        }
+
+        // Sends the code, test results and coverage of both sides to SonarQube as one project
+        // (settings in sonar-project.properties). Jenkins supplies the server address and token
+        // ('SonarQube' under Manage Jenkins > System) and the scanner ('SonarScanner' under
+        // Tools), so neither is written here. Runs after the integration tests so that their
+        // results and coverage are part of the analysis, and needs both sides' reports.
+        stage('SonarQube Analysis') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                sh 'node scripts/coverage/build-sonar-coverage.mjs'
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
+                        // Java analysis resolve Spring and other library types.
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+                    }
+                }
+            }
+        }
+
+        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
+        // build here when the Classroom Quality Gate fails.
+        stage('Quality Gate') {
+            when {
+                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+            }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 

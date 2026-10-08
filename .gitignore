@@ -30,3 +30,6 @@ Thumbs.db
 apps/frontend/test-results/
 apps/frontend/playwright-report/
 error.txt
+
+# SonarScanner working folder
+.scannerwork/

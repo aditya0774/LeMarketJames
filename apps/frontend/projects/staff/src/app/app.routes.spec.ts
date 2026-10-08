@@ -76,12 +76,6 @@ describe('Staff routes', () => {
     });
   }
 
-  it('gives a role without a section nothing but Access denied', async () => {
-    expect((await open('/', 'COMPLIANCE')).url).toBe('/access-denied');
-    TestBed.resetTestingModule();
-    expect((await open('/trading-ops', 'COMPLIANCE')).url).toBe('/access-denied');
-  });
-
   it('sends an unknown address to the start page', async () => {
     expect((await open('/no-such-page', 'ANALYST')).url).toBe('/analyst');
   });

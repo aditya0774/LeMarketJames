@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 
-export type Role = 'CLIENT' | 'TRADING_OPS' | 'ANALYST' | 'COMPLIANCE';
+export type Role = 'CLIENT' | 'TRADING_OPS' | 'ANALYST';
 
 interface SessionResponse {
   username: string;
