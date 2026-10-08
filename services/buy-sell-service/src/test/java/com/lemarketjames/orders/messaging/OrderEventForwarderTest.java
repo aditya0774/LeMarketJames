@@ -3,6 +3,7 @@ package com.lemarketjames.orders.messaging;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.events.OrderFilled;
 import com.lemarketjames.orders.events.OrderStatusChanged;
+import com.lemarketjames.orders.events.OrderSubmitted;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,11 @@ class OrderEventForwarderTest {
     final OrderEventForwarder forwarder = new OrderEventForwarder(publisher);
     final Instant now = Instant.parse("2026-09-30T15:00:00Z");
 
+    @Test void forwardsSubmissionKeyedByOrder() {
+        var event = new OrderSubmitted(7, 1, 3, Order.OrderType.BUY, BigDecimal.TEN, new BigDecimal("101.0000"), now);
+        forwarder.onSubmitted(event);
+        verify(publisher).publish(OrderEventForwarder.SUBMITTED_TOPIC, "7", event);
+    }
     @Test void forwardsStatusChangeKeyedByOrder() {
         var event = new OrderStatusChanged(7, 1, Order.OrderStatus.SUBMITTED, Order.OrderStatus.ACCEPTED, now);
         forwarder.onStatusChanged(event);

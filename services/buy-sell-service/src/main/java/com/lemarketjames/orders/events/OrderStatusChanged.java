@@ -6,8 +6,9 @@ import java.time.Instant;
 
 /**
  * Published inside buy-sell-service after every order status transition (contract C6). Creation isn't a
- * transition: a new order is always SUBMITTED. Listen with {@code @EventListener}, or with
- * {@code @TransactionalEventListener} to act only once the transition has committed.
+ * transition: a new order is always SUBMITTED, and {@link OrderSubmitted} announces it. Listen with
+ * {@code @EventListener}, or with {@code @TransactionalEventListener} to act only once the
+ * transition has committed.
  *
  * @param orderId    the order
  * @param accountId  the order's account

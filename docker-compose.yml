@@ -221,9 +221,9 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
 
-  # Message broker for order events (LMKT-137): buy-sell-service publishes OrderStatusChanged and
-  # OrderFilled to it (contracts/C6-api.md). One node in KRaft mode, acting as broker and controller
-  # at once, so there is no ZooKeeper.
+  # Message broker for order events (LMKT-137): buy-sell-service publishes OrderSubmitted,
+  # OrderStatusChanged and OrderFilled to it (contracts/C6-api.md). One node in KRaft mode, acting
+  # as broker and controller at once, so there is no ZooKeeper.
   # The topics are not listed here: buy-sell-service declares them from the names in its
   # OrderEventForwarder and creates them when it starts. The broker's own auto-creation is off, so
   # a mistyped topic name fails instead of quietly making a new topic.

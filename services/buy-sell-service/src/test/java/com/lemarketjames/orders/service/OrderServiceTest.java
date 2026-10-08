@@ -16,6 +16,7 @@ import com.lemarketjames.common.domain.ClientEntity;
 import com.lemarketjames.common.domain.ClientRepository;
 import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.events.OrderStatusChanged;
+import com.lemarketjames.orders.events.OrderSubmitted;
 import com.lemarketjames.orders.exception.InvalidStatusTransitionException;
 import org.springframework.context.ApplicationEventPublisher;
 import java.util.Map;
@@ -103,7 +104,7 @@ class OrderServiceTest {
             clientRepository, instrumentRepository, restrictions, holdingsValidationClient, marketDataService,
             cashValidationService);
         orderService = new OrderService(orderRepository, accountAccess, validator,
-            new SubmissionRecorder(orderRepository, auditRecorder),
+            new SubmissionRecorder(orderRepository, auditRecorder, events),
             new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events),
             auditEventRepository);
         // Mock cash validation to pass by default (sufficient balance)
@@ -195,6 +196,11 @@ class OrderServiceTest {
         var sequence = inOrder(orderRepository, auditRecorder);
         sequence.verify(orderRepository).save(any());
         sequence.verify(auditRecorder, times(7)).recordSubmission(any());
+        // The new order is announced once, with what was ordered (contract C6).
+        verify(events).publishEvent(argThat((Object e) -> e instanceof OrderSubmitted announced
+            && announced.orderId() == 77 && announced.accountId() == 1 && announced.instrumentId() == 1
+            && announced.side() == Order.OrderType.SELL && announced.quantity().equals(BigDecimal.ONE)
+            && announced.price() == null && announced.submittedAt() != null));
     }
 
     @Test
@@ -217,7 +223,8 @@ class OrderServiceTest {
             assertEquals(REQUEST_ID, event.requestId());
         });
         assertEquals(new BigDecimal("250.0000"), audited().get(0).details().get("price"));
-        verifyNoInteractions(orderRepository);
+        // No order was saved, so there is none to announce.
+        verifyNoInteractions(orderRepository, events);
     }
 
     @Test
