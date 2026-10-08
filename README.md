@@ -507,17 +507,16 @@ Like the trading app, the staff app only ever calls `/api` on its own origin (`a
 | Route | Folder | Who may open it |
 |---|---|---|
 | `/login` | `features/auth/login/` | Anyone; it is the start page |
-| `/trading-ops` | `features/trading-ops/` | `TRADING_OPS` |
-| `/trade-search` | `features/trade-search/` | `TRADING_OPS` |
+| `/trade-search` | `features/trade-search/` | `TRADING_OPS`; it is where that role starts |
 | `/analyst` | `features/analyst/` | `ANALYST` |
 | `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) | `ANALYST` |
 
 The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell), which also holds the sign-out action.
 
-**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trading-ops` and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
+**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trade-search` (Trading Ops) and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
 
 - A page for one role goes in as a child of that role's section and needs no guard of its own. A report added to `analyst-reports.ts` is such a child already.
-- A page outside the sections takes the guard itself, as `/trade-search` does with `requiresRole('TRADING_OPS')`. Several roles can share one: `requiresRole('TRADING_OPS', 'ANALYST')` lets either in.
+- A page outside the sections takes the guard itself. Several roles can share one: `requiresRole('TRADING_OPS', 'ANALYST')` lets either in.
 - To show or hide part of a page, use `Auth.hasRole('<ROLE>')`.
 
 The guard only decides what the app shows; the endpoint behind the screen still needs its `hasRole` rule in the owning service ([C7](contracts/C7-roles.md)).

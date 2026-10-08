@@ -55,14 +55,13 @@ The staff app opens on its own login page, which signs in through the staff gate
 
 | Who signs in | What happens |
 |---|---|
-| A staff role with a section | Lands on that section's dashboard. Where each role lands is one list, [staff-home.ts](../apps/frontend/projects/staff/src/app/core/auth/staff-home.ts) |
+| A staff role with a section | Lands on that section's start page: trade search for `TRADING_OPS`, the Analyst dashboard for `ANALYST`. Where each role lands is one list, [staff-home.ts](../apps/frontend/projects/staff/src/app/core/auth/staff-home.ts) |
 | `CLIENT` | Signed straight out again, with "This login is for staff only". The gateway cannot refuse the sign-in itself, because it checks no role |
 
 Pages are guarded with `requiresRole(...roles)` ([role.guard.ts](../apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), which takes the roles that may open a page:
 
 - a signed-out visitor is sent to the staff login
-- a signed-in account with none of the roles sees Access denied
-- the sidebar links a role only to its own section.
+- a signed-in account with none of the roles sees Access denied.
 
 As in the trading app, this decides what is shown and nothing more: the service behind a page enforces the role itself.
 
