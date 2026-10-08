@@ -54,6 +54,7 @@ export class Dashboard implements OnInit {
   private historyDate = '';
   private historyRequest?: Subscription;
   private ordersRequest?: Subscription;
+  private pendingOrdersRefresh = false;
   private liveOrdersRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
@@ -154,7 +155,10 @@ export class Dashboard implements OnInit {
   }
 
   private loadOrders(): void {
-    if (this.ordersRequest && !this.ordersRequest.closed) return;
+    if (this.ordersRequest && !this.ordersRequest.closed) {
+      this.pendingOrdersRefresh = true;
+      return;
+    }
     const accountId = this.auth.currentAccountId();
     if (!accountId) {
       this.ordersError.set('No trading account is linked to this login.');
@@ -173,9 +177,17 @@ export class Dashboard implements OnInit {
             this.loadHoldings();
             this.loadHistory();
           }
+          if (this.pendingOrdersRefresh) {
+            this.pendingOrdersRefresh = false;
+            this.loadOrders();
+          }
         },
         error: (err) => {
           this.flagExpiredSession(err);
+          if (this.pendingOrdersRefresh) {
+            this.pendingOrdersRefresh = false;
+            this.loadOrders();
+          }
         },
       });
   }

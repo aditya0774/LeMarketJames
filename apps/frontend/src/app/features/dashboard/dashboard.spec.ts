@@ -99,6 +99,26 @@ describe('Dashboard', () => {
     expect(text()).toContain('Filled');
   });
 
+  it('queues an orders refresh when a live event arrives during an in-flight orders request', async () => {
+    const first = new Subject<OrderResponse[]>();
+    ordersResult = first;
+    await setup();
+
+    // The queued follow-up request should read this newer state once the first request completes.
+    ordersResult = of([order(1, 'FILLED')]);
+    liveOrders.next({
+      connection: 'live',
+      event: { orderId: 1, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '2026-09-01T10:00:00Z' },
+    });
+    first.next([order(1, 'SUBMITTED')]);
+    first.complete();
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(text()).toContain('Filled');
+  });
+
   it('shows portfolio totals and open order count', async () => {
     ordersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
     await setup();
