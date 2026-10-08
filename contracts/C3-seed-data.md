@@ -24,7 +24,6 @@ Every seed login, client or staff, uses the password **`Pass123!`**. Log in with
 |---|---|
 | `ops@seed.lemarket.com` | `TRADING_OPS` |
 | `analyst@seed.lemarket.com` | `ANALYST` |
-| `compliance@seed.lemarket.com` | `COMPLIANCE` |
 
 ## Stocks
 

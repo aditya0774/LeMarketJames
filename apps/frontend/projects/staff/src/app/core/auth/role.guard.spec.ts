@@ -32,7 +32,7 @@ describe('requiresRole', () => {
     expect(decide(requiresRole('ANALYST'))).toBe(true);
   });
 
-  for (const role of ['CLIENT', 'ANALYST', 'COMPLIANCE'] as Role[]) {
+  for (const role of ['CLIENT', 'ANALYST'] as Role[]) {
     it(`refuses ${role} on a TRADING_OPS page`, () => {
       signInAs(role);
       expect(decide(requiresRole('TRADING_OPS'))).toBe('/access-denied');
@@ -40,13 +40,13 @@ describe('requiresRole', () => {
   }
 
   it('lets in any one of several roles, and refuses the rest', () => {
-    const guard = requiresRole('TRADING_OPS', 'COMPLIANCE');
+    const guard = requiresRole('TRADING_OPS', 'ANALYST');
 
-    signInAs('COMPLIANCE');
-    expect(decide(guard)).toBe(true);
     signInAs('TRADING_OPS');
     expect(decide(guard)).toBe(true);
     signInAs('ANALYST');
+    expect(decide(guard)).toBe(true);
+    signInAs('CLIENT');
     expect(decide(guard)).toBe('/access-denied');
   });
 });

@@ -11,7 +11,7 @@ describe('Trading Operations access', () => {
   it('redirects signed-out visitors to login', () => {
     expect(TestBed.inject(Router).serializeUrl(run() as UrlTree)).toBe('/login');
   });
-  for (const role of ['CLIENT', 'ANALYST', 'COMPLIANCE', 'TRADING_OPS'] as Role[]) {
+  for (const role of ['CLIENT', 'ANALYST', 'TRADING_OPS'] as Role[]) {
     it('checks direct access and navigation for ' + role, () => {
       const auth = TestBed.inject(Auth);
       auth.currentUser.set('user'); auth.roles.set([role]);
