@@ -48,7 +48,8 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TradeFixture }>
 
       // Insert audit events for the order
       const clientId = (await db.query('SELECT client_id FROM accounts WHERE account_id=$1', [accountId])).rows[0].client_id as number;
-      const requestId = '550e8400-e29b-41d4-a716-446655440000';
+      // Use a unique requestId per test run to avoid constraint violations
+      const requestId = crypto.randomUUID();
       
       await db.query(
         "INSERT INTO audit_log (order_id, account_id, client_id, action, details, created_at, request_id, event_key, archived) " +
@@ -77,7 +78,8 @@ const test = base.extend<{ tradingApp: APIRequestContext; trade: TradeFixture }>
       await use({ user, orderId, accountId });
     } finally {
       try {
-        // audit_log is immutable (contract C2), do not delete from it
+        // Delete audit_log events first, then orders (due to foreign key constraint)
+        await db.query('DELETE FROM audit_log WHERE order_id IN (SELECT order_id FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1))', [user.username]);
         await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [user.username]);
         await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
         await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
