@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `92b54415` on 2026-10-09 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `0a811dc0` on 2026-10-09 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -22,8 +22,8 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 97.40 | 100.00 | 2 / 77 |
 | **Back end (all modules)** | 83.57 | 80.69 | 538 / 3275 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.53 | 80.31 | 179 / 1710 |
-| **Everything** | 85.62 | 80.45 | 717 / 4985 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.18 | 80.13 | 185 / 1710 |
+| **Everything** | 85.50 | 80.34 | 723 / 4985 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -52,15 +52,16 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | `src/app/core/orders/orders.service.ts` | 9 | 30.77 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 91.84 |
+| `src/app/core/orders/order.service.ts` | 7 | 80.00 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
 | `src/app/features/auth/login/login.html` | 5 | 86.11 |
 | `src/app/features/holdings/by-stock-report/by-stock-detail.component.ts` | 5 | 87.50 |
-| `src/app/features/holdings/by-stock-report/by-stock-report.component.html` | 5 | 85.71 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-09 | `0a811dc0` | 83.57 | 80.69 | 89.18 | 80.13 |
 | 2026-10-09 | `92b54415` | 83.57 | 80.69 | 89.53 | 80.31 |
 | 2026-10-08 | `7e204ecf` | 83.57 | 80.69 | 89.53 | 80.31 |
 | 2026-10-08 | `b487e4a0` | 82.53 | 78.97 | 89.18 | 80.13 |
