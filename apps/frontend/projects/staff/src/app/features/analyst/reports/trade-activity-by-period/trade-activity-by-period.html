@@ -9,8 +9,8 @@
   <mat-card class="controls-card">
     <mat-card-content>
       <div class="period-selector">
-        <label class="period-label">Period Type:</label>
-        <div class="period-buttons">
+        <span class="period-label" id="period-type-label">Period Type:</span>
+        <div class="period-buttons" role="group" aria-labelledby="period-type-label">
           <button 
             mat-raised-button 
             [color]="periodType() === 'DAY' ? 'primary' : ''"
@@ -48,12 +48,13 @@
 
       <!-- Date Range Picker -->
       <div class="date-range-picker">
-        <label class="date-label">Date Range:</label>
-        <form [formGroup]="dateRangeForm" class="date-inputs">
+        <span class="date-label" id="date-range-label">Date Range:</span>
+        <form [formGroup]="dateRangeForm" class="date-inputs" aria-labelledby="date-range-label">
           <mat-form-field appearance="outline">
             <mat-label>Start Date</mat-label>
             <input 
               matInput 
+              id="start-date-input"
               [matDatepicker]="startPicker"
               formControlName="startDate"
               readonly />
@@ -65,6 +66,7 @@
             <mat-label>End Date</mat-label>
             <input 
               matInput 
+              id="end-date-input"
               [matDatepicker]="endPicker"
               formControlName="endDate"
               readonly />
@@ -85,8 +87,8 @@
 
       <!-- Preset Date Range Buttons -->
       <div class="preset-dates">
-        <label class="preset-label">Quick Select:</label>
-        <div class="preset-buttons">
+        <span class="preset-label" id="quick-select-label">Quick Select:</span>
+        <div class="preset-buttons" role="group" aria-labelledby="quick-select-label">
           <button 
             mat-stroked-button 
             (click)="setPresetDates('week')"

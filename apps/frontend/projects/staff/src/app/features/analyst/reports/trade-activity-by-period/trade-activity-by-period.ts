@@ -159,12 +159,15 @@ export class TradeActivityByPeriod implements OnInit {
         startDate.setMonth(today.getMonth());
         startDate.setDate(1);
         break;
-      case 'quarter':
-        // First day of current quarter (Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec)
+      case 'quarter': {
+        // First day of current quarter (Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec).
+        // The braces scope `quarter` to this case. Day 1 is set first so that, on the 31st,
+        // moving to a shorter month does not roll over into the next one.
         const quarter = Math.floor(today.getMonth() / 3);
-        startDate.setMonth(quarter * 3);
         startDate.setDate(1);
+        startDate.setMonth(quarter * 3);
         break;
+      }
     }
 
     this.startDate.set(startDate);
