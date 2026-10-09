@@ -26,7 +26,7 @@ LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionTra
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionTrail.Check,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionRequestId,0,9,0,0,0,3,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,ValidationRule,0,51,0,0,0,9,0,1,0,1
-LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionRecorder,0,158,0,6,0,32,0,9,0,6
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,SubmissionRecorder,0,179,0,6,0,35,0,9,0,6
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.submission,ValidationOutcome,0,34,0,2,0,4,0,5,0,4
 LeMarketJames Buy Sell Service,com.lemarketjames.common,OrderExceptionHandler,13,31,0,0,4,11,1,3,1,3
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.dto,OrderResponse,4,147,0,0,2,48,1,23,1,23
@@ -35,10 +35,13 @@ LeMarketJames Buy Sell Service,com.lemarketjames.orders.dto,SubmitBuyOrderReques
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.dto,AuditEventDto,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders,OrderController,18,121,1,5,4,29,2,11,1,9
 LeMarketJames Buy Sell Service,com.lemarketjames.orders,BuyOrderController,0,26,0,2,0,7,0,3,0,2
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.events,OrderSubmitted,0,24,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.events,OrderStatusChanged,0,18,0,0,0,1,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.events,OrderFilled,0,30,0,0,0,1,0,1,0,1
-LeMarketJames Buy Sell Service,com.lemarketjames.orders.messaging,OrderEventForwarder,0,27,0,0,0,8,0,4,0,4
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.messaging,OrderEventTopics,0,20,0,0,0,5,0,5,0,5
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.messaging,OrderEventForwarder,0,36,0,0,0,10,0,5,0,5
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.messaging,KafkaStubOrderEventPublisher,0,25,0,0,0,4,0,3,0,3
+LeMarketJames Buy Sell Service,com.lemarketjames.orders.messaging,KafkaOrderEventPublisher,0,94,0,2,0,17,0,6,0,5
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,RejectionReason,0,57,0,0,0,10,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,Order.OrderType,0,15,0,0,0,2,0,1,0,1
 LeMarketJames Buy Sell Service,com.lemarketjames.orders.entity,Order.OrderStatus,0,76,0,7,0,15,0,9,0,4

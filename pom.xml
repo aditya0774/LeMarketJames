@@ -33,6 +33,9 @@
         <module>services/market-service</module>
         <module>services/holdings-service</module>
         <module>services/reporting-service</module>
+        <module>services/notification-service</module>
+        <module>services/surveillance-service</module>
+        <module>services/activity-service</module>
         <module>services/gateway-service</module>
         <module>services/staff-gateway-service</module>
     </modules>

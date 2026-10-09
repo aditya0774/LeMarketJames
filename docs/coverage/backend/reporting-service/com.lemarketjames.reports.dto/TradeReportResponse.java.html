@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TradeReportResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.dto</a> &gt; <span class="el_source">TradeReportResponse.java</span></div><h1>TradeReportResponse.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.dto;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Response envelope for trade aggregation reports.
+ * Contains aggregated data by period and generation timestamp.
+ */
+public class TradeReportResponse {
+
+    private List&lt;PeriodAggregation&gt; data;
+    private LocalDateTime generatedAt;
+
+<span class="nc" id="L15">    public TradeReportResponse() {</span>
+<span class="nc" id="L16">    }</span>
+
+<span class="fc" id="L18">    public TradeReportResponse(List&lt;PeriodAggregation&gt; data, LocalDateTime generatedAt) {</span>
+<span class="fc" id="L19">        this.data = data;</span>
+<span class="fc" id="L20">        this.generatedAt = generatedAt;</span>
+<span class="fc" id="L21">    }</span>
+
+    public List&lt;PeriodAggregation&gt; getData() {
+<span class="fc" id="L24">        return data;</span>
+    }
+
+    public void setData(List&lt;PeriodAggregation&gt; data) {
+<span class="nc" id="L28">        this.data = data;</span>
+<span class="nc" id="L29">    }</span>
+
+    public LocalDateTime getGeneratedAt() {
+<span class="nc" id="L32">        return generatedAt;</span>
+    }
+
+    public void setGeneratedAt(LocalDateTime generatedAt) {
+<span class="nc" id="L36">        this.generatedAt = generatedAt;</span>
+<span class="nc" id="L37">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

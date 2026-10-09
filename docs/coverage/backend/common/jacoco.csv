@@ -3,10 +3,12 @@ LeMarketJames Common,com.lemarketjames.common.instruments,Instrument,52,0,0,0,23
 LeMarketJames Common,com.lemarketjames.common.instruments,Instrument.AssetClass,21,0,0,0,2,0,1,0,1,0
 LeMarketJames Common,com.lemarketjames.common.error,GlobalExceptionHandler,62,0,2,0,14,0,6,0,5,0
 LeMarketJames Common,com.lemarketjames.common.error,ValidationException,10,0,0,0,4,0,2,0,2,0
+LeMarketJames Common,com.lemarketjames.common.events,OrderEventReader,0,48,0,4,0,11,0,5,0,3
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Auth,0,11,0,0,0,3,0,2,0,2
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Session,4,10,0,0,2,3,1,2,1,2
-LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings,0,51,0,0,0,13,0,7,0,7
+LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings,0,59,0,0,0,15,0,8,0,8
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Audit,4,10,0,0,2,3,1,2,1,2
+LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Surveillance,0,16,0,0,0,5,0,3,0,3
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Orders,0,15,0,0,0,5,0,3,0,3
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Market,0,14,0,0,0,5,0,3,0,3
 LeMarketJames Common,com.lemarketjames.common.config,PlatformSettings.Auth.Lockout,4,20,0,0,2,7,1,4,1,4
@@ -17,7 +19,7 @@ LeMarketJames Common,com.lemarketjames.common.audit,AuditEventType,0,45,0,0,0,8,
 LeMarketJames Common,com.lemarketjames.common.audit,SubmissionAuditEvent,0,39,0,2,0,2,0,3,0,2
 LeMarketJames Common,com.lemarketjames.common.audit,AuditLockdownCheck,4,53,0,4,0,15,1,5,1,3
 LeMarketJames Common,com.lemarketjames.common.security,JwtService,2,116,2,4,1,30,2,9,0,8
-LeMarketJames Common,com.lemarketjames.common.security,Role,0,31,0,0,0,6,0,2,0,2
+LeMarketJames Common,com.lemarketjames.common.security,Role,0,25,0,0,0,5,0,2,0,2
 LeMarketJames Common,com.lemarketjames.common.security,JwtAuthenticationFilter,0,68,0,2,0,21,0,7,0,6
 LeMarketJames Common,com.lemarketjames.common.security,TokenClaims,5,9,0,0,1,1,1,1,1,1
 LeMarketJames Common,com.lemarketjames.common.domain,ClientSegment,21,0,0,0,4,0,1,0,1,0

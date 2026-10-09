@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderFilledListener.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Activity Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.activity</a> &gt; <span class="el_source">OrderFilledListener.java</span></div><h1>OrderFilledListener.java</h1><pre class="source lang-java linenums">package com.lemarketjames.activity;
+
+import com.lemarketjames.common.events.OrderEventConsumerSwitch;
+import com.lemarketjames.common.events.OrderEventReader;
+import com.lemarketjames.common.events.OrderEventTopicNames;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * The Kafka side of this service: receives every fill (contract C6) and hands it to
+ * {@link MarketActivityService}. It exists only when the consumer is switched on, so a stack
+ * without a broker starts no listener and contacts nothing.
+ */
+@Component
+@ConditionalOnProperty(name = OrderEventConsumerSwitch.CONSUMER_PROPERTY, havingValue = OrderEventConsumerSwitch.KAFKA)
+public class OrderFilledListener {
+
+    /**
+     * This service's consumer group. Every instance of the service shares it, so each fill is
+     * counted once however many instances run, and the group's committed position is where the
+     * service carries on after a restart.
+     */
+    public static final String GROUP_ID = &quot;activity-service&quot;;
+
+    private final OrderEventReader reader;
+    private final MarketActivityService activity;
+
+<span class="fc" id="L29">    public OrderFilledListener(OrderEventReader reader, MarketActivityService activity) {</span>
+<span class="fc" id="L30">        this.reader = reader;</span>
+<span class="fc" id="L31">        this.activity = activity;</span>
+<span class="fc" id="L32">    }</span>
+
+    /** @param value the record value: an {@code OrderFilled} as JSON */
+    @KafkaListener(topics = OrderEventTopicNames.FILLED, groupId = GROUP_ID)
+    public void onFilled(String value) {
+<span class="fc" id="L37">        reader.read(OrderEventTopicNames.FILLED, value, OrderFilledMessage.class)</span>
+<span class="fc" id="L38">            .ifPresent(activity::record);</span>
+<span class="fc" id="L39">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -19,17 +19,17 @@ test.describe('Staff login', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole('heading', { name: 'Staff Login' })).toBeVisible();
 
-    for (const address of ['/trading-ops', '/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
+    for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
       await page.goto(address);
       await expect(page, address).toHaveURL(/\/login$/);
     }
   });
 
-  test('Trading Ops lands on the Trading Ops dashboard', async ({ page }) => {
+  test('Trading Ops lands on trade search', async ({ page }) => {
     await signIn(page, TRADING_OPS);
 
-    await expect(page).toHaveURL(/\/trading-ops$/);
-    await expect(page.getByRole('heading', { name: 'Trading Ops Dashboard' })).toBeVisible();
+    await expect(page).toHaveURL(/\/trade-search$/);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toBeVisible();
   });
 
   test('an Analyst lands on the Analyst dashboard and sees the report list', async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe('Staff login', () => {
 
   test('Trading Ops is refused on the Analyst pages', async ({ page }) => {
     await signIn(page, TRADING_OPS);
-    await expect(page).toHaveURL(/\/trading-ops$/);
+    await expect(page).toHaveURL(/\/trade-search$/);
     await expect(page.getByRole('link', { name: 'Analyst', exact: true })).toHaveCount(0);
 
     // Typed into the address bar: a full page load, so the session is read back from the cookie.
@@ -61,11 +61,9 @@ test.describe('Staff login', () => {
     await expect(page).toHaveURL(/\/analyst$/);
     await expect(page.getByRole('link', { name: 'Trading Ops', exact: true })).toHaveCount(0);
 
-    for (const address of ['/trading-ops', '/trade-search']) {
-      await page.goto(address);
-      await expectAccessDenied(page);
-    }
-    await expect(page.getByRole('heading', { name: 'Trading Ops Dashboard' })).toHaveCount(0);
+    await page.goto('/trade-search');
+    await expectAccessDenied(page);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
   });
 
   test('a client is refused on the staff login and is left signed out', async ({ page, context }) => {
@@ -78,7 +76,7 @@ test.describe('Staff login', () => {
     await expect.poll(async () => (await context.cookies()).map(cookie => cookie.name)).not.toContain('staff_jwt');
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
 
-    for (const address of ['/trading-ops', '/analyst']) {
+    for (const address of ['/trade-search', '/analyst']) {
       await page.goto(address);
       await expect(page, address).toHaveURL(/\/login$/);
     }
@@ -86,12 +84,12 @@ test.describe('Staff login', () => {
 
   test('signing out returns to the staff login and ends the session', async ({ page }) => {
     await signIn(page, TRADING_OPS);
-    await expect(page).toHaveURL(/\/trading-ops$/);
+    await expect(page).toHaveURL(/\/trade-search$/);
 
     await page.getByRole('button', { name: 'Log out' }).click();
     await expect(page).toHaveURL(/\/login$/);
 
-    await page.goto('/trading-ops');
+    await page.goto('/trade-search');
     await expect(page).toHaveURL(/\/login$/);
   });
 });

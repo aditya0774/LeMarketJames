@@ -42,6 +42,9 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Audit trail | `TRADING_OPS` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-reporting-service)) |
 | Insights | `ANALYST` | Planned; guard with this role |
+| Notifications about one's own orders (`/api/v1/notifications/**`) | `CLIENT` (own account only) | Enforced in notification-service `SecurityConfig`; staff get `403` ([C6](C6-api.md#get-apiv1notifications-client-only)) |
+| Large-order alerts (`/api/v1/surveillance/**`) | `TRADING_OPS` | Enforced in surveillance-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)) |
+| Market activity (`/api/v1/market-activity/**`) | every signed-in role | Enforced in activity-service `SecurityConfig`: signed in, any role. It holds aggregates only ([C6](C6-api.md#get-apiv1market-activity)) |
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
 
@@ -55,14 +58,13 @@ The staff app opens on its own login page, which signs in through the staff gate
 
 | Who signs in | What happens |
 |---|---|
-| A staff role with a section | Lands on that section's dashboard. Where each role lands is one list, [staff-home.ts](../apps/frontend/projects/staff/src/app/core/auth/staff-home.ts) |
+| A staff role with a section | Lands on that section's start page: trade search for `TRADING_OPS`, the Analyst dashboard for `ANALYST`. Where each role lands is one list, [staff-home.ts](../apps/frontend/projects/staff/src/app/core/auth/staff-home.ts) |
 | `CLIENT` | Signed straight out again, with "This login is for staff only". The gateway cannot refuse the sign-in itself, because it checks no role |
 
 Pages are guarded with `requiresRole(...roles)` ([role.guard.ts](../apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), which takes the roles that may open a page:
 
 - a signed-out visitor is sent to the staff login
-- a signed-in account with none of the roles sees Access denied
-- the sidebar links a role only to its own section.
+- a signed-in account with none of the roles sees Access denied.
 
 As in the trading app, this decides what is shown and nothing more: the service behind a page enforces the role itself.
 

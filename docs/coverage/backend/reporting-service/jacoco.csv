@@ -1,12 +1,19 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+LeMarketJames Reporting Service,com.lemarketjames.reports.entity,ReportingTrade,27,12,0,0,9,4,9,4,9,4
+LeMarketJames Reporting Service,com.lemarketjames.reports.service,TradeReportService,12,245,5,19,3,49,5,14,0,5
 LeMarketJames Reporting Service,com.lemarketjames.reports,ReportPingController,0,16,0,0,0,4,0,2,0,2
 LeMarketJames Reporting Service,com.lemarketjames.reports,ReportPingController.PingResponse,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Reporting Service,com.lemarketjames,ReportingServiceApplication,5,3,0,0,2,1,1,1,1,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.dto,TradeReportRequest,19,27,0,0,10,10,5,5,5,5
+LeMarketJames Reporting Service,com.lemarketjames.reports.dto,TradeReportResponse,14,12,0,0,7,5,4,2,4,2
+LeMarketJames Reporting Service,com.lemarketjames.reports.dto,PeriodAggregation,7,49,0,0,4,20,2,10,2,10
 LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportCalendar,0,81,0,6,0,15,0,11,0,8
-LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportPeriod,0,26,0,4,0,2,0,4,0,2
 LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket.new ReportBucket() {...},0,11,0,0,0,3,0,3,0,3
 LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket.new ReportBucket() {...},0,13,0,0,0,3,0,3,0,3
-LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket,0,27,0,0,0,5,0,1,0,1
 LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket.new ReportBucket() {...},0,14,0,0,0,3,0,3,0,3
 LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket.new ReportBucket() {...},0,13,0,0,0,3,0,3,0,3
+LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportPeriod,0,26,0,4,0,2,0,4,0,2
+LeMarketJames Reporting Service,com.lemarketjames.reports.period,ReportBucket,0,27,0,0,0,5,0,1,0,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.controller,TradeReportController,22,0,0,0,6,0,2,0,2,0
 LeMarketJames Reporting Service,com.lemarketjames.config,SecurityConfig,0,72,0,0,0,13,0,6,0,6
+LeMarketJames Reporting Service,com.lemarketjames.config,ApplicationConfig,5,0,0,0,2,0,2,0,2,0

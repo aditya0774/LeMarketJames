@@ -5,22 +5,21 @@
  * views). Carried in the JWT's {@code roles} claim and exposed to Spring Security as the authority
  * {@code ROLE_&lt;name&gt;}, so endpoints guard with {@code hasRole(&quot;TRADING_OPS&quot;)} and so on.
  *
- * &lt;p&gt;Mirrors: the {@code staff_users.role} CHECK constraint (every value except CLIENT) and the
- * frontend's {@code Role} type in {@code apps/frontend/src/app/core/auth/auth.ts}.
+ * &lt;p&gt;Mirrors: the {@code staff_users.role} CHECK constraint (values: TRADING_OPS, ANALYST; CLIENT
+ * excluded because staff cannot be clients) and the frontend's {@code Role} type in
+ * {@code apps/frontend/src/app/core/auth/auth.ts}.
  */
-<span class="fc" id="L11">public enum Role {</span>
+<span class="fc" id="L12">public enum Role {</span>
     /** A retail trader with a trading account; the only role that places orders. */
-<span class="fc" id="L13">    CLIENT,</span>
+<span class="fc" id="L14">    CLIENT,</span>
     /** Staff who run order operations: may move orders through their lifecycle and reject them. */
-<span class="fc" id="L15">    TRADING_OPS,</span>
+<span class="fc" id="L16">    TRADING_OPS,</span>
     /** Staff who read reports and insights; never see individual clients' personal details. */
-<span class="fc" id="L17">    ANALYST,</span>
-    /** Staff who read the audit trail and reports. */
-<span class="fc" id="L19">    COMPLIANCE;</span>
+<span class="fc" id="L18">    ANALYST;</span>
 
     /** The Spring Security authority for this role, e.g. {@code ROLE_TRADING_OPS}. */
     public String authority() {
-<span class="fc" id="L23">        return &quot;ROLE_&quot; + name();</span>
+<span class="fc" id="L22">        return &quot;ROLE_&quot; + name();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

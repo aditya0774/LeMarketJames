@@ -19,6 +19,9 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `market_quotes`, `price_candles` | market-service | market-service |
 | `instrument_market_params` | migrations only | market-service |
 | `reporting_trades` (view) | — | reporting-service, as the only data source of its reports ([C6](../contracts/C6-api.md#reports-reporting-service)); insights later |
+| `notifications` | notification-service, from `OrderStatusChanged` events on Kafka ([018](#018--tables-of-the-kafka-consumers)) | notification-service |
+| `order_alerts` | surveillance-service, from `OrderSubmitted` events on Kafka | surveillance-service |
+| `trade_activity` | activity-service, from `OrderFilled` events on Kafka | activity-service |
 
 The shared JPA mappings for `clients`/`addresses`/`accounts`/`staff_users`/`audit_log` live in `libs/common` (`com.lemarketjames.common.domain` and `.audit`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
 
@@ -364,3 +367,28 @@ not who ran it; to add that:
 
 This changes `log_line_prefix` for the whole PostgreSQL install and turns on DDL logging for the
 `lemarket` database. The log files are in the `log` folder of the PostgreSQL data directory.
+
+## 018 — Tables of the Kafka consumers
+
+`schema/018_event_consumers.sql` adds one table for each service that listens to the order events
+on Kafka ([C6](../contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service)).
+Apply it before starting any of the three: each runs with `ddl-auto=validate` and will not start
+without its table.
+
+| Table | Written by | One row per | The same event twice is caught by |
+|---|---|---|---|
+| `notifications` | notification-service | status change of an order, for its client | `UNIQUE (order_id, status)` |
+| `order_alerts` | surveillance-service | order large enough to alert Trading Ops | `UNIQUE (order_id)` |
+| `trade_activity` | activity-service | fill; it has no account column | the primary key, `order_id` |
+
+```powershell
+Get-Content database/schema/018_event_consumers.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. `lemarket_app` needs no
+grant: 016 gives it read and write on every table created later.
+
+None of the three tables has a foreign key to `orders`, `accounts` or `instruments`, on purpose.
+Their rows are written from events, after the order's own transaction, and must never stop an
+order, an account or a test fixture from being deleted. A row can therefore outlive its order.
+The rows are derived data: emptying a table loses nothing an order or the audit trail needs.

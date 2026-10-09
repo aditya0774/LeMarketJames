@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderEventTopics.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.messaging</a> &gt; <span class="el_source">OrderEventTopics.java</span></div><h1>OrderEventTopics.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.messaging;
+
+import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.TopicBuilder;
+
+/**
+ * Declares the order event topics, which Spring's KafkaAdmin creates on the broker at startup if
+ * they are missing. The names come from {@link OrderEventForwarder}, which takes them from
+ * libs/common's OrderEventTopicNames, so they are written in one place for the publisher and the
+ * consuming services alike; the broker's own auto-creation is off (docker-compose.yml), so a
+ * mistyped topic fails instead of quietly appearing.
+ */
+@Configuration
+@ConditionalOnProperty(name = OrderEventPublisher.PUBLISHER_PROPERTY, havingValue = OrderEventPublisher.KAFKA)
+<span class="fc" id="L18">public class OrderEventTopics {</span>
+    /** More than one, so keying by order id matters: one order's events share a partition and keep their order. */
+    static final int PARTITIONS = 3;
+    /** The stack has a single broker. */
+    static final int REPLICAS = 1;
+
+    @Bean
+    NewTopic orderSubmittedTopic() {
+<span class="fc" id="L26">        return topic(OrderEventForwarder.SUBMITTED_TOPIC);</span>
+    }
+
+    @Bean
+    NewTopic orderStatusChangedTopic() {
+<span class="fc" id="L31">        return topic(OrderEventForwarder.STATUS_CHANGED_TOPIC);</span>
+    }
+
+    @Bean
+    NewTopic orderFilledTopic() {
+<span class="fc" id="L36">        return topic(OrderEventForwarder.FILLED_TOPIC);</span>
+    }
+
+    private static NewTopic topic(String name) {
+<span class="fc" id="L40">        return TopicBuilder.name(name).partitions(PARTITIONS).replicas(REPLICAS).build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

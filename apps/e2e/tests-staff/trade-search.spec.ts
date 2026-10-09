@@ -75,10 +75,9 @@ const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture 
 // The UI promises UTC dates even when the operator's browser uses another time zone.
 test.use({ timezoneId: 'America/New_York' });
 
-/** Signs in as Trading Ops and opens trade search, as an operator does. */
+/** Signs in as Trading Ops, which lands on trade search: it is that role's start page. */
 async function openTradeSearch(page: Page): Promise<void> {
   await signIn(page, TRADING_OPS);
-  await page.goto('/trade-search');
   await expect(page).toHaveURL(/\/trade-search$/);
 }
 

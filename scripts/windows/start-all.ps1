@@ -6,14 +6,15 @@
     Windows counterpart of `docker compose up`, for machines that can't run Linux containers.
     Builds the backend once, then opens one PowerShell window per process so each one's log
     stays readable and closing a window stops that process. Every service's defaults already
-    point at localhost (database on 5432, services on 8081-8086, the trading gateway on 8089 and
-    the staff gateway on 8090), so no configuration is needed.
+    point at localhost (database on 5432, services on 8081-8088 and 8091, the trading gateway on
+    8089 and the staff gateway on 8090), so no configuration is needed.
 
     Run .\scripts\windows\setup-db.ps1 once first so the lemarket database exists.
 
     Kafka is not started: this script only runs what needs no container. Without -Kafka,
-    buy-sell-service logs its order events instead of publishing them (its stub publisher), so
-    nothing here needs a broker. See "Kafka (order events)" in the README.
+    buy-sell-service logs its order events instead of publishing them (its stub publisher) and
+    the three consumer services start no listener, so nothing here needs a broker; their
+    endpoints still answer, with nothing new arriving. See "Kafka (order events)" in the README.
 
 .EXAMPLE
     .\scripts\windows\start-all.ps1
@@ -23,7 +24,8 @@
 param(
     # Skip `mvn install` when nothing under libs/ or services/ changed since the last run.
     [switch]$SkipBuild,
-    # Publish order events to a Kafka broker you already have running on localhost:9092.
+    # Publish order events to a Kafka broker you already have running on localhost:9092, and have
+    # the three consumer services read them from it.
     [switch]$Kafka
 )
 
@@ -60,6 +62,13 @@ Start-Window 'buy-sell-service :8085' $repoRoot $buySell
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
 # Not behind the trading gateway below: only the staff gateway routes to it.
 Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'
+# The three Kafka consumers, with the same setting Docker Compose gives them; without it they
+# start no listener. surveillance-service is, like reporting-service, behind the staff gateway only.
+foreach ($consumer in 'notification-service :8087', 'surveillance-service :8088', 'activity-service :8091') {
+    $run = "mvn -B -pl services/$($consumer.Split(' ')[0]) spring-boot:run"
+    if ($Kafka) { $run = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $run }
+    Start-Window $consumer $repoRoot $run
+}
 # 8089 matches the port Docker Compose publishes the gateway on, which proxy.conf.json targets.
 Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.arguments=--server.port=8089'"
 # The staff gateway is the same module with the "staff" profile, which sets port 8090 and the
