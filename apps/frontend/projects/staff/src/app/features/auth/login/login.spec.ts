@@ -31,7 +31,7 @@ describe('Staff login', () => {
     });
   }
   // Each role lands on its own dashboard.
-  for (const [role, destination] of [['TRADING_OPS', '/trading-ops'], ['ANALYST', '/analyst']]) {
+  for (const [role, destination] of [['TRADING_OPS', '/trade-search'], ['ANALYST', '/analyst']]) {
     it('routes ' + role + ' after authenticating on the staff origin', async () => {
       await TestBed.configureTestingModule({
         imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
