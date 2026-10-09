@@ -30,16 +30,14 @@
     "zod": "~4.5.4"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.24",
-    "@angular/cli": "^21.2.24",
+    "@angular/build": "^21.2.26",
+    "@angular/cli": "^21.2.26",
     "@angular/compiler-cli": "^21.2.24",
     "@types/jasmine": "~5.1.0",
+    "@types/node": "^24.19.1",
     "@vitest/coverage-v8": "~4.1.11",
     "jasmine-core": "~7.0.2",
     "jsdom": "~29.1.1",
-    "karma": "~6.4.4",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-jasmine": "~5.1.0",
     "prettier": "~3.8.1",
     "typescript": "~5.9",
     "vitest": "^4.1.11"
