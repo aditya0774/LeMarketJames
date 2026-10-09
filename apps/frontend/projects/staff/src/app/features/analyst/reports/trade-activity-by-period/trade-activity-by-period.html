@@ -15,28 +15,32 @@
             mat-raised-button 
             [color]="periodType() === 'DAY' ? 'primary' : ''"
             (click)="onPeriodTypeChange('DAY')"
-            [disabled]="isLoading()">
+            [disabled]="isLoading()"
+            [matTooltip]="getPeriodTypeHint('DAY')">
             Day
           </button>
           <button 
             mat-raised-button 
             [color]="periodType() === 'WEEK' ? 'primary' : ''"
             (click)="onPeriodTypeChange('WEEK')"
-            [disabled]="isLoading()">
+            [disabled]="isLoading()"
+            [matTooltip]="getPeriodTypeHint('WEEK')">
             Week
           </button>
           <button 
             mat-raised-button 
             [color]="periodType() === 'MONTH' ? 'primary' : ''"
             (click)="onPeriodTypeChange('MONTH')"
-            [disabled]="isLoading()">
+            [disabled]="isLoading()"
+            [matTooltip]="getPeriodTypeHint('MONTH')">
             Month
           </button>
           <button 
             mat-raised-button 
             [color]="periodType() === 'YEAR' ? 'primary' : ''"
             (click)="onPeriodTypeChange('YEAR')"
-            [disabled]="isLoading()">
+            [disabled]="isLoading()"
+            [matTooltip]="getPeriodTypeHint('YEAR')">
             Year
           </button>
         </div>
@@ -77,6 +81,34 @@
             Apply
           </button>
         </form>
+      </div>
+
+      <!-- Preset Date Range Buttons -->
+      <div class="preset-dates">
+        <label class="preset-label">Quick Select:</label>
+        <div class="preset-buttons">
+          <button 
+            mat-stroked-button 
+            (click)="setPresetDates('week')"
+            [disabled]="isLoading()"
+            matTooltip="Set date range to the last 7 days">
+            Last 7 Days
+          </button>
+          <button 
+            mat-stroked-button 
+            (click)="setPresetDates('month')"
+            [disabled]="isLoading()"
+            matTooltip="Set date range to the current month">
+            This Month
+          </button>
+          <button 
+            mat-stroked-button 
+            (click)="setPresetDates('quarter')"
+            [disabled]="isLoading()"
+            matTooltip="Set date range to the current quarter">
+            This Quarter
+          </button>
+        </div>
       </div>
 
       <!-- Refresh Button -->

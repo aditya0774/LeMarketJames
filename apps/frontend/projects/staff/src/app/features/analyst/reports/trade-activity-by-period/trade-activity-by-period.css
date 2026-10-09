@@ -78,6 +78,29 @@
   margin-top: 4px;
 }
 
+/* Preset Date Buttons */
+.preset-dates {
+  margin-bottom: 24px;
+}
+
+.preset-label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #555;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.preset-buttons button {
+  min-width: 120px;
+}
+
 /* Refresh Container */
 .refresh-container {
   display: flex;

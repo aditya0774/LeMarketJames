@@ -66,6 +66,15 @@ export class TradeActivityByPeriod implements OnInit {
   // Computed: derived data for display
   readonly hasData = computed(() => this.reportData().length > 0);
   readonly showEmpty = computed(() => !this.isLoading() && !this.hasData() && !this.error());
+  readonly totalTradeCount = computed(() =>
+    this.reportData().reduce((sum, row) => sum + (row.buyCount + row.sellCount), 0)
+  );
+  readonly totalQuantity = computed(() =>
+    this.reportData().reduce((sum, row) => sum + row.totalQuantity, 0)
+  );
+  readonly totalGrossAmount = computed(() =>
+    this.reportData().reduce((sum, row) => sum + row.totalGrossAmount, 0)
+  );
 
   // Form group for date range
   readonly dateRangeForm = new FormGroup({
@@ -129,6 +138,41 @@ export class TradeActivityByPeriod implements OnInit {
    * Manually refresh the report with current date range.
    */
   refresh(): void {
+    this.loadReport();
+  }
+
+  /**
+   * Set a preset date range (last 7 days, this month, this quarter).
+   * Provides quick date selection for common reporting periods.
+   */
+  setPresetDates(preset: 'week' | 'month' | 'quarter'): void {
+    const today = new Date();
+    const startDate = new Date();
+
+    switch (preset) {
+      case 'week':
+        // Last 7 days
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        // First day of current month
+        startDate.setMonth(today.getMonth());
+        startDate.setDate(1);
+        break;
+      case 'quarter':
+        // First day of current quarter (Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec)
+        const quarter = Math.floor(today.getMonth() / 3);
+        startDate.setMonth(quarter * 3);
+        startDate.setDate(1);
+        break;
+    }
+
+    this.startDate.set(startDate);
+    this.endDate.set(today);
+    this.dateRangeForm.patchValue({
+      startDate: startDate,
+      endDate: today,
+    });
     this.loadReport();
   }
 
@@ -255,5 +299,18 @@ export class TradeActivityByPeriod implements OnInit {
       month: 'short',
       day: 'numeric',
     }).format(date);
+  }
+
+  /**
+   * Get a hint/tooltip for each period type to help users understand the aggregation level.
+   */
+  getPeriodTypeHint(period: PeriodType): string {
+    const hints: Record<PeriodType, string> = {
+      DAY: 'Aggregates trades for each day within the date range',
+      WEEK: 'Aggregates trades for each week (Sunday-Saturday) within the date range',
+      MONTH: 'Aggregates trades for each month within the date range',
+      YEAR: 'Aggregates trades for each year within the date range',
+    };
+    return hints[period];
   }
 }
