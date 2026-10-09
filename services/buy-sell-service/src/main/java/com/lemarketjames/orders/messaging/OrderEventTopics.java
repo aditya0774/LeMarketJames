@@ -8,9 +8,10 @@ import org.springframework.kafka.config.TopicBuilder;
 
 /**
  * Declares the order event topics, which Spring's KafkaAdmin creates on the broker at startup if
- * they are missing. The names come from {@link OrderEventForwarder}, so they are written in one
- * place; the broker's own auto-creation is off (docker-compose.yml), so a mistyped topic fails
- * instead of quietly appearing.
+ * they are missing. The names come from {@link OrderEventForwarder}, which takes them from
+ * libs/common's OrderEventTopicNames, so they are written in one place for the publisher and the
+ * consuming services alike; the broker's own auto-creation is off (docker-compose.yml), so a
+ * mistyped topic fails instead of quietly appearing.
  */
 @Configuration
 @ConditionalOnProperty(name = OrderEventPublisher.PUBLISHER_PROPERTY, havingValue = OrderEventPublisher.KAFKA)

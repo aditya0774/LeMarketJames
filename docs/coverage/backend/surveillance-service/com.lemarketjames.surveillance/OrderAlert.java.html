@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderAlert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Surveillance Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.surveillance</a> &gt; <span class="el_source">OrderAlert.java</span></div><h1>OrderAlert.java</h1><pre class="source lang-java linenums">package com.lemarketjames.surveillance;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * One order brought to Trading Operations' attention, with what was ordered when it was placed.
+ * Written once from the event and never changed, so it has no setters. The table's created_at
+ * column is filled by the database and is not mapped.
+ */
+@Entity
+@Table(name = &quot;order_alerts&quot;)
+public class OrderAlert {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer alertId;
+
+    @Column(nullable = false, unique = true)
+    private Integer orderId;
+
+    @Column(nullable = false)
+    private Integer accountId;
+
+    @Column(nullable = false)
+    private Integer instrumentId;
+
+    @Column(nullable = false, length = 10)
+    private String side;
+
+    @Column(nullable = false, precision = 14, scale = 4)
+    private BigDecimal quantity;
+
+    /** Null for a SELL, which has no price until it fills. */
+    @Column(precision = 14, scale = 4)
+    private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 40)
+    private AlertReason reason;
+
+    @Column(nullable = false)
+    private Instant submittedAt;
+
+    /** For JPA. */
+<span class="fc" id="L55">    protected OrderAlert() {</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * @param order  the order the alert is about
+     * @param reason why it is raised
+     */
+<span class="fc" id="L62">    public OrderAlert(OrderSubmittedMessage order, AlertReason reason) {</span>
+<span class="fc" id="L63">        this.orderId = order.orderId();</span>
+<span class="fc" id="L64">        this.accountId = order.accountId();</span>
+<span class="fc" id="L65">        this.instrumentId = order.instrumentId();</span>
+<span class="fc" id="L66">        this.side = order.side();</span>
+<span class="fc" id="L67">        this.quantity = order.quantity();</span>
+<span class="fc" id="L68">        this.price = order.price();</span>
+<span class="fc" id="L69">        this.reason = reason;</span>
+<span class="fc" id="L70">        this.submittedAt = order.submittedAt();</span>
+<span class="fc" id="L71">    }</span>
+
+    public Integer getAlertId() {
+<span class="fc" id="L74">        return alertId;</span>
+    }
+
+    public Integer getOrderId() {
+<span class="fc" id="L78">        return orderId;</span>
+    }
+
+    public Integer getAccountId() {
+<span class="fc" id="L82">        return accountId;</span>
+    }
+
+    public Integer getInstrumentId() {
+<span class="fc" id="L86">        return instrumentId;</span>
+    }
+
+    public String getSide() {
+<span class="fc" id="L90">        return side;</span>
+    }
+
+    public BigDecimal getQuantity() {
+<span class="fc" id="L94">        return quantity;</span>
+    }
+
+    public BigDecimal getPrice() {
+<span class="fc" id="L98">        return price;</span>
+    }
+
+    public AlertReason getReason() {
+<span class="fc" id="L102">        return reason;</span>
+    }
+
+    public Instant getSubmittedAt() {
+<span class="fc" id="L106">        return submittedAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Notification Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.notifications</a> &gt; <span class="el_source">NotificationService.java</span></div><h1>NotificationService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.notifications;
+
+import com.lemarketjames.common.domain.AccountRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Turns order status changes into notifications and reads a client's notifications back.
+ *
+ * &lt;p&gt;Kafka can deliver a record more than once, after a restart or a failed commit. Recording is
+ * therefore idempotent: a status change that is already stored is left alone, so a client is
+ * never told the same thing twice.
+ */
+@Service
+public class NotificationService {
+<span class="fc" id="L21">    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);</span>
+
+    /** How many notifications a client gets back: the newest ones. */
+    static final int LATEST = 50;
+
+    private final NotificationRepository notifications;
+    private final AccountRepository accounts;
+
+<span class="fc" id="L29">    public NotificationService(NotificationRepository notifications, AccountRepository accounts) {</span>
+<span class="fc" id="L30">        this.notifications = notifications;</span>
+<span class="fc" id="L31">        this.accounts = accounts;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Stores the notification for one status change.
+     *
+     * @param event the status change, as read from Kafka
+     * @return whether a notification was stored; false for an event that was already recorded or
+     *         that lacks a field a notification needs
+     */
+    @Transactional
+    public boolean record(OrderStatusChangedMessage event) {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (!event.isComplete()) {</span>
+<span class="fc" id="L44">            log.warn(&quot;Kafka: skipped an incomplete status change: {}&quot;, event);</span>
+<span class="fc" id="L45">            return false;</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (notifications.existsByOrderIdAndStatus(event.orderId(), event.to())) {</span>
+<span class="fc" id="L48">            log.info(&quot;Kafka: order {} reaching {} was already notified&quot;, event.orderId(), event.to());</span>
+<span class="fc" id="L49">            return false;</span>
+        }
+<span class="fc" id="L51">        notifications.save(new Notification(event, messageFor(event)));</span>
+<span class="fc" id="L52">        log.info(&quot;Notification stored: account={} order={} status={}&quot;, event.accountId(), event.orderId(), event.to());</span>
+<span class="fc" id="L53">        return true;</span>
+    }
+
+    /**
+     * @param username the signed-in client
+     * @return the newest notifications of that client's account, newest first
+     * @throws AccountNotFoundException when the user has no trading account
+     */
+    @Transactional(readOnly = true)
+    public List&lt;Notification&gt; latestFor(String username) {
+<span class="fc" id="L63">        Integer accountId = accounts.findAccountIdByUsername(username)</span>
+<span class="fc" id="L64">            .orElseThrow(() -&gt; new AccountNotFoundException(username));</span>
+<span class="fc" id="L65">        return notifications.findByAccountIdOrderByOccurredAtDescNotificationIdDesc(accountId, PageRequest.of(0, LATEST));</span>
+    }
+
+    /** The sentence the client reads. */
+    static String messageFor(OrderStatusChangedMessage event) {
+<span class="fc" id="L70">        return &quot;Order #&quot; + event.orderId() + &quot; is now &quot; + event.to() + &quot; (was &quot; + event.from() + &quot;)&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
