@@ -22,8 +22,10 @@ services:
       - gateway-service
 
   # Single entry point for the frontend: routes /api/auth/** to auth-service, /api/market/** to
-  # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service, and
-  # /api/v1/{orders,buy-orders}/** to buy-sell-service, everything else to core-service (see
+  # market-service, /api/v1/{holdings,profile,portfolio,trades}/** to holdings-service,
+  # /api/v1/{orders,buy-orders}/** to buy-sell-service, /api/v1/notifications/** to
+  # notification-service and /api/v1/market-activity/** to activity-service, everything else to
+  # core-service (see
   # services/gateway-service/src/main/resources/application.yml).
   gateway-service:
     image: lemarketjames/gateway-service:${IMAGE_TAG:-dev}
@@ -39,18 +41,22 @@ services:
       - market-service
       - holdings-service
       - buy-sell-service
+      - notification-service
+      - activity-service
     environment:
       AUTH_SERVICE_URL: http://auth-service:8082
       BUY_SELL_SERVICE_URL: http://buy-sell-service:8085
       CORE_SERVICE_URL: http://core-service:8081
       MARKET_SERVICE_URL: http://market-service:8083
       HOLDINGS_SERVICE_URL: http://holdings-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      ACTIVITY_SERVICE_URL: http://activity-service:8091
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Single entry point for the staff app (LMKT-143). It is the gateway image above started with
   # the "staff" profile, which swaps in the staff routes: /api/v1/reports/** to reporting-service,
-  # sign-in, sign-out and /me to auth-service, and the Trading Ops trade search and order
-  # timeline to buy-sell-service; nothing else is routed (see
+  # sign-in, sign-out and /me to auth-service, the Trading Ops trade search and order timeline to
+  # buy-sell-service, and /api/v1/surveillance/** to surveillance-service; nothing else is routed (see
   # services/gateway-service/src/main/resources/application-staff.yml). The browser's session
   # cookie here is staff_jwt, so a staff and a customer session can share a browser
   # (contracts/C7-roles.md).
@@ -65,11 +71,13 @@ services:
       - auth-service
       - buy-sell-service
       - reporting-service
+      - surveillance-service
     environment:
       SPRING_PROFILES_ACTIVE: staff
       AUTH_SERVICE_URL: http://auth-service:8082
       BUY_SELL_SERVICE_URL: http://buy-sell-service:8085
       REPORTING_SERVICE_URL: http://reporting-service:8086
+      SURVEILLANCE_SERVICE_URL: http://surveillance-service:8088
       STAFF_CORS_ALLOWED_ORIGIN: ${STAFF_CORS_ALLOWED_ORIGIN:-http://localhost:4201}
 
   # auth-service and core-service share the same database and the same JWT_SECRET, so a token
@@ -221,9 +229,110 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
 
+  # --- The three Kafka consumers (contracts/C6-api.md, "The consumers") -----------------------
+  # Each reads one of the order event topics that buy-sell-service publishes to, in a consumer
+  # group of its own, and keeps what it makes of the events in a table of its own (018).
+
+  # Reads lemarket.orders.status-changed and keeps a notification per status change for the order's
+  # client (GET /api/v1/notifications, through the trading gateway).
+  notification-service:
+    image: lemarketjames/notification-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    ports:
+      # Published for direct debugging and the smoke test only; browser traffic goes through a gateway.
+      - "8087:8087"
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      # buy-sell-service creates the topics when it starts. A consumer that is up first only waits
+      # for them, so this is about a quiet log, not correctness.
+      buy-sell-service:
+        condition: service_started
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
+      # Listen to the order events on the broker below (contracts/C5-config.md). Without this
+      # setting the service starts no listener and needs no broker.
+      LMJ_EVENTS_CONSUMER: kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
+
+  # Reads lemarket.orders.submitted and raises an alert for Trading Ops on each large order
+  # (GET /api/v1/surveillance/alerts, through the staff gateway only).
+  surveillance-service:
+    image: lemarketjames/surveillance-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/surveillance-service/Dockerfile
+    ports:
+      # Published for direct debugging and the smoke test only; browser traffic goes through a gateway.
+      - "8088:8088"
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      # buy-sell-service creates the topics when it starts. A consumer that is up first only waits
+      # for them, so this is about a quiet log, not correctness.
+      buy-sell-service:
+        condition: service_started
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
+      # Listen to the order events on the broker below (contracts/C5-config.md). Without this
+      # setting the service starts no listener and needs no broker.
+      LMJ_EVENTS_CONSUMER: kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
+
+  # Reads lemarket.orders.filled and sums the fills into traded volume per stock
+  # (GET /api/v1/market-activity, through the trading gateway).
+  activity-service:
+    image: lemarketjames/activity-service:${IMAGE_TAG:-dev}
+    build:
+      context: .
+      dockerfile: services/activity-service/Dockerfile
+    ports:
+      # Published for direct debugging and the smoke test only; browser traffic goes through a gateway.
+      - "8091:8091"
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      # buy-sell-service creates the topics when it starts. A consumer that is up first only waits
+      # for them, so this is about a quiet log, not correctness.
+      buy-sell-service:
+        condition: service_started
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
+      SPRING_DATASOURCE_USERNAME: lemarket_app
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
+      # Listen to the order events on the broker below (contracts/C5-config.md). Without this
+      # setting the service starts no listener and needs no broker.
+      LMJ_EVENTS_CONSUMER: kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # These services are small. Without a limit a JVM may grow its heap to a quarter of the
+      # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
+      JAVA_TOOL_OPTIONS: -Xmx256m
+
   # Message broker for order events (LMKT-137): buy-sell-service publishes OrderSubmitted,
-  # OrderStatusChanged and OrderFilled to it (contracts/C6-api.md). One node in KRaft mode, acting
-  # as broker and controller at once, so there is no ZooKeeper.
+  # OrderStatusChanged and OrderFilled to it, and the three consumers above read them
+  # (contracts/C6-api.md). One node in KRaft mode, acting as broker and controller at once, so
+  # there is no ZooKeeper.
   # The topics are not listed here: buy-sell-service declares them from the names in its
   # OrderEventForwarder and creates them when it starts. The broker's own auto-creation is off, so
   # a mistyped topic name fails instead of quietly making a new topic.
@@ -255,7 +364,8 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
-      # A consumer group with one member needn't wait for others to join.
+      # A consumer group with one member needn't wait for others to join: each consumer service
+      # is the only member of its group.
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       # The default heap is 1 GB, far more than a test stack's few events need.
       KAFKA_HEAP_OPTS: -Xms256m -Xmx512m

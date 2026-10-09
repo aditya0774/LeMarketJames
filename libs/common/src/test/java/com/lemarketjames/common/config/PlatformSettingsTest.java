@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.List;
@@ -25,6 +26,7 @@ class PlatformSettingsTest {
         assertEquals(List.of(), settings.getOrders().getRestrictedLocations());
         assertEquals(Duration.ofDays(365), settings.getAudit().getOnlineRetention());
         assertEquals(LocalTime.of(2, 0), settings.getReports().getOvernightRunTime());
+        assertEquals(new BigDecimal("100"), settings.getSurveillance().getLargeOrderQuantity());
     }
 
     @Test
@@ -32,11 +34,13 @@ class PlatformSettingsTest {
         PlatformSettings settings = bind(Map.of(
                 "lmj.auth.lockout.max-attempts", "5",
                 "lmj.market.staleness-limit", "15s",
-                "lmj.orders.restricted-locations", "New York,Texas"));
+                "lmj.orders.restricted-locations", "New York,Texas",
+                "lmj.surveillance.large-order-quantity", "250"));
 
         assertEquals(5, settings.getAuth().getLockout().getMaxAttempts());
         assertEquals(Duration.ofSeconds(15), settings.getMarket().getStalenessLimit());
         assertEquals(List.of("New York", "Texas"), settings.getOrders().getRestrictedLocations());
+        assertEquals(new BigDecimal("250"), settings.getSurveillance().getLargeOrderQuantity());
     }
 
     private static PlatformSettings bind(Map<String, String> properties) {

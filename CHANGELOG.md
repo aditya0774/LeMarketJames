@@ -2,9 +2,16 @@
 
 ## Unreleased
 
-- LMKT-77: Switch dashboard live order-status updates to the real `GET /api/v1/orders/stream`
-  SSE channel (`order-status-changed` events) and add an end-to-end test that triggers a
-  backend status transition and asserts the dashboard reflects it within 2 seconds.
+- Kafka consumers: three new services read the order events, one topic each, in Docker Compose
+  and Jenkins. `notification-service` (8087) keeps a notification per order status change for
+  the order's client (`GET /api/v1/notifications`); `surveillance-service` (8088) raises an
+  alert for Trading Ops on each order of at least `lmj.surveillance.large-order-quantity` shares
+  (`GET /api/v1/surveillance/alerts`, staff gateway only); `activity-service` (8091) sums fills
+  into traded volume per stock over 24 hours (`GET /api/v1/market-activity`). They listen when
+  `LMJ_EVENTS_CONSUMER=kafka`, store the same event only once, and keep their results in the
+  tables of migration 018. The topic names moved to `libs/common` (`OrderEventTopicNames`) so
+  publisher and consumers share them. Jenkins gains a `docker ps` stage and a
+  **Verify Kafka consumers** stage (`scripts/verify-kafka-consumers.sh`).
 - LMKT-137: Add a single-node Kafka broker (KRaft, port 9092) to Docker Compose and Jenkins.
   `buy-sell-service` publishes `OrderStatusChanged` and `OrderFilled` to it as JSON, keyed by
   order id, when `LMJ_EVENTS_PUBLISHER=kafka` (set in Compose); without it the stub publisher

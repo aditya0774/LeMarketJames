@@ -20,7 +20,7 @@
 
       <!-- Registration form: collects user identity, address, financial, and security information -->
       <!-- All validation rules are defined in register.schema.ts using Zod -->
-      <form (ngSubmit)="onSubmit()">
+      <form method="post" (ngSubmit)="onSubmit()">
         <div class="form-section-title first">Personal information</div>
 
         <div class="field-row">

@@ -36,15 +36,16 @@ describe('Staff routes', () => {
   }
 
   it('starts each signed-in role on its own dashboard', async () => {
+    // Trading Ops has no dashboard of its own: trade search is where it starts.
     expect((await open('/', 'TRADING_OPS')).url).toBe('/trade-search');
     TestBed.resetTestingModule();
     expect((await open('/', 'ANALYST')).url).toBe('/analyst');
   });
 
   it('opens the Trading Ops pages for Trading Ops', async () => {
-    const tradeSearch = await open('/trade-search', 'TRADING_OPS');
-    expect(tradeSearch.url).toBe('/trade-search');
-    expect(tradeSearch.page.textContent).toContain('Trade search');
+    const search = await open('/trade-search', 'TRADING_OPS');
+    expect(search.url).toBe('/trade-search');
+    expect(search.page.querySelector('h1')?.textContent).toContain('Trade search');
   });
 
   it('opens the Analyst pages for an Analyst', async () => {
@@ -67,11 +68,11 @@ describe('Staff routes', () => {
     expect((await open('/analyst/reports/activity-by-stock', 'TRADING_OPS')).url).toBe('/access-denied');
   });
 
-  for (const address of ['/trade-search']) {
-    it(`refuses an Analyst on ${address}`, async () => {
-      expect((await open(address, 'ANALYST')).url).toBe('/access-denied');
-    });
-  }
+  it('refuses an Analyst on /trade-search', async () => {
+    const refused = await open('/trade-search', 'ANALYST');
+    expect(refused.url).toBe('/access-denied');
+    expect(refused.page.textContent).not.toContain('Trade search');
+  });
 
   it('sends an unknown address to the start page', async () => {
     expect((await open('/no-such-page', 'ANALYST')).url).toBe('/analyst');

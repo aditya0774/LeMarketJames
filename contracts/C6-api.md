@@ -1,6 +1,6 @@
 # C6 – API and event contracts
 
-Every REST endpoint, the internal events, the execution interface and the reporting data source. Front-end and back-end halves of a story meet here. Each endpoint below is checked against its controller; **Planned** marks endpoints that are agreed but not built yet.
+Every REST endpoint, the internal events and the services that consume them, the execution interface and the reporting data source. Front-end and back-end halves of a story meet here. Each endpoint below is checked against its controller; **Planned** marks endpoints that are agreed but not built yet.
 
 Value lists (order statuses, rejection codes, roles, audit event types) are not repeated here. Each links to the one place it is defined.
 
@@ -25,6 +25,9 @@ Each gateway's route list is its configuration file; this table says what they a
 | Holdings, balance, profile, portfolio, trades | holdings-service | yes | no |
 | `/api/market/**` | market-service | yes | no |
 | `/api/v1/reports/**` | reporting-service | no: these paths fall through to core-service, which has no such endpoint | yes |
+| `/api/v1/notifications/**` | notification-service | yes | no |
+| `/api/v1/market-activity/**` | activity-service | yes | no |
+| `/api/v1/surveillance/**` | surveillance-service | no: these paths fall through to core-service, which has no such endpoint | yes |
 | Everything else under `/api/**` | core-service | yes | no |
 
 - A gateway decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either gateway: a `CLIENT` who signs in through the staff gateway gets `403` on every staff route.
@@ -421,6 +424,81 @@ Each period aggregates:
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role | see access rules above |
 
+## The consumers (notification-, surveillance- and activity-service)
+
+Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens to one event's topic, in a consumer group of its own, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)).
+
+| Service | Event it reads | Listener (topic and consumer group) | What it does with an event | Read back with |
+|---|---|---|---|---|
+| notification-service (`:8087`) | `OrderStatusChanged` | [OrderStatusListener](../services/notification-service/src/main/java/com/lemarketjames/notifications/OrderStatusListener.java) | Stores one notification per status change, for the order's client | [`GET /api/v1/notifications`](#get-apiv1notifications-client-only), trading gateway |
+| surveillance-service (`:8088`) | `OrderSubmitted` | [OrderSubmittedListener](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/OrderSubmittedListener.java) | Raises an alert for Trading Ops when the order is large | [`GET /api/v1/surveillance/alerts`](#get-apiv1surveillancealerts-trading_ops-only), staff gateway only |
+| activity-service (`:8091`) | `OrderFilled` | [OrderFilledListener](../services/activity-service/src/main/java/com/lemarketjames/activity/OrderFilledListener.java) | Stores the fill, without its account | [`GET /api/v1/market-activity`](#get-apiv1market-activity), trading gateway |
+
+Rules for all three, and for any consumer added later:
+
+- **Its own shape of the event.** A consumer reads the record value with a record class of its own that names only the fields it uses, through [OrderEventReader](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventReader.java). It depends on none of buy-sell-service's classes, and statuses and sides stay text, so a field or a status added by the publisher breaks nobody.
+- **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order, one recorded fill per order.
+- **A record that can't be used is skipped.** A value that isn't valid JSON, or that lacks a field the consumer needs, is logged and skipped, so one bad record never blocks the ones behind it.
+- **A new consumer group starts at the oldest record**, so events published before the service first started are not missed. From then on it continues from its group's committed position.
+- **Nothing depends on a consumer.** Publishing is best effort (see [Outbound events](#internal-events-and-the-execution-interface-buy-sell-service)), so a notification, an alert or a recorded fill can be missing. Orders, holdings and the audit trail never read these tables; no service calls a consumer, and a consumer calls no service.
+- **The switch.** A consumer listens only where `LMJ_EVENTS_CONSUMER=kafka` is set ([C5](C5-config.md#order-events)). Elsewhere it starts no listener and its endpoint answers with what its table already holds.
+
+### GET /api/v1/notifications (CLIENT only)
+
+The signed-in client's newest notifications (up to 50), newest first. There is no account in the path: the account is the caller's own.
+
+```json
+{
+  "success": true,
+  "notifications": [
+    { "notificationId": 12, "orderId": 42, "status": "FILLED", "previousStatus": "PENDING",
+      "message": "Order #42 is now FILLED (was PENDING)", "occurredAt": "2026-10-08T14:30:02Z" }
+  ]
+}
+```
+
+- One entry per status change of an order ([C1](C1-orders.md)); placing an order is not a status change, so the first entry of an order is it leaving `SUBMITTED`. `occurredAt` is when the order changed status, ISO-8601 UTC.
+- No notifications is `200` with `notifications: []`. A login without an account gets the same `404 ACCOUNT_NOT_FOUND` as holdings-service gives.
+- A missing or expired cookie gets `401`; staff roles get `403`.
+
+### GET /api/v1/surveillance/alerts (TRADING_OPS only)
+
+The newest alerts (up to 100), newest order first. Served by the staff gateway only; the trading gateway has no route to it.
+
+```json
+{
+  "success": true,
+  "largeOrderQuantity": 100,
+  "alerts": [
+    { "alertId": 3, "orderId": 42, "accountId": 7, "instrumentId": 5, "side": "BUY", "quantity": 150,
+      "price": 244.2366, "reason": "LARGE_ORDER", "submittedAt": "2026-10-08T14:30:00Z" }
+  ]
+}
+```
+
+- An alert is raised when an order is placed for at least the large-order quantity, a setting ([C5](C5-config.md)); `largeOrderQuantity` is its value in this environment, and the number above is an example. The alert shows the order as it was placed and is not updated when the order later fills or is rejected.
+- `reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. `price` is null for a SELL, which has no price until it fills.
+- A missing or expired cookie gets `401`; every role but `TRADING_OPS` gets `403`.
+
+### GET /api/v1/market-activity
+
+How much of each stock traded in the last 24 hours, for anyone who is signed in. One entry per stock that traded, in instrument id order; a stock with no fill in the window has no entry.
+
+```json
+{
+  "success": true,
+  "windowHours": 24,
+  "since": "2026-10-07T14:30:00Z",
+  "activity": [
+    { "instrumentId": 5, "trades": 2, "volume": 30, "turnover": 6210, "lastTradedAt": "2026-10-08T14:10:00Z" }
+  ]
+}
+```
+
+- `trades` counts fills, `volume` is shares (buys and sells together), `turnover` is the sum of quantity x price in USD. The window is a rolling 24 hours ending now ([MarketActivityService](../services/activity-service/src/main/java/com/lemarketjames/activity/MarketActivityService.java)), so it needs no time zone; `since` is its start.
+- Aggregates only: the answer never names an order, an account or a client.
+- A missing or expired cookie gets `401`. Every role may read it.
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -448,8 +526,8 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 ## Internal events and the execution interface (buy-sell-service)
 
 - **Events.** buy-sell-service announces three things about an order: [OrderSubmitted](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderSubmitted.java) when it is placed, [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) after every status transition, and [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) in addition when it fills. [The order events](#the-order-events) below says when each is published and what it carries. All three are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the order's transaction commits.
-- **Outbound events (Kafka).** After the order's transaction commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands each event to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java). With Kafka switched on, as in Docker Compose and Jenkins, [KafkaOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaOrderEventPublisher.java) publishes them to the broker, so other services can consume them:
-  - **Topics.** One per event. Their names are constants in the forwarder; [OrderEventTopics](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventTopics.java) creates them on the broker when buy-sell-service starts.
+- **Outbound events (Kafka).** After the order's transaction commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands each event to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java). With Kafka switched on, as in Docker Compose and Jenkins, [KafkaOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaOrderEventPublisher.java) publishes them to the broker, where [three services consume them](#the-consumers-notification--surveillance--and-activity-service):
+  - **Topics.** One per event. Their names are constants in [OrderEventTopicNames](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventTopicNames.java) in `libs/common`, where the publisher and the consumers both read them; [OrderEventTopics](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventTopics.java) creates them on the broker when buy-sell-service starts.
   - **Key.** The order id, as text. Within a topic, one order's events share a partition, so a consumer reads them in the order they happened. Nothing orders one topic against another: a consumer of two topics can receive an order's first status change before its `OrderSubmitted`.
   - **Value.** The event record as plain JSON, UTF-8: the event's fields under their own names, enums as their names, amounts as JSON numbers, and times as ISO-8601 UTC text as in the REST API. There are no type headers, so a consumer needs none of this service's classes.
   - **Delivery is best effort.** An order is committed before its events are sent. If the broker can't be reached the event is logged as an error and dropped; nothing replays it later (there is no outbox). A consumer that must not miss a fill should reconcile against the REST API or the `reporting_trades` view.

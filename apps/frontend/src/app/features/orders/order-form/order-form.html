@@ -25,7 +25,7 @@
     </div>
 
     <!-- Form -->
-    <form [formGroup]="form" (ngSubmit)="submit()" class="order-form">
+    <form method="post" [formGroup]="form" (ngSubmit)="submit()" class="order-form">
       <!-- Symbol field -->
       <mat-form-field appearance="fill" class="form-field">
         <mat-label>Stock Symbol</mat-label>

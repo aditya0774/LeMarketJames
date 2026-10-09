@@ -25,7 +25,7 @@ test.describe('Staff login', () => {
     }
   });
 
-  test('Trading Ops lands on the Trading Ops dashboard', async ({ page }) => {
+  test('Trading Ops lands on trade search', async ({ page }) => {
     await signIn(page, TRADING_OPS);
 
     await expect(page).toHaveURL(/\/trade-search$/);
@@ -61,14 +61,9 @@ test.describe('Staff login', () => {
     await expect(page).toHaveURL(/\/analyst$/);
     await expect(page.getByRole('link', { name: 'Trading Ops', exact: true })).toHaveCount(0);
 
-    for (const address of ['/trade-search']) {
-      await page.goto(address);
-      await expectAccessDenied(page);
-    }
-    // /trading-ops is not a route; wildcard navigation returns to the role's home.
-    await page.goto('/trading-ops');
-    await expect(page).toHaveURL(/\/analyst$/);
-    await expect(page.getByRole('heading', { name: 'Trading Ops Dashboard' })).toHaveCount(0);
+    await page.goto('/trade-search');
+    await expectAccessDenied(page);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
   });
 
   test('a client is refused on the staff login and is left signed out', async ({ page, context }) => {
@@ -81,7 +76,7 @@ test.describe('Staff login', () => {
     await expect.poll(async () => (await context.cookies()).map(cookie => cookie.name)).not.toContain('staff_jwt');
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
 
-    for (const address of ['/trading-ops', '/analyst']) {
+    for (const address of ['/trade-search', '/analyst']) {
       await page.goto(address);
       await expect(page, address).toHaveURL(/\/login$/);
     }
