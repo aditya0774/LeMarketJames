@@ -153,7 +153,7 @@ public class OrderController {
     * (e.g., price, quantity, rejection reason, cash/holdings deltas).
     * 
     * <p><strong>Access control:</strong> Only TRADING_OPS staff may call this endpoint.
-    * The order ID must exist and be accessible to the caller (see {@link #findOwnOrder(Integer)}).
+    * The order ID must exist and be accessible to the caller (see {@link OrderService#findOwnOrder(Integer)}).
     * 
     * <p><strong>Response:</strong> Returns 200 with a list of audit events in chronological order (oldest first).
     * If the order has no events, returns an empty list.
