@@ -48,7 +48,7 @@ public class SurveillanceService {
         if (order.quantity().compareTo(largeOrderQuantity()) < 0) {
             return false;
         }
-        if (alerts.existsByOrderId(order.orderId())) {
+        if (alerts.existsByOrderIdAndReason(order.orderId(), AlertReason.LARGE_ORDER)) {
             log.info("Kafka: order {} already has its alert", order.orderId());
             return false;
         }
@@ -58,10 +58,10 @@ public class SurveillanceService {
         return true;
     }
 
-    /** @return the newest alerts, newest order first */
+    /** @return the newest alerts, newest first */
     @Transactional(readOnly = true)
     public List<OrderAlert> latest() {
-        return alerts.findAllByOrderBySubmittedAtDescAlertIdDesc(PageRequest.of(0, LATEST));
+        return alerts.findAllByOrderByOccurredAtDescAlertIdDesc(PageRequest.of(0, LATEST));
     }
 
     /** @return the number of shares at which an order counts as large in this environment */

@@ -439,7 +439,7 @@ Three services read the [order events](#the-order-events) from Kafka and serve w
 Rules for all three, and for any consumer added later:
 
 - **Its own shape of the event.** A consumer reads the record value with a record class of its own that names only the fields it uses, through [OrderEventReader](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventReader.java). It depends on none of buy-sell-service's classes, and statuses and sides stay text, so a field or a status added by the publisher breaks nobody.
-- **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order, one recorded fill per order.
+- **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order and reason ([019](../database/schema/019_order_alert_reasons.sql)), one recorded fill per order.
 - **A record that can't be used is skipped.** A value that isn't valid JSON, or that lacks a field the consumer needs, is logged and skipped, so one bad record never blocks the ones behind it.
 - **A new consumer group starts at the oldest record**, so events published before the service first started are not missed. From then on it continues from its group's committed position.
 - **Nothing depends on a consumer.** Publishing is best effort (see [Outbound events](#internal-events-and-the-execution-interface-buy-sell-service)), so a notification, an alert or a recorded fill can be missing. Orders, holdings and the audit trail never read these tables; no service calls a consumer, and a consumer calls no service.
@@ -465,7 +465,7 @@ The signed-in client's newest notifications (up to 50), newest first. There is n
 
 ### GET /api/v1/surveillance/alerts (TRADING_OPS only)
 
-The newest alerts (up to 100), newest order first. Served by the staff gateway only; the trading gateway has no route to it.
+The newest alerts (up to 100), newest first by `occurredAt`. Served by the staff gateway only; the trading gateway has no route to it.
 
 ```json
 {
@@ -473,13 +473,15 @@ The newest alerts (up to 100), newest order first. Served by the staff gateway o
   "largeOrderQuantity": 100,
   "alerts": [
     { "alertId": 3, "orderId": 42, "accountId": 7, "instrumentId": 5, "side": "BUY", "quantity": 150,
-      "price": 244.2366, "reason": "LARGE_ORDER", "submittedAt": "2026-10-08T14:30:00Z" }
+      "price": 244.2366, "reason": "LARGE_ORDER", "submittedAt": "2026-10-08T14:30:00Z",
+      "rejectionReason": null, "occurredAt": "2026-10-08T14:30:00Z" }
   ]
 }
 ```
 
 - An alert is raised when an order is placed for at least the large-order quantity, a setting ([C5](C5-config.md)); `largeOrderQuantity` is its value in this environment, and the number above is an example. The alert shows the order as it was placed and is not updated when the order later fills or is rejected.
-- `reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. `price` is null for a SELL, which has no price until it fills.
+- `reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. An order has at most one alert per reason. `price` is null for a SELL, which has no price until it fills.
+- `occurredAt` is when what the alert is about happened: for a large order, when it was placed, so it equals `submittedAt`. `rejectionReason` is null for an alert that is not about a rejection. Both were added after the other fields (LMKT-71).
 - A missing or expired cookie gets `401`; every role but `TRADING_OPS` gets `403`.
 
 ### GET /api/v1/market-activity

@@ -50,6 +50,9 @@ class SurveillanceServiceTest {
         assertEquals(new BigDecimal("244.2366"), saved.getValue().getPrice());
         assertEquals(AlertReason.LARGE_ORDER, saved.getValue().getReason());
         assertEquals(WHEN, saved.getValue().getSubmittedAt());
+        // A large order is alerted to as it is placed, so that is when the alert happened.
+        assertEquals(WHEN, saved.getValue().getOccurredAt());
+        assertNull(saved.getValue().getRejectionReason());
     }
 
     @Test
@@ -86,7 +89,7 @@ class SurveillanceServiceTest {
     /** Kafka redelivers after a restart or a failed commit; staff must not see the order twice. */
     @Test
     void anOrderThatAlreadyHasItsAlertGetsNoSecondOne() {
-        when(stored.existsByOrderId(42)).thenReturn(true);
+        when(stored.existsByOrderIdAndReason(42, AlertReason.LARGE_ORDER)).thenReturn(true);
 
         assertFalse(service.review(buy(large)));
 
@@ -112,7 +115,7 @@ class SurveillanceServiceTest {
     @Test
     void staffReadTheNewestAlerts() {
         List<OrderAlert> newest = List.of(new OrderAlert(buy(large), AlertReason.LARGE_ORDER));
-        when(stored.findAllByOrderBySubmittedAtDescAlertIdDesc(PageRequest.of(0, SurveillanceService.LATEST)))
+        when(stored.findAllByOrderByOccurredAtDescAlertIdDesc(PageRequest.of(0, SurveillanceService.LATEST)))
             .thenReturn(newest);
 
         assertSame(newest, service.latest());

@@ -11,11 +11,15 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -68,7 +72,9 @@ class SurveillanceFlowTest {
             .andExpect(jsonPath("$.alerts[0].quantity").value(150))
             .andExpect(jsonPath("$.alerts[0].price").value(244.2366))
             .andExpect(jsonPath("$.alerts[0].reason").value("LARGE_ORDER"))
-            .andExpect(jsonPath("$.alerts[0].submittedAt").value("2026-10-08T14:30:00Z"));
+            .andExpect(jsonPath("$.alerts[0].submittedAt").value("2026-10-08T14:30:00Z"))
+            .andExpect(jsonPath("$.alerts[0].occurredAt").value("2026-10-08T14:30:00Z"))
+            .andExpect(jsonPath("$.alerts[0].rejectionReason").doesNotExist());
     }
 
     @Test
@@ -81,7 +87,7 @@ class SurveillanceFlowTest {
     }
 
     @Test
-    void alertsAreListedNewestOrderFirst() throws Exception {
+    void alertsAreListedNewestFirst() throws Exception {
         listener.onSubmitted(newOrder(42, "BUY", "150", "244.2366", "2026-10-08T14:30:00Z"));
         listener.onSubmitted(newOrder(43, "SELL", "500", "null", "2026-10-08T14:31:00Z"));
 
@@ -99,6 +105,21 @@ class SurveillanceFlowTest {
         listener.onSubmitted(record);
         listener.onSubmitted(record);
 
+        assertEquals(1, stored.count());
+    }
+
+    /**
+     * The service looks before it stores, but two instances can look at the same moment. The
+     * table's key (database/schema/019) is what guarantees one alert per order and reason.
+     */
+    @Test
+    void theTableRefusesASecondAlertForTheSameOrderAndReason() {
+        OrderSubmittedMessage order = new OrderSubmittedMessage(42, 7, 5, "BUY", new BigDecimal("150"),
+            new BigDecimal("244.2366"), Instant.parse("2026-10-08T14:30:00Z"));
+        stored.saveAndFlush(new OrderAlert(order, AlertReason.LARGE_ORDER));
+
+        assertThrows(DataIntegrityViolationException.class,
+            () -> stored.saveAndFlush(new OrderAlert(order, AlertReason.LARGE_ORDER)));
         assertEquals(1, stored.count());
     }
 

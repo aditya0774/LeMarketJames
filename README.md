@@ -100,7 +100,7 @@ LeMarketJames/
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
 │   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
 ├── contracts/                     # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
-├── database/schema/               # Numbered SQL files (001_ … 018_); 011 is the seed data set
+├── database/schema/               # Numbered SQL files (001_ … 019_); 011 is the seed data set
 ├── scripts/
 │   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file

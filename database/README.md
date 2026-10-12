@@ -378,7 +378,7 @@ without its table.
 | Table | Written by | One row per | The same event twice is caught by |
 |---|---|---|---|
 | `notifications` | notification-service | status change of an order, for its client | `UNIQUE (order_id, status)` |
-| `order_alerts` | surveillance-service | order large enough to alert Trading Ops | `UNIQUE (order_id)` |
+| `order_alerts` | surveillance-service | order large enough to alert Trading Ops | `UNIQUE (order_id)`, which [019](#019--one-alert-per-order-and-reason) replaces with `UNIQUE (order_id, reason)` |
 | `trade_activity` | activity-service | fill; it has no account column | the primary key, `order_id` |
 
 ```powershell
@@ -392,3 +392,25 @@ None of the three tables has a foreign key to `orders`, `accounts` or `instrumen
 Their rows are written from events, after the order's own transaction, and must never stop an
 order, an account or a test fixture from being deleted. A row can therefore outlive its order.
 The rows are derived data: emptying a table loses nothing an order or the audit trail needs.
+
+## 019 — One alert per order and reason
+
+`schema/019_order_alert_reasons.sql` lets an order have more than one alert, one per reason
+([C6](../contracts/C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). Apply it before
+starting the updated surveillance-service (it runs with `ddl-auto=validate` and will not start
+without the new columns), and with the old one stopped: the old one does not fill `occurred_at`,
+so its inserts would be refused.
+
+| Change | Why |
+|---|---|
+| `UNIQUE (order_id)` becomes `UNIQUE (order_id, reason)` | A large order can also be alerted to for another reason. The key is still what catches the same event delivered twice. |
+| `instrument_id`, `side`, `quantity` and `submitted_at` are optional | They describe the order as it was placed, which only the `OrderSubmitted` event carries. An alert raised from another event has the order, its account and why. |
+| `rejection_reason` added | Why the order was rejected, for an alert about a rejection. A `RejectionReason` code as text, with no CHECK, like the statuses in `notifications`. |
+| `occurred_at` added, required | When what the alert is about happened. Alerts are listed newest first by it; `order_alerts_occurred_idx` replaces `order_alerts_submitted_idx`. |
+
+```powershell
+Get-Content database/schema/019_order_alert_reasons.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. Existing alerts are
+kept: each is about a placement, so its `occurred_at` is set to its `submitted_at`.
