@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, signal } from '@angular/core';
+import { Component, inject, OnDestroy, signal, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -21,6 +21,7 @@ export class TradeSearch implements OnDestroy {
   readonly searched = signal(false);
   readonly error = signal('');
   readonly selected = signal('');
+  readonly tradeSelected = output<number>();
 
   clearResults(): void {
     this.request?.unsubscribe();
@@ -60,6 +61,10 @@ export class TradeSearch implements OnDestroy {
     this.request = this.api.search(this.clientQuery(client.clientId)).subscribe({next: trades => {
       this.show({label: `${client.fullName} (Client ID ${client.clientId})`, trades});
     }, error: error => this.failed(error)});
+  }
+
+  selectTrade(orderId: number): void {
+    this.tradeSelected.emit(orderId);
   }
 
   show(choice: {label: string; trades: TradeSearchResult[]}): void {

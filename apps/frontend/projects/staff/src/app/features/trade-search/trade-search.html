@@ -46,11 +46,20 @@
   @if (results().length) {
     <div class="table-scroll" tabindex="0" role="region" aria-label="Trades table">
       <table>
-        <caption>Completed trades · Prices in USD · Times in UTC</caption>
+        <caption>Completed trades · Prices in USD · Times in UTC · Click a row to view its timeline</caption>
         <thead><tr><th scope="col">Order ID</th><th scope="col">Client ID</th><th scope="col">Account ID</th><th scope="col">Stock</th><th scope="col">Side</th><th scope="col">Quantity</th><th scope="col">Execution price (USD)</th><th scope="col">Executed at (UTC)</th></tr></thead>
         <tbody>
           @for (trade of results(); track trade.orderId) {
-            <tr><td>{{ trade.orderId }}</td><td>{{ trade.clientId }}</td><td>{{ trade.accountId }}</td><td>{{ trade.symbol }}</td><td>{{ trade.side }}</td><td>{{ trade.quantity | number:'1.0-4' }}</td><td>{{ trade.pricePerUnit | number:'1.4-4' }}</td><td>{{ utcTime(trade.filledAt) }}</td></tr>
+            <tr (click)="selectTrade(trade.orderId)" role="button" tabindex="0" (keydown.enter)="selectTrade(trade.orderId)" (keydown.space)="selectTrade(trade.orderId)">
+              <td>{{ trade.orderId }}</td>
+              <td>{{ trade.clientId }}</td>
+              <td>{{ trade.accountId }}</td>
+              <td>{{ trade.symbol }}</td>
+              <td>{{ trade.side }}</td>
+              <td>{{ trade.quantity | number:'1.0-4' }}</td>
+              <td>{{ trade.pricePerUnit | number:'1.4-4' }}</td>
+              <td>{{ utcTime(trade.filledAt) }}</td>
+            </tr>
           }
         </tbody>
       </table>

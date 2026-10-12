@@ -29,23 +29,27 @@ describe('Staff routes', () => {
     expect(page.querySelector('h2')?.textContent).toContain('Staff Login');
   });
 
-  for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
+  for (const address of ['/trade-search', '/trading-ops', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
     it(`sends a signed-out visitor from ${address} to the staff login`, async () => {
       expect((await open(address)).url).toBe('/login');
     });
   }
 
   it('starts each signed-in role on its own dashboard', async () => {
-    // Trading Ops has no dashboard of its own: trade search is where it starts.
-    expect((await open('/', 'TRADING_OPS')).url).toBe('/trade-search');
+    expect((await open('/', 'TRADING_OPS')).url).toBe('/trading-ops');
     TestBed.resetTestingModule();
     expect((await open('/', 'ANALYST')).url).toBe('/analyst');
   });
 
   it('opens the Trading Ops pages for Trading Ops', async () => {
     const search = await open('/trade-search', 'TRADING_OPS');
-    expect(search.url).toBe('/trade-search');
-    expect(search.page.querySelector('h1')?.textContent).toContain('Trade search');
+    expect(search.url).toBe('/trading-ops');
+    expect(search.page.querySelector('h1')?.textContent).toContain('Trading Ops Dashboard');
+
+    TestBed.resetTestingModule();
+    const dashboard = await open('/trading-ops', 'TRADING_OPS');
+    expect(dashboard.url).toBe('/trading-ops');
+    expect(dashboard.page.querySelector('h1')?.textContent).toContain('Trading Ops Dashboard');
   });
 
   it('opens the Analyst pages for an Analyst', async () => {
@@ -74,9 +78,10 @@ describe('Staff routes', () => {
     expect(refused.page.textContent).not.toContain('Trade search');
   });
 
-  // /trading-ops is no longer a route: it falls through to the start page, like any unknown address.
-  it('sends an Analyst from the retired /trading-ops address to the Analyst dashboard', async () => {
-    expect((await open('/trading-ops', 'ANALYST')).url).toBe('/analyst');
+  it('refuses an Analyst on /trading-ops', async () => {
+    const refused = await open('/trading-ops', 'ANALYST');
+    expect(refused.url).toBe('/access-denied');
+    expect(refused.page.textContent).toContain('Access denied');
   });
 
   it('sends an unknown address to the start page', async () => {
