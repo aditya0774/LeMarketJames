@@ -1,319 +1,155 @@
-import { Component, OnInit, computed, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
+import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { ReportingService, TradesByStockRow, TradesReportResponse } from '../../../../core/reports/reporting.service';
+import { TradeReportService } from '../../../../shared/services/trade-report.service';
+import { PeriodAggregation } from '../../../../shared/models/trade-report.model';
+import { formatPeriod } from '../../../../shared/utils/period-formatter';
 
-type PeriodType = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+export type PeriodType = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+
+/** The selectable period types, in the order they appear. */
+export const PERIOD_TYPES: readonly { value: PeriodType; label: string }[] = [
+  { value: 'DAY', label: 'Day' },
+  { value: 'WEEK', label: 'Week' },
+  { value: 'MONTH', label: 'Month' },
+  { value: 'YEAR', label: 'Year' },
+];
+
+/** The look-back, in days, used for the default date range of each period type. */
+const DEFAULT_LOOKBACK_DAYS: Record<PeriodType, number> = {
+  DAY: 30,
+  WEEK: 90,
+  MONTH: 365,
+  YEAR: 365 * 5,
+};
 
 /**
- * Analyst report: Trade activity by period.
- * Displays aggregate trade counts and values by selected period type (day/week/month/year)
- * and date range. Data sourced from /api/v1/reports/trades-by-stock (ANALYST-only endpoint).
+ * Analyst report: trade counts and values per period (C6, GET /api/v1/reports/trades).
+ * The analyst picks a period type and a date range; the table shows one row per period.
+ * Fetching is delegated to TradeReportService; this component only owns the selection state.
  */
 @Component({
   selector: 'staff-trade-activity-by-period',
-  standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
+    DecimalPipe,
+    CurrencyPipe,
+    MatButtonModule,
+    MatButtonToggleModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatInputModule,
     MatFormFieldModule,
+    MatInputModule,
     MatTableModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatCardModule,
-    MatTabsModule,
-    MatIconModule,
-    MatTooltipModule,
   ],
   templateUrl: './trade-activity-by-period.html',
   styleUrls: ['./trade-activity-by-period.css'],
 })
-export class TradeActivityByPeriod implements OnInit {
-  private readonly reportingService = inject(ReportingService);
+export class TradeActivityByPeriod {
+  private readonly reports = inject(TradeReportService);
 
-  // State signals
+  readonly periodTypes = PERIOD_TYPES;
+  readonly columns = ['period', 'tradeCount', 'buyCount', 'sellCount', 'totalValue'];
+
   readonly periodType = signal<PeriodType>('MONTH');
-  readonly startDate = signal<Date | null>(null);
-  readonly endDate = signal<Date | null>(null);
-  readonly reportData = signal<TradesByStockRow[]>([]);
-  readonly isLoading = signal<boolean>(false);
+  readonly rows = signal<PeriodAggregation[]>([]);
+  readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  /** True once a request has finished, so "no trades" is not shown before the first answer. */
+  readonly loaded = signal(false);
 
-  // Table columns to display
-  readonly displayedColumns: string[] = [
-    'symbol',
-    'totalQuantity',
-    'totalGrossAmount',
-    'buyCount',
-    'sellCount',
-  ];
+  readonly totalTrades = computed(() => this.rows().reduce((sum, r) => sum + r.tradeCount, 0));
+  readonly totalValue = computed(() => this.rows().reduce((sum, r) => sum + r.totalValue, 0));
 
-  // Computed: derived data for display
-  readonly hasData = computed(() => this.reportData().length > 0);
-  readonly showEmpty = computed(() => !this.isLoading() && !this.hasData() && !this.error());
-  readonly totalTradeCount = computed(() =>
-    this.reportData().reduce((sum, row) => sum + (row.buyCount + row.sellCount), 0)
-  );
-  readonly totalQuantity = computed(() =>
-    this.reportData().reduce((sum, row) => sum + row.totalQuantity, 0)
-  );
-  readonly totalGrossAmount = computed(() =>
-    this.reportData().reduce((sum, row) => sum + row.totalGrossAmount, 0)
-  );
-
-  // Form group for date range
-  readonly dateRangeForm = new FormGroup({
-    startDate: new FormControl<Date | null>(null),
-    endDate: new FormControl<Date | null>(null),
+  readonly range = new FormGroup({
+    from: new FormControl<Date | null>(null),
+    to: new FormControl<Date | null>(null),
   });
 
-  ngOnInit(): void {
-    // Initialize with default date range (last 30 days)
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    this.startDate.set(thirtyDaysAgo);
-    this.endDate.set(today);
-
-    this.dateRangeForm.patchValue({
-      startDate: thirtyDaysAgo,
-      endDate: today,
-    });
-
-    // Load initial report
-    this.loadReport();
+  constructor() {
+    this.applyDefaultRange('MONTH');
+    this.load();
   }
 
-  /**
-   * Handle period type change (DAY/WEEK/MONTH/YEAR).
-   * Adjusts the default date range and reloads the report.
-   */
-  onPeriodTypeChange(newPeriod: PeriodType): void {
-    this.periodType.set(newPeriod);
-    this.adjustDateRangeForPeriod(newPeriod);
-    this.loadReport();
+  selectPeriodType(type: PeriodType): void {
+    this.periodType.set(type);
+    this.applyDefaultRange(type);
+    this.load();
   }
 
-  /**
-   * Handle date range change.
-   * Validates the range and reloads the report if valid.
-   */
-  onDateRangeChange(): void {
-    const start = this.dateRangeForm.get('startDate')?.value;
-    const end = this.dateRangeForm.get('endDate')?.value;
-
-    if (!start || !end) {
-      this.error.set('Both start and end dates are required.');
+  /** Called by the Apply button. */
+  applyRange(): void {
+    const { from, to } = this.range.value;
+    if (!from || !to) {
+      this.error.set('Choose both a start and an end date.');
       return;
     }
-
-    if (start > end) {
-      this.error.set('Start date must be before or equal to end date.');
+    if (from > to) {
+      this.error.set('The start date must not be after the end date.');
       return;
     }
+    this.load();
+  }
 
-    this.startDate.set(start);
-    this.endDate.set(end);
+  label(period: string): string {
+    return formatPeriod(period, this.periodType());
+  }
+
+  private applyDefaultRange(type: PeriodType): void {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - DEFAULT_LOOKBACK_DAYS[type]);
+    this.range.setValue({ from, to });
+  }
+
+  private load(): void {
+    const { from, to } = this.range.value;
+    if (!from || !to) {
+      return;
+    }
+    this.loading.set(true);
     this.error.set(null);
-    this.loadReport();
-  }
-
-  /**
-   * Manually refresh the report with current date range.
-   */
-  refresh(): void {
-    this.loadReport();
-  }
-
-  /**
-   * Set a preset date range (last 7 days, this month, this quarter).
-   * Provides quick date selection for common reporting periods.
-   */
-  setPresetDates(preset: 'week' | 'month' | 'quarter'): void {
-    const today = new Date();
-    const startDate = new Date();
-
-    switch (preset) {
-      case 'week':
-        // Last 7 days
-        startDate.setDate(today.getDate() - 7);
-        break;
-      case 'month':
-        // First day of current month
-        startDate.setMonth(today.getMonth());
-        startDate.setDate(1);
-        break;
-      case 'quarter': {
-        // First day of current quarter (Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec).
-        // The braces scope `quarter` to this case. Day 1 is set first so that, on the 31st,
-        // moving to a shorter month does not roll over into the next one.
-        const quarter = Math.floor(today.getMonth() / 3);
-        startDate.setDate(1);
-        startDate.setMonth(quarter * 3);
-        break;
-      }
-    }
-
-    this.startDate.set(startDate);
-    this.endDate.set(today);
-    this.dateRangeForm.patchValue({
-      startDate: startDate,
-      endDate: today,
-    });
-    this.loadReport();
-  }
-
-  /**
-   * Private: Adjust date range based on period type.
-   * For all types, keep the current end date and compute start based on period.
-   */
-  private adjustDateRangeForPeriod(period: PeriodType): void {
-    const today = new Date();
-    let start = new Date();
-
-    switch (period) {
-      case 'DAY':
-        // Last 1 day (today only)
-        start = new Date(today);
-        break;
-      case 'WEEK':
-        // Last 7 days
-        start = new Date();
-        start.setDate(today.getDate() - 7);
-        break;
-      case 'MONTH':
-        // Last 30 days
-        start = new Date();
-        start.setDate(today.getDate() - 30);
-        break;
-      case 'YEAR':
-        // Last 365 days
-        start = new Date();
-        start.setDate(today.getDate() - 365);
-        break;
-    }
-
-    this.startDate.set(start);
-    this.endDate.set(today);
-
-    this.dateRangeForm.patchValue({
-      startDate: start,
-      endDate: today,
-    });
-  }
-
-  /**
-   * Private: Load the report from the API.
-   * Calls ReportingService.getTradesByStock() with the current date range.
-   */
-  private loadReport(): void {
-    const start = this.startDate();
-    const end = this.endDate();
-
-    if (!start || !end) {
-      this.error.set('Invalid date range.');
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.error.set(null);
-    this.reportData.set([]);
-
-    const startDateStr = this.formatDateForApi(start);
-    const endDateStr = this.formatDateForApi(end);
-
-    this.reportingService.getTradesByStock(startDateStr, endDateStr).subscribe({
-      next: (response: TradesReportResponse) => {
-        if (response.success) {
-          this.reportData.set(response.data);
-        } else {
-          this.error.set('Failed to load report data.');
-        }
-        this.isLoading.set(false);
+    this.reports.getTradeReport(this.periodType(), toIsoDay(from), toIsoDay(to)).subscribe({
+      next: (response) => {
+        this.rows.set(response.data);
+        this.loading.set(false);
+        this.loaded.set(true);
       },
-      error: (err) => {
-        this.isLoading.set(false);
-        this.handleApiError(err);
+      error: (err: HttpErrorResponse) => {
+        this.rows.set([]);
+        this.loading.set(false);
+        this.loaded.set(true);
+        this.error.set(messageFor(err));
       },
     });
   }
+}
 
-  /**
-   * Handle API errors with appropriate messages.
-   */
-  private handleApiError(error: any): void {
-    const status = error.status || 0;
+/** YYYY-MM-DD of the local calendar day the analyst picked (UTC could shift the day). */
+function toIsoDay(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
 
-    if (status === 401) {
-      this.error.set('Your session has expired. Please log in again.');
-    } else if (status === 403) {
-      this.error.set('You do not have permission to access reports.');
-    } else if (status === 400) {
-      this.error.set('Invalid date range or request format.');
-    } else {
-      this.error.set(`An error occurred: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Format a Date object to YYYY-MM-DD string for API calls.
-   */
-  private formatDateForApi(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  /**
-   * Format a number as USD currency for display.
-   */
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  }
-
-  /**
-   * Format a Date object for display.
-   */
-  formatDateForDisplay(date: Date): string {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
-  }
-
-  /**
-   * Get a hint/tooltip for each period type to help users understand the aggregation level.
-   */
-  getPeriodTypeHint(period: PeriodType): string {
-    const hints: Record<PeriodType, string> = {
-      DAY: 'Aggregates trades for each day within the date range',
-      WEEK: 'Aggregates trades for each week (Sunday-Saturday) within the date range',
-      MONTH: 'Aggregates trades for each month within the date range',
-      YEAR: 'Aggregates trades for each year within the date range',
-    };
-    return hints[period];
+function messageFor(err: HttpErrorResponse): string {
+  switch (err.status) {
+    case 400:
+      return 'The period type or date range was not accepted.';
+    case 401:
+      return 'Your session has expired. Please sign in again.';
+    case 403:
+      return 'Your role cannot read reports.';
+    default:
+      return 'The report could not be loaded. Try again.';
   }
 }
