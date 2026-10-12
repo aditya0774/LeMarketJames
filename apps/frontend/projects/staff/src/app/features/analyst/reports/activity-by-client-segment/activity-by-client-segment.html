@@ -69,7 +69,7 @@
     <section *ngIf="reportData().length > 0" class="chart-card" aria-label="Segment value chart">
       <div class="chart-header">
         <h2>Traded value by segment</h2>
-        <p>Total executed value (USD), ranked from highest to lowest.</p>
+        <p>Share of total traded value. A full bar represents 100% across all segments.</p>
       </div>
       <div class="chart-body">
         <div class="chart-row" *ngFor="let row of chartRows()">
@@ -77,7 +77,7 @@
             <span class="segment-label">{{ row.segment.replaceAll('_', ' ') | titlecase }}</span>
             <span class="column-value">{{ row.totalTradedValue | currency }}</span>
           </div>
-          <!-- Equal-width tracks share a zero origin to preserve value ratios. -->
+          <!-- Equal-width tracks represent the same total across all segments. -->
           <div class="bar-zone" aria-hidden="true">
             <div class="bar-fill" [style.width.%]="barWidthPercent(row.totalTradedValue)"></div>
           </div>
@@ -86,10 +86,10 @@
             <span>{{ (totalTradedValue() > 0 ? row.totalTradedValue / totalTradedValue() : 0) | percent:'1.1-1' }} of total</span>
           </div>
         </div>
-        <div class="chart-scale" aria-hidden="true" *ngIf="maxTradedValue() > 0">
-          <span>{{ 0 | currency:'USD':'symbol':'1.0-0' }}</span>
-          <span>{{ maxTradedValue() * 0.5 | currency:'USD':'symbol':'1.0-0' }}</span>
-          <span>{{ maxTradedValue() | currency:'USD':'symbol':'1.0-0' }}</span>
+        <div class="chart-scale" aria-hidden="true">
+          <span>0%</span>
+          <span>50%</span>
+          <span>100%</span>
         </div>
       </div>
     </section>

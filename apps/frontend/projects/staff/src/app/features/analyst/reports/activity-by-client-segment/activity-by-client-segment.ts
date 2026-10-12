@@ -45,10 +45,6 @@ export class ActivityByClientSegment implements OnInit {
   protected readonly chartRows = computed(() =>
     [...this.reportData()].sort((a, b) => b.totalTradedValue - a.totalTradedValue)
   );
-  protected readonly maxTradedValue = computed(() => {
-    const values = this.chartRows().map((row) => row.totalTradedValue);
-    return values.length > 0 ? Math.max(...values) : 0;
-  });
   protected readonly totalTradedValue = computed(() =>
     this.reportData().reduce((sum, row) => sum + row.totalTradedValue, 0)
   );
@@ -88,11 +84,12 @@ export class ActivityByClientSegment implements OnInit {
   }
 
   protected barWidthPercent(value: number): number {
-    const max = this.maxTradedValue();
-    if (max <= 0) {
+    // Match the bar length to the share-of-total label beside it.
+    const total = this.totalTradedValue();
+    if (total <= 0) {
       return 0;
     }
-    return (value / max) * 100;
+    return (value / total) * 100;
   }
 
   protected selectedRangeLabel(): string {

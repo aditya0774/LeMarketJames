@@ -227,16 +227,16 @@ describe('ActivityByClientSegment Component', () => {
       fixture.detectChanges();
       const req = httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity'));
       req.flush({ success: true, data: [
-        { segment: 'RETAIL', activeClients: 2, tradeCount: 4, totalTradedValue: 100 },
-        { segment: 'ACTIVE_TRADER', activeClients: 1, tradeCount: 2, totalTradedValue: 50 },
+        { segment: 'RETAIL', activeClients: 2, tradeCount: 4, totalTradedValue: 478 },
+        { segment: 'ACTIVE_TRADER', activeClients: 1, tradeCount: 2, totalTradedValue: 522 },
         { segment: 'HIGH_NET_WORTH', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
       ] });
       fixture.detectChanges();
 
       const bars = fixture.nativeElement.querySelectorAll('.bar-fill');
-      expect(Array.from(bars).map((bar: any) => bar.style.width)).toEqual(['100%', '50%', '0%']);
+      expect(Array.from(bars).map((bar: any) => bar.style.width)).toEqual(['52.2%', '47.8%', '0%']);
       expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(3);
-      expect(fixture.nativeElement.textContent).toContain('33.3% of total');
+      expect(fixture.nativeElement.textContent).toContain('47.8% of total');
     });
 
     it('renders all-zero values without invalid widths', () => {
