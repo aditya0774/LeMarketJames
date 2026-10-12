@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">85.71% </span>
+                <span class="strong">96.42% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>48/56</span>
+                <span class='fraction'>54/56</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">86.2% </span>
+                <span class="strong">93.1% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>25/29</span>
+                <span class='fraction'>27/29</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">79.31% </span>
+                <span class="strong">96.55% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>23/29</span>
+                <span class='fraction'>28/29</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">84.44% </span>
+                <span class="strong">97.77% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>38/45</span>
+                <span class='fraction'>44/45</span>
             </div>
         
             
@@ -398,7 +398,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -462,29 +462,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
+<span class="cline-any cline-yes">29x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Injectable } from '@angular/core';
@@ -609,8 +609,8 @@ export class OrderService {
   /**
    * Get order by ID
    */
-<span class="fstat-no" title="function not covered" >  getOrderById(o</span>rderId: number): Observable&lt;OrderResponse&gt; {
-<span class="cstat-no" title="statement not covered" >    return this.http.get&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}`);</span>
+  getOrderById(orderId: number): Observable&lt;OrderResponse&gt; {
+    return this.http.get&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}`);
   }
 &nbsp;
   /**
@@ -673,30 +673,30 @@ export class OrderService {
   /**
    * Get orders for an account with a specific status
    */
-<span class="fstat-no" title="function not covered" >  getOrdersByAccountAndStatus(a</span>ccountId: number, status: string): Observable&lt;OrderResponse[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return this.http.get&lt;OrderResponse[]&gt;(`${this.apiUrl}/account/${accountId}/status/${status}`);</span>
+  getOrdersByAccountAndStatus(accountId: number, status: string): Observable&lt;OrderResponse[]&gt; {
+    return this.http.get&lt;OrderResponse[]&gt;(`${this.apiUrl}/account/${accountId}/status/${status}`);
   }
 &nbsp;
   /**
    * Get all orders for an instrument
    */
-<span class="fstat-no" title="function not covered" >  getOrdersByInstrumentId(i</span>nstrumentId: number): Observable&lt;OrderResponse[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return this.http.get&lt;OrderResponse[]&gt;(`${this.apiUrl}/instrument/${instrumentId}`);</span>
+  getOrdersByInstrumentId(instrumentId: number): Observable&lt;OrderResponse[]&gt; {
+    return this.http.get&lt;OrderResponse[]&gt;(`${this.apiUrl}/instrument/${instrumentId}`);
   }
 &nbsp;
   /**
    * Update order status
    */
-<span class="fstat-no" title="function not covered" >  updateOrderStatus(o</span>rderId: number, status: string): Observable&lt;OrderResponse&gt; {
-<span class="cstat-no" title="statement not covered" >    return this.http.put&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}/status/${status}`, {});</span>
+  updateOrderStatus(orderId: number, status: string): Observable&lt;OrderResponse&gt; {
+    return this.http.put&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}/status/${status}`, {});
   }
 &nbsp;
   /**
    * Reject an order
    */
-<span class="fstat-no" title="function not covered" >  rejectOrder(o</span>rderId: number, reason?: string): Observable&lt;OrderResponse&gt; {
-    const params = <span class="cstat-no" title="statement not covered" >reason ? `?reason=${encodeURIComponent(reason)}` : '';</span>
-<span class="cstat-no" title="statement not covered" >    return this.http.post&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}/reject${params}`, {});</span>
+  rejectOrder(orderId: number, reason?: string): Observable&lt;OrderResponse&gt; {
+    const params = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    return this.http.post&lt;OrderResponse&gt;(`${this.apiUrl}/${orderId}/reject${params}`, {});
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -706,7 +706,7 @@ export class OrderService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-10-12T21:41:04.266Z
+                at 2026-10-12T21:57:03.882Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
