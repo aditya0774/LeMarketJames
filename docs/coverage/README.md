@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `a50bead7` on 2026-10-12 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `345ecb5c` on 2026-10-12 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -22,8 +22,8 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 97.40 | 100.00 | 2 / 77 |
 | **Back end (all modules)** | 83.71 | 80.87 | 538 / 3302 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.18 | 80.13 | 185 / 1710 |
-| **Everything** | 85.57 | 80.40 | 723 / 5012 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.34 | 80.61 | 183 / 1717 |
+| **Everything** | 85.63 | 80.71 | 721 / 5019 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -47,12 +47,12 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | File | Lines missed | Line % |
 |---|---:|---:|
 | `src/app/features/auth/register/register.ts` | 56 | 34.12 |
-| `src/app/features/dashboard/dashboard.ts` | 27 | 77.50 |
+| `src/app/features/dashboard/dashboard.ts` | 25 | 78.63 |
 | `src/app/features/auth/register/register.html` | 21 | 91.18 |
 | `src/app/core/orders/orders.service.ts` | 9 | 30.77 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 91.84 |
-| `src/app/core/orders/order.service.ts` | 7 | 80.00 |
+| `src/app/core/orders/order.service.ts` | 7 | 84.44 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
 | `src/app/features/auth/login/login.html` | 5 | 86.11 |
 | `src/app/features/holdings/by-stock-report/by-stock-detail.component.ts` | 5 | 87.50 |
@@ -61,6 +61,9 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-12 | `345ecb5c` | 83.71 | 80.87 | 89.34 | 80.61 |
+| 2026-10-12 | `b0f31fec` | 83.71 | 80.87 | 89.53 | 80.31 |
+| 2026-10-12 | `19a048b9` | 83.71 | 80.87 | 89.18 | 80.13 |
 | 2026-10-12 | `a50bead7` | 83.71 | 80.87 | 89.18 | 80.13 |
 | 2026-10-12 | `182614a5` | 83.71 | 80.87 | 89.18 | 80.13 |
 | 2026-10-09 | `0a811dc0` | 83.57 | 80.69 | 89.18 | 80.13 |
