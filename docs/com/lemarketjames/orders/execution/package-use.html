@@ -71,7 +71,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><a href="class-use/OrderExecutionService.html#com.lemarketjames.orders">OrderExecutionService</a></div>
 <div class="col-last even-row-color">
-<div class="block">No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock.</div>
+<div class="block">Coordinates execution in two phases: persist intent first, then call holdings.</div>
 </div>
 </div>
 </section>
@@ -93,11 +93,11 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><a href="class-use/OrderExecutionService.html#com.lemarketjames.orders.execution">OrderExecutionService</a></div>
 <div class="col-last even-row-color">
-<div class="block">No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock.</div>
+<div class="block">Coordinates execution in two phases: persist intent first, then call holdings.</div>
 </div>
 <div class="col-first odd-row-color"><a href="class-use/OrderExecutionTransactions.html#com.lemarketjames.orders.execution">OrderExecutionTransactions</a></div>
 <div class="col-last odd-row-color">
-<div class="block">Separate bean ensures the durable intent commits BEFORE any remote settlement call.</div>
+<div class="block">Transactional half of execution.</div>
 </div>
 <div class="col-first even-row-color"><a href="class-use/OrderExecutor.html#com.lemarketjames.orders.execution">OrderExecutor</a></div>
 <div class="col-last even-row-color">
