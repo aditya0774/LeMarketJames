@@ -68,7 +68,7 @@ describe('TradingOpsDashboard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.hasAccess).toBe(false);
+    expect(component.hasAccess()).toBe(false);
     expect(fixture.nativeElement.textContent).toContain('Access denied');
     expect(fixture.nativeElement.textContent).toContain('TRADING_OPS role');
     expect(fixture.nativeElement.querySelector('staff-trade-search')).toBeFalsy();
@@ -89,8 +89,8 @@ describe('TradingOpsDashboard', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(component.events.length).toBe(2);
-    expect(component.selectedOrderId).toBe(42);
+    expect(component.events().length).toBe(2);
+    expect(component.selectedOrderId()).toBe(42);
   });
 
   it('does not load timeline on init when TRADING_OPS role is granted', async () => {
@@ -99,8 +99,8 @@ describe('TradingOpsDashboard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.hasAccess).toBe(true);
-    expect(component.selectedOrderId).toBeNull();
+    expect(component.hasAccess()).toBe(true);
+    expect(component.selectedOrderId()).toBeNull();
     httpMock.expectNone('/api/v1/orders');
   });
 
@@ -120,13 +120,13 @@ describe('TradingOpsDashboard', () => {
     await fixture.whenStable();
 
     component.selectOrder(42);
-    expect(component.isLoading).toBe(true);
+    expect(component.isLoading()).toBe(true);
 
     const req = httpMock.expectOne('/api/v1/orders/42/timeline');
     req.flush(mockEvents);
     await fixture.whenStable();
 
-    expect(component.isLoading).toBe(false);
+    expect(component.isLoading()).toBe(false);
   });
 
   it('displays error message on 403 Forbidden', async () => {
@@ -140,7 +140,7 @@ describe('TradingOpsDashboard', () => {
     req.flush({ message: 'Access denied' }, { status: 403, statusText: 'Forbidden' });
     await fixture.whenStable();
 
-    expect(component.error).toContain('TRADING_OPS');
+    expect(component.error()).toContain('TRADING_OPS');
   });
 
   it('displays error message on 404 Not Found', async () => {
@@ -154,6 +154,6 @@ describe('TradingOpsDashboard', () => {
     req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     await fixture.whenStable();
 
-    expect(component.error).toContain('Order not found');
+    expect(component.error()).toContain('Order not found');
   });
 });

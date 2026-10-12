@@ -25,7 +25,7 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
           <div class="timeline-event">
             <div class="event-header">
               <span class="event-type">{{ event.eventType }}</span>
-              <span class="event-time">{{ event.occurredAt | date: 'short' }}</span>
+              <span class="event-time">{{ event.occurredAt | date: 'yyyy-MM-dd HH:mm:ss':'UTC' }} UTC</span>
             </div>
             <div class="event-details">
               @for (entry of getDetailsEntries(event.details); track entry[0]) {
@@ -55,12 +55,15 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
       align-items: center;
       gap: 12px;
       padding: 24px;
-      color: #666;
+      color: var(--text-dim);
+      background: var(--ink-2);
+      border: 1px solid var(--purple-line);
+      border-radius: 8px;
     }
 
     .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #3498db;
+      border: 3px solid color-mix(in srgb, var(--purple-line) 80%, transparent);
+      border-top: 3px solid var(--gold);
       border-radius: 50%;
       width: 24px;
       height: 24px;
@@ -74,10 +77,10 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
 
     .error-state {
       padding: 16px;
-      background-color: #fff3cd;
-      border: 1px solid #ffc107;
+      background: color-mix(in srgb, var(--down) 12%, var(--ink-2));
+      border: 1px solid color-mix(in srgb, var(--down) 60%, var(--purple-line));
       border-radius: 4px;
-      color: #856404;
+      color: var(--text);
     }
 
     .error-message {
@@ -87,58 +90,71 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
 
     .empty-state {
       padding: 16px;
-      color: #999;
+      color: var(--text-dim);
       font-style: italic;
       text-align: center;
       margin: 0;
+      background: var(--ink-2);
+      border: 1px solid var(--purple-line);
+      border-radius: 8px;
     }
 
     .timeline-event {
-      padding: 12px;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      background-color: #fafafa;
+      padding: 14px;
+      border: 1px solid var(--purple-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--ink) 82%, black);
     }
 
     .event-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
       margin-bottom: 8px;
       padding-bottom: 8px;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--purple-line);
     }
 
     .event-type {
-      font-weight: 500;
-      font-size: 14px;
-      color: #333;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: var(--gold);
     }
 
     .event-time {
       font-size: 12px;
-      color: #666;
+      color: var(--text-dim);
     }
 
     .event-details {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 8px;
       font-size: 13px;
     }
 
     .detail-row {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 10px;
+      align-items: start;
     }
 
     .detail-key {
-      color: #666;
+      color: var(--text-dim);
       font-weight: 500;
     }
 
     .detail-value {
-      color: #333;
+      color: var(--text);
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      text-align: right;
+      line-height: 1.35;
     }
   `],
 })
@@ -147,7 +163,20 @@ export class TradeTimelineComponent {
   @Input() isLoading = false;
   @Input() error: string | null = null;
 
-  getDetailsEntries(details: Record<string, any>): Array<[string, any]> {
-    return Object.entries(details);
+  getDetailsEntries(details: Record<string, any> | null | undefined): Array<[string, string]> {
+    if (!details || typeof details !== 'object' || Array.isArray(details)) return [];
+    return Object.entries(details).map(([key, value]) => [key, this.stringifyDetail(value)]);
+  }
+
+  private stringifyDetail(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) return value.map(item => String(item)).join(', ');
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
   }
 }

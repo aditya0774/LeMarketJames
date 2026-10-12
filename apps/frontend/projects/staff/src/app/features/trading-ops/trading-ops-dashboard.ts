@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { TradeTimelineComponent } from './trade-timeline/trade-timeline';
 import { TradeSearch } from '../trade-search/trade-search';
 import { TradeTimelineService } from './trade-timeline/trade-timeline.service';
 import { Auth } from '../../core/auth/auth';
 import { AuditEvent } from '../../shared/models/audit-event.model';
+import { finalize, Subscription, take, timeout, TimeoutError } from 'rxjs';
 
 /**
  * Landing page of the TRADING_OPS role, which works on individual client trades.
@@ -20,7 +21,7 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
     <div class="dashboard">
       <h1>Trading Ops Dashboard</h1>
       
-      @if (!hasAccess) {
+      @if (!hasAccess()) {
         <div class="access-denied">
           <p>Access denied. You must have the TRADING_OPS role to view this page.</p>
         </div>
@@ -29,13 +30,13 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
         <staff-trade-search (tradeSelected)="selectOrder($event)"></staff-trade-search>
 
         <!-- Trade timeline (LMKT-40) -->
-        @if (selectedOrderId) {
+        @if (selectedOrderId()) {
           <div class="timeline-section">
-            <h2>Order Timeline #{{ selectedOrderId }}</h2>
+            <h2>Order Timeline #{{ selectedOrderId() }}</h2>
             <staff-trade-timeline
-              [events]="events"
-              [isLoading]="isLoading"
-              [error]="error">
+              [events]="events()"
+              [isLoading]="isLoading()"
+              [error]="error()">
             </staff-trade-timeline>
           </div>
         }
@@ -68,12 +69,13 @@ import { AuditEvent } from '../../shared/models/audit-event.model';
     }
   `],
 })
-export class TradingOpsDashboard implements OnInit {
-  hasAccess = false;
-  selectedOrderId: number | null = null;
-  events: AuditEvent[] = [];
-  isLoading = false;
-  error: string | null = null;
+export class TradingOpsDashboard implements OnInit, OnDestroy {
+  readonly hasAccess = signal(false);
+  readonly selectedOrderId = signal<number | null>(null);
+  readonly events = signal<AuditEvent[]>([]);
+  readonly isLoading = signal(false);
+  readonly error = signal<string | null>(null);
+  private timelineRequest?: Subscription;
 
   constructor(
     private timelineService: TradeTimelineService,
@@ -82,29 +84,41 @@ export class TradingOpsDashboard implements OnInit {
 
   ngOnInit() {
     // AC3: Check TRADING_OPS role; deny CLIENT and ANALYST
-    this.hasAccess = this.auth.hasRole('TRADING_OPS');
+    this.hasAccess.set(this.auth.hasRole('TRADING_OPS'));
+  }
+
+  ngOnDestroy() {
+    this.timelineRequest?.unsubscribe();
   }
 
   selectOrder(orderId: number) {
-    this.selectedOrderId = orderId;
-    this.events = [];
-    this.error = null;
-    this.isLoading = true;
+    this.timelineRequest?.unsubscribe();
+    this.selectedOrderId.set(orderId);
+    this.events.set([]);
+    this.error.set(null);
+    this.isLoading.set(true);
 
-    this.timelineService.getOrderTimeline(orderId).subscribe({
+    this.timelineRequest = this.timelineService.getOrderTimeline(orderId).pipe(
+      // A local stack call should be fast; fail gracefully if a route/service hangs.
+      take(1),
+      timeout({ first: 10000 }),
+      finalize(() => {
+        this.isLoading.set(false);
+      }),
+    ).subscribe({
       next: (events) => {
-        this.events = events;
-        this.isLoading = false;
-        this.error = null;
+        this.events.set(events);
+        this.error.set(null);
       },
       error: (error) => {
-        this.isLoading = false;
         if (error.status === 403) {
-          this.error = 'Access denied: TRADING_OPS role required to view this timeline';
+          this.error.set('Access denied: TRADING_OPS role required to view this timeline');
         } else if (error.status === 404) {
-          this.error = 'Order not found';
+          this.error.set('Order not found');
+        } else if (error instanceof TimeoutError) {
+          this.error.set('Timeline request timed out. Please try again.');
         } else {
-          this.error = `Error loading timeline: ${error.statusText || 'Unknown error'}`;
+          this.error.set(`Error loading timeline: ${error.statusText || 'Unknown error'}`);
         }
       },
     });
