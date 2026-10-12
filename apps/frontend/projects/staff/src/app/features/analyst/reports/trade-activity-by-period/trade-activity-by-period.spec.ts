@@ -1,608 +1,126 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { TradeActivityByPeriod } from './trade-activity-by-period';
-import { ReportingService, TradesByStockRow, TradesReportResponse } from '../../../../core/reports/reporting.service';
+import { TradeReportResponse } from '../../../../shared/models/trade-report.model';
 
-describe('TradeActivityByPeriod Component', () => {
-  let component: TradeActivityByPeriod;
+/** A response shaped like the C6 example for GET /api/v1/reports/trades (mocked API). */
+const dayReport: TradeReportResponse = {
+  data: [
+    { period: '2026-10-02', tradeCount: 2, buyCount: 1, sellCount: 1, totalValue: 500 },
+    { period: '2026-10-01', tradeCount: 5, buyCount: 3, sellCount: 2, totalValue: 1250.5 },
+  ],
+  generatedAt: '2026-10-07T20:15:30.123Z',
+};
+
+describe('TradeActivityByPeriod', () => {
   let fixture: ComponentFixture<TradeActivityByPeriod>;
-  let httpMock: HttpTestingController;
+  let component: TradeActivityByPeriod;
+  let http: HttpTestingController;
 
-  // Real seed_active persona trades aggregated from database/schema/011_seed_test_data.sql
-  // 12-month history with actual LeBron-themed stock data
-  const mockTradesData: TradesByStockRow[] = [
-    {
-      // BUY 20 @ 190 + SELL 5 @ 205 + BUY 5 @ 230 (12, 8, 1 months ago)
-      symbol: 'AAPL',
-      totalQuantity: 20,
-      totalGrossAmount: 6950.00,
-      buyCount: 2,
-      sellCount: 1,
-    },
-    {
-      // BUY 10 @ 410 + SELL 4 @ 430 (11, 2 months ago)
-      symbol: 'MSFT',
-      totalQuantity: 6,
-      totalGrossAmount: 5820.00,
-      buyCount: 1,
-      sellCount: 1,
-    },
-    {
-      // BUY 15 @ 120 + SELL 5 @ 135 (10, 5 months ago)
-      symbol: 'NVDA',
-      totalQuantity: 10,
-      totalGrossAmount: 2475.00,
-      buyCount: 1,
-      sellCount: 1,
-    },
-    {
-      // BUY 12 @ 165 (9 months ago)
-      symbol: 'GOOGL',
-      totalQuantity: 12,
-      totalGrossAmount: 1980.00,
-      buyCount: 1,
-      sellCount: 0,
-    },
-    {
-      // BUY 10 @ 210 (6 months ago)
-      symbol: 'JPM',
-      totalQuantity: 10,
-      totalGrossAmount: 2100.00,
-      buyCount: 1,
-      sellCount: 0,
-    },
-    {
-      // BUY 10 @ 250 + SELL 10 @ 275 (2 years, 18 months ago) - closed position
-      symbol: 'V',
-      totalQuantity: 0,
-      totalGrossAmount: 5250.00,
-      buyCount: 1,
-      sellCount: 1,
-    },
-  ];
+  const isReport = (req: { url: string }) => req.url === '/api/v1/reports/trades';
 
-  const mockResponse: TradesReportResponse = {
-    success: true,
-    data: mockTradesData,
-  };
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        TradeActivityByPeriod,
-        HttpClientTestingModule,
-        ReactiveFormsModule,
-        MatDatepickerModule,
-        MatNativeDateModule,
-        MatInputModule,
-        MatFormFieldModule,
-        MatTableModule,
-        MatButtonModule,
-        MatProgressSpinnerModule,
-        MatCardModule,
-        MatTabsModule,
-        MatIconModule,
-        MatTooltipModule,
-      ],
-      providers: [ReportingService, provideRouter([])],
-    }).compileComponents();
-
-    httpMock = TestBed.inject(HttpTestingController);
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [TradeActivityByPeriod],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideNoopAnimations()],
+    });
+    http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TradeActivityByPeriod);
     component = fixture.componentInstance;
   });
 
-  afterEach(() => {
-    // Most tests call detectChanges(), which fires the initial report request, and only some
-    // answer it. Drop what is left: a failed verify() here would leave TestBed instantiated and
-    // fail every later test (and spec file) in the run.
-    httpMock.match(() => true);
-    httpMock.verify();
+  afterEach(() => http.verify());
+
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  it('loads the MONTH report with a date range as soon as it opens', () => {
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('periodType')).toBe('MONTH');
+    expect(req.request.params.get('from')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(req.request.params.get('to')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  describe('Initialization', () => {
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
+  it('shows one row per period with its counts and value, plus a total row', async () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+    component.selectPeriodType('DAY');
+    http.expectOne(isReport).flush(dayReport);
+    await fixture.whenStable();
 
-    it('should initialize with MONTH period type', () => {
-      expect(component.periodType()).toBe('MONTH');
-    });
+    const rows = el().querySelectorAll('tr[mat-row]');
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('October 2, 2026');
+    expect(rows[0].textContent).toContain('$500.00');
+    expect(rows[1].textContent).toContain('$1,250.50');
 
-    it('should initialize with default date range (last 30 days)', () => {
-      fixture.detectChanges();
-      // Init also loads the report; answer it so afterEach's verify() finds nothing open.
-      httpMock.expectOne((req) => req.url.includes('/api/v1/reports/')).flush(mockResponse);
-
-      const startDate = component.startDate();
-      const endDate = component.endDate();
-
-      expect(startDate).toBeTruthy();
-      expect(endDate).toBeTruthy();
-
-      // Calculate expected difference (30 days)
-      const diff = endDate!.getTime() - startDate!.getTime();
-      const daysDiff = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      expect(daysDiff).toBeCloseTo(30, 1); // Allow 1 day difference due to timing
-    });
-
-    it('should set form controls with default dates on init', () => {
-      fixture.detectChanges();
-
-      const startFormDate = component.dateRangeForm.get('startDate')?.value;
-      const endFormDate = component.dateRangeForm.get('endDate')?.value;
-
-      expect(startFormDate).toBeTruthy();
-      expect(endFormDate).toBeTruthy();
-    });
-
-    it('should load report on init', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      expect(req.request.method).toBe('GET');
-
-      req.flush(mockResponse);
-      fixture.detectChanges();
-
-      expect(component.reportData()).toEqual(mockTradesData);
-      expect(component.isLoading()).toBe(false);
-    });
+    const footer = el().querySelector('tr[mat-footer-row]')!.textContent!;
+    expect(footer).toContain('7'); // 2 + 5 trades
+    expect(footer).toContain('$1,750.50');
   });
 
-  describe('Period Type Changes', () => {
-    it('should change period type to DAY and adjust date range', () => {
-      fixture.detectChanges();
+  it('reloads with the chosen period type', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
 
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
+    component.selectPeriodType('WEEK');
 
-      component.onPeriodTypeChange('DAY');
-      fixture.detectChanges();
-
-      expect(component.periodType()).toBe('DAY');
-
-      // Verify another request was made (date range reload)
-      req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      expect(req.request.method).toBe('GET');
-
-      req.flush(mockResponse);
-    });
-
-    it('should change period type to WEEK and adjust date range', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      component.onPeriodTypeChange('WEEK');
-      fixture.detectChanges();
-
-      expect(component.periodType()).toBe('WEEK');
-
-      req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-    });
-
-    it('should change period type to YEAR and adjust date range', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      component.onPeriodTypeChange('YEAR');
-      fixture.detectChanges();
-
-      expect(component.periodType()).toBe('YEAR');
-
-      req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-    });
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('periodType')).toBe('WEEK');
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  describe('Date Range Changes', () => {
-    it('should send correct startDate and endDate parameters to API', () => {
-      fixture.detectChanges();
+  it('reloads with the chosen date range when Apply is used', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
 
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
+    component.range.setValue({ from: new Date(2026, 0, 5), to: new Date(2026, 0, 20) });
+    component.applyRange();
 
-      const newStartDate = new Date('2026-10-01');
-      const newEndDate = new Date('2026-10-07');
-
-      component.dateRangeForm.patchValue({
-        startDate: newStartDate,
-        endDate: newEndDate,
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      req = httpMock.expectOne((request) => {
-        const url = request.url;
-        const startParam = request.params.get('startDate');
-        const endParam = request.params.get('endDate');
-
-        return (
-          url.includes('/api/v1/reports/trades-by-stock') &&
-          startParam === '2026-10-01' &&
-          endParam === '2026-10-07'
-        );
-      });
-
-      expect(req.request.method).toBe('GET');
-      req.flush(mockResponse);
-    });
-
-    it('should validate date range and show error if startDate > endDate', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      const startDate = new Date('2026-10-10');
-      const endDate = new Date('2026-10-01');
-
-      component.dateRangeForm.patchValue({
-        startDate,
-        endDate,
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      expect(component.error()).toContain('Start date must be before or equal to end date');
-      // No additional HTTP request should be made
-      httpMock.expectNone((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-    });
-
-    it('should show error if either date is missing', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      component.dateRangeForm.patchValue({
-        startDate: null,
-        endDate: new Date('2026-10-07'),
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      expect(component.error()).toContain('Both start and end dates are required');
-    });
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('from')).toBe('2026-01-05');
+    expect(req.request.params.get('to')).toBe('2026-01-20');
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  describe('Error Handling', () => {
-    it('should handle 401 Unauthorized (expired session)', () => {
-      fixture.detectChanges();
+  it('does not call the API when the start date is after the end date', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
 
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+    component.range.setValue({ from: new Date(2026, 0, 20), to: new Date(2026, 0, 5) });
+    component.applyRange();
 
-      fixture.detectChanges();
-
-      expect(component.isLoading()).toBe(false);
-      expect(component.error()).toContain('session has expired');
-    });
-
-    it('should handle 403 Forbidden (access denied)', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush('Forbidden', { status: 403, statusText: 'Forbidden' });
-
-      fixture.detectChanges();
-
-      expect(component.isLoading()).toBe(false);
-      expect(component.error()).toContain('do not have permission');
-    });
-
-    it('should handle 400 Bad Request (invalid date range)', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush('Bad Request', { status: 400, statusText: 'Bad Request' });
-
-      fixture.detectChanges();
-
-      expect(component.isLoading()).toBe(false);
-      expect(component.error()).toContain('Invalid date range');
-    });
-
-    it('should handle generic errors', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush('Internal Server Error', { status: 500, statusText: 'Internal Server Error' });
-
-      fixture.detectChanges();
-
-      expect(component.isLoading()).toBe(false);
-      expect(component.error()).toBeTruthy();
-      expect(component.error()).toContain('An error occurred');
-    });
+    expect(component.error()).toContain('start date');
+    http.expectNone(isReport);
   });
 
-  describe('Data Display', () => {
-    it('should display report data in table', () => {
-      fixture.detectChanges();
+  it('asks for both dates when one is missing', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
 
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
+    component.range.setValue({ from: null, to: new Date(2026, 0, 5) });
+    component.applyRange();
 
-      fixture.detectChanges();
-
-      expect(component.reportData()).toEqual(mockTradesData);
-      expect(component.hasData()).toBe(true);
-    });
-
-    it('should display empty state when no data', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush({ success: true, data: [] });
-
-      fixture.detectChanges();
-
-      expect(component.reportData().length).toBe(0);
-      expect(component.showEmpty()).toBe(true);
-      expect(component.hasData()).toBe(false);
-    });
-
-    it('should render all 5 columns in table', () => {
-      fixture.detectChanges();
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      fixture.detectChanges();
-
-      expect(component.displayedColumns.length).toBe(5);
-      expect(component.displayedColumns).toContain('symbol');
-      expect(component.displayedColumns).toContain('totalQuantity');
-      expect(component.displayedColumns).toContain('totalGrossAmount');
-      expect(component.displayedColumns).toContain('buyCount');
-      expect(component.displayedColumns).toContain('sellCount');
-    });
+    expect(component.error()).toContain('both');
+    http.expectNone(isReport);
   });
 
-  describe('Formatting', () => {
-    it('should format currency correctly', () => {
-      const formatted = component.formatCurrency(6950.00);
+  it('says there are no trades when the report is empty', async () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+    await fixture.whenStable();
 
-      expect(formatted).toBe('$6,950.00');
-    });
-
-    it('should format currency with thousands separator', () => {
-      const formatted = component.formatCurrency(5820.00);
-
-      expect(formatted).toBe('$5,820.00');
-    });
-
-    it('should format small currency values', () => {
-      const formatted = component.formatCurrency(2100.00);
-
-      expect(formatted).toBe('$2,100.00');
-    });
-
-    it('should format date correctly', () => {
-      const date = new Date('2026-10-07');
-      const formatted = component.formatDateForDisplay(date);
-
-      expect(formatted).toContain('Oct');
-      expect(formatted).toContain('7');
-      expect(formatted).toContain('2026');
-    });
+    expect(el().textContent).toContain('No trades in this date range.');
+    expect(el().querySelector('table')).toBeNull();
   });
 
-  describe('Loading State', () => {
-    it('should set isLoading to true during request', () => {
-      fixture.detectChanges();
+  it.each([
+    [401, 'session has expired'],
+    [403, 'cannot read reports'],
+    [400, 'not accepted'],
+    [500, 'could not be loaded'],
+  ])('shows a message for a %i response', async (status, text) => {
+    http.expectOne(isReport).flush({}, { status, statusText: 'x' });
+    await fixture.whenStable();
 
-      expect(component.isLoading()).toBe(true);
-
-      const req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      fixture.detectChanges();
-
-      expect(component.isLoading()).toBe(false);
-    });
-
-    it('should clear error state when loading starts', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      // Trigger error
-      component.dateRangeForm.patchValue({
-        startDate: new Date('2026-10-10'),
-        endDate: new Date('2026-10-01'),
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      expect(component.error()).toBeTruthy();
-
-      // Load a valid report
-      component.dateRangeForm.patchValue({
-        startDate: new Date('2026-10-01'),
-        endDate: new Date('2026-10-10'),
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      expect(component.error()).toBeNull();
-
-      req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-    });
-  });
-
-  describe('Refresh Functionality', () => {
-    it('should reload report when refresh is called', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      fixture.detectChanges();
-
-      component.refresh();
-      fixture.detectChanges();
-
-      req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      expect(req.request.method).toBe('GET');
-
-      req.flush(mockResponse);
-    });
-  });
-
-  describe('API Parameter Formatting', () => {
-    it('should format dates as YYYY-MM-DD in API calls', () => {
-      fixture.detectChanges();
-
-      let req = httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-      req.flush(mockResponse);
-
-      const testDate = new Date('2026-10-07');
-
-      component.dateRangeForm.patchValue({
-        startDate: testDate,
-        endDate: testDate,
-      });
-
-      component.onDateRangeChange();
-      fixture.detectChanges();
-
-      req = httpMock.expectOne((request) => {
-        const startParam = request.params.get('startDate');
-
-        return (
-          request.url.includes('/api/v1/reports/trades-by-stock') &&
-          startParam === '2026-10-07'
-        );
-      });
-
-      expect(req.request.params.get('startDate')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(req.request.params.get('endDate')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-
-      req.flush(mockResponse);
-    });
-  });
-  describe('Preset Date Ranges', () => {
-    const reportRequest = () =>
-      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
-
-    // A fixed "today" (Wed 2026-11-18, in Q4) so the expected start dates do not depend on the run date.
-    beforeEach(() => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 10, 18, 12, 0, 0));
-      fixture.detectChanges();
-      reportRequest().flush(mockResponse);
-    });
-
-    afterEach(() => vi.useRealTimers());
-
-    const ymd = (d: Date | null) => `${d!.getFullYear()}-${d!.getMonth() + 1}-${d!.getDate()}`;
-
-    it('week starts 7 days ago and reloads the report', () => {
-      component.setPresetDates('week');
-
-      expect(ymd(component.startDate())).toBe('2026-11-11');
-      expect(ymd(component.endDate())).toBe('2026-11-18');
-      expect(ymd(component.dateRangeForm.value.startDate as Date)).toBe('2026-11-11');
-      reportRequest().flush(mockResponse);
-    });
-
-    it('month starts on the first day of the current month', () => {
-      component.setPresetDates('month');
-
-      expect(ymd(component.startDate())).toBe('2026-11-1');
-      reportRequest().flush(mockResponse);
-    });
-
-    it('quarter starts on the first day of the current quarter', () => {
-      component.setPresetDates('quarter');
-
-      expect(ymd(component.startDate())).toBe('2026-10-1');
-      expect(ymd(component.endDate())).toBe('2026-11-18');
-      reportRequest().flush(mockResponse);
-    });
-
-    it('quarter from the 31st does not roll over into the next month', () => {
-      vi.setSystemTime(new Date(2026, 4, 31, 12, 0, 0)); // May 31 is in Q2, which starts April 1
-
-      component.setPresetDates('quarter');
-
-      expect(ymd(component.startDate())).toBe('2026-4-1');
-      reportRequest().flush(mockResponse);
-    });
-  });
-
-  describe('Period type on MONTH', () => {
-    it('selecting MONTH sets the last 30 days and reloads', () => {
-      fixture.detectChanges();
-      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
-
-      component.onPeriodTypeChange('MONTH');
-
-      const days = Math.round((component.endDate()!.getTime() - component.startDate()!.getTime()) / 86_400_000);
-      expect(days).toBe(30);
-      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
-    });
-  });
-
-  describe('Report failures', () => {
-    it('shows an error when the server answers success: false', () => {
-      fixture.detectChanges();
-      httpMock
-        .expectOne((request) => request.url.includes('/api/v1/reports/'))
-        .flush({ success: false, data: [] });
-
-      expect(component.error()).toBe('Failed to load report data.');
-      expect(component.isLoading()).toBe(false);
-      expect(component.reportData()).toEqual([]);
-    });
-
-    it('refuses to load without a date range', () => {
-      fixture.detectChanges();
-      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
-      component.startDate.set(null);
-
-      component.refresh();
-
-      expect(component.error()).toBe('Invalid date range.');
-      httpMock.expectNone((request) => request.url.includes('/api/v1/reports/'));
-    });
-  });
-
-  describe('Period type hints', () => {
-    it('describes the aggregation level of every period type', () => {
-      expect(component.getPeriodTypeHint('DAY')).toContain('each day');
-      expect(component.getPeriodTypeHint('WEEK')).toContain('each week');
-      expect(component.getPeriodTypeHint('MONTH')).toContain('each month');
-      expect(component.getPeriodTypeHint('YEAR')).toContain('each year');
-    });
+    expect(el().querySelector('[role="alert"]')!.textContent).toContain(text);
+    expect(el().textContent).not.toContain('No trades in this date range.');
   });
 });
