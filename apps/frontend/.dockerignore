@@ -7,3 +7,7 @@ coverage
 
 # Saved test logs are not part of the build.
 *.txt
+
+# Neither are the unit tests: tsconfig.app.json leaves them out of `ng build`. Ignored here so a
+# change that only touches tests doesn't rebuild the image.
+**/*.spec.ts

@@ -64,6 +64,7 @@ LeMarketJames/
 ├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)
 ├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1, stop-all.ps1
 ├── docker-compose.yml
+├── docker-compose.ci.yml    # Jenkins only: sizes the stack's JVMs for the small CI agent
 ├── sonar-project.properties # SonarQube analysis settings for the whole repo (README: SonarQube)
 └── Jenkinsfile
 ```
@@ -95,7 +96,7 @@ Run Maven commands from the repo root.
 3. Put the `@SpringBootApplication` class in the root `com.lemarketjames` package so it picks up `com.lemarketjames.common.*`. Move the feature's packages and tests out of `core-service`.
 4. Point it at the shared database (`SPRING_DATASOURCE_*`) as `lemarket_app`, the restricted account that can't change audit records ([C2](contracts/C2-audit.md#the-lockdown)); never the owner `lemarket`. Give it the same `JWT_SECRET`, and keep `spring.jpa.hibernate.ddl-auto=validate`. Schema changes still go in `database/schema`.
 5. Add a route for its paths in `services/gateway-service/src/main/resources/application.yml`, **above** the `core-service` catch-all. A staff-only service such as `reporting-service` gets no route here; add its route to the staff gateway's list in `application-staff.yml` in the same folder, and its paths to [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
-6. Add a `Dockerfile` (copy an existing service's and change only the jar name and the port: the Maven build line must stay the same in every service Dockerfile, which is what lets Docker build it once for all images), a service in `docker-compose.yml`, and the name to the Jenkinsfile: a unit-test stage, the image loop, the smoke test's health ports and the `compose logs` lists. The "Show running containers" stage then expects its container without being told. Add it to `scripts/windows/start-all.ps1` and `stop-all.ps1` too, and its `target/surefire-reports` folder to `sonar.junit.reportPaths` in `sonar-project.properties`, which lists them module by module.
+6. Add a `Dockerfile` (copy an existing service's and change only the jar name and the port: the Maven build line must stay the same in every service Dockerfile, which is what lets Docker build it once for all images), a service in `docker-compose.yml` with its JVM settings in `docker-compose.ci.yml`, and the name to the Jenkinsfile: the image loop, the smoke test's health ports and the `compose logs` lists. Its unit tests need no stage of their own: one Maven run tests every module in the root `pom.xml`. The "Show running containers" stage then expects its container without being told. Add it to `scripts/windows/start-all.ps1` and `stop-all.ps1` too, and its `target/surefire-reports` folder to `sonar.junit.reportPaths` in `sonar-project.properties`, which lists them module by module.
 
 ## Feature Dependencies (Keep Acyclic)
 

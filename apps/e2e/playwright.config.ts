@@ -25,7 +25,10 @@ export default defineConfig({
     // Keep evidence only when something fails, so passing runs stay fast and small.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // No video in CI: 'retain-on-failure' records and encodes every test and then throws most
+    // recordings away, which the two-CPU Jenkins agent pays for in every run. The trace above
+    // already holds a screenshot of each step, the network calls and the console.
+    video: isCi ? 'off' : 'retain-on-failure',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: FEED_FAILURE_TESTS },

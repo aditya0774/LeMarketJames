@@ -5,6 +5,12 @@ pipeline {
         // the same Compose stack on the same host ports (5432, 9092, 4200, ...), so two at once
         // collide, and together they take the memory SonarQube needs on this host.
         disableConcurrentBuilds()
+        // A hung build would hold those ports and the stack's memory until someone noticed. A
+        // full run takes well under half of this.
+        timeout(time: 45, unit: 'MINUTES')
+        // Every build keeps a coverage site and its Playwright reports; without a limit they
+        // pile up on the agent's disk.
+        buildDiscarder(logRotator(numToKeepStr: '20'))
     }
     tools {
         jdk 'JDK21'
@@ -13,6 +19,10 @@ pipeline {
     environment {
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
         NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+        // docker-compose.ci.yml sizes the stack's JVMs for this small agent (see that file).
+        // Compose reads this variable itself, so every compose call below, and the
+        // scripts/verify-*.sh checks, run the same merged stack without naming the files.
+        COMPOSE_FILE = "${WORKSPACE}/docker-compose.yml:${WORKSPACE}/docker-compose.ci.yml"
         // CI exercises fills regardless of the wall-clock time; production defaults still respect sessions.
         SIM_RESPECT_MARKET_HOURS = 'false'
         CI_HEALTH_RETRIES = '180'
@@ -28,10 +38,14 @@ pipeline {
                     mvn -version
                     node --version
                     npm --version
+                    # "config -q" reads both Compose files (COMPOSE_FILE above), so a mistake in either
+                    # is reported here and not when the stack starts, most of a build later.
                     if docker compose version >/dev/null 2>&1; then
                         echo "Using Docker Compose v2"
+                        docker compose config -q
                     elif command -v docker-compose >/dev/null 2>&1; then
                         echo "Using legacy docker-compose"
+                        docker-compose config -q
                     else
                         echo "Docker Compose is not installed on this Jenkins agent"
                         exit 1
@@ -41,6 +55,13 @@ pipeline {
                     # missing plugin is reported now and not after every test has run.
                     if ! docker buildx version; then
                         echo "Docker BuildKit (the buildx plugin) is not available to this Jenkins agent"
+                        exit 1
+                    fi
+                    # A build needs room for its images and the stack's database. Docker keeps both
+                    # on the same disk as the workspace on this agent.
+                    available_kb=$(df -Pk "$WORKSPACE" | awk 'NR == 2 {print $4}')
+                    if [ "$available_kb" -lt 5242880 ]; then
+                        echo "Less than 5 GiB is free on this Jenkins agent's disk"
                         exit 1
                     fi
                 '''
@@ -111,7 +132,10 @@ pipeline {
             }
         }
 
-        stage('Test and build Angular') {
+        // The two Angular stages run the unit tests only. The production build is not run here:
+        // each frontend image built further down runs the same `ng build`, so a build error
+        // still fails this run, at that stage, and the apps are not compiled twice.
+        stage('Test Angular app') {
             when {
                 expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
             }
@@ -123,26 +147,29 @@ pipeline {
                     // workspace, and the staff app has its own stage below.
                     // npm-ci-if-changed.sh is `npm ci`, skipped while node_modules still matches
                     // the lock file from an earlier build (the workspace is kept between builds).
-                    sh 'rm -rf coverage && sh ../../scripts/ci/npm-ci-if-changed.sh && npm test -- lemarket-ui --watch=false --coverage && npm run build'
+                    sh 'rm -rf coverage && sh ../../scripts/ci/npm-ci-if-changed.sh && npm test -- lemarket-ui --watch=false --coverage'
                 }
             }
         }
 
         // The staff app is a second project in the same Angular workspace (apps/frontend/projects/staff),
         // so it reuses the node_modules the stage above installed.
-        stage('Test and build staff Angular app') {
+        stage('Test staff Angular app') {
             when {
                 expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
             }
             steps {
                 dir('apps/frontend') {
                     // --coverage writes coverage/staff/lcov.info, which the SonarQube stage reads.
-                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
+                    sh 'npm run test:staff -- --watch=false --coverage'
                 }
             }
         }
 
         // Disposable testing database: remove -v here and in post cleanup before keeping real data.
+        // PostgreSQL and Kafka are then started again at once, without waiting for them: they
+        // load the schema and come up while the unit tests below run, which use neither. The
+        // integration stage is where the build waits for them.
         stage('Clean up stale volumes') {
             steps {
                 sh '''
@@ -150,118 +177,43 @@ pipeline {
                     if docker compose version >/dev/null 2>&1; then
                         docker compose down -v --remove-orphans
                         docker compose ps -q | xargs -r docker kill 2>/dev/null || true
+                        docker compose up -d db kafka
                     elif command -v docker-compose >/dev/null 2>&1; then
                         docker-compose down -v --remove-orphans
                         docker-compose ps -q | xargs -r docker kill 2>/dev/null || true
+                        docker-compose up -d db kafka
                     fi
                     set -e
                 '''
             }
         }
 
-        stage('Prepare backend test dependencies') {
+        // Every backend module's unit tests in one Maven run, two modules at a time on this agent
+        // (-T 1C is one per CPU). They used to be nine Maven builds side by side, which on two
+        // CPUs was mostly Maven starting nine times, with eighteen JVMs in memory at once.
+        // -fae: a failing module does not stop the others, so one run reports every failure.
+        // staff-gateway-service, the earlier stand-alone staff gateway, is tested too: it is still
+        // a module of the build, and the coverage report counts its code.
+        // None of these tests needs a broker: the Kafka consumers' tests hand the record value to
+        // the listener directly and read the result back from its endpoint.
+        stage('Test backend units') {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
             }
+            environment {
+                // The JIT's quick first tier only. These JVMs spend their short lives starting
+                // Spring contexts and are gone before the optimising tier would pay for itself.
+                // Set through the environment so Maven's forked test JVMs get it too.
+                JAVA_TOOL_OPTIONS = '-XX:TieredStopAtLevel=1'
+            }
             steps {
-                // Build shared libraries once to avoid repeating -am work in parallel lanes.
                 // JaCoCo appends to jacoco.exec and the workspace is kept between builds, so old
                 // execution data is removed first; otherwise a deleted test would not lower coverage.
                 sh '''
                     set -eu
                     rm -f libs/*/target/jacoco.exec services/*/target/jacoco.exec
-                    mvn -B -pl libs/common,libs/market-client -am -DskipTests install
+                    mvn -B -T 1C -fae test
                 '''
-            }
-        }
-
-        stage('Test backend units (parallel)') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
-            }
-            parallel {
-                stage('Test libs') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl libs/common,libs/market-client test
-                        '''
-                    }
-                }
-
-                stage('Test core service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/core-service test
-                        '''
-                    }
-                }
-
-                stage('Test buy-sell service units') {
-                    steps { sh 'mvn -B -pl services/buy-sell-service test' }
-                }
-
-                stage('Test auth service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/auth-service test
-                        '''
-                    }
-                }
-
-                stage('Test market service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/market-service test
-                        '''
-                    }
-                }
-
-                stage('Test holdings service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/holdings-service test
-                        '''
-                    }
-                }
-
-                stage('Test reporting service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/reporting-service test
-                        '''
-                    }
-                }
-
-                // The three Kafka consumers. Their tests need no broker: each hands the record
-                // value to its listener directly and reads the result back from its endpoint.
-                // One lane for the three, one after the other: they are small, and three more
-                // lanes would each start a JVM alongside the eight already running here.
-                stage('Test Kafka consumer service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/notification-service,services/surveillance-service,services/activity-service test
-                        '''
-                    }
-                }
-
-                // Covers both gateways: the staff gateway is this module's "staff" profile.
-                // staff-gateway-service, the earlier stand-alone staff gateway, is tested here too:
-                // it is still a module of the build, and the coverage report counts its code.
-                stage('Test gateway service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/gateway-service,services/staff-gateway-service test
-                        '''
-                    }
-                }
             }
             post {
                 always {
@@ -282,12 +234,17 @@ pipeline {
             }
         }
 
-        // Also where Kafka starts, once per run: the full-stack stage further down finds the same
-        // container already running, and that is where the three consumers attach to it. The
-        // unit-test lanes above need no broker (stub publisher, listeners switched off).
+        // PostgreSQL and Kafka were started by the clean-up stage, once per run, and this is where
+        // the build waits for them (the "up" below is then a no-op, kept in case that start
+        // failed). The full-stack stage further down finds the same containers already running,
+        // and that is where the three consumers attach to the broker.
         stage('Run backend integration tests on shared PostgreSQL') {
             when {
                 expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+            }
+            environment {
+                // As in the unit-test stage: these JVMs are short-lived too.
+                JAVA_TOOL_OPTIONS = '-XX:TieredStopAtLevel=1'
             }
             steps {
                 sh '''
@@ -387,71 +344,87 @@ pipeline {
             }
         }
 
-        // Sends the code, test results and coverage of both sides to SonarQube as one project
-        // (settings in sonar-project.properties). Jenkins supplies the server address and token
-        // ('SonarQube' under Manage Jenkins > System) and the scanner ('SonarScanner' under
-        // Tools), so neither is written here. Runs after the integration tests so that their
-        // results and coverage are part of the analysis, and needs both sides' reports.
-        stage('SonarQube Analysis') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                sh 'node scripts/coverage/build-sonar-coverage.mjs'
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQube') {
-                        // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
-                        // Java analysis resolve Spring and other library types.
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+        // The analysis and the image builds need nothing from each other: SonarQube reads the
+        // workspace, Docker reads its own copy of the sources and ignores target/. The scanner and
+        // a Maven build are each mostly one thread, so the agent's two CPUs take one each, and the
+        // wait for SonarQube's verdict costs the images nothing.
+        // failFast: a failed Quality Gate still stops the build at once, image builds included.
+        stage('Analyse and build images (parallel)') {
+            failFast true
+            parallel {
+                stage('SonarQube') {
+                    stages {
+                        // Sends the code, test results and coverage of both sides to SonarQube as one project
+                        // (settings in sonar-project.properties). Jenkins supplies the server address and token
+                        // ('SonarQube' under Manage Jenkins > System) and the scanner ('SonarScanner' under
+                        // Tools), so neither is written here. Runs after the integration tests so that their
+                        // results and coverage are part of the analysis, and needs both sides' reports.
+                        stage('SonarQube Analysis') {
+                            when {
+                                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                sh 'node scripts/coverage/build-sonar-coverage.mjs'
+                                script {
+                                    def scannerHome = tool 'SonarScanner'
+                                    withSonarQubeEnv('SonarQube') {
+                                        // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
+                                        // Java analysis resolve Spring and other library types.
+                                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+                                    }
+                                }
+                            }
+                        }
+
+                        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
+                        // build here when the Classroom Quality Gate fails.
+                        stage('Quality Gate') {
+                            when {
+                                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitForQualityGate abortPipeline: true
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
-        // build here when the Classroom Quality Gate fails.
-        stage('Quality Gate') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                stage('Build versioned Docker images') {
+                    when {
+                        expression { env.CI_RUN_FULL_STACK == 'true' }
+                    }
+                    steps {
+                        sh '''
+                            set -eu
+
+                            short_sha=$(git rev-parse --short=8 HEAD)
+                            image_tag="${BUILD_NUMBER:-local}-${short_sha}"
+                            echo "$image_tag" > .image_tag
+
+                            # Backend images build from the repo root so Maven can see the parent pom and libs/common.
+                            # Every service Dockerfile starts with the same steps, ending in one Maven build of
+                            # all modules, so the first image here does that work and the others take it from
+                            # Docker's cache. That is why this loop builds one image at a time.
+                            # staff-gateway-service has no image of its own: Compose runs gateway-service's
+                            # image a second time with the "staff" profile.
+                            for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
+                                docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
+                                docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
+                            done
+                            # The two frontend images are also this run's production build of each app:
+                            # the Angular test stages above leave `ng build` to them.
+                            docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
+                            docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
+                            # The staff app builds from the same Angular workspace, with its own Dockerfile.
+                            docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
+                            docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
+
+                            echo "Built versioned images with tag: $image_tag"
+                        '''
+                    }
                 }
-            }
-        }
-
-        stage('Build versioned Docker images') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps {
-                sh '''
-                    set -eu
-
-                    short_sha=$(git rev-parse --short=8 HEAD)
-                    image_tag="${BUILD_NUMBER:-local}-${short_sha}"
-                    echo "$image_tag" > .image_tag
-
-                    # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    # Every service Dockerfile starts with the same steps, ending in one Maven build of
-                    # all modules, so the first image here does that work and the others take it from
-                    # Docker's cache. That is why this loop builds one image at a time.
-                    # staff-gateway-service has no image of its own: Compose runs gateway-service's
-                    # image a second time with the "staff" profile.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
-                        docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
-                        docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
-                    done
-                    docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
-                    docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
-                    # The staff app builds from the same Angular workspace, with its own Dockerfile.
-                    docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
-                    docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
-
-                    echo "Built versioned images with tag: $image_tag"
-                '''
             }
         }
 
@@ -666,7 +639,7 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: 'apps/e2e/results/junit.xml'
-                    // HTML report plus traces, screenshots and videos of any failed test.
+                    // HTML report plus the trace and screenshots of any failed test.
                     archiveArtifacts artifacts: 'apps/e2e/playwright-report/**, apps/e2e/test-results/**', allowEmptyArchive: true
                 }
             }
@@ -915,6 +888,19 @@ JSON
                 elif command -v docker-compose >/dev/null 2>&1; then
                     docker-compose down -v --rmi local --remove-orphans || true
                 fi
+                # Every build tags twelve images with its build number, and "--rmi local" above
+                # leaves them: it skips images named by an "image:" entry, which is all of ours.
+                # Nothing uses one once its build is over, so they are all removed here, an earlier
+                # build's leftovers included. Images tagged :dev, a developer's own stack, don't
+                # match the pattern and stay.
+                docker images --format '{{.Repository}}:{{.Tag}}' \
+                    | grep -E '^lemarketjames/[a-z-]+:[0-9]+-[0-9a-f]{8}$' \
+                    | xargs -r docker image rm >/dev/null 2>&1 || true
+                # Then the untagged layers that rebuilt images leave behind, and the oldest build
+                # cache beyond a cap. The cap is wide enough for Maven's downloads and the current
+                # layers, so the next build still starts warm.
+                docker image prune -f >/dev/null 2>&1 || true
+                docker builder prune -f --keep-storage 6gb >/dev/null 2>&1 || true
             '''
         }
     }
