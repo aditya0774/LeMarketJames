@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
+import { resetFeed } from './support/market-control';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 const OPS = { email: 'ops@seed.lemarket.com', password: 'Pass123!' };
@@ -66,6 +67,9 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
 
   const accountId = await loginViaApi(request, user);
   const instrumentId = await instrumentIdOf(request, 'AAPL');
+
+  // This scenario needs a placeable order; ensure the shared feed is back to normal first.
+  await resetFeed(request);
 
   const ops = await playwright.request.newContext({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
