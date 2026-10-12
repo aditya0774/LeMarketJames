@@ -18,6 +18,30 @@
   --text-faint: #7c6d98;
   --radius: 10px;
   --radius-lg: 16px;
+
+  /* Spacing & type scale — values match the literals already repeated throughout this
+     file; existing one-off px values elsewhere are left as-is unless migrated below. */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  --font-3xs: 10px;
+  --font-2xs: 11px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-base: 14px;
+  --font-md: 17px;
+  --font-lg: 18px;
+  --font-xl: 22px;
+  --font-2xl: 26px;
+  --font-3xl: 30px;
+  --font-display: 38px;
 }
 
 /* ---------- Auth shell ---------- */
@@ -48,7 +72,7 @@
   position: absolute;
   top: 26px;
   left: 34px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-faint);
   text-decoration: none;
   cursor: pointer;
@@ -75,7 +99,7 @@
 .auth-brand .wordmark {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 800;
-  font-size: 22px;
+  font-size: var(--font-xl);
   letter-spacing: 0.3px;
 }
 
@@ -116,13 +140,13 @@
 }
 
 .auth-card .sub {
-  font-size: 14px;
+  font-size: var(--font-base);
   color: var(--text-dim);
   margin-bottom: 28px;
 }
 
 .form-section-title {
-  font-size: 13px;
+  font-size: var(--font-sm);
   font-weight: 700;
   color: var(--gold);
   margin: 26px 0 14px;
@@ -138,7 +162,7 @@
 
 .switch-line {
   text-align: center;
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--text-dim);
   margin-top: 22px;
 }
@@ -158,12 +182,12 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius);
   border: none;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--font-base);
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.15s ease;
 }
@@ -206,12 +230,12 @@
 /* ---------- Fields ---------- */
 
 .field {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .field label {
   display: block;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 600;
   color: var(--text-dim);
   margin-bottom: 6px;
@@ -228,7 +252,7 @@
   background: var(--purple-deep);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: var(--font-base);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -245,7 +269,7 @@
 
 .field-row {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .field-row .field {
@@ -253,7 +277,7 @@
 }
 
 .hint {
-  font-size: 11px;
+  font-size: var(--font-2xs);
   color: var(--text-faint);
   margin-top: 5px;
 }
@@ -266,7 +290,7 @@
 }
 
 .field-error {
-  font-size: 11px;
+  font-size: var(--font-2xs);
   color: #ffc5c5;
   margin-top: 5px;
 }
@@ -309,18 +333,18 @@
 
 .alert {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: flex-start;
   padding: 13px 16px;
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: var(--font-sm);
   margin-bottom: 18px;
   border: 1px solid;
 }
 
 .alert b {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-sm);
   margin-bottom: 2px;
 }
 
@@ -396,7 +420,7 @@
 .brand .wordmark {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 800;
-  font-size: 17px;
+  font-size: var(--font-md);
   letter-spacing: 0.3px;
 }
 
@@ -416,12 +440,12 @@
 }
 
 .app-header h1 {
-  font-size: 30px;
+  font-size: var(--font-3xl);
 }
 
 .app-header .sub {
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--font-base);
   margin-top: 4px;
 }
 
@@ -470,7 +494,7 @@
   background: var(--ink-2);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: var(--font-base);
   outline: none;
 }
 
@@ -532,14 +556,14 @@
 }
 
 .search-item .si-price {
-  font-size: 13px;
+  font-size: var(--font-sm);
   font-weight: 600;
   text-align: right;
 }
 
 .search-empty {
   padding: 16px;
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--text-faint);
   text-align: center;
 }
@@ -557,11 +581,11 @@
   background: linear-gradient(160deg, var(--purple-deep), var(--ink-2));
   border: 1px solid var(--purple-line);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  padding: var(--space-md) 18px;
 }
 
 .stat-card .lbl {
-  font-size: 11px;
+  font-size: var(--font-2xs);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-faint);
@@ -570,12 +594,12 @@
 .stat-card .val {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 700;
-  font-size: 26px;
+  font-size: var(--font-2xl);
   margin-top: 6px;
 }
 
 .stat-card .delta {
-  font-size: 12px;
+  font-size: var(--font-xs);
   margin-top: 4px;
   font-weight: 600;
   color: var(--text-dim);
@@ -603,18 +627,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid var(--purple-line);
   flex-wrap: wrap;
   gap: 10px;
 }
 
 .panel-head h3 {
-  font-size: 18px;
+  font-size: var(--font-lg);
 }
 
 .panel-head .sub-s {
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-faint);
   margin-top: 2px;
 }
@@ -652,7 +676,7 @@
 .pt-value {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 700;
-  font-size: 22px;
+  font-size: var(--font-xl);
   margin-top: 2px;
 }
 
@@ -664,17 +688,17 @@
 
 .panel thead th {
   text-align: left;
-  padding: 10px 20px;
+  padding: 10px var(--space-lg);
   color: var(--text-faint);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--font-2xs);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   border-bottom: 1px solid var(--purple-line);
 }
 
 .panel tbody td {
-  padding: 13px 20px;
+  padding: 13px var(--space-lg);
   border-bottom: 1px solid rgba(67, 36, 102, 0.5);
   color: var(--text);
   vertical-align: middle;
@@ -701,9 +725,9 @@
 }
 
 .panel tbody td.empty-row {
-  padding: 26px 20px;
+  padding: 26px var(--space-lg);
   text-align: center;
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--text-faint);
 }
 
@@ -713,7 +737,7 @@
 
 .sym-sub {
   display: block;
-  font-size: 11px;
+  font-size: var(--font-2xs);
   color: var(--text-faint);
   font-weight: 400;
 }
@@ -722,7 +746,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: var(--font-2xs);
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 999px;
@@ -754,7 +778,7 @@
 
 .chip {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 600;
   padding: 6px 13px;
   border-radius: 999px;
@@ -797,7 +821,7 @@
   border: 1px solid var(--purple-line);
   background: transparent;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--font-sm);
   cursor: pointer;
 }
 
@@ -814,7 +838,7 @@
 }
 
 .pg-info {
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: var(--text-faint);
 }
 
@@ -827,7 +851,7 @@
 
 .market-filter input {
   padding: 8px 12px 8px 36px;
-  font-size: 13px;
+  font-size: var(--font-sm);
 }
 
 .row-chart {
@@ -856,7 +880,7 @@
 }
 
 .trade-link {
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--text-faint);
   white-space: nowrap;
@@ -907,7 +931,7 @@
 }
 
 .modal-head h2 {
-  font-size: 26px;
+  font-size: var(--font-2xl);
 }
 
 .modal-head .sub {
@@ -967,7 +991,7 @@
   border: none;
   background: transparent;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: var(--font-sm);
   font-weight: 700;
   color: var(--text-dim);
   cursor: pointer;
@@ -1055,7 +1079,7 @@
 .price-panel .sym-big {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 700;
-  font-size: 26px;
+  font-size: var(--font-2xl);
 }
 
 .price-panel .sym-name {
@@ -1067,12 +1091,12 @@
 .price-panel .price-now {
   font-family: 'Big Shoulders Display', sans-serif;
   font-weight: 700;
-  font-size: 38px;
+  font-size: var(--font-display);
   margin-top: 10px;
 }
 
 .price-panel .price-now small {
-  font-size: 14px;
+  font-size: var(--font-base);
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   margin-left: 8px;
@@ -1090,7 +1114,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: var(--font-3xs);
   color: var(--gold-dim);
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -1120,7 +1144,7 @@
 }
 
 .chart-note {
-  font-size: 11px;
+  font-size: var(--font-2xs);
   color: var(--text-faint);
 }
 
@@ -1144,7 +1168,7 @@
 .stats-grid div b {
   display: block;
   font-family: 'Big Shoulders Display', sans-serif;
-  font-size: 17px;
+  font-size: var(--font-md);
   margin-top: 2px;
 }
 
@@ -1157,7 +1181,7 @@
 .breakdown-row {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--text-dim);
   padding: 5px 0;
 }

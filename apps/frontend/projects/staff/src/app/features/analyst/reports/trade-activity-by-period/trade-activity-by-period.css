@@ -1,0 +1,41 @@
+.trade-activity {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.subtitle {
+  margin: 0 0 16px;
+  color: #666;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-table {
+  width: 100%;
+}
+
+.num {
+  text-align: right;
+}
+
+.error {
+  color: #b00020;
+}
+
+.status {
+  color: #666;
+}

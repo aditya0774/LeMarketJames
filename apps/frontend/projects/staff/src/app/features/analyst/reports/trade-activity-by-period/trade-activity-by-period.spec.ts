@@ -1,103 +1,126 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+
 import { TradeActivityByPeriod } from './trade-activity-by-period';
-import { TradeReportService } from '../../../../shared/services/trade-report.service';
+import { TradeReportResponse } from '../../../../shared/models/trade-report.model';
+
+/** A response shaped like the C6 example for GET /api/v1/reports/trades (mocked API). */
+const dayReport: TradeReportResponse = {
+  data: [
+    { period: '2026-10-02', tradeCount: 2, buyCount: 1, sellCount: 1, totalValue: 500 },
+    { period: '2026-10-01', tradeCount: 5, buyCount: 3, sellCount: 2, totalValue: 1250.5 },
+  ],
+  generatedAt: '2026-10-07T20:15:30.123Z',
+};
 
 describe('TradeActivityByPeriod', () => {
-  let component: TradeActivityByPeriod;
   let fixture: ComponentFixture<TradeActivityByPeriod>;
-  let httpMock: HttpTestingController;
+  let component: TradeActivityByPeriod;
+  let http: HttpTestingController;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [TradeActivityByPeriod, HttpClientTestingModule],
-      providers: [
-        TradeReportService,
-        provideRouter([]),
-      ],
-    }).compileComponents();
+  const isReport = (req: { url: string }) => req.url === '/api/v1/reports/trades';
 
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [TradeActivityByPeriod],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideNoopAnimations()],
+    });
+    http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TradeActivityByPeriod);
     component = fixture.componentInstance;
-    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => {
-    // If a test triggered ngOnInit via fixture.detectChanges(), respond to the HTTP request
-    const requests = httpMock.match(req => req.url.includes('/api/v1/reports/trades'));
-    requests.forEach(req => {
-      req.flush({ data: [], generatedAt: new Date().toISOString() });
-    });
-    httpMock.verify();
+  afterEach(() => http.verify());
+
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  it('loads the MONTH report with a date range as soon as it opens', () => {
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('periodType')).toBe('MONTH');
+    expect(req.request.params.get('from')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(req.request.params.get('to')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('shows one row per period with its counts and value, plus a total row', async () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+    component.selectPeriodType('DAY');
+    http.expectOne(isReport).flush(dayReport);
+    await fixture.whenStable();
+
+    const rows = el().querySelectorAll('tr[mat-row]');
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('October 2, 2026');
+    expect(rows[0].textContent).toContain('$500.00');
+    expect(rows[1].textContent).toContain('$1,250.50');
+
+    const footer = el().querySelector('tr[mat-footer-row]')!.textContent!;
+    expect(footer).toContain('7'); // 2 + 5 trades
+    expect(footer).toContain('$1,750.50');
   });
 
-  it('should have period types available', () => {
-    expect(component.periodTypes).toEqual(['DAY', 'WEEK', 'MONTH', 'YEAR']);
+  it('reloads with the chosen period type', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+
+    component.selectPeriodType('WEEK');
+
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('periodType')).toBe('WEEK');
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  it('should initialize with DAY period type', () => {
-    expect(component.periodType).toBe('DAY');
+  it('reloads with the chosen date range when Apply is used', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+
+    component.range.setValue({ from: new Date(2026, 0, 5), to: new Date(2026, 0, 20) });
+    component.applyRange();
+
+    const req = http.expectOne(isReport);
+    expect(req.request.params.get('from')).toBe('2026-01-05');
+    expect(req.request.params.get('to')).toBe('2026-01-20');
+    req.flush({ data: [], generatedAt: '' });
   });
 
-  it('should initialize with default dates (last 7 days) and zero data', () => {
-    expect(component.fromDate).toBeDefined();
-    expect(component.toDate).toBeDefined();
-    expect(component.data).toEqual([]);
-    expect(component.loading).toBe(false);
-    expect(component.error).toBeNull();
+  it('does not call the API when the start date is after the end date', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+
+    component.range.setValue({ from: new Date(2026, 0, 20), to: new Date(2026, 0, 5) });
+    component.applyRange();
+
+    expect(component.error()).toContain('start date');
+    http.expectNone(isReport);
   });
 
-  it('should change period type', () => {
-    component.onPeriodTypeChange('WEEK');
-    expect(component.periodType).toBe('WEEK');
+  it('asks for both dates when one is missing', () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+
+    component.range.setValue({ from: null, to: new Date(2026, 0, 5) });
+    component.applyRange();
+
+    expect(component.error()).toContain('both');
+    http.expectNone(isReport);
   });
 
-  it('should have loadReport method', () => {
-    expect(component.loadReport).toBeDefined();
-    expect(typeof component.loadReport).toBe('function');
+  it('says there are no trades when the report is empty', async () => {
+    http.expectOne(isReport).flush({ data: [], generatedAt: '' });
+    await fixture.whenStable();
+
+    expect(el().textContent).toContain('No trades in this date range.');
+    expect(el().querySelector('table')).toBeNull();
   });
 
-  it('should format period labels for DAY period type', () => {
-    component.periodType = 'DAY';
-    const formatted = component.formatPeriodLabel('2026-10-01');
-    expect(formatted).toContain('October');
-    expect(formatted).toContain('2026');
-  });
+  it.each([
+    [401, 'session has expired'],
+    [403, 'cannot read reports'],
+    [400, 'not accepted'],
+    [500, 'could not be loaded'],
+  ])('shows a message for a %i response', async (status, text) => {
+    http.expectOne(isReport).flush({}, { status, statusText: 'x' });
+    await fixture.whenStable();
 
-  it('should format period labels for WEEK period type', () => {
-    component.periodType = 'WEEK';
-    const formatted = component.formatPeriodLabel('2026-W41');
-    expect(formatted).toContain('Week 41');
-    expect(formatted).toContain('2026');
-  });
-
-  it('should format period labels for MONTH period type', () => {
-    component.periodType = 'MONTH';
-    const formatted = component.formatPeriodLabel('2026-10');
-    expect(formatted).toContain('October');
-    expect(formatted).toContain('2026');
-  });
-
-  it('should format period labels for YEAR period type', () => {
-    component.periodType = 'YEAR';
-    const formatted = component.formatPeriodLabel('2026');
-    expect(formatted).toBe('2026');
-  });
-
-  it('should render heading in template', () => {
-    fixture.detectChanges();
-    const heading = fixture.nativeElement.querySelector('h1');
-    expect(heading?.textContent).toContain('Trade activity by period');
-  });
-
-  it('should render period type buttons', () => {
-    fixture.detectChanges();
-    const buttons = fixture.nativeElement.querySelectorAll('.tab-button');
-    expect(buttons.length).toBe(4);
+    expect(el().querySelector('[role="alert"]')!.textContent).toContain(text);
+    expect(el().textContent).not.toContain('No trades in this date range.');
   });
 });
