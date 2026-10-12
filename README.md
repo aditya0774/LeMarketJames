@@ -925,11 +925,11 @@ Common causes:
 This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 
 1. Works out what the change touches. A pull request or feature branch runs only the sides it changed (front end, back end, full stack); a build of `main` always runs everything
-2. Runs each back-end module's unit tests in parallel
-3. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below. Both Angular apps are tested and built at the same time
+2. Tests and builds both Angular apps, and runs each back-end module's unit tests in parallel
+3. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below.
 4. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
-5. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube)). The Docker images are built at the same time
-6. Applies any new schema files
+5. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube))
+6. Builds the Docker images and applies any new schema files
 7. Runs the containerized application and prints `docker ps` once every container is up (**Show running containers**), failing if any Compose service is not running
 8. Runs the smoke test, including that a filled order's event is on its Kafka topic
 9. Runs the Playwright end-to-end suites, the trading app's and then the staff app's (see [End-to-End Tests](#end-to-end-tests-playwright))
