@@ -6,6 +6,7 @@ import { Auth } from './core/auth/auth';
 import { routes } from './app.routes';
 import { withCredentialsInterceptor } from './core/interceptors/with-credentials.interceptor';
 
+// HttpClient with credentials interceptor: ensures httpOnly auth cookie is sent to backend.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),

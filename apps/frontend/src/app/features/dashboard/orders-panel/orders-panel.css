@@ -15,38 +15,38 @@
 .date-filters input,
 .date-filters select {
   padding: 7px;
-  border: 1px solid #64748b;
+  border: 1px solid var(--purple-line);
   border-radius: 6px;
   font: inherit;
 }
 
 .date-filters span {
-  font-size: 12px;
+  font-size: var(--font-xs);
   align-self: center;
 }
 
 .live-badge {
   margin-left: auto;
-  border: 1px solid #16a34a;
+  border: 1px solid rgba(59, 217, 138, 0.35);
   border-radius: 999px;
-  color: #166534;
-  background: #f0fdf4;
-  font-size: 12px;
+  color: var(--up);
+  background: rgba(59, 217, 138, 0.14);
+  font-size: var(--font-xs);
   font-weight: 600;
   letter-spacing: 0.01em;
-  padding: 4px 10px;
+  padding: 4px var(--space-sm);
 }
 
 .live-badge-reconnecting {
-  border-color: #d97706;
-  color: #92400e;
-  background: #fffbeb;
+  border-color: rgba(253, 185, 39, 0.35);
+  color: var(--gold);
+  background: rgba(253, 185, 39, 0.14);
 }
 
 .status-detail {
   margin-top: 4px;
-  color: #475569;
-  font-size: 12px;
+  color: var(--text-faint);
+  font-size: var(--font-xs);
   line-height: 1.35;
   max-width: 260px;
 }

@@ -1,0 +1,47 @@
+<div class="analyst-dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <h1>Analyst Dashboard</h1>
+    <p class="subtitle">App-wide trading analytics and aggregate reports</p>
+  </div>
+
+  <!-- Reports Grid -->
+  <div class="reports-grid">
+    @for (report of reports; track report.path) {
+      @if (getReportMeta(report.path); as meta) {
+        <mat-card class="report-card" [routerLink]="['/analyst/reports', report.path]">
+          <mat-card-content class="card-content">
+            <!-- Icon Section -->
+            <div class="icon-section">
+              <mat-icon class="report-icon">{{ meta.icon }}</mat-icon>
+            </div>
+
+            <!-- Title & Description -->
+            <div class="text-section">
+              <h2 class="report-title">{{ meta.title }}</h2>
+              <p class="report-description">{{ meta.description }}</p>
+            </div>
+
+            <!-- Action Arrow -->
+            <div class="action-section">
+              <mat-icon class="action-arrow">arrow_forward</mat-icon>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    }
+  </div>
+
+  <!-- Empty State (fallback, shouldn't occur with 4 reports) -->
+  @if (reports.length === 0) {
+    <div class="empty-state">
+      <mat-card>
+        <mat-card-content>
+          <mat-icon class="empty-icon">inbox</mat-icon>
+          <h2>No Reports Available</h2>
+          <p>Reports will appear here as they are added to the system.</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>
