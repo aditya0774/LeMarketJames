@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.events.OrderFilled;
 import com.lemarketjames.orders.events.OrderStatusChanged;
 import java.math.BigDecimal;
@@ -65,7 +66,7 @@ class KafkaOrderEventPublisherTest {
         when(kafka.send(anyString(), anyString(), anyString())).thenReturn(answer);
 
         publisher.publish(OrderEventForwarder.STATUS_CHANGED_TOPIC, "7",
-            new OrderStatusChanged(7, 1, Order.OrderStatus.ACCEPTED, Order.OrderStatus.FILLED, now));
+            new OrderStatusChanged(7, 1, Order.OrderStatus.ACCEPTED, Order.OrderStatus.FILLED, now, null));
 
         ArgumentCaptor<String> value = ArgumentCaptor.forClass(String.class);
         verify(kafka).send(eq(OrderEventForwarder.STATUS_CHANGED_TOPIC), eq("7"), value.capture());
@@ -73,6 +74,22 @@ class KafkaOrderEventPublisherTest {
         assertEquals("ACCEPTED", sent.get("from").asText());
         assertEquals("FILLED", sent.get("to").asText());
         assertEquals("2026-09-30T15:00:00Z", sent.get("occurredAt").asText());
+        // Written as null when there is none, as contract C6 says; the field is never left out.
+        assertTrue(sent.has("rejectionReason"));
+        assertTrue(sent.get("rejectionReason").isNull());
+    }
+
+    @Test void sendsARejectionWithItsReasonAsTheCodeName() throws Exception {
+        when(kafka.send(anyString(), anyString(), anyString())).thenReturn(answer);
+
+        publisher.publish(OrderEventForwarder.STATUS_CHANGED_TOPIC, "7", new OrderStatusChanged(7, 1,
+            Order.OrderStatus.PENDING, Order.OrderStatus.REJECTED, now, RejectionReason.INSUFFICIENT_CASH));
+
+        ArgumentCaptor<String> value = ArgumentCaptor.forClass(String.class);
+        verify(kafka).send(eq(OrderEventForwarder.STATUS_CHANGED_TOPIC), eq("7"), value.capture());
+        JsonNode sent = json.readTree(value.getValue());
+        assertEquals("REJECTED", sent.get("to").asText());
+        assertEquals("INSUFFICIENT_CASH", sent.get("rejectionReason").asText());
     }
 
     @Test void logsWhereTheBrokerStoredTheRecord(CapturedOutput output) {

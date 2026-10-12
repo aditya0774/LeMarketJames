@@ -85,7 +85,7 @@ LeMarketJames/
 │   │                              #       trade search and order timeline for Trading Ops
 │   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); behind the staff gateway only
 │   ├── notification-service/      # :8087 Kafka consumer: tells clients what happened to their orders
-│   ├── surveillance-service/      # :8088 Kafka consumer: alerts Trading Ops to large orders; staff gateway only
+│   ├── surveillance-service/      # :8088 Kafka consumer: alerts Trading Ops to large orders and refused settlements; staff gateway only
 │   ├── activity-service/          # :8091 Kafka consumer: traded volume per stock
 │   └── staff-gateway-service/     # Earlier stand-alone staff gateway. Maven still builds and tests it, but nothing
 │                                  #       runs it: the staff gateway is gateway-service with the "staff" profile
@@ -100,7 +100,7 @@ LeMarketJames/
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
 │   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
 ├── contracts/                     # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
-├── database/schema/               # Numbered SQL files (001_ … 018_); 011 is the seed data set
+├── database/schema/               # Numbered SQL files (001_ … 019_); 011 is the seed data set
 ├── scripts/
 │   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file
@@ -186,7 +186,7 @@ Solid arrows are requests routed by a gateway and the Kafka event flow; dotted a
 
 The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
 
-buy-sell-service publishes every new order, order status change and fill to Kafka, and three small services consume them, one topic each: notification-service tells a client what happened to their orders, surveillance-service alerts Trading Ops to large orders, and activity-service keeps the traded volume per stock. See [Kafka (order events)](#kafka-order-events).
+buy-sell-service publishes every new order, order status change and fill to Kafka, and three small services consume them: notification-service tells a client what happened to their orders, surveillance-service alerts Trading Ops to large orders and to refused settlements, and activity-service keeps the traded volume per stock. See [Kafka (order events)](#kafka-order-events).
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
@@ -257,7 +257,7 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - **Orders** (buy-sell-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-buy-sell-service))
 - **Holdings and portfolio** (holdings-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
-- **Order events** (Kafka): notifications for clients, large-order alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
+- **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
 - **Staff app**: trade search and order timeline for Trading Ops; aggregate, read-only trade reports for Analysts (reporting-service)
 
 **Architecture Notes:**
@@ -328,7 +328,7 @@ mvn -pl services/buy-sell-service spring-boot:run   # http://localhost:8085
 mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
 mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; behind the staff gateway only)
 mvn -pl services/notification-service spring-boot:run   # http://localhost:8087 (Kafka consumer: order notifications)
-mvn -pl services/surveillance-service spring-boot:run   # http://localhost:8088 (Kafka consumer: large-order alerts; behind the staff gateway only)
+mvn -pl services/surveillance-service spring-boot:run   # http://localhost:8088 (Kafka consumer: large-order and refused-settlement alerts; behind the staff gateway only)
 mvn -pl services/activity-service spring-boot:run       # http://localhost:8091 (Kafka consumer: traded volume per stock)
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
 mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.profiles=staff"                 # staff gateway, http://localhost:8090; the staff app talks to this one
@@ -641,12 +641,13 @@ The events are test data: the broker keeps them in its container, so `docker com
 
 #### The three consumers
 
-Each is a small service in its own container. It listens to one topic in a consumer group of its own, stores what it makes of each event in a table of its own, and serves that from one read-only endpoint. The rules they share (reading an event, the same event arriving twice, a bad record) are in [C6](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service).
+Each is a small service in its own container. It listens in a consumer group of its own (to one topic, or two for surveillance-service), stores what it makes of each event in a table of its own, and serves that from one read-only endpoint. The rules they share (reading an event, the same event arriving twice, a bad record) are in [C6](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service).
 
 | Service | Listens to | Business scenario | Read it with |
 |---|---|---|---|
 | notification-service (8087) | `lemarket.orders.status-changed` | A client is told every status their order reaches, including a fill or a rejection that happened while they were signed out | `GET /api/v1/notifications` as that client, through the trading gateway |
 | surveillance-service (8088) | `lemarket.orders.submitted` | Trading Ops are alerted to an order of at least the large-order quantity, a setting ([C5](contracts/C5-config.md)), the moment it is placed | `GET /api/v1/surveillance/alerts` as Trading Ops, through the staff gateway |
+| | `lemarket.orders.status-changed` | Trading Ops are alerted when an order's settlement is refused: by the time it executed, the account no longer had the cash or the shares | the same endpoint |
 | activity-service (8091) | `lemarket.orders.filled` | Anyone signed in sees how much of each stock traded in the last 24 hours | `GET /api/v1/market-activity`, through the trading gateway |
 
 To see them work with Docker Compose, place an order in the trading app (make it at least the large-order quantity, which the alerts endpoint returns, to raise an alert too), then:
@@ -753,7 +754,7 @@ Once the application is running (via any of the three methods), you can access:
 | **Instruments** | `GET http://localhost:8089/api/v1/instruments` | core-service: the supported stock list |
 | **Notifications** | `GET http://localhost:8089/api/v1/notifications` | notification-service: the signed-in client's order notifications, built from Kafka events |
 | **Market activity** | `GET http://localhost:8089/api/v1/market-activity` | activity-service: traded volume per stock over the last 24 hours, built from Kafka events |
-| **Large-order alerts (staff)** | `GET http://localhost:8090/api/v1/surveillance/alerts` | surveillance-service, through the staff gateway; `TRADING_OPS` login only, built from Kafka events |
+| **Surveillance alerts (staff)** | `GET http://localhost:8090/api/v1/surveillance/alerts` | surveillance-service, through the staff gateway; `TRADING_OPS` login only, built from Kafka events |
 | **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/trades?periodType=MONTH` | reporting-service, through the staff gateway: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 | **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service to the three consumer services (Method 3 only; not HTTP) |
@@ -1237,7 +1238,7 @@ classDiagram
 
     SettlementReceipt ..> Order : settles, once
     Notification ..> Order : status change, from an event
-    OrderAlert ..> Order : large order, from an event
+    OrderAlert ..> Order : large order or refused settlement, from an event
     RecordedFill ..> Order : fill, from an event
     ReportingTrade ..> Order : filled orders, read-only
 ```

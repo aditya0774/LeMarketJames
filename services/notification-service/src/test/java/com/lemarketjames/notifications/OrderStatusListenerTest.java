@@ -32,6 +32,16 @@ class OrderStatusListenerTest {
             new OrderStatusChangedMessage(42, 7, "PENDING", "FILLED", Instant.parse("2026-10-08T14:30:00Z")));
     }
 
+    /** The publisher may add a field (contract C6); this service names only the ones it uses. */
+    @Test
+    void aFieldThisServiceDoesNotUseIsIgnored() {
+        listener.onStatusChanged("{\"orderId\":42,\"accountId\":7,\"from\":\"PENDING\",\"to\":\"REJECTED\","
+            + "\"occurredAt\":\"2026-10-08T14:30:00Z\",\"rejectionReason\":\"INSUFFICIENT_CASH\"}");
+
+        verify(notifications).record(
+            new OrderStatusChangedMessage(42, 7, "PENDING", "REJECTED", Instant.parse("2026-10-08T14:30:00Z")));
+    }
+
     /** One bad record must not stop the listener: it is skipped and the next one is read. */
     @Test
     void aRecordThatCannotBeReadIsSkipped() {
