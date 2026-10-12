@@ -25,7 +25,7 @@ class OrderEventForwarderTest {
         verify(publisher).publish(OrderEventForwarder.SUBMITTED_TOPIC, "7", event);
     }
     @Test void forwardsStatusChangeKeyedByOrder() {
-        var event = new OrderStatusChanged(7, 1, Order.OrderStatus.SUBMITTED, Order.OrderStatus.ACCEPTED, now);
+        var event = new OrderStatusChanged(7, 1, Order.OrderStatus.SUBMITTED, Order.OrderStatus.ACCEPTED, now, null);
         forwarder.onStatusChanged(event);
         verify(publisher).publish(OrderEventForwarder.STATUS_CHANGED_TOPIC, "7", event);
     }
@@ -36,7 +36,7 @@ class OrderEventForwarderTest {
         verify(publisher).publish(OrderEventForwarder.FILLED_TOPIC, "7", event);
     }
     @Test void kafkaStubLogsTheRecordInsteadOfSendingIt(CapturedOutput output) {
-        var event = new OrderStatusChanged(7, 1, Order.OrderStatus.ACCEPTED, Order.OrderStatus.FILLED, now);
+        var event = new OrderStatusChanged(7, 1, Order.OrderStatus.ACCEPTED, Order.OrderStatus.FILLED, now, null);
         new OrderEventForwarder(new KafkaStubOrderEventPublisher()).onStatusChanged(event);
         assertTrue(output.getOut().contains("Kafka stub: would publish topic=" + OrderEventForwarder.STATUS_CHANGED_TOPIC + " key=7"));
     }

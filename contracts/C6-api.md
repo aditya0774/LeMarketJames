@@ -153,9 +153,12 @@ The stream emits an `order-status-changed` event each time buy-sell-service publ
   "accountId": 7,
   "from": "SUBMITTED",
   "to": "ACCEPTED",
-  "occurredAt": "2026-09-21T10:30:01.123Z"
+  "occurredAt": "2026-09-21T10:30:01.123Z",
+  "rejectionReason": null
 }
 ```
+
+The fields are those of [`OrderStatusChanged`](#the-order-events): `rejectionReason` is a rejection code when `to` is `REJECTED`, and null otherwise.
 
 Access control and failures:
 
@@ -556,7 +559,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `price` | number or null | Price per share the order was placed at. Null for a SELL, which is priced only when it fills. A BUY can fill at a different price; `OrderFilled` has the one used. |
 | `submittedAt` | time | When the order was placed |
 
-**`OrderStatusChanged`** tells a consumer where an order is in its life. It doesn't say why an order was rejected; the order's `rejectionReason` in the REST API does.
+**`OrderStatusChanged`** tells a consumer where an order is in its life, and why when it was rejected.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -565,6 +568,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `from` | text | Status before the transition ([C1](C1-orders.md)) |
 | `to` | text | Status after it |
 | `occurredAt` | time | When the transition happened |
+| `rejectionReason` | text or null | Why the order was rejected: a [RejectionReason](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java) name, the same code as the order's `rejectionReason` in the REST API. Null unless `to` is `REJECTED`. Added after the other fields (LMKT-71): a record published before then has no such field, and a consumer reads that as null. |
 
 **`OrderFilled`** carries what a portfolio or reporting consumer needs about a fill, so it doesn't have to read the order back.
 
