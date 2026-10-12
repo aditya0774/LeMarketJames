@@ -8,9 +8,9 @@ import java.util.List;
 /** Reads and writes the {@code order_alerts} table. */
 public interface OrderAlertRepository extends JpaRepository<OrderAlert, Integer> {
 
-    /** @return whether this order already has its alert */
-    boolean existsByOrderId(Integer orderId);
+    /** @return whether this order already has its alert for this reason */
+    boolean existsByOrderIdAndReason(Integer orderId, AlertReason reason);
 
-    /** @return one page of alerts, newest order first */
-    List<OrderAlert> findAllByOrderBySubmittedAtDescAlertIdDesc(Pageable page);
+    /** @return one page of alerts, newest first */
+    List<OrderAlert> findAllByOrderByOccurredAtDescAlertIdDesc(Pageable page);
 }

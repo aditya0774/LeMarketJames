@@ -43,7 +43,7 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-reporting-service)) |
 | Insights (`/api/v1/reports/insights/**`) | `ANALYST` | Enforced by the same reporting-service rule as reports; every other role gets `403` ([C6](C6-api.md#get-apiv1reportsinsightsvolume)) |
 | Notifications about one's own orders (`/api/v1/notifications/**`) | `CLIENT` (own account only) | Enforced in notification-service `SecurityConfig`; staff get `403` ([C6](C6-api.md#get-apiv1notifications-client-only)) |
-| Large-order alerts (`/api/v1/surveillance/**`) | `TRADING_OPS` | Enforced in surveillance-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)) |
+| Surveillance alerts: large orders and refused settlements (`/api/v1/surveillance/**`) | `TRADING_OPS` | Enforced in surveillance-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)) |
 | Market activity (`/api/v1/market-activity/**`) | every signed-in role | Enforced in activity-service `SecurityConfig`: signed in, any role. It holds aggregates only ([C6](C6-api.md#get-apiv1market-activity)) |
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
