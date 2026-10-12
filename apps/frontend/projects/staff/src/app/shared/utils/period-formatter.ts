@@ -33,6 +33,7 @@ function formatDay(period: string): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
@@ -49,17 +50,12 @@ function formatWeek(period: string): string {
   const year = parseInt(match[1], 10);
   const weekNum = parseInt(match[2], 10);
 
-  // Calculate Monday of the given week (ISO 8601)
-  // January 4th is always in week 1
+  // Monday of ISO week 1 is the Monday on or before January 4th (week 1 always contains it).
+  // getUTCDay() is 0 for Sunday, but ISO treats Sunday as day 7.
   const jan4 = new Date(Date.UTC(year, 0, 4));
-  const thursday = new Date(jan4);
-  thursday.setUTCDate(jan4.getUTCDate() - jan4.getUTCDay() + 4);
-
-  const monday = new Date(thursday);
-  monday.setUTCDate(thursday.getUTCDate() - thursday.getUTCDay() + 1);
-
-  // Move to the desired week
-  monday.setUTCDate(monday.getUTCDate() + (weekNum - 1) * 7);
+  const jan4IsoDay = jan4.getUTCDay() || 7;
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - (jan4IsoDay - 1) + (weekNum - 1) * 7);
 
   // Sunday of the same week
   const sunday = new Date(monday);
@@ -68,10 +64,12 @@ function formatWeek(period: string): string {
   const mondayStr = monday.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
   const sundayStr = sunday.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 
   return `Week ${weekNum} of ${year} (${mondayStr} - ${sundayStr})`;
@@ -85,6 +83,7 @@ function formatMonth(period: string): string {
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
+    timeZone: 'UTC',
   });
 }
 
