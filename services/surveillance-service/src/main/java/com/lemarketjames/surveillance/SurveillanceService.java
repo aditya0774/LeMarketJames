@@ -9,13 +9,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 /**
- * Decides which new orders Trading Operations are alerted to, and reads the alerts back.
+ * Decides which orders Trading Operations are alerted to, and reads the alerts back. There are
+ * two rules: a new order that is large, and an order whose settlement was refused.
  *
  * <p>Kafka can deliver a record more than once, after a restart or a failed commit. Reviewing is
- * therefore idempotent: an order that already has its alert is left alone, so staff never see
- * the same order twice.
+ * therefore idempotent: an order that already has its alert for a reason is left alone, so staff
+ * never see the same alert twice.
  */
 @Service
 public class SurveillanceService {
@@ -23,6 +25,17 @@ public class SurveillanceService {
 
     /** How many alerts staff get back: the newest ones. */
     static final int LATEST = 100;
+
+    /** The status of a rejected order, as the event carries it (contract C1). */
+    static final String REJECTED = "REJECTED";
+
+    /**
+     * The rejection reasons that mean holdings-service refused the settlement (contract C6,
+     * "Automatic execution and recovery"): no cash left for a BUY, no shares left for a SELL.
+     * They are names of buy-sell-service's RejectionReason, kept as text because a consumer
+     * depends on none of that service's classes.
+     */
+    static final Set<String> SETTLEMENT_REFUSALS = Set.of("INSUFFICIENT_CASH", "INSUFFICIENT_HOLDINGS");
 
     private final OrderAlertRepository alerts;
     private final PlatformSettings settings;
@@ -55,6 +68,34 @@ public class SurveillanceService {
         alerts.save(new OrderAlert(order, AlertReason.LARGE_ORDER));
         log.info("Alert raised: order={} account={} quantity={} reason={}", order.orderId(), order.accountId(),
             order.quantity(), AlertReason.LARGE_ORDER);
+        return true;
+    }
+
+    /**
+     * Raises an alert for an order that was rejected because its settlement was refused
+     * (LMKT-71). Every other status change, and a rejection for any other reason, raises none.
+     *
+     * @param change the status change, as read from Kafka
+     * @return whether an alert was raised; false for a change that is not a refused settlement,
+     *         one that already has its alert, or an event that lacks a field an alert needs
+     */
+    @Transactional
+    public boolean reviewStatusChange(OrderStatusChangedMessage change) {
+        if (!change.isComplete()) {
+            log.warn("Kafka: skipped an incomplete status change: {}", change);
+            return false;
+        }
+        String why = change.rejectionReason();
+        if (!REJECTED.equals(change.to()) || why == null || !SETTLEMENT_REFUSALS.contains(why)) {
+            return false;
+        }
+        if (alerts.existsByOrderIdAndReason(change.orderId(), AlertReason.SETTLEMENT_REFUSED)) {
+            log.info("Kafka: order {} already has its {} alert", change.orderId(), AlertReason.SETTLEMENT_REFUSED);
+            return false;
+        }
+        alerts.save(new OrderAlert(change, AlertReason.SETTLEMENT_REFUSED));
+        log.info("Alert raised: order={} account={} reason={} rejectionReason={}", change.orderId(),
+            change.accountId(), AlertReason.SETTLEMENT_REFUSED, why);
         return true;
     }
 

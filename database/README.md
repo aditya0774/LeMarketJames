@@ -20,7 +20,7 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `instrument_market_params` | migrations only | market-service |
 | `reporting_trades` (view) | — | reporting-service, as the only data source of its reports ([C6](../contracts/C6-api.md#reports-reporting-service)); insights later |
 | `notifications` | notification-service, from `OrderStatusChanged` events on Kafka ([018](#018--tables-of-the-kafka-consumers)) | notification-service |
-| `order_alerts` | surveillance-service, from `OrderSubmitted` events on Kafka | surveillance-service |
+| `order_alerts` | surveillance-service, from `OrderSubmitted` and `OrderStatusChanged` events on Kafka ([019](#019--one-alert-per-order-and-reason)) | surveillance-service |
 | `trade_activity` | activity-service, from `OrderFilled` events on Kafka | activity-service |
 
 The shared JPA mappings for `clients`/`addresses`/`accounts`/`staff_users`/`audit_log` live in `libs/common` (`com.lemarketjames.common.domain` and `.audit`). When a feature is extracted into its own service, update this table so it's clear who owns each write.

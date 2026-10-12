@@ -14,7 +14,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * One order brought to Trading Operations' attention, with what was ordered when it was placed.
+ * One order brought to Trading Operations' attention. An alert raised when the order was placed
+ * has what was ordered; one raised from a later status change has the order, its account and why.
  * Written once from the event and never changed, so it has no setters. The table's created_at
  * column is filled by the database and is not mapped.
  *
@@ -84,6 +85,23 @@ public class OrderAlert {
         this.reason = reason;
         this.submittedAt = order.submittedAt();
         this.occurredAt = order.submittedAt();
+    }
+
+    /**
+     * An alert about an order that was rejected, so it happened when the order changed status.
+     * The status change says nothing of what was ordered, and nothing orders its topic against
+     * the placement's (contract C6), so those fields stay empty; staff read them in the order's
+     * timeline.
+     *
+     * @param rejection the order's move to REJECTED, with its reason
+     * @param reason    why the alert is raised
+     */
+    public OrderAlert(OrderStatusChangedMessage rejection, AlertReason reason) {
+        this.orderId = rejection.orderId();
+        this.accountId = rejection.accountId();
+        this.reason = reason;
+        this.rejectionReason = rejection.rejectionReason();
+        this.occurredAt = rejection.occurredAt();
     }
 
     public Integer getAlertId() {

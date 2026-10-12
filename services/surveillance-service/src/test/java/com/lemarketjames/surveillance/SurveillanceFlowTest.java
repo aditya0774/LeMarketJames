@@ -25,10 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * From a Kafka record to what Trading Operations read: the record goes into the real listener,
- * through the service and the database (H2), and comes back out of the endpoint with a real
- * signed token in the {@code jwt} cookie. Only the broker is left out; the listener is given the
- * record value directly. The large-order quantity is set to 100 shares here so the test does not
+ * From a Kafka record to what Trading Operations read: the record goes into the real listener of
+ * its topic, through the service and the database (H2), and comes back out of the endpoint with a
+ * real signed token in the {@code jwt} cookie. Only the broker is left out; a listener is given
+ * the record value directly. The large-order quantity is set to 100 shares here so the test does not
  * depend on the default.
  */
 @SpringBootTest(properties = {"lmj.events.consumer=kafka", "lmj.surveillance.large-order-quantity=100"})
@@ -40,6 +40,7 @@ class SurveillanceFlowTest {
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
     @Autowired OrderSubmittedListener listener;
+    @Autowired OrderStatusChangedListener statusListener;
     @Autowired OrderAlertRepository stored;
 
     @BeforeEach
@@ -54,6 +55,12 @@ class SurveillanceFlowTest {
     private static String newOrder(int orderId, String side, String quantity, String price, String submittedAt) {
         return "{\"orderId\":" + orderId + ",\"accountId\":7,\"instrumentId\":5,\"side\":\"" + side
             + "\",\"quantity\":" + quantity + ",\"price\":" + price + ",\"submittedAt\":\"" + submittedAt + "\"}";
+    }
+
+    /** An order's move to REJECTED as buy-sell-service publishes it (contract C6). */
+    private static String rejected(int orderId, String reason, String occurredAt) {
+        return "{\"orderId\":" + orderId + ",\"accountId\":7,\"from\":\"PENDING\",\"to\":\"REJECTED\","
+            + "\"occurredAt\":\"" + occurredAt + "\",\"rejectionReason\":\"" + reason + "\"}";
     }
 
     @Test
@@ -106,6 +113,97 @@ class SurveillanceFlowTest {
         listener.onSubmitted(record);
 
         assertEquals(1, stored.count());
+    }
+
+    @Test
+    void aRefusedSettlementOnKafkaBecomesAnAlertForTradingOps() throws Exception {
+        statusListener.onStatusChanged(rejected(42, "INSUFFICIENT_CASH", "2026-10-08T14:30:02Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.alerts.length()").value(1))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(42))
+            .andExpect(jsonPath("$.alerts[0].accountId").value(7))
+            .andExpect(jsonPath("$.alerts[0].reason").value("SETTLEMENT_REFUSED"))
+            .andExpect(jsonPath("$.alerts[0].rejectionReason").value("INSUFFICIENT_CASH"))
+            .andExpect(jsonPath("$.alerts[0].occurredAt").value("2026-10-08T14:30:02Z"))
+            // The status change does not say what was ordered.
+            .andExpect(jsonPath("$.alerts[0].instrumentId").doesNotExist())
+            .andExpect(jsonPath("$.alerts[0].side").doesNotExist())
+            .andExpect(jsonPath("$.alerts[0].quantity").doesNotExist())
+            .andExpect(jsonPath("$.alerts[0].price").doesNotExist())
+            .andExpect(jsonPath("$.alerts[0].submittedAt").doesNotExist());
+    }
+
+    @Test
+    void aSellRefusedForLackOfSharesIsAlertedToAsWell() throws Exception {
+        statusListener.onStatusChanged(rejected(43, "INSUFFICIENT_HOLDINGS", "2026-10-08T14:30:02Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(1))
+            .andExpect(jsonPath("$.alerts[0].reason").value("SETTLEMENT_REFUSED"))
+            .andExpect(jsonPath("$.alerts[0].rejectionReason").value("INSUFFICIENT_HOLDINGS"));
+    }
+
+    @Test
+    void aRejectionThatIsNotARefusedSettlementRaisesNoAlert() throws Exception {
+        statusListener.onStatusChanged(rejected(42, "STALE_QUOTE", "2026-10-08T14:30:02Z"));
+        statusListener.onStatusChanged(rejected(43, "REJECTED_BY_OPERATIONS", "2026-10-08T14:30:03Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.alerts.length()").value(0));
+    }
+
+    @Test
+    void theSameRefusalDeliveredTwiceRaisesOneAlert() {
+        String record = rejected(42, "INSUFFICIENT_CASH", "2026-10-08T14:30:02Z");
+        statusListener.onStatusChanged(record);
+        statusListener.onStatusChanged(record);
+
+        assertEquals(1, stored.count());
+    }
+
+    /** One alert per order and reason, so neither alert hides the other; the later event is listed first. */
+    @Test
+    void aLargeOrderThatIsThenRefusedHasBothAlerts() throws Exception {
+        listener.onSubmitted(newOrder(42, "BUY", "150", "244.2366", "2026-10-08T14:30:00Z"));
+        statusListener.onStatusChanged(rejected(42, "INSUFFICIENT_CASH", "2026-10-08T14:30:02Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(2))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(42))
+            .andExpect(jsonPath("$.alerts[0].reason").value("SETTLEMENT_REFUSED"))
+            .andExpect(jsonPath("$.alerts[1].orderId").value(42))
+            .andExpect(jsonPath("$.alerts[1].reason").value("LARGE_ORDER"));
+    }
+
+    /** Nothing orders one topic against another (contract C6): the refusal can be read before the placement. */
+    @Test
+    void theTwoTopicsCanBeReadInEitherOrder() throws Exception {
+        statusListener.onStatusChanged(rejected(42, "INSUFFICIENT_CASH", "2026-10-08T14:30:02Z"));
+        listener.onSubmitted(newOrder(42, "BUY", "150", "244.2366", "2026-10-08T14:30:00Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(2))
+            .andExpect(jsonPath("$.alerts[0].reason").value("SETTLEMENT_REFUSED"))
+            .andExpect(jsonPath("$.alerts[1].reason").value("LARGE_ORDER"));
+    }
+
+    /**
+     * An order placed earlier and refused later is news now: the list is newest first by when the
+     * alert's event happened, not by when the order was placed.
+     */
+    @Test
+    void aLateRefusalOfAnOlderOrderIsListedAboveNewerOrders() throws Exception {
+        listener.onSubmitted(newOrder(50, "BUY", "150", "244.2366", "2026-10-08T14:30:00Z"));
+        // Order 41 was placed before order 50 and too small to alert to; its settlement is refused after.
+        statusListener.onStatusChanged(rejected(41, "INSUFFICIENT_CASH", "2026-10-08T14:35:00Z"));
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(2))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(41))
+            .andExpect(jsonPath("$.alerts[1].orderId").value(50));
     }
 
     /**

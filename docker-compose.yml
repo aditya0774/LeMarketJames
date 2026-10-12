@@ -265,7 +265,8 @@ services:
       # host's memory before it tidies up, and this stack runs a dozen JVMs on one machine.
       JAVA_TOOL_OPTIONS: -Xmx256m
 
-  # Reads lemarket.orders.submitted and raises an alert for Trading Ops on each large order
+  # Reads lemarket.orders.submitted and lemarket.orders.status-changed, and raises an alert for
+  # Trading Ops on each large order and each refused settlement
   # (GET /api/v1/surveillance/alerts, through the staff gateway only).
   surveillance-service:
     image: lemarketjames/surveillance-service:${IMAGE_TAG:-dev}
