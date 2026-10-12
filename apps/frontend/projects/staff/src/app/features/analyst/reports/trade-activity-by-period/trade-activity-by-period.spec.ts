@@ -510,4 +510,99 @@ describe('TradeActivityByPeriod Component', () => {
       req.flush(mockResponse);
     });
   });
+  describe('Preset Date Ranges', () => {
+    const reportRequest = () =>
+      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/trades-by-stock'));
+
+    // A fixed "today" (Wed 2026-11-18, in Q4) so the expected start dates do not depend on the run date.
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 10, 18, 12, 0, 0));
+      fixture.detectChanges();
+      reportRequest().flush(mockResponse);
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    const ymd = (d: Date | null) => `${d!.getFullYear()}-${d!.getMonth() + 1}-${d!.getDate()}`;
+
+    it('week starts 7 days ago and reloads the report', () => {
+      component.setPresetDates('week');
+
+      expect(ymd(component.startDate())).toBe('2026-11-11');
+      expect(ymd(component.endDate())).toBe('2026-11-18');
+      expect(ymd(component.dateRangeForm.value.startDate as Date)).toBe('2026-11-11');
+      reportRequest().flush(mockResponse);
+    });
+
+    it('month starts on the first day of the current month', () => {
+      component.setPresetDates('month');
+
+      expect(ymd(component.startDate())).toBe('2026-11-1');
+      reportRequest().flush(mockResponse);
+    });
+
+    it('quarter starts on the first day of the current quarter', () => {
+      component.setPresetDates('quarter');
+
+      expect(ymd(component.startDate())).toBe('2026-10-1');
+      expect(ymd(component.endDate())).toBe('2026-11-18');
+      reportRequest().flush(mockResponse);
+    });
+
+    it('quarter from the 31st does not roll over into the next month', () => {
+      vi.setSystemTime(new Date(2026, 4, 31, 12, 0, 0)); // May 31 is in Q2, which starts April 1
+
+      component.setPresetDates('quarter');
+
+      expect(ymd(component.startDate())).toBe('2026-4-1');
+      reportRequest().flush(mockResponse);
+    });
+  });
+
+  describe('Period type on MONTH', () => {
+    it('selecting MONTH sets the last 30 days and reloads', () => {
+      fixture.detectChanges();
+      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
+
+      component.onPeriodTypeChange('MONTH');
+
+      const days = Math.round((component.endDate()!.getTime() - component.startDate()!.getTime()) / 86_400_000);
+      expect(days).toBe(30);
+      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
+    });
+  });
+
+  describe('Report failures', () => {
+    it('shows an error when the server answers success: false', () => {
+      fixture.detectChanges();
+      httpMock
+        .expectOne((request) => request.url.includes('/api/v1/reports/'))
+        .flush({ success: false, data: [] });
+
+      expect(component.error()).toBe('Failed to load report data.');
+      expect(component.isLoading()).toBe(false);
+      expect(component.reportData()).toEqual([]);
+    });
+
+    it('refuses to load without a date range', () => {
+      fixture.detectChanges();
+      httpMock.expectOne((request) => request.url.includes('/api/v1/reports/')).flush(mockResponse);
+      component.startDate.set(null);
+
+      component.refresh();
+
+      expect(component.error()).toBe('Invalid date range.');
+      httpMock.expectNone((request) => request.url.includes('/api/v1/reports/'));
+    });
+  });
+
+  describe('Period type hints', () => {
+    it('describes the aggregation level of every period type', () => {
+      expect(component.getPeriodTypeHint('DAY')).toContain('each day');
+      expect(component.getPeriodTypeHint('WEEK')).toContain('each week');
+      expect(component.getPeriodTypeHint('MONTH')).toContain('each month');
+      expect(component.getPeriodTypeHint('YEAR')).toContain('each year');
+    });
+  });
 });
