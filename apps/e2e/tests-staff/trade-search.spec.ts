@@ -78,7 +78,7 @@ test.use({ timezoneId: 'America/New_York' });
 /** Signs in as Trading Ops, which lands on trade search: it is that role's start page. */
 async function openTradeSearch(page: Page): Promise<void> {
   await signIn(page, TRADING_OPS);
-  await expect(page).toHaveURL(/\/trade-search$/);
+  await expect(page).toHaveURL(/\/trading-ops$/);
 }
 
 async function search(page: Page, expected: Record<string, string>) {
