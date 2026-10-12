@@ -10,7 +10,7 @@ import {
   statusPillClass,
 } from './order-status';
 import { rejectionReasonLabel } from './rejection-reason';
-import { toOrderHistoryRow } from './order-history-row';
+import { OrderHistoryRow, toOrderHistoryRow } from './order-history-row';
 
 const PAGE_SIZE = 5;
 type Period = 'day' | 'month' | 'year';
@@ -51,10 +51,14 @@ export class OrdersPanel {
     return 'Connecting';
   });
 
+  protected readonly rows = computed(() =>
+    this.orders().map((order) => toOrderHistoryRow(order, this.catalog.byId(order.instrumentId))),
+  );
+
   /** Newest first, then narrowed by the active chip. */
   protected readonly filtered = computed(() =>
-    [...this.orders()]
-      .filter((o) => matchesFilter(o.orderStatus, this.filter()))
+    [...this.rows()]
+      .filter((row) => matchesFilter(row.order.orderStatus, this.filter()))
       .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt)),
   );
 
@@ -98,16 +102,17 @@ export class OrdersPanel {
     this.page.set(Math.min(Math.max(1, page), this.pageCount()));
   }
 
-  // Orders only carry instrumentId until the backend adds symbol (planned in contracts/C6-api.md).
-  protected symbolFor(order: OrderResponse): string {
-    return toOrderHistoryRow(order, this.catalog.byId(order.instrumentId)).symbol;
+  protected fillPriceFor(row: OrderHistoryRow): number | null {
+    if (row.order.orderStatus !== 'FILLED') {
+      return null;
+    }
+    return row.order.pricePerUnit ?? null;
   }
 
-  protected nameFor(order: OrderResponse): string {
-    return toOrderHistoryRow(order, this.catalog.byId(order.instrumentId)).instrumentName;
-  }
-
-  protected isFilled(order: OrderResponse): boolean {
-    return order.orderStatus === 'FILLED';
+  protected rejectionReasonFor(row: OrderHistoryRow): string | null {
+    if (row.order.orderStatus !== 'REJECTED') {
+      return null;
+    }
+    return this.rejectionReasonLabel(row.rejectionReason);
   }
 }
