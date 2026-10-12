@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 /**
  * DTO for a single stock's aggregate trading activity (from reporting-service).
@@ -39,30 +38,6 @@ export interface SegmentActivityReportResponse {
   success: boolean;
   data: SegmentActivityRow[];
 }
-
-const MOCK_SEGMENT_ACTIVITY_RESPONSE: SegmentActivityReportResponse = {
-  success: true,
-  data: [
-    {
-      segment: 'ACTIVE_TRADER',
-      activeClients: 12,
-      tradeCount: 126,
-      totalTradedValue: 341250.5,
-    },
-    {
-      segment: 'HIGH_NET_WORTH',
-      activeClients: 5,
-      tradeCount: 31,
-      totalTradedValue: 510000,
-    },
-    {
-      segment: 'RETAIL',
-      activeClients: 42,
-      tradeCount: 180,
-      totalTradedValue: 215090,
-    },
-  ],
-};
 
 /**
  * Service to fetch aggregate trading reports from the reporting-service.
@@ -102,16 +77,6 @@ export class ReportingService {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    return this.http
-      .get<SegmentActivityReportResponse>('/api/v1/reports/activity', { params })
-      .pipe(
-        catchError((error) => {
-          // LMKT-43 builds against a mocked API contract until the endpoint is available.
-          if (error?.status === 404) {
-            return of(MOCK_SEGMENT_ACTIVITY_RESPONSE);
-          }
-          return throwError(() => error);
-        })
-      );
+    return this.http.get<SegmentActivityReportResponse>('/api/v1/reports/activity', { params });
   }
 }
