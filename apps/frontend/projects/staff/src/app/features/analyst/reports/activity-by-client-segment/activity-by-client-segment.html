@@ -1,0 +1,103 @@
+<div class="activity-by-client-segment-container">
+  <div class="report-header">
+    <p class="report-kicker">Analyst Report</p>
+    <h1>Trading Activity by Client Segment</h1>
+    <p class="description">Segment-level activity trends in your selected date window.</p>
+    <div class="header-meta">
+      <span class="meta-pill">{{ selectedRangeLabel() }}</span>
+      <span class="meta-pill">{{ reportData().length }} segments</span>
+    </div>
+  </div>
+
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <form [formGroup]="dateRangeForm" class="date-range-form">
+        <div class="date-fields">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (change)="onDateRangeChange()" />
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <button mat-raised-button color="primary" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
+          Refresh
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <div *ngIf="isLoading()" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading report...</p>
+  </div>
+
+  <div *ngIf="error() && !isLoading()" class="error-state">
+    <mat-card>
+      <mat-card-content>
+        <h2>Unable to Load Report</h2>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="onRetry()">Try Again</button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="!isLoading() && !error()" class="report-content">
+    <section *ngIf="reportData().length > 0" class="stats-grid" aria-label="Segment summary metrics">
+      <article class="stat-card">
+        <p class="stat-label">Total Traded Value</p>
+        <p class="stat-value">{{ totalTradedValue() | currency }}</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Total Trades</p>
+        <p class="stat-value">{{ totalTrades() | number: '1.0-0' }}</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Active Clients</p>
+        <p class="stat-value">{{ totalActiveClients() | number: '1.0-0' }}</p>
+      </article>
+    </section>
+
+    <section *ngIf="reportData().length > 0" class="chart-card" aria-label="Segment value chart">
+      <div class="chart-header">
+        <h2>Segment Activity Bar Graph</h2>
+        <p>Each bar starts at zero and scales linearly to the largest segment value in this view.</p>
+      </div>
+
+      <div class="chart-scale" *ngIf="maxTradedValue() > 0">
+        <span>{{ maxTradedValue() | currency }}</span>
+        <span>{{ maxTradedValue() * 0.5 | currency }}</span>
+        <span>{{ 0 | currency }}</span>
+      </div>
+
+      <div class="chart-body">
+        <div class="chart-column" *ngFor="let row of chartRows()">
+          <div class="column-value">{{ row.totalTradedValue | currency }}</div>
+          <div class="bar-zone">
+            <div class="bar-fill" [style.height.%]="barWidthPercent(row.totalTradedValue)"></div>
+          </div>
+          <div class="column-label">{{ row.segment }}</div>
+          <div class="column-meta">
+            <span>{{ row.activeClients }} active clients</span>
+            <span>{{ row.tradeCount }} trades</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="reportData().length === 0" class="chart-card" aria-label="No data">
+      <div class="chart-header">
+        <h2>No segment activity in this range</h2>
+        <p>Try widening the date range to visualize segment trends.</p>
+      </div>
+    </section>
+  </div>
+</div>

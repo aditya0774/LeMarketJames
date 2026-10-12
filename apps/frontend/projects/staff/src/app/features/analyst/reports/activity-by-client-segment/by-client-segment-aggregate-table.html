@@ -1,0 +1,32 @@
+<div class="by-client-segment-aggregate-table">
+  <div *ngIf="reportData().length === 0" class="empty-state">
+    <p>No trading activity for the selected date range.</p>
+  </div>
+
+  <table *ngIf="reportData().length > 0" class="aggregate-table">
+    <thead>
+      <tr>
+        <th (click)="toggleSort('segment')" class="sortable">
+          Segment {{ getSortIndicator('segment') }}
+        </th>
+        <th (click)="toggleSort('activeClients')" class="sortable numeric">
+          Active Clients {{ getSortIndicator('activeClients') }}
+        </th>
+        <th (click)="toggleSort('tradeCount')" class="sortable numeric">
+          Trade Count {{ getSortIndicator('tradeCount') }}
+        </th>
+        <th (click)="toggleSort('totalTradedValue')" class="sortable numeric">
+          Total Traded Value {{ getSortIndicator('totalTradedValue') }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of sortedData()" class="trade-row">
+        <td class="segment">{{ row.segment }}</td>
+        <td class="numeric">{{ row.activeClients | number: '1.0-0' }}</td>
+        <td class="numeric">{{ row.tradeCount | number: '1.0-0' }}</td>
+        <td class="numeric">{{ row.totalTradedValue | currency }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
