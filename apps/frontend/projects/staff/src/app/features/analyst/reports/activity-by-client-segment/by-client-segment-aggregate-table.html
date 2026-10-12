@@ -22,7 +22,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let row of sortedData()" class="trade-row">
-        <td class="segment">{{ row.segment }}</td>
+        <td class="segment">{{ row.segment.replaceAll('_', ' ') | titlecase }}</td>
         <td class="numeric">{{ row.activeClients | number: '1.0-0' }}</td>
         <td class="numeric">{{ row.tradeCount | number: '1.0-0' }}</td>
         <td class="numeric">{{ row.totalTradedValue | currency }}</td>

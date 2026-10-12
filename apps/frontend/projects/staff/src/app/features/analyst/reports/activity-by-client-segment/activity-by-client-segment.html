@@ -2,7 +2,7 @@
   <div class="report-header">
     <p class="report-kicker">Analyst Report</p>
     <h1>Trading Activity by Client Segment</h1>
-    <p class="description">Segment-level activity trends in your selected date window.</p>
+    <p class="description">Compare trading activity across client segments for your selected date range.</p>
     <div class="header-meta">
       <span class="meta-pill">{{ selectedRangeLabel() }}</span>
       <span class="meta-pill">{{ reportData().length }} segments</span>
@@ -13,14 +13,14 @@
     <mat-card-content>
       <form [formGroup]="dateRangeForm" class="date-range-form">
         <div class="date-fields">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Start Date</mat-label>
             <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />
             <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
             <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>End Date</mat-label>
             <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (change)="onDateRangeChange()" />
             <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
@@ -28,24 +28,24 @@
           </mat-form-field>
         </div>
 
-        <button mat-raised-button color="primary" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
+        <button class="btn btn-gold" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
           Refresh
         </button>
       </form>
     </mat-card-content>
   </mat-card>
 
-  <div *ngIf="isLoading()" class="loading-state">
+  <div *ngIf="isLoading()" class="loading-state" role="status">
     <mat-spinner diameter="40"></mat-spinner>
     <p>Loading report...</p>
   </div>
 
-  <div *ngIf="error() && !isLoading()" class="error-state">
+  <div *ngIf="error() && !isLoading()" class="error-state" role="alert">
     <mat-card>
       <mat-card-content>
         <h2>Unable to Load Report</h2>
         <p>{{ error() }}</p>
-        <button mat-raised-button color="primary" (click)="onRetry()">Try Again</button>
+        <button class="btn btn-gold" (click)="onRetry()">Try Again</button>
       </mat-card-content>
     </mat-card>
   </div>
@@ -68,29 +68,37 @@
 
     <section *ngIf="reportData().length > 0" class="chart-card" aria-label="Segment value chart">
       <div class="chart-header">
-        <h2>Segment Activity Bar Graph</h2>
-        <p>Each bar starts at zero and scales linearly to the largest segment value in this view.</p>
+        <h2>Traded value by segment</h2>
+        <p>Total executed value (USD), ranked from highest to lowest.</p>
       </div>
-
-      <div class="chart-scale" *ngIf="maxTradedValue() > 0">
-        <span>{{ maxTradedValue() | currency }}</span>
-        <span>{{ maxTradedValue() * 0.5 | currency }}</span>
-        <span>{{ 0 | currency }}</span>
-      </div>
-
       <div class="chart-body">
-        <div class="chart-column" *ngFor="let row of chartRows()">
-          <div class="column-value">{{ row.totalTradedValue | currency }}</div>
-          <div class="bar-zone">
-            <div class="bar-fill" [style.height.%]="barWidthPercent(row.totalTradedValue)"></div>
+        <div class="chart-row" *ngFor="let row of chartRows()">
+          <div class="row-heading">
+            <span class="segment-label">{{ row.segment.replaceAll('_', ' ') | titlecase }}</span>
+            <span class="column-value">{{ row.totalTradedValue | currency }}</span>
           </div>
-          <div class="column-label">{{ row.segment }}</div>
+          <!-- Equal-width tracks share a zero origin to preserve value ratios. -->
+          <div class="bar-zone" aria-hidden="true">
+            <div class="bar-fill" [style.width.%]="barWidthPercent(row.totalTradedValue)"></div>
+          </div>
           <div class="column-meta">
-            <span>{{ row.activeClients }} active clients</span>
-            <span>{{ row.tradeCount }} trades</span>
+            <span>{{ row.activeClients | number }} active clients &middot; {{ row.tradeCount | number }} trades</span>
+            <span>{{ (totalTradedValue() > 0 ? row.totalTradedValue / totalTradedValue() : 0) | percent:'1.1-1' }} of total</span>
           </div>
         </div>
+        <div class="chart-scale" aria-hidden="true" *ngIf="maxTradedValue() > 0">
+          <span>{{ 0 | currency:'USD':'symbol':'1.0-0' }}</span>
+          <span>{{ maxTradedValue() * 0.5 | currency:'USD':'symbol':'1.0-0' }}</span>
+          <span>{{ maxTradedValue() | currency:'USD':'symbol':'1.0-0' }}</span>
+        </div>
       </div>
+    </section>
+    <section *ngIf="reportData().length > 0" class="table-card" aria-labelledby="segment-details-heading">
+      <div class="chart-header">
+        <h2 id="segment-details-heading">Segment breakdown</h2>
+        <p>Active clients, executed trades and traded value for each segment.</p>
+      </div>
+      <staff-by-client-segment-aggregate-table [reportData]="reportData()" />
     </section>
 
     <section *ngIf="reportData().length === 0" class="chart-card" aria-label="No data">

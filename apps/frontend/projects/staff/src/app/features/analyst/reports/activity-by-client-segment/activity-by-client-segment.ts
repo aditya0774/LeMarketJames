@@ -1,3 +1,4 @@
+import { ByClientSegmentAggregateTable } from './by-client-segment-aggregate-table';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -25,6 +26,7 @@ import {
   styleUrls: ['./activity-by-client-segment.scss'],
   standalone: true,
   imports: [
+    ByClientSegmentAggregateTable,
     CommonModule,
     ReactiveFormsModule,
     MatDatepickerModule,

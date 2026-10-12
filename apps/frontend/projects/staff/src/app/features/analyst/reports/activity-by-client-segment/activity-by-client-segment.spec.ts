@@ -222,6 +222,35 @@ describe('ActivityByClientSegment Component', () => {
     });
   });
 
+  describe('Proportional chart', () => {
+    it('renders unequal and zero values on one scale alongside the segment table', () => {
+      fixture.detectChanges();
+      const req = httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity'));
+      req.flush({ success: true, data: [
+        { segment: 'RETAIL', activeClients: 2, tradeCount: 4, totalTradedValue: 100 },
+        { segment: 'ACTIVE_TRADER', activeClients: 1, tradeCount: 2, totalTradedValue: 50 },
+        { segment: 'HIGH_NET_WORTH', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
+      ] });
+      fixture.detectChanges();
+
+      const bars = fixture.nativeElement.querySelectorAll('.bar-fill');
+      expect(Array.from(bars).map((bar: any) => bar.style.width)).toEqual(['100%', '50%', '0%']);
+      expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(3);
+      expect(fixture.nativeElement.textContent).toContain('33.3% of total');
+    });
+
+    it('renders all-zero values without invalid widths', () => {
+      fixture.detectChanges();
+      const req = httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity'));
+      req.flush({ success: true, data: [
+        { segment: 'RETAIL', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
+      ] });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.bar-fill').style.width).toBe('0%');
+      expect(fixture.nativeElement.textContent).toContain('0.0% of total');
+    });
+  });
+
   describe('Data Display', () => {
     it('displays report data', () => {
       fixture.detectChanges();
