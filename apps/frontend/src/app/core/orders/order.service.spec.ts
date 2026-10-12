@@ -110,6 +110,59 @@ describe('BUY order HTTP integration', () => {
     expect(submittedAt).toBe('2026-01-01T00:00:00+05:30');
   });
 
+  it('maps C6-compatible history fields and normalizes UTC-like timestamps', () => {
+    let history: any[] = [];
+    service.getOrdersByAccountId(7, { date: '2026-10-12', timeZone: 'UTC' })
+      .subscribe(orders => history = orders);
+
+    const call = http.expectOne(request => request.url.endsWith('/account/7'));
+    expect(call.request.method).toBe('GET');
+    expect(call.request.params.get('date')).toBe('2026-10-12');
+    expect(call.request.params.get('timeZone')).toBe('UTC');
+
+    call.flush([
+      {
+        success: true,
+        orderId: 501,
+        accountId: 7,
+        instrumentId: 5,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 10,
+        pricePerUnit: 201.55,
+        orderStatus: 'FILLED',
+        rejectionReason: null,
+        submittedAt: '2026-10-12T13:45:00',
+        acceptedAt: '2026-10-12T13:45:01',
+        filledAt: '2026-10-12T13:45:03',
+        createdAt: '2026-10-12T13:45:00',
+        updatedAt: '2026-10-12T13:45:03',
+      },
+      {
+        success: true,
+        orderId: 502,
+        accountId: 7,
+        instrumentId: 8,
+        orderType: 'SELL',
+        quantity: 2,
+        pricePerUnit: null,
+        orderStatus: 'REJECTED',
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-10-12T09:15:00Z',
+        acceptedAt: null,
+        filledAt: null,
+        createdAt: '2026-10-12T09:15:00',
+        updatedAt: '2026-10-12T09:15:00',
+      },
+    ]);
+
+    expect(history).toHaveLength(2);
+    expect(history[0].symbol).toBe('AAPL');
+    expect(history[0].submittedAt).toBe('2026-10-12T13:45:00Z');
+    expect(history[1].submittedAt).toBe('2026-10-12T09:15:00Z');
+    expect(history[1].rejectionReason).toBe('INSUFFICIENT_HOLDINGS');
+  });
+
   it('streams account orders and marks reconnecting after a transient failure', async () => {
     vi.useFakeTimers();
     try {

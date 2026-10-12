@@ -33,6 +33,24 @@ function rejectedOrder(reason: string): OrderResponse {
   };
 }
 
+function backendSymbolOrder(symbol: string): OrderResponse {
+  return {
+    success: true,
+    orderId: 1001,
+    accountId: 7,
+    instrumentId: 1,
+    symbol,
+    orderType: 'BUY',
+    quantity: 3,
+    pricePerUnit: 99.5,
+    orderStatus: 'FILLED',
+    submittedAt: '2026-10-12T12:00:00',
+    createdAt: '2026-10-12T12:00:00',
+    updatedAt: '2026-10-12T12:00:00',
+    filledAt: '2026-10-12T12:00:02',
+  };
+}
+
 describe('OrdersPanel date filtering', () => {
   let fixture: ComponentFixture<OrdersPanel>;
   const seeds = [
@@ -143,5 +161,12 @@ describe('OrdersPanel date filtering', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent)
       .toContain('Order rejected because your available cash is too low for this buy order.');
+  });
+
+  it('renders backend symbol when provided in the API payload', () => {
+    fixture.componentRef.setInput('orders', [backendSymbolOrder('AAPL')]);
+    fixture.detectChanges();
+    const symbol = fixture.nativeElement.querySelector('.sym')?.textContent?.trim();
+    expect(symbol).toBe('AAPL');
   });
 });
