@@ -366,6 +366,40 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
 
+### GET /api/v1/reports/activity
+
+Trading activity grouped by the client's segment (LMKT-43), for `ANALYST` only.
+The staff app calls this through the staff gateway.
+
+- `startDate`, `endDate`: optional ISO calendar dates (`YYYY-MM-DD`), both inclusive in
+  the configured reports time zone. Omitted boundaries use the defaults defined in
+  [SegmentActivityService](../services/reporting-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
+- Filtering uses `filled_at`, converted to a half-open UTC range by `ReportCalendar`.
+- One row per segment with matching trades, sorted by segment name; no matching trades returns
+  `200 { "success": true, "data": [] }`. Segments without matching trades are omitted.
+- `activeClients` counts distinct clients across all their accounts, `tradeCount` counts filled
+  orders, and `totalTradedValue` sums `gross_amount` for both buys and sells in USD, without
+  rounding the stored amounts.
+- Segment names come from the view, with sample definitions supplied by [C3](C3-seed-data.md).
+  The API has no hard-coded segment list.
+- Responses contain only the four aggregate fields below. No client, account, order, name or
+  contact information is returned; there is no individual-client filtering or drill-down.
+- Malformed or reversed dates return `400`; missing/invalid authentication returns `401`;
+  non-Analyst roles (including `CLIENT` and `TRADING_OPS`) return `403`.
+
+```json
+{
+  "success": true,
+  "data": [
+    { "segment": "RETAIL", "activeClients": 42, "tradeCount": 180, "totalTradedValue": 215090.1250 }
+  ]
+}
+```
+
+The report target is under ten seconds. The PostgreSQL integration test exercises an explicit
+100,000-trade synthetic baseline through query execution and response serialization. Production
+capacity and concurrency require measurement on the deployed dataset and hardware.
+
 ### GET /api/v1/reports/trades
 
 Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.

@@ -44,3 +44,21 @@ It loads wherever the schema does:
 - every Jenkins run.
 
 The file is skipped once `seed_active` exists, so re-running it never duplicates data. To add seed data, put it in a new numbered migration with its own marker check rather than editing 011, which existing databases have already run.
+
+## Segment report proof of concept
+
+[019_segment_report_demo_clients.sql](../database/schema/019_segment_report_demo_clients.sql)
+adds seven fictional clients named `demo_segment_1` through `demo_segment_7`.
+Their emails are their usernames followed by `@seed.lemarket.com`; they reuse the seed
+password above. Their segment attributes come from the existing seed personas. Reapplying
+the migration leaves existing balances and clients alone.
+
+Run `python scripts/windows/seed-segment-report.py` against the running local trading stack
+after applying 019. The script defines the activity targets and order sizes, uses current
+quotes, and places buy/sell pairs through the trading API. This creates real persisted
+orders, settlement receipts and audit trails through the normal service writers.
+An open market and healthy quote feed are required. Run only one copy at a time.
+
+The script resumes each dedicated demo account to its target rather than duplicating
+completed trades. Dates are the actual execution dates; choose a report range including
+the day it ran. Existing seed and user activity is included alongside these demo trades.

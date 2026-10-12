@@ -392,3 +392,19 @@ None of the three tables has a foreign key to `orders`, `accounts` or `instrumen
 Their rows are written from events, after the order's own transaction, and must never stop an
 order, an account or a test fixture from being deleted. A row can therefore outlive its order.
 The rows are derived data: emptying a table loses nothing an order or the audit trail needs.
+
+## 019 ? Segment report demo clients
+
+`schema/019_segment_report_demo_clients.sql` adds dedicated fictional clients and funded
+accounts for the LMKT-43 proof of concept. It derives segments from 011's seed clients
+and is safe to reapply without resetting account balances. Apply it as the database owner:
+
+```powershell
+psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket -f database/schema/019_segment_report_demo_clients.sql
+python scripts/windows/seed-segment-report.py
+```
+
+The second command requires the running trading stack and an open market. It places trades
+through the API, keeping cash, holdings, settlement receipts and audit events consistent.
+See [C3](../contracts/C3-seed-data.md#segment-report-proof-of-concept) for the demo personas
+and rerun behavior. No existing history is deleted or backdated.
