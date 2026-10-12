@@ -10,6 +10,7 @@ import {
   statusPillClass,
 } from './order-status';
 import { rejectionReasonLabel } from './rejection-reason';
+import { toOrderHistoryRow } from './order-history-row';
 
 const PAGE_SIZE = 5;
 type Period = 'day' | 'month' | 'year';
@@ -99,11 +100,11 @@ export class OrdersPanel {
 
   // Orders only carry instrumentId until the backend adds symbol (planned in contracts/C6-api.md).
   protected symbolFor(order: OrderResponse): string {
-    return this.catalog.byId(order.instrumentId)?.symbol ?? `#${order.instrumentId}`;
+    return toOrderHistoryRow(order, this.catalog.byId(order.instrumentId)).symbol;
   }
 
   protected nameFor(order: OrderResponse): string {
-    return this.catalog.byId(order.instrumentId)?.name ?? '';
+    return toOrderHistoryRow(order, this.catalog.byId(order.instrumentId)).instrumentName;
   }
 
   protected isFilled(order: OrderResponse): boolean {

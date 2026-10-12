@@ -47,6 +47,7 @@ export interface OrderResponse {
   orderId: number;
   accountId: number;
   instrumentId: number;
+  symbol?: string | null;
   orderType: 'BUY' | 'SELL';
   quantity: number;
   pricePerUnit?: number | null;
