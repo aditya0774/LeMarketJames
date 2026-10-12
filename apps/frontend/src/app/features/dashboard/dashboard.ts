@@ -54,6 +54,7 @@ export class Dashboard implements OnInit {
   private historyDate = '';
   private historyRequest?: Subscription;
   private ordersRequest?: Subscription;
+  private pendingOrdersRefresh = false;
   private liveOrdersRequest?: Subscription;
   protected readonly ordersLoading = signal(true);
   protected readonly ordersError = signal<string | null>(null);
@@ -154,7 +155,10 @@ export class Dashboard implements OnInit {
   }
 
   private loadOrders(): void {
-    if (this.ordersRequest && !this.ordersRequest.closed) return;
+    if (this.ordersRequest && !this.ordersRequest.closed) {
+      this.pendingOrdersRefresh = true;
+      return;
+    }
     const accountId = this.auth.currentAccountId();
     if (!accountId) {
       this.ordersError.set('No trading account is linked to this login.');
@@ -173,45 +177,37 @@ export class Dashboard implements OnInit {
             this.loadHoldings();
             this.loadHistory();
           }
+          if (this.pendingOrdersRefresh) {
+            this.pendingOrdersRefresh = false;
+            this.loadOrders();
+          }
         },
         error: (err) => {
           this.flagExpiredSession(err);
+          if (this.pendingOrdersRefresh) {
+            this.pendingOrdersRefresh = false;
+            this.loadOrders();
+          }
         },
       });
   }
 
   private startLiveOrdersWatch(): void {
     if (this.liveOrdersRequest && !this.liveOrdersRequest.closed) return;
-    const accountId = this.auth.currentAccountId();
-    if (!accountId) return;
+    if (!this.auth.currentAccountId()) return;
 
     this.liveOrdersRequest = this.orderService
-      .watchOrdersByAccountId(accountId, MARKET_REFRESH_MS)
+      .watchOrderStatusStream()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: snapshot => {
           this.ordersConnection.set(snapshot.connection);
-          const nextOrders = snapshot.orders ?? [];
-          const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
-          this.orders.set(nextOrders);
-
-          const changed = nextOrders.some(order =>
-            previous.has(order.orderId) && previous.get(order.orderId) !== order.orderStatus,
-          );
-          if (changed) {
+          if (snapshot.event) {
+            // A status change can affect open-order counts, holdings and filtered history.
+            this.loadOrders();
             this.loadHoldings();
             this.loadHistory();
           }
-
-          if (!this.historyDate) {
-            this.historyOrders.set(nextOrders);
-            this.ordersLoading.set(false);
-            this.ordersError.set(null);
-            return;
-          }
-
-          const latestById = new Map(nextOrders.map(order => [order.orderId, order]));
-          this.historyOrders.update(rows => rows.map(order => latestById.get(order.orderId) ?? order));
         },
         error: (err) => {
           this.flagExpiredSession(err);

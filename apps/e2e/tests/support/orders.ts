@@ -46,13 +46,32 @@ export async function instrumentIdOf(request: APIRequestContext, symbol: string)
 export async function placeOrder(request: APIRequestContext, accountId: number, instrumentId: number,
     orderType: 'BUY' | 'SELL', quantity = 1): Promise<OrderDto> {
   // pricePerUnit is deliberately absurd: the server must ignore browser prices (C6).
-  const response = await request.post('/api/v1/orders', {
-    data: { accountId, instrumentId, orderType, quantity, pricePerUnit: 0.01 },
-  });
-  expect(response.status(), await response.text()).toBe(201);
-  const order: OrderDto = await response.json();
-  expect(order.orderStatus).toBe('SUBMITTED');
-  return order;
+  // Fresh-quote reads can race market ticks in shared CI stacks; retry transient stale-quote rejects.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const response = await request.post('/api/v1/orders', {
+      data: { accountId, instrumentId, orderType, quantity, pricePerUnit: 0.01 },
+    });
+    if (response.status() === 201) {
+      const order: OrderDto = await response.json();
+      expect(order.orderStatus).toBe('SUBMITTED');
+      return order;
+    }
+
+    const body = await response.text();
+    let code: string | null = null;
+    try {
+      code = JSON.parse(body).code ?? null;
+    } catch {
+      code = null;
+    }
+    const staleQuote = response.status() === 400 && code === 'STALE_QUOTE';
+    if (!staleQuote || attempt === 4) {
+      expect(response.status(), body).toBe(201);
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  throw new Error('Failed to place order after stale-quote retries.');
 }
 
 export async function getOrder(request: APIRequestContext, orderId: number): Promise<OrderDto> {

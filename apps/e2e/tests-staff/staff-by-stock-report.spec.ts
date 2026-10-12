@@ -175,14 +175,21 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       });
     });
 
+    const reportCall = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/reports/trades-by-stock') && response.status() === 403
+    );
+
     await openReport(page);
+    await reportCall;
 
     // Wait for error message to appear
-    const errorHeading = page.getByRole('heading').filter({ hasText: 'Unable to Load' });
-    await expect(errorHeading).toBeVisible({ timeout: 5000 });
+    const errorState = page.locator('.error-state');
+    await expect(errorState).toBeVisible({ timeout: 10000 });
+    await expect(errorState).toContainText('Unable to Load Report');
+    await expect(errorState).toContainText('permission');
 
     // Verify safe error message (no sensitive data)
-    const errorText = page.locator('.error-state').textContent();
+    const errorText = errorState.textContent();
     expect(errorText).toBeDefined();
   });
 
