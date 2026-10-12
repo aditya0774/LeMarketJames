@@ -30,8 +30,9 @@ describe('Staff login', () => {
       http.verify();
     });
   }
-  // Each role lands on its own dashboard.
-  for (const [role, destination] of [['TRADING_OPS', '/trade-search'], ['ANALYST', '/analyst']]) {
+  // Each role lands on its own dashboard; a staff role without a section (COMPLIANCE) stays
+  // signed in and lands on Access denied.
+  for (const [role, destination] of [['TRADING_OPS', '/trade-search'], ['ANALYST', '/analyst'], ['COMPLIANCE', '/access-denied']]) {
     it('routes ' + role + ' after authenticating on the staff origin', async () => {
       await TestBed.configureTestingModule({
         imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],

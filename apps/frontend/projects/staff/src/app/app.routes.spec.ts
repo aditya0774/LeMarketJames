@@ -51,7 +51,7 @@ describe('Staff routes', () => {
   it('opens the Analyst pages for an Analyst', async () => {
     const dashboard = await open('/analyst', 'ANALYST');
     expect(dashboard.url).toBe('/analyst');
-    expect(dashboard.page.textContent).toContain('Analyst dashboard');
+    expect(dashboard.page.textContent).toContain('Analyst Dashboard');
 
     TestBed.resetTestingModule();
     expect((await open('/analyst/reports/activity-by-stock', 'ANALYST')).url)
@@ -62,7 +62,7 @@ describe('Staff routes', () => {
     const refused = await open('/analyst', 'TRADING_OPS');
     expect(refused.url).toBe('/access-denied');
     expect(refused.page.textContent).toContain('Access denied');
-    expect(refused.page.textContent).not.toContain('Analyst dashboard');
+    expect(refused.page.textContent).not.toContain('Analyst Dashboard');
 
     TestBed.resetTestingModule();
     expect((await open('/analyst/reports/activity-by-stock', 'TRADING_OPS')).url).toBe('/access-denied');
@@ -72,6 +72,11 @@ describe('Staff routes', () => {
     const refused = await open('/trade-search', 'ANALYST');
     expect(refused.url).toBe('/access-denied');
     expect(refused.page.textContent).not.toContain('Trade search');
+  });
+
+  // /trading-ops is no longer a route: it falls through to the start page, like any unknown address.
+  it('sends an Analyst from the retired /trading-ops address to the Analyst dashboard', async () => {
+    expect((await open('/trading-ops', 'ANALYST')).url).toBe('/analyst');
   });
 
   it('sends an unknown address to the start page', async () => {

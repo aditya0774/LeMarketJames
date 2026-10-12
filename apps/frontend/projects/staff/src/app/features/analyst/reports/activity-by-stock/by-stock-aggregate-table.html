@@ -1,0 +1,38 @@
+<div class="trades-by-stock-aggregate-table">
+  <!-- Empty state -->
+  <div *ngIf="tradesData().length === 0" class="empty-state">
+    <p>No trading activity for the selected date range.</p>
+  </div>
+
+  <!-- Table -->
+  <table *ngIf="tradesData().length > 0" class="aggregate-table">
+    <thead>
+      <tr>
+        <th (click)="toggleSort('symbol')" class="sortable">
+          Symbol {{ getSortIndicator('symbol') }}
+        </th>
+        <th (click)="toggleSort('totalQuantity')" class="sortable numeric">
+          Total Quantity {{ getSortIndicator('totalQuantity') }}
+        </th>
+        <th (click)="toggleSort('totalGrossAmount')" class="sortable numeric">
+          Total Gross Amount {{ getSortIndicator('totalGrossAmount') }}
+        </th>
+        <th (click)="toggleSort('buyCount')" class="sortable numeric">
+          Buy Count {{ getSortIndicator('buyCount') }}
+        </th>
+        <th (click)="toggleSort('sellCount')" class="sortable numeric">
+          Sell Count {{ getSortIndicator('sellCount') }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of sortedData()" class="trade-row">
+        <td class="symbol">{{ row.symbol }}</td>
+        <td class="numeric">{{ row.totalQuantity | number: '1.0-0' }}</td>
+        <td class="numeric">{{ row.totalGrossAmount | currency }}</td>
+        <td class="numeric">{{ row.buyCount }}</td>
+        <td class="numeric">{{ row.sellCount }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

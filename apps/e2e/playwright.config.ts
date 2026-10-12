@@ -16,7 +16,13 @@ export default defineConfig({
   forbidOnly: isCi,
   // CI must expose flakiness instead of hiding it with automatic retries.
   retries: 0,
-  workers: isCi ? 2 : undefined,
+  // The Jenkins agent also hosts the whole Docker stack (a dozen JVMs plus Kafka and Postgres).
+  // Two parallel Chromium instances starved it of CPU: pages froze mid-login and the whole
+  // browser session closed. One worker is slower but stable; E2E_WORKERS raises it on a bigger agent.
+  workers: isCi ? Number(process.env.E2E_WORKERS ?? 1) : undefined,
+  // Room for a login, a seeded page load and a trace teardown on a busy agent.
+  timeout: isCi ? 60_000 : 30_000,
+  expect: { timeout: isCi ? 10_000 : 5_000 },
   reporter: isCi
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],
@@ -25,7 +31,12 @@ export default defineConfig({
     // Keep evidence only when something fails, so passing runs stay fast and small.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // Recording video costs CPU the CI agent lacks; the trace and screenshot already show the failure.
+    video: isCi ? 'off' : 'retain-on-failure',
+    launchOptions: {
+      // Containers have a small /dev/shm; without this Chromium can crash or hang under load.
+      args: ['--disable-dev-shm-usage', '--disable-gpu'],
+    },
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: FEED_FAILURE_TESTS },

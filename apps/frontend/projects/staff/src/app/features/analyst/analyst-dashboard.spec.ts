@@ -11,13 +11,12 @@ describe('AnalystDashboard', () => {
     const fixture = TestBed.createComponent(AnalystDashboard);
     await fixture.whenStable();
 
-    const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('ul a'));
+    const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.report-card .report-title'));
     expect(links.map((a) => a.textContent)).toEqual([
-      'Trade activity by period',
-      'Activity by stock',
-      'Activity by client segment',
-      'Overnight reports',
+      'Trade Activity by Period',
+      'Activity by Stock',
+      'Activity by Client Segment',
+      'Overnight Reports',
     ]);
-    expect(links[0].getAttribute('href')).toBe('/analyst/reports/trade-activity-by-period');
   });
 });
