@@ -1,12 +1,12 @@
 # Root build context is only used by the backend service images (services/*/Dockerfile).
-.git
-.gitignore
-Jenkinsfile
-README.md
+# Everything is left out except what their Maven build reads. A Jenkins workspace also holds the
+# Maven repository (.m2) and the npm cache (.npm), which would otherwise be sent to Docker with
+# every image build.
+*
+!pom.xml
+!libs
+!services
 **/target
-apps
-docs
-database
-*.pdf
-*.xlsx
-*.png
+# The images are built with -DskipTests and hold no test code, so a change that only touches
+# tests leaves every image's Maven build layer in the cache.
+**/src/test

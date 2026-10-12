@@ -105,6 +105,7 @@ LeMarketJames/
 │   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file
 │   ├── sonarqube/                 # One-time SonarQube server set-up
+│   ├── ci/                        # Jenkins helper: npm ci, skipped while node_modules still matches the lock file
 │   └── verify-*.sh                # Checks Jenkins runs against the live stack (orders, Kafka consumers, audit lockdown)
 ├── docs/                          # Generated only: Javadoc and the coverage report (GitHub Pages)
 ├── .github/workflows/             # Publishes the Javadoc and the coverage report
@@ -410,7 +411,7 @@ Replace `PRIVATE_IP` with your backend's IP or hostname. The frontend dev server
 
 ### Method 2: Docker Build & Run
 
-This method builds one service's Docker image and runs it in a container. Backend images build from the repo root so Maven can see the parent pom and `libs/`.
+This method builds one service's Docker image and runs it in a container. Backend images build from the repo root so Maven can see the parent pom and `libs/`. Each image's build compiles every module, not only its own: that step is the same in every service Dockerfile, so Docker runs it once and reuses it for the other images.
 
 1. Build the Docker image (swap `core-service` for any other folder under `services/`):
    ```bash
@@ -924,11 +925,11 @@ Common causes:
 This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 
 1. Works out what the change touches. A pull request or feature branch runs only the sides it changed (front end, back end, full stack); a build of `main` always runs everything
-2. Tests and builds both Angular apps, and runs each back-end module's unit tests in parallel
-3. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below.
+2. Runs each back-end module's unit tests in parallel
+3. Starts PostgreSQL and Kafka once and runs the back-end integration tests against them, including the test that an order's events arrive on their Kafka topics. The same two containers then serve the full stack below. Both Angular apps are tested and built at the same time
 4. Publishes back-end and front-end coverage and fails below the baseline (see [Code Coverage](#code-coverage))
-5. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube))
-6. Builds the Docker images and applies any new schema files
+5. Sends the code, test results and coverage to SonarQube and stops when the Classroom Quality Gate fails (see [SonarQube](#sonarqube)). The Docker images are built at the same time
+6. Applies any new schema files
 7. Runs the containerized application and prints `docker ps` once every container is up (**Show running containers**), failing if any Compose service is not running
 8. Runs the smoke test, including that a filled order's event is on its Kafka topic
 9. Runs the Playwright end-to-end suites, the trading app's and then the staff app's (see [End-to-End Tests](#end-to-end-tests-playwright))
@@ -940,7 +941,7 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 The Jenkins agent requires:
 - Java 21
 - Maven 3.9.9+
-- Docker daemon
+- Docker daemon with BuildKit (the `buildx` plugin; the default builder since Docker 23). The service Dockerfiles keep Maven's downloads in a BuildKit cache mount
 - Permission to run Docker commands
 - The SonarQube set-up in [SonarQube](#sonarqube)
 

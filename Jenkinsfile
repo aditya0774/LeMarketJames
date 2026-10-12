@@ -36,6 +36,13 @@ pipeline {
                         echo "Docker Compose is not installed on this Jenkins agent"
                         exit 1
                     fi
+                    # The service Dockerfiles keep Maven's downloads in a BuildKit cache mount, which
+                    # the legacy builder cannot read. Checked here, as the user Jenkins runs as, so a
+                    # missing plugin is reported now and not after every test has run.
+                    if ! docker buildx version; then
+                        echo "Docker BuildKit (the buildx plugin) is not available to this Jenkins agent"
+                        exit 1
+                    fi
                 '''
             }
         }
@@ -100,35 +107,6 @@ pipeline {
                     env.CI_RUN_FULL_STACK = 'true'
 
                     echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
-                }
-            }
-        }
-
-        stage('Test and build Angular') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                dir('apps/frontend') {
-                    // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
-                    // old folder is removed first so a stale report is never published.
-                    // The project is named because a bare `ng test` runs every project in the
-                    // workspace, and the staff app has its own stage below.
-                    sh 'rm -rf coverage && npm ci --no-audit --no-fund && npm test -- lemarket-ui --watch=false --coverage && npm run build'
-                }
-            }
-        }
-
-        // The staff app is a second project in the same Angular workspace (apps/frontend/projects/staff),
-        // so it reuses the node_modules the stage above installed.
-        stage('Test and build staff Angular app') {
-            when {
-                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                dir('apps/frontend') {
-                    // --coverage writes coverage/staff/lcov.info, which the SonarQube stage reads.
-                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
                 }
             }
         }
@@ -243,11 +221,13 @@ pipeline {
                 }
 
                 // Covers both gateways: the staff gateway is this module's "staff" profile.
+                // staff-gateway-service, the earlier stand-alone staff gateway, is tested here too:
+                // it is still a module of the build, and the coverage report counts its code.
                 stage('Test gateway service units') {
                     steps {
                         sh '''
                             set -eu
-                            mvn -B -pl services/gateway-service test
+                            mvn -B -pl services/gateway-service,services/staff-gateway-service test
                         '''
                     }
                 }
@@ -271,71 +251,114 @@ pipeline {
             }
         }
 
-        // Also where Kafka starts, once per run: the full-stack stage further down finds the same
-        // container already running, and that is where the three consumers attach to it. The
-        // unit-test lanes above need no broker (stub publisher, listeners switched off).
-        stage('Run backend integration tests on shared PostgreSQL') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
-            }
-            steps {
-                sh '''
-                    set -eu
-                    if docker compose version >/dev/null 2>&1; then
-                        compose() { docker compose "$@"; }
-                    else
-                        compose() { docker-compose "$@"; }
-                    fi
-                    compose up -d db kafka
-                    ready=0
-                    for attempt in $(seq 1 60); do
-                        if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
-                            ready=1
-                            break
-                        fi
-                        sleep 1
-                    done
-                    test "$ready" = 1
-                    # The broker started alongside the database; wait until it answers a client.
-                    kafka_ready=0
-                    for attempt in $(seq 1 60); do
-                        if compose exec -T kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1; then
-                            kafka_ready=1
-                            break
-                        fi
-                        sleep 1
-                    done
-                    if [ "$kafka_ready" -ne 1 ]; then
-                        echo "Kafka did not become ready"
-                        compose logs kafka
-                        exit 1
-                    fi
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/012_order_execution.sql
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/013_execution_quote.sql
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/014_submission_audit.sql
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/015_seed_submission_audit.sql
-                    # The tests below log in as lemarket_app, which 016 creates and restricts.
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
+        // The front end and the back-end integration tests share nothing (other folders, other
+        // tools), so they run side by side instead of one after the other. They are paired here,
+        // not with the unit-test lanes above: those already run nine Maven builds at once, and this
+        // host has little memory to spare. Both sides must finish before coverage is published.
+        stage('Test front end and back-end integration (parallel)') {
+            parallel {
+                stage('Front end') {
+                    stages {
+                        stage('Test and build Angular') {
+                            when {
+                                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                dir('apps/frontend') {
+                                    // --coverage writes coverage/lemarket-ui/ (reporters are set in angular.json); the
+                                    // old folder is removed first so a stale report is never published.
+                                    // The project is named because a bare `ng test` runs every project in the
+                                    // workspace, and the staff app has its own stage below.
+                                    // npm-ci-if-changed.sh is `npm ci`, skipped while node_modules still matches
+                                    // the lock file from an earlier build (the workspace is kept between builds).
+                                    sh 'rm -rf coverage && sh ../../scripts/ci/npm-ci-if-changed.sh && npm test -- lemarket-ui --watch=false --coverage && npm run build'
+                                }
+                            }
+                        }
 
-                    # Keep one Maven invocation so integration tests share startup work.
-                    # kafka-test only means something to buy-sell-service: its integration tests
-                    # publish order events to the broker started above (localhost:9092) instead of
-                    # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
-                    mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service,services/reporting-service -am \
-                        -Dspring.profiles.active=postgres-test,kafka-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest" \
-                        -Dsurefire.failIfNoSpecifiedTests=false test
+                        // The staff app is a second project in the same Angular workspace (apps/frontend/projects/staff),
+                        // so it reuses the node_modules the stage above installed.
+                        stage('Test and build staff Angular app') {
+                            when {
+                                expression { env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                dir('apps/frontend') {
+                                    // --coverage writes coverage/staff/lcov.info, which the SonarQube stage reads.
+                                    sh 'npm run test:staff -- --watch=false --coverage && npm run build:staff'
+                                }
+                            }
+                        }
+                    }
+                }
 
-                    # The Kafka test skips itself when the kafka-test profile is missing, and a
-                    # skipped test doesn't fail a build. Make sure it really ran here.
-                    kafka_report=services/buy-sell-service/target/surefire-reports/TEST-com.lemarketjames.orders.OrderEventKafkaIntegrationTest.xml
-                    grep '<testsuite ' "$kafka_report" | grep -q 'tests="[1-9]'
-                    grep '<testsuite ' "$kafka_report" | grep -q 'skipped="0"'
-                '''
-            }
-            post {
-                always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml'
+                // Also where Kafka starts, once per run: the full-stack stage further down finds the same
+                // container already running, and that is where the three consumers attach to it. The
+                // unit-test lanes above need no broker (stub publisher, listeners switched off).
+                stage('Run backend integration tests on shared PostgreSQL') {
+                    when {
+                        expression { env.CI_RUN_BACKEND_PIPELINE == 'true' }
+                    }
+                    steps {
+                        sh '''
+                            set -eu
+                            if docker compose version >/dev/null 2>&1; then
+                                compose() { docker compose "$@"; }
+                            else
+                                compose() { docker-compose "$@"; }
+                            fi
+                            compose up -d db kafka
+                            ready=0
+                            for attempt in $(seq 1 60); do
+                                if compose exec -T db pg_isready -h 127.0.0.1 -U lemarket -d lemarket >/dev/null 2>&1; then
+                                    ready=1
+                                    break
+                                fi
+                                sleep 1
+                            done
+                            test "$ready" = 1
+                            # The broker started alongside the database; wait until it answers a client.
+                            kafka_ready=0
+                            for attempt in $(seq 1 60); do
+                                if compose exec -T kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1; then
+                                    kafka_ready=1
+                                    break
+                                fi
+                                sleep 1
+                            done
+                            if [ "$kafka_ready" -ne 1 ]; then
+                                echo "Kafka did not become ready"
+                                compose logs kafka
+                                exit 1
+                            fi
+                            compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/012_order_execution.sql
+                            compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/013_execution_quote.sql
+                            compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/014_submission_audit.sql
+                            compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/015_seed_submission_audit.sql
+                            # The tests below log in as lemarket_app, which 016 creates and restricts.
+                            compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
+
+                            # Keep one Maven invocation so integration tests share startup work.
+                            # kafka-test only means something to buy-sell-service: its integration tests
+                            # publish order events to the broker started above (localhost:9092) instead of
+                            # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
+                            mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service,services/reporting-service -am \
+                                -Dspring.profiles.active=postgres-test,kafka-test \
+                                "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest" \
+                                -Dsurefire.failIfNoSpecifiedTests=false test
+
+                            # The Kafka test skips itself when the kafka-test profile is missing, and a
+                            # skipped test doesn't fail a build. Make sure it really ran here.
+                            kafka_report=services/buy-sell-service/target/surefire-reports/TEST-com.lemarketjames.orders.OrderEventKafkaIntegrationTest.xml
+                            grep '<testsuite ' "$kafka_report" | grep -q 'tests="[1-9]'
+                            grep '<testsuite ' "$kafka_report" | grep -q 'skipped="0"'
+                        '''
+                    }
+                    post {
+                        always {
+                            junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml'
+                        }
+                    }
                 }
             }
         }
@@ -376,68 +399,84 @@ pipeline {
             }
         }
 
-        // Sends the code, test results and coverage of both sides to SonarQube as one project
-        // (settings in sonar-project.properties). Jenkins supplies the server address and token
-        // ('SonarQube' under Manage Jenkins > System) and the scanner ('SonarScanner' under
-        // Tools), so neither is written here. Runs after the integration tests so that their
-        // results and coverage are part of the analysis, and needs both sides' reports.
-        stage('SonarQube Analysis') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                sh 'node scripts/coverage/build-sonar-coverage.mjs'
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQube') {
-                        // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
-                        // Java analysis resolve Spring and other library types.
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+        // The analysis and the image builds need nothing from each other: SonarQube reads the
+        // workspace, Docker reads its own copy of the sources and ignores target/. Most of the
+        // SonarQube side is waiting for the server, so the images are built in that time.
+        // failFast: a failed Quality Gate still stops the build at once, image builds included.
+        stage('Analyse and build images (parallel)') {
+            failFast true
+            parallel {
+                stage('SonarQube') {
+                    stages {
+                        // Sends the code, test results and coverage of both sides to SonarQube as one project
+                        // (settings in sonar-project.properties). Jenkins supplies the server address and token
+                        // ('SonarQube' under Manage Jenkins > System) and the scanner ('SonarScanner' under
+                        // Tools), so neither is written here. Runs after the integration tests so that their
+                        // results and coverage are part of the analysis, and needs both sides' reports.
+                        stage('SonarQube Analysis') {
+                            when {
+                                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                sh 'node scripts/coverage/build-sonar-coverage.mjs'
+                                script {
+                                    def scannerHome = tool 'SonarScanner'
+                                    withSonarQubeEnv('SonarQube') {
+                                        // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
+                                        // Java analysis resolve Spring and other library types.
+                                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+                                    }
+                                }
+                            }
+                        }
+
+                        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
+                        // build here when the Classroom Quality Gate fails.
+                        stage('Quality Gate') {
+                            when {
+                                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
+                            }
+                            steps {
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitForQualityGate abortPipeline: true
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        // Waits for SonarQube's verdict, which its "Jenkins" webhook sends back, and stops the
-        // build here when the Classroom Quality Gate fails.
-        stage('Quality Gate') {
-            when {
-                expression { env.CI_RUN_BACKEND_PIPELINE == 'true' && env.CI_RUN_FRONTEND_PIPELINE == 'true' }
-            }
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                stage('Build versioned Docker images') {
+                    when {
+                        expression { env.CI_RUN_FULL_STACK == 'true' }
+                    }
+                    steps {
+                        sh '''
+                            set -eu
+
+                            short_sha=$(git rev-parse --short=8 HEAD)
+                            image_tag="${BUILD_NUMBER:-local}-${short_sha}"
+                            echo "$image_tag" > .image_tag
+
+                            # Backend images build from the repo root so Maven can see the parent pom and libs/common.
+                            # Every service Dockerfile starts with the same steps, ending in one Maven build of
+                            # all modules, so the first image here does that work and the others take it from
+                            # Docker's cache. That is why this loop builds one image at a time.
+                            # staff-gateway-service has no image of its own: Compose runs gateway-service's
+                            # image a second time with the "staff" profile.
+                            for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
+                                docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
+                                docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
+                            done
+                            docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
+                            docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
+                            # The staff app builds from the same Angular workspace, with its own Dockerfile.
+                            docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
+                            docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
+
+                            echo "Built versioned images with tag: $image_tag"
+                        '''
+                    }
                 }
-            }
-        }
-
-        stage('Build versioned Docker images') {
-            when {
-                expression { env.CI_RUN_FULL_STACK == 'true' }
-            }
-            steps {
-                sh '''
-                    set -eu
-
-                    short_sha=$(git rev-parse --short=8 HEAD)
-                    image_tag="${BUILD_NUMBER:-local}-${short_sha}"
-                    echo "$image_tag" > .image_tag
-
-                    # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    # staff-gateway-service has no image of its own: Compose runs gateway-service's
-                    # image a second time with the "staff" profile.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
-                        docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
-                        docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
-                    done
-                    docker build -t "lemarketjames/frontend:$image_tag" ./apps/frontend
-                    docker image inspect "lemarketjames/frontend:$image_tag" >/dev/null
-                    # The staff app builds from the same Angular workspace, with its own Dockerfile.
-                    docker build -t "lemarketjames/staff-frontend:$image_tag" -f apps/frontend/projects/staff/Dockerfile ./apps/frontend
-                    docker image inspect "lemarketjames/staff-frontend:$image_tag" >/dev/null
-
-                    echo "Built versioned images with tag: $image_tag"
-                '''
             }
         }
 
@@ -635,6 +674,8 @@ pipeline {
                     # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
                     # --network host lets the browser reach localhost:4200 on the agent; running as
                     # the Jenkins user keeps the report files deletable by the workspace cleanup.
+                    # npm-ci-if-changed.sh is `npm ci`, skipped while apps/e2e/node_modules still
+                    # matches the lock file; it is mounted because only apps/e2e is in the container.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
                         -e E2E_BASE_URL=http://localhost:4200 \
@@ -642,8 +683,9 @@ pipeline {
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        -v "$PWD/scripts/ci/npm-ci-if-changed.sh:/ci/npm-ci-if-changed.sh:ro" \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
-                        sh -c 'npm ci --no-audit --no-fund && npx playwright test'
+                        sh -c 'sh /ci/npm-ci-if-changed.sh && npx playwright test'
                 '''
             }
             post {
@@ -676,8 +718,9 @@ pipeline {
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        -v "$PWD/scripts/ci/npm-ci-if-changed.sh:/ci/npm-ci-if-changed.sh:ro" \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
-                        sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
+                        sh -c 'sh /ci/npm-ci-if-changed.sh && npx playwright test -c playwright.staff.config.ts'
                 '''
             }
             post {
