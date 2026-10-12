@@ -75,26 +75,25 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     const initialCount = await initialRows.count();
     expect(initialCount).toBeGreaterThan(0);
 
-    // Change date range (narrow it to exclude some trades)
+    // Change the date range to the last 400 days. The seed trades are dated relative to the run
+    // date (see 011_seed_test_data.sql), so a hardcoded day would hit an empty range and the
+    // table would not render. Dates are typed in the datepicker's en-US M/D/YYYY format.
+    const usDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    const today = new Date();
+    const from = new Date(today);
+    from.setDate(today.getDate() - 400);
+
     const startDateInput = page.locator('input[matInput]').first();
     const endDateInput = page.locator('input[matInput]').nth(1);
 
-    // Clear and set new dates (today only, or a specific narrow range)
-    await startDateInput.click();
-    await page.keyboard.press('Control+A');
-    await startDateInput.fill('10/07/2026'); // Today (seed data date)
-    
-    await endDateInput.click();
-    await page.keyboard.press('Control+A');
-    await endDateInput.fill('10/07/2026'); // Same day
+    await startDateInput.fill(usDate(from));
+    await endDateInput.fill(usDate(today));
 
-    // Click refresh or wait for auto-refresh on date change
-    const refreshButton = page.locator('button:has-text("Refresh")');
-    if (await refreshButton.isVisible()) {
-      await refreshButton.click();
-    }
+    // Wait for the reload triggered by Refresh to finish
+    const reload = page.waitForResponse((r) => r.url().includes('/api/v1/reports/') && r.ok());
+    await page.locator('button:has-text("Refresh")').click();
+    await reload;
 
-    // Wait for new data to load
     await expect(table).toBeVisible({ timeout: 5000 });
 
     // Verify table updated (rows may change based on date filter)
