@@ -424,6 +424,38 @@ Each period aggregates:
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role | see access rules above |
 
+### GET /api/v1/reports/insights/volume
+
+Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. Both periods are whole periods: a period still in progress would always look like a drop against a finished one.
+
+**Parameters:**
+
+- `periodType` (required): `DAY`, `WEEK`, `MONTH` or `YEAR`, in any letter case. The periods are those of [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the day before today in the reports time zone for `DAY`, the last Monday-to-Sunday week for `WEEK`, and so on.
+
+**Response `200`:**
+
+```json
+{
+  "periodType": "WEEK",
+  "current":  { "startDate": "2026-10-05", "endDate": "2026-10-11", "tradeCount": 40, "shareVolume": 1200, "grossAmount": 54000.00 },
+  "previous": { "startDate": "2026-09-28", "endDate": "2026-10-04", "tradeCount": 32, "shareVolume": 1000, "grossAmount": 41000.00 },
+  "change":   { "shareVolume": 200, "shareVolumePercent": 20.00, "grossAmount": 13000.00, "grossAmountPercent": 31.71 },
+  "generatedAt": "2026-10-12T14:00:00Z"
+}
+```
+
+- `startDate` and `endDate` are both included, days in the reports time zone.
+- `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-reporting-service)).
+- `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | `periodType` missing or not one of the four values | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
 ## The consumers (notification-, surveillance- and activity-service)
 
 Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens to one event's topic, in a consumer group of its own, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)).
@@ -586,7 +618,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades` are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, and the [volume insight](#get-apiv1reportsinsightsvolume) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
