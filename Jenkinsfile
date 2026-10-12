@@ -388,11 +388,17 @@ pipeline {
             steps {
                 sh 'node scripts/coverage/build-sonar-coverage.mjs'
                 script {
-                    def scannerHome = tool 'SonarScanner'
+                    def scannerCmd = 'sonar-scanner'
+                    try {
+                        scannerCmd = "${tool('SonarScanner')}/bin/sonar-scanner"
+                    } catch (Exception ignored) {
+                        // Jenkins tool not configured: rely on sonar-scanner being installed on PATH.
+                        sh 'command -v sonar-scanner >/dev/null 2>&1 || (echo "SonarScanner tool is not configured in Jenkins and sonar-scanner is not on PATH." && exit 1)'
+                    }
                     withSonarQubeEnv('SonarQube') {
                         // The jars Maven downloaded into the workspace (MAVEN_OPTS above) let the
                         // Java analysis resolve Spring and other library types.
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
+                        sh "${scannerCmd} -Dsonar.java.libraries='.m2/repository/**/*.jar' -Dsonar.java.test.libraries='.m2/repository/**/*.jar'"
                     }
                 }
             }
