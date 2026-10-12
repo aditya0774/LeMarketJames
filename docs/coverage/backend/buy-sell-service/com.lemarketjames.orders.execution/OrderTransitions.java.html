@@ -27,13 +27,15 @@ public class OrderTransitions {
 <span class="fc bfc" id="L27" title="All 2 branches covered.">        if (next == Order.OrderStatus.FILLED) record(order, AuditEventType.FILLED,</span>
 <span class="fc" id="L28">            Map.of(&quot;quantity&quot;, order.getQuantity(), &quot;price&quot;, order.getPricePerUnit()));</span>
 <span class="fc" id="L29">        Instant now = Instant.now();</span>
-<span class="fc" id="L30">        events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now));</span>
-<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (next == Order.OrderStatus.FILLED) events.publishEvent(new OrderFilled(order.getOrderId(),</span>
-<span class="fc" id="L32">            order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now,</span>
-<span class="fc" id="L33">            order.getQuoteSource(), order.getQuoteTime()));</span>
-<span class="fc" id="L34">    }</span>
+        // The reason travels only with a rejection: surveillance-service alerts on some of them (contract C6).
+<span class="fc" id="L31">        events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now,</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">            next == Order.OrderStatus.REJECTED ? reason : null));</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (next == Order.OrderStatus.FILLED) events.publishEvent(new OrderFilled(order.getOrderId(),</span>
+<span class="fc" id="L34">            order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now,</span>
+<span class="fc" id="L35">            order.getQuoteSource(), order.getQuoteTime()));</span>
+<span class="fc" id="L36">    }</span>
     private void record(Order order, AuditEventType type, Map&lt;String, Object&gt; details) {
-<span class="fc" id="L36">        audit.record(type, order.getOrderId(), order.getAccountId(), details);</span>
-<span class="fc" id="L37">    }</span>
+<span class="fc" id="L38">        audit.record(type, order.getOrderId(), order.getAccountId(), details);</span>
+<span class="fc" id="L39">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

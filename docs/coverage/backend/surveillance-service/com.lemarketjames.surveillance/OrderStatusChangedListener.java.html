@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderStatusChangedListener.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Surveillance Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.surveillance</a> &gt; <span class="el_source">OrderStatusChangedListener.java</span></div><h1>OrderStatusChangedListener.java</h1><pre class="source lang-java linenums">package com.lemarketjames.surveillance;
+
+import com.lemarketjames.common.events.OrderEventConsumerSwitch;
+import com.lemarketjames.common.events.OrderEventReader;
+import com.lemarketjames.common.events.OrderEventTopicNames;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * The second Kafka listener of this service: receives every order status change (contract C6) and
+ * hands it to {@link SurveillanceService}, which alerts Trading Operations when a settlement was
+ * refused. Like {@link OrderSubmittedListener} it exists only when the consumer is switched on.
+ *
+ * &lt;p&gt;It is a class of its own so that each listener reads one topic, and it joins the same
+ * consumer group: the group is the service, whichever of its topics a record comes from.
+ */
+@Component
+@ConditionalOnProperty(name = OrderEventConsumerSwitch.CONSUMER_PROPERTY, havingValue = OrderEventConsumerSwitch.KAFKA)
+public class OrderStatusChangedListener {
+
+    private final OrderEventReader reader;
+    private final SurveillanceService surveillance;
+
+<span class="fc" id="L25">    public OrderStatusChangedListener(OrderEventReader reader, SurveillanceService surveillance) {</span>
+<span class="fc" id="L26">        this.reader = reader;</span>
+<span class="fc" id="L27">        this.surveillance = surveillance;</span>
+<span class="fc" id="L28">    }</span>
+
+    /** @param value the record value: an {@code OrderStatusChanged} as JSON */
+    @KafkaListener(topics = OrderEventTopicNames.STATUS_CHANGED, groupId = OrderSubmittedListener.GROUP_ID)
+    public void onStatusChanged(String value) {
+<span class="fc" id="L33">        reader.read(OrderEventTopicNames.STATUS_CHANGED, value, OrderStatusChangedMessage.class)</span>
+<span class="fc" id="L34">            .ifPresent(surveillance::reviewStatusChange);</span>
+<span class="fc" id="L35">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
