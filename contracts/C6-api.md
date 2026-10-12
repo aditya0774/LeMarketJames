@@ -312,8 +312,11 @@ Holdings locks the account and persists one outcome per order in `settlement_rec
 with any cash/share changes. `POST /internal/holdings/settle` returns `200 { rejectionReason }`:
 null for success, otherwise `INSUFFICIENT_CASH` or `INSUFFICIENT_HOLDINGS`. Repeating an identical
 request returns that original outcome; changed payloads get 409. Malformed requests get 400.
-Network errors and unknown failures retain the intent for retry without repricing. A confirmed
-outcome becomes FILLED or REJECTED; a subsequent worker sees the final status and does nothing.
+Network errors and unknown failures retain the intent for retry without repricing. Recovery is
+automatic: the execution worker retries persisted open orders after startup and on each poll,
+including orders already marked `PENDING` with `settlement_pending=true`.
+A confirmed outcome becomes FILLED or REJECTED; subsequent workers see the final status and do
+nothing.
 
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
 The dashboard polls while orders are open and refreshes holdings/history when statuses change.
