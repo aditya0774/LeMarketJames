@@ -94,11 +94,13 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
         const data = await response.json();
         prices.push({ ticker, price: data.lastPrice });
       } else {
-        console.warn(`Failed to fetch price for ${ticker}: ${response.status()}`);
         prices.push({ ticker, price: null });
       }
-    } catch (err) {
-      console.warn(`Failed to fetch price for ${ticker}:`, err);
+    } catch (err: any) {
+      // Silently ignore if context is closed (test already cleanup); log other errors
+      if (!err?.message?.includes('closed')) {
+        console.debug(`Failed to fetch price for ${ticker}`);
+      }
       prices.push({ ticker, price: null });
     }
   }
@@ -111,10 +113,13 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
           data: { price, pinned: true }
         });
         if (!response.ok()) {
-          console.warn(`Failed to pin price for ${ticker}: ${response.status()}`);
+          console.debug(`Failed to pin price for ${ticker}: ${response.status()}`);
         }
-      } catch (err) {
-        console.warn(`Failed to pin ${ticker}:`, err);
+      } catch (err: any) {
+        // Silently ignore if context is closed; log other errors
+        if (!err?.message?.includes('closed')) {
+          console.debug(`Failed to pin ${ticker}`);
+        }
       }
     }
   }
@@ -131,10 +136,13 @@ export async function unpinMarketPrices(request: APIRequestContext, baseUrl = MA
     try {
       const response = await request.delete(`${baseUrl}/internal/market/control/prices/${ticker}`);
       if (!response.ok()) {
-        console.warn(`Failed to unpin price for ${ticker}: ${response.status()}`);
+        console.debug(`Failed to unpin price for ${ticker}: ${response.status()}`);
       }
-    } catch (err) {
-      console.warn(`Failed to unpin ${ticker}:`, err);
+    } catch (err: any) {
+      // Silently ignore if context is closed (test already in cleanup); log other errors
+      if (!err?.message?.includes('closed')) {
+        console.debug(`Failed to unpin ${ticker}`);
+      }
     }
   }
 }

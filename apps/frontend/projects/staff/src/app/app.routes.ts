@@ -27,9 +27,15 @@ export const routes: Routes = [
       // Each role's section is one parent route that carries the guard, so a page added as its
       // child is guarded without repeating it.
       {
-        path: 'trade-search',
+        path: 'trading-ops',
         canActivate: [requiresRole('TRADING_OPS')],
-        children: [{ path: '', title: 'Trade search', loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) }],
+        children: [{ path: '', title: 'Trading Ops', loadComponent: () => import('./features/trading-ops/trading-ops-dashboard').then(m => m.TradingOpsDashboard) }],
+      },
+      // Backward compatibility: old bookmarks still work, and now open the dashboard.
+      {
+        path: 'trade-search',
+        pathMatch: 'full',
+        redirectTo: 'trading-ops',
       },
       {
         path: 'analyst',
