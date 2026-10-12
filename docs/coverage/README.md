@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `0a811dc0` on 2026-10-09 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `182614a5` on 2026-10-12 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -18,12 +18,12 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 84.32 | 77.14 | 82 / 523 |
 | [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 82.70 | 70.00 | 77 / 445 |
 | [notification-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/notification-service/index.html) | 97.30 | 100.00 | 2 / 74 |
-| [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 76.63 | 85.29 | 43 / 184 |
+| [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 79.62 | 87.50 | 43 / 211 |
 | [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 97.40 | 100.00 | 2 / 77 |
-| **Back end (all modules)** | 83.57 | 80.69 | 538 / 3275 |
+| **Back end (all modules)** | 83.71 | 80.87 | 538 / 3302 |
 | **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.18 | 80.13 | 185 / 1710 |
-| **Everything** | 85.50 | 80.34 | 723 / 4985 |
+| **Everything** | 85.57 | 80.40 | 723 / 5012 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -61,6 +61,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-12 | `182614a5` | 83.71 | 80.87 | 89.18 | 80.13 |
 | 2026-10-09 | `0a811dc0` | 83.57 | 80.69 | 89.18 | 80.13 |
 | 2026-10-09 | `92b54415` | 83.57 | 80.69 | 89.53 | 80.31 |
 | 2026-10-08 | `7e204ecf` | 83.57 | 80.69 | 89.53 | 80.31 |
