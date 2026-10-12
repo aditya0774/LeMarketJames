@@ -24,7 +24,7 @@ public class SettlementReceipt {
 <span class="fc" id="L24">    public String getRejectionReason() { return rejectionReason; }</span>
     public boolean matches(SettlementRequest request) {
 <span class="pc bpc" id="L26" title="2 of 4 branches missed.">        return accountId.equals(request.getAccountId()) &amp;&amp; instrumentId.equals(request.getInstrumentId())</span>
-<span class="pc bpc" id="L27" title="2 of 4 branches missed.">            &amp;&amp; orderType.equals(request.getOrderType().name()) &amp;&amp; quantity.compareTo(request.getQuantity()) == 0</span>
+<span class="pc bpc" id="L27" title="1 of 4 branches missed.">            &amp;&amp; orderType.equals(request.getOrderType().name()) &amp;&amp; quantity.compareTo(request.getQuantity()) == 0</span>
 <span class="fc bfc" id="L28" title="All 2 branches covered.">            &amp;&amp; pricePerUnit.compareTo(request.getPricePerUnit()) == 0;</span>
     }
 }

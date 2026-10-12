@@ -27,7 +27,9 @@ public class OrderTransitions {
         if (next == Order.OrderStatus.FILLED) record(order, AuditEventType.FILLED,
             Map.of("quantity", order.getQuantity(), "price", order.getPricePerUnit()));
         Instant now = Instant.now();
-        events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now));
+        // The reason travels only with a rejection: surveillance-service alerts on some of them (contract C6).
+        events.publishEvent(new OrderStatusChanged(order.getOrderId(), order.getAccountId(), previous, next, now,
+            next == Order.OrderStatus.REJECTED ? reason : null));
         if (next == Order.OrderStatus.FILLED) events.publishEvent(new OrderFilled(order.getOrderId(),
             order.getAccountId(), order.getInstrumentId(), order.getOrderType(), order.getQuantity(), order.getPricePerUnit(), now,
             order.getQuoteSource(), order.getQuoteTime()));

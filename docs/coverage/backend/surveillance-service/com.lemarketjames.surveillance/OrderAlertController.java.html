@@ -22,7 +22,7 @@ public class OrderAlertController {
 <span class="fc" id="L22">        this.surveillance = surveillance;</span>
 <span class="fc" id="L23">    }</span>
 
-    /** @return the newest alerts, newest order first, with the quantity that made them large */
+    /** @return the newest alerts, newest first, with the quantity at which an order counts as large */
     @GetMapping(&quot;/alerts&quot;)
     public AlertList alerts() {
 <span class="fc" id="L28">        return new AlertList(true, surveillance.largeOrderQuantity(), surveillance.latest().stream()</span>
@@ -43,23 +43,26 @@ public class OrderAlertController {
     /**
      * One alert as staff see it.
      *
-     * @param alertId      this alert
-     * @param orderId      the order it is about
-     * @param accountId    the order's account
-     * @param instrumentId the stock ordered
-     * @param side         BUY or SELL
-     * @param quantity     shares ordered
-     * @param price        price per share the order was placed at; null for a SELL
-     * @param reason       why the alert was raised, an {@link AlertReason} name
-     * @param submittedAt  when the order was placed (UTC)
+     * @param alertId         this alert
+     * @param orderId         the order it is about
+     * @param accountId       the order's account
+     * @param instrumentId    the stock ordered
+     * @param side            BUY or SELL
+     * @param quantity        shares ordered
+     * @param price           price per share the order was placed at; null for a SELL
+     * @param reason          why the alert was raised, an {@link AlertReason} name
+     * @param submittedAt     when the order was placed (UTC)
+     * @param rejectionReason why the order was rejected, for an alert about a rejection; otherwise null
+     * @param occurredAt      when what the alert is about happened (UTC); the list is newest first by it
      */
-<span class="fc" id="L56">    public record AlertView(Integer alertId, Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
-                            BigDecimal quantity, BigDecimal price, AlertReason reason, Instant submittedAt) {
+<span class="fc" id="L58">    public record AlertView(Integer alertId, Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
+                            BigDecimal quantity, BigDecimal price, AlertReason reason, Instant submittedAt,
+                            String rejectionReason, Instant occurredAt) {
 
         static AlertView of(OrderAlert alert) {
-<span class="fc" id="L60">            return new AlertView(alert.getAlertId(), alert.getOrderId(), alert.getAccountId(),</span>
-<span class="fc" id="L61">                alert.getInstrumentId(), alert.getSide(), alert.getQuantity(), alert.getPrice(), alert.getReason(),</span>
-<span class="fc" id="L62">                alert.getSubmittedAt());</span>
+<span class="fc" id="L63">            return new AlertView(alert.getAlertId(), alert.getOrderId(), alert.getAccountId(),</span>
+<span class="fc" id="L64">                alert.getInstrumentId(), alert.getSide(), alert.getQuantity(), alert.getPrice(), alert.getReason(),</span>
+<span class="fc" id="L65">                alert.getSubmittedAt(), alert.getRejectionReason(), alert.getOccurredAt());</span>
         }
     }
 }

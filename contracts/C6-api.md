@@ -153,9 +153,12 @@ The stream emits an `order-status-changed` event each time buy-sell-service publ
   "accountId": 7,
   "from": "SUBMITTED",
   "to": "ACCEPTED",
-  "occurredAt": "2026-09-21T10:30:01.123Z"
+  "occurredAt": "2026-09-21T10:30:01.123Z",
+  "rejectionReason": null
 }
 ```
+
+The fields are those of [`OrderStatusChanged`](#the-order-events): `rejectionReason` is a rejection code when `to` is `REJECTED`, and null otherwise.
 
 Access control and failures:
 
@@ -429,18 +432,19 @@ Each period aggregates:
 
 ## The consumers (notification-, surveillance- and activity-service)
 
-Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens to one event's topic, in a consumer group of its own, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)).
+Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens in a consumer group of its own, with one listener per topic it reads, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)). notification- and activity-service read one topic each; surveillance-service reads two.
 
 | Service | Event it reads | Listener (topic and consumer group) | What it does with an event | Read back with |
 |---|---|---|---|---|
 | notification-service (`:8087`) | `OrderStatusChanged` | [OrderStatusListener](../services/notification-service/src/main/java/com/lemarketjames/notifications/OrderStatusListener.java) | Stores one notification per status change, for the order's client | [`GET /api/v1/notifications`](#get-apiv1notifications-client-only), trading gateway |
 | surveillance-service (`:8088`) | `OrderSubmitted` | [OrderSubmittedListener](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/OrderSubmittedListener.java) | Raises an alert for Trading Ops when the order is large | [`GET /api/v1/surveillance/alerts`](#get-apiv1surveillancealerts-trading_ops-only), staff gateway only |
+| | `OrderStatusChanged` | [OrderStatusChangedListener](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/OrderStatusChangedListener.java), in the same consumer group | Raises an alert for Trading Ops when the order's settlement was refused | the same endpoint |
 | activity-service (`:8091`) | `OrderFilled` | [OrderFilledListener](../services/activity-service/src/main/java/com/lemarketjames/activity/OrderFilledListener.java) | Stores the fill, without its account | [`GET /api/v1/market-activity`](#get-apiv1market-activity), trading gateway |
 
 Rules for all three, and for any consumer added later:
 
 - **Its own shape of the event.** A consumer reads the record value with a record class of its own that names only the fields it uses, through [OrderEventReader](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventReader.java). It depends on none of buy-sell-service's classes, and statuses and sides stay text, so a field or a status added by the publisher breaks nobody.
-- **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order, one recorded fill per order.
+- **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order and reason ([019](../database/schema/019_order_alert_reasons.sql)), one recorded fill per order.
 - **A record that can't be used is skipped.** A value that isn't valid JSON, or that lacks a field the consumer needs, is logged and skipped, so one bad record never blocks the ones behind it.
 - **A new consumer group starts at the oldest record**, so events published before the service first started are not missed. From then on it continues from its group's committed position.
 - **Nothing depends on a consumer.** Publishing is best effort (see [Outbound events](#internal-events-and-the-execution-interface-buy-sell-service)), so a notification, an alert or a recorded fill can be missing. Orders, holdings and the audit trail never read these tables; no service calls a consumer, and a consumer calls no service.
@@ -466,7 +470,7 @@ The signed-in client's newest notifications (up to 50), newest first. There is n
 
 ### GET /api/v1/surveillance/alerts (TRADING_OPS only)
 
-The newest alerts (up to 100), newest order first. Served by the staff gateway only; the trading gateway has no route to it.
+The newest alerts (up to 100), newest first by `occurredAt`. Served by the staff gateway only; the trading gateway has no route to it.
 
 ```json
 {
@@ -474,13 +478,29 @@ The newest alerts (up to 100), newest order first. Served by the staff gateway o
   "largeOrderQuantity": 100,
   "alerts": [
     { "alertId": 3, "orderId": 42, "accountId": 7, "instrumentId": 5, "side": "BUY", "quantity": 150,
-      "price": 244.2366, "reason": "LARGE_ORDER", "submittedAt": "2026-10-08T14:30:00Z" }
+      "price": 244.2366, "reason": "LARGE_ORDER", "submittedAt": "2026-10-08T14:30:00Z",
+      "rejectionReason": null, "occurredAt": "2026-10-08T14:30:00Z" }
   ]
 }
 ```
 
-- An alert is raised when an order is placed for at least the large-order quantity, a setting ([C5](C5-config.md)); `largeOrderQuantity` is its value in this environment, and the number above is an example. The alert shows the order as it was placed and is not updated when the order later fills or is rejected.
-- `reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. `price` is null for a SELL, which has no price until it fills.
+`reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. An order has at most one alert per reason, so an order can appear more than once: a large order whose settlement is refused has both alerts.
+
+| `reason` | Raised when | From | What the alert carries |
+|---|---|---|---|
+| `LARGE_ORDER` | An order is placed for at least the large-order quantity, a setting ([C5](C5-config.md)); `largeOrderQuantity` is its value in this environment, and the number above is an example. | `OrderSubmitted` | The order as it was placed: `instrumentId`, `side`, `quantity`, `price` (null for a SELL, which has no price until it fills) and `submittedAt`. `occurredAt` equals `submittedAt`; `rejectionReason` is null. |
+| `SETTLEMENT_REFUSED` | An order is rejected because holdings-service refused its settlement ([Automatic execution and recovery](#automatic-execution-and-recovery)): the order moves to `REJECTED` with `INSUFFICIENT_CASH` (a BUY) or `INSUFFICIENT_HOLDINGS` (a SELL). | `OrderStatusChanged` | `rejectionReason`, which of the two it was, and `occurredAt`, when the order was rejected. `instrumentId`, `side`, `quantity`, `price` and `submittedAt` are null: the status change does not carry them. The order's [timeline](#order-timeline-trading_ops-only) has them. |
+
+```json
+{ "alertId": 4, "orderId": 42, "accountId": 7, "instrumentId": null, "side": null, "quantity": null,
+  "price": null, "reason": "SETTLEMENT_REFUSED", "submittedAt": null,
+  "rejectionReason": "INSUFFICIENT_CASH", "occurredAt": "2026-10-08T14:30:02Z" }
+```
+
+- An alert is not updated afterwards: a `LARGE_ORDER` alert shows the order as it was placed, whatever happens to it later.
+- A rejection for any other reason raises no alert. The two codes are the ones a refused settlement gives, so a Trading Ops rejection made by hand with one of them ([Changing an order's status](#changing-an-orders-status-trading_ops-only)) is alerted to as well. An order refused at placement is never saved and publishes no event, so it raises none.
+- A status change published before the event carried `rejectionReason` has none and raises no alert.
+- `rejectionReason` and `occurredAt` were added after the other fields (LMKT-71).
 - A missing or expired cookie gets `401`; every role but `TRADING_OPS` gets `403`.
 
 ### GET /api/v1/market-activity
@@ -560,7 +580,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `price` | number or null | Price per share the order was placed at. Null for a SELL, which is priced only when it fills. A BUY can fill at a different price; `OrderFilled` has the one used. |
 | `submittedAt` | time | When the order was placed |
 
-**`OrderStatusChanged`** tells a consumer where an order is in its life. It doesn't say why an order was rejected; the order's `rejectionReason` in the REST API does.
+**`OrderStatusChanged`** tells a consumer where an order is in its life, and why when it was rejected.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -569,6 +589,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `from` | text | Status before the transition ([C1](C1-orders.md)) |
 | `to` | text | Status after it |
 | `occurredAt` | time | When the transition happened |
+| `rejectionReason` | text or null | Why the order was rejected: a [RejectionReason](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java) name, the same code as the order's `rejectionReason` in the REST API. Null unless `to` is `REJECTED`. Added after the other fields (LMKT-71): a record published before then has no such field, and a consumer reads that as null. |
 
 **`OrderFilled`** carries what a portfolio or reporting consumer needs about a fill, so it doesn't have to read the order back.
 

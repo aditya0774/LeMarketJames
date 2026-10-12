@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- LMKT-71: Trading Ops are alerted when a settlement is refused. `OrderStatusChanged` carries a
+  new `rejectionReason` (null unless the order was rejected), and `surveillance-service` now also
+  reads `lemarket.orders.status-changed` and raises a `SETTLEMENT_REFUSED` alert when an order
+  is rejected with `INSUFFICIENT_CASH` or `INSUFFICIENT_HOLDINGS`. Migration 019 keys
+  `order_alerts` by order and reason, so a large order that is refused has both alerts, and adds
+  `rejection_reason` and `occurred_at`; `GET /api/v1/surveillance/alerts` returns them as
+  `rejectionReason` and `occurredAt` and lists alerts newest first by `occurredAt`. Apply 019
+  before starting the updated service. A new integration test proves a settlement that fails
+  part-way changes nothing and settles once when retried.
 - Kafka consumers: three new services read the order events, one topic each, in Docker Compose
   and Jenkins. `notification-service` (8087) keeps a notification per order status change for
   the order's client (`GET /api/v1/notifications`); `surveillance-service` (8088) raises an

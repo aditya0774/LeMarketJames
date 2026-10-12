@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderStatusChangedMessage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Surveillance Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.surveillance</a> &gt; <span class="el_source">OrderStatusChangedMessage.java</span></div><h1>OrderStatusChangedMessage.java</h1><pre class="source lang-java linenums">package com.lemarketjames.surveillance;
+
+import java.time.Instant;
+
+/**
+ * What this service reads from an {@code OrderStatusChanged} record (contract C6). It is this
+ * service's own copy of the shape, so it needs none of buy-sell-service's classes; the status and
+ * the rejection reason stay text, because their lists belong to buy-sell-service (contract C1).
+ *
+ * @param orderId         the order
+ * @param accountId       the order's account
+ * @param to              the status the order moved to
+ * @param rejectionReason why it was rejected; null for any other move, and in a record published
+ *                        before the event carried a reason
+ * @param occurredAt      when the order changed status (UTC)
+ */
+<span class="fc" id="L17">public record OrderStatusChangedMessage(Integer orderId, Integer accountId, String to, String rejectionReason,</span>
+                                        Instant occurredAt) {
+
+    /** @return whether every field an alert needs is present; the rejection reason is optional */
+    public boolean isComplete() {
+<span class="fc bfc" id="L22" title="All 8 branches covered.">        return orderId != null &amp;&amp; accountId != null &amp;&amp; to != null &amp;&amp; occurredAt != null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
