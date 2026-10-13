@@ -52,7 +52,7 @@ describe('Dashboard', () => {
         {
           provide: OrderService,
           useValue: {
-            getOrdersByAccountId: (_accountId: number, filter: unknown) => {
+            getAllOrdersByAccountId: (_accountId: number, filter: unknown) => {
               requestedFilters.push(filter);
               return ordersResult;
             },

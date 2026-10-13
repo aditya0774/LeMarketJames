@@ -166,7 +166,7 @@ export class Dashboard implements OnInit {
       return;
     }
     this.ordersRequest = this.orderService
-      .getOrdersByAccountId(accountId)
+      .getAllOrdersByAccountId(accountId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (orders) => {
@@ -231,7 +231,7 @@ export class Dashboard implements OnInit {
       date: this.historyDate,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     } : undefined;
-    this.historyRequest = this.orderService.getOrdersByAccountId(accountId, filter)
+    this.historyRequest = this.orderService.getAllOrdersByAccountId(accountId, filter)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: orders => {

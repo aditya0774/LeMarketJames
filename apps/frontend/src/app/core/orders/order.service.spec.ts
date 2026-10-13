@@ -163,6 +163,54 @@ describe('BUY order HTTP integration', () => {
     expect(history[1].rejectionReason).toBe('INSUFFICIENT_HOLDINGS');
   });
 
+  it('aggregates paginated account history until the backend returns a short page', () => {
+    let history: any[] = [];
+    service.getAllOrdersByAccountId(7).subscribe(orders => history = orders);
+
+    const page0 = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20');
+    page0.flush(Array.from({ length: 20 }, (_, i) => ({ submittedAt: `2026-03-08T05:${String(i).padStart(2, '0')}:00`, orderId: i + 1 })));
+
+    const page1 = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '1'
+      && request.params.get('size') === '20');
+    page1.flush([
+      { submittedAt: '2026-03-08T06:00:00', orderId: 21 },
+      { submittedAt: '2026-03-08T06:01:00', orderId: 22 },
+    ]);
+
+    expect(history.map(order => order.orderId)).toEqual(Array.from({ length: 22 }, (_, i) => i + 1));
+    expect(history[0].submittedAt).toBe('2026-03-08T05:00:00Z');
+    expect(history[21].submittedAt).toBe('2026-03-08T06:01:00Z');
+  });
+
+  it('passes date and timeZone through every paginated history request', () => {
+    let history: any[] = [];
+    service.getAllOrdersByAccountId(7, { date: '2026-03-08', timeZone: 'America/New_York' })
+      .subscribe(orders => history = orders);
+
+    const first = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20');
+    expect(first.request.params.get('date')).toBe('2026-03-08');
+    expect(first.request.params.get('timeZone')).toBe('America/New_York');
+    first.flush(Array.from({ length: 20 }, (_, i) => ({ submittedAt: `2026-03-08T05:${String(i).padStart(2, '0')}:00`, orderId: i + 1 })));
+
+    const second = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '1'
+      && request.params.get('size') === '20');
+    expect(second.request.params.get('date')).toBe('2026-03-08');
+    expect(second.request.params.get('timeZone')).toBe('America/New_York');
+    second.flush([{ submittedAt: '2026-03-08T06:00:00', orderId: 21 }]);
+
+    expect(history).toHaveLength(21);
+  });
+
   it('streams account orders and marks reconnecting after a transient failure', async () => {
     vi.useFakeTimers();
     try {

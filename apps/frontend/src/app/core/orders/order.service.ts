@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, catchError, defer, map, of, scan, switchMap, throwError, timer } from 'rxjs';
+import { EMPTY, Observable, catchError, defer, expand, map, of, reduce, scan, switchMap, throwError, timer } from 'rxjs';
 import { HoldingsService } from '../holdings/holdings.service';
 import { Auth } from '../auth/auth';
 import { environment } from '../../../environments/environment';
@@ -70,6 +70,11 @@ export interface OrderHistoryFilter {
   timeZone: string;
 }
 
+export interface OrderHistoryPageRequest {
+  page: number;
+  size: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -132,6 +137,39 @@ export class OrderService {
     const params = filter ? { date: filter.date, timeZone: filter.timeZone } : undefined;
     return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`, { params }).pipe(
       map(orders => orders.map(order => ({ ...order, submittedAt: orderTimestamp(order.submittedAt) }))),
+    );
+  }
+
+  /**
+   * Get one page of account history from the backend pagination contract.
+   */
+  getOrdersByAccountIdPage(
+    accountId: number,
+    request: OrderHistoryPageRequest,
+    filter?: OrderHistoryFilter,
+  ): Observable<OrderResponse[]> {
+    const params = {
+      ...(filter ? { date: filter.date, timeZone: filter.timeZone } : {}),
+      page: String(request.page),
+      size: String(request.size),
+    };
+    return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`, { params }).pipe(
+      map(orders => orders.map(order => ({ ...order, submittedAt: orderTimestamp(order.submittedAt) }))),
+    );
+  }
+
+  /**
+   * Read the full account history by following backend pages until exhaustion.
+   */
+  getAllOrdersByAccountId(accountId: number, filter?: OrderHistoryFilter): Observable<OrderResponse[]> {
+    const pageSize = 20;
+    return this.getOrdersByAccountIdPage(accountId, { page: 0, size: pageSize }, filter).pipe(
+      expand((orders, pageIndex) =>
+        orders.length < pageSize
+          ? EMPTY
+          : this.getOrdersByAccountIdPage(accountId, { page: pageIndex + 1, size: pageSize }, filter),
+      ),
+      reduce((all, page) => [...all, ...page], [] as OrderResponse[]),
     );
   }
 
