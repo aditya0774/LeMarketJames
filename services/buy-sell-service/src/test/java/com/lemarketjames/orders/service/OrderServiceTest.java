@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -655,11 +656,12 @@ class OrderServiceTest {
         List<Order> orders = new ArrayList<>();
         orders.add(submittedOrder);
         
-        when(orderRepository.findByAccountIdAndOrderStatus(1, Order.OrderStatus.SUBMITTED))
-            .thenReturn(orders);
+        when(orderRepository.findByAccountIdAndOrderStatus(eq(1), eq(Order.OrderStatus.SUBMITTED), any()))
+            .thenReturn(new PageImpl<>(orders));
         
         // Act
-        List<OrderResponse> responses = orderService.getOrdersByAccountAndStatus(1, Order.OrderStatus.SUBMITTED);
+        List<OrderResponse> responses = orderService.getOrdersByAccountAndStatus(1, Order.OrderStatus.SUBMITTED,
+            null, null, 0, 20);
         
         // Assert
         assertEquals(1, responses.size());

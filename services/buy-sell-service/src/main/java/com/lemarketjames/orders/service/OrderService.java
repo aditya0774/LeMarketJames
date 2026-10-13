@@ -19,6 +19,9 @@ import com.lemarketjames.orders.submission.SubmissionValidator;
 import com.lemarketjames.orders.submission.ValidationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -198,17 +201,19 @@ public class OrderService {
             Integer accountId, Order.OrderStatus status, String date, String timeZone, Integer page, Integer size) {
         accountAccess.requireOwnAccount(accountId);
         validatePagination(page, size);
+        Pageable pageable = PageRequest.of(page, size,
+            Sort.by(Sort.Order.desc("submittedAt"), Sort.Order.desc("orderId")));
         OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);
         List<Order> orders;
         if (period == null) {
-            orders = status == null ? orderRepository.findByAccountId(accountId)
-                : orderRepository.findByAccountIdAndOrderStatus(accountId, status);
+            orders = status == null
+                ? orderRepository.findByAccountId(accountId, pageable).getContent()
+                : orderRepository.findByAccountIdAndOrderStatus(accountId, status, pageable).getContent();
         } else {
-            orders = orderRepository.findHistory(accountId, status, period.start(), period.end());
+            orders = orderRepository.findHistory(accountId, status, period.start(), period.end(), pageable)
+                .getContent();
         }
-        int fromIndex = Math.min(page * size, orders.size());
-        int toIndex = Math.min(fromIndex + size, orders.size());
-        return orders.subList(fromIndex, toIndex).stream().map(OrderResponse::new).collect(Collectors.toList());
+        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());
     }
 
     private static void validatePagination(Integer page, Integer size) {
