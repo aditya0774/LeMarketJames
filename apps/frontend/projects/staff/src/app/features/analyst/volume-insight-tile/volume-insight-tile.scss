@@ -1,0 +1,68 @@
+.volume-tile {
+  margin-bottom: 32px;
+}
+
+.tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.section {
+  h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 4px 0;
+  }
+}
+
+.range,
+.previous,
+.refreshed,
+.unit {
+  color: #666;
+  font-size: 13px;
+}
+
+.volume {
+  font-size: 28px;
+  font-weight: 600;
+
+  .unit {
+    font-weight: 400;
+  }
+}
+
+/* The icon and signed text carry the meaning; colour only reinforces it. */
+.change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+
+  &.up { color: #1b7f3b; }
+  &.down { color: #b3261e; }
+  &.flat { color: #666; }
+}
+
+.error {
+  color: #b3261e;
+}
