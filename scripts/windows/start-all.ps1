@@ -60,7 +60,8 @@ $buySell = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +
     'mvn -B -pl services/buy-sell-service spring-boot:run'
 if ($Kafka) { $buySell = '$env:LMJ_EVENTS_PUBLISHER = ''kafka''; ' + $buySell }
 Start-Window 'buy-sell-service :8085' $repoRoot $buySell
-Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
+# The settlement test control is on, as in Docker Compose (contracts/C5-config.md).
+Start-Window 'holdings-service :8084' $repoRoot '$env:LMJ_SETTLEMENT_CONTROL_ENABLED = ''true''; mvn -B -pl services/holdings-service spring-boot:run'
 # Not behind the trading gateway below: only the staff gateway routes to it.
 Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'
 # The three Kafka consumers, with the same setting Docker Compose gives them; without it they

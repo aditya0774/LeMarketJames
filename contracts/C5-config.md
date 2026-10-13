@@ -80,6 +80,17 @@ to market and buy-sell so simulation and execution agree. Tests can disable poll
 exercising the coordinator explicitly. Never disable polling in a live deployment that needs
 automatic recovery of unfinished settlements.
 
+## Settlement test control
+
+holdings-service can be told to make the settlements of one account fail part-way, so that
+recovery can be tested on a running stack ([C6](C6-api.md#the-settlement-test-control)). The
+control exists only where `lmj.settlement.control-enabled` is `true`; the key is defined on
+[SettlementControlController.java](../services/holdings-service/src/main/java/com/lemarketjames/holdings/SettlementControlController.java),
+and without it there is nothing at the control's address. It is on in the Docker stack
+(`LMJ_SETTLEMENT_CONTROL_ENABLED` in `docker-compose.yml`) and in `scripts/windows/start-all.ps1`,
+and off otherwise. Never switch it on in a live deployment: whoever can reach holdings-service's
+port could stop an account's orders from settling.
+
 ## Order events
 
 Whether buy-sell-service publishes its order events to Kafka or only logs them

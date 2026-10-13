@@ -718,7 +718,16 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 
 `staff-gateway.spec.ts` goes through the staff gateway the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
 
-`execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished. Playwright skips it when an earlier test failed.
+`settlement.spec.ts` follows a buy and a sell through settlement (S17, S18), with fills the executor really made: an order the client can no longer pay for, or has no shares left for, by the time it fills is `REJECTED` and Trading Ops are alerted; a settlement that fails part-way changes nothing and settles exactly once afterwards. Besides what the execution suites need, it needs:
+
+- The settlement test control ([C5](contracts/C5-config.md#settlement-test-control)) on holdings-service, reached directly at `http://localhost:8084`; set `E2E_HOLDINGS_URL` if it is elsewhere.
+- The execution control on buy-sell-service, reached directly at `http://localhost:8085` (`E2E_EXECUTION_URL`), to hold an order back until the price or the holding has changed.
+- Kafka, which carries the alert to surveillance-service: Docker Compose has it; on the native Windows stack start with `-Kafka` ([Kafka (order events)](#kafka-order-events)).
+- The staff app on `http://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
+
+It pauses the execution worker for the whole stack, as `execution-retry.spec.ts` does, so both run one test at a time in the Playwright project `execution-recovery`, after the main tests.
+
+`execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished, `execution-recovery` included. Playwright skips it when an earlier test failed.
 
 **The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `http://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It also holds the trade search tests (`trade-search.spec.ts`), which moved here with the screen: they register clients through the trading app (`E2E_BASE_URL`) and insert their trades, so they need the same database settings as the order-history suite above.
 

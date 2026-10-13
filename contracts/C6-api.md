@@ -623,6 +623,30 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 | `POST /internal/holdings/settle` | buy-sell → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
 | `POST /internal/holdings/validate` | buy-sell → holdings-service | SELL holdings check at placement |
 | `/internal/market/control/**` | tests → market-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
+| `/internal/holdings/control/settlement-faults/{accountId}` | tests → holdings-service | [The settlement test control](#the-settlement-test-control), only when enabled |
+
+### The settlement test control
+
+Makes the settlements of one account fail part-way, so a test can show on a running stack that a
+failed settlement changes nothing and settles once when retried
+([Automatic execution and recovery](#automatic-execution-and-recovery)). It exists only where its
+setting is on ([C5](C5-config.md#settlement-test-control)), and is served by holdings-service
+itself on port 8084.
+
+```bash
+curl -X PUT    localhost:8084/internal/holdings/control/settlement-faults/7   # account 7's settlements fail from now on
+curl           localhost:8084/internal/holdings/control/settlement-faults/7   # { "accountId": 7, "failing": true, "failures": 2 }
+curl -X DELETE localhost:8084/internal/holdings/control/settlement-faults/7   # they work again
+```
+
+- While an account is failing, `POST /internal/holdings/settle` for it answers `500` after the
+  cash movement, the holding, the receipt and the `SETTLED` event have been written and before
+  they are committed, so all of them are rolled back. buy-sell-service keeps the order `PENDING`
+  with `settlement_pending` and retries on every poll.
+- A settlement that is refused (`INSUFFICIENT_CASH`, `INSUFFICIENT_HOLDINGS`) is still answered
+  as a refusal, and a request that already has a receipt still gets its original outcome.
+- `failures` counts the settlements failed since the account was named; it is 0 once released.
+- Other accounts are not affected, so tests can use it while the rest of a suite runs.
 
 ## Internal events and the execution interface (buy-sell-service)
 

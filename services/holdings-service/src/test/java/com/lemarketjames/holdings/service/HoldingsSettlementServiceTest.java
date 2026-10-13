@@ -45,7 +45,9 @@ class HoldingsSettlementServiceTest {
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(accountRepository.findLockedById(1)).thenAnswer(inv -> accountRepository.findById(1).or(() -> Optional.of(accountWithBalance(BigDecimal.ZERO))));
-        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository, auditRecorder, receipts);
+        // No settlement is made to fail here; SettlementControlIntegrationTest covers that.
+        settlementService = new HoldingsSettlementService(holdingsRepository, accountRepository, auditRecorder, receipts,
+            request -> { });
     }
 
     @Test

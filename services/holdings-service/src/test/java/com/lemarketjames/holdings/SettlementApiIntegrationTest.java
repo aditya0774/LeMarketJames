@@ -24,6 +24,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -300,5 +301,14 @@ class SettlementApiIntegrationTest {
     })
     void aMalformedRequestIsABadRequest(String body) throws Exception {
         settle(body).andExpect(status().isBadRequest());
+    }
+
+    /**
+     * The settlement test control exists only where its setting is on (contract C5). It is off
+     * here, as in any deployment that does not ask for it, so there is nothing at its address.
+     */
+    @Test
+    void theSettlementTestControlIsAbsentUnlessSwitchedOn() throws Exception {
+        mvc.perform(put("/internal/holdings/control/settlement-faults/1")).andExpect(status().isNotFound());
     }
 }

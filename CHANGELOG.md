@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- LMKT-72, LMKT-74: Buy and sell settlement tested end to end. `apps/e2e/tests/settlement.spec.ts`
+  follows real fills from the executor through settlement on a running stack: a buy the client
+  can no longer afford, or a sell of shares that are gone, by fill time is `REJECTED` with
+  `INSUFFICIENT_CASH` or `INSUFFICIENT_HOLDINGS`, changes nothing, and its alert is read by a
+  Trading Ops login on the staff app; a settlement that fails part-way changes nothing and
+  settles exactly once afterwards, with `SETTLED` carrying the cash and holding changes. For the
+  failure, `holdings-service` gains a settlement test control,
+  `/internal/holdings/control/settlement-faults/{accountId}`, which exists only where
+  `lmj.settlement.control-enabled` is on (Docker Compose, `start-all.ps1`). No behaviour changes
+  without it. The `feed-failure` Playwright project now also waits for `execution-recovery`.
 - LMKT-73: Sell settlement checked against S18's acceptance criteria. No behaviour changes:
   `holdings-service` already credited the cash, reduced or removed the holding and audited
   `SETTLED` in one transaction. New tests prove it for a sell through

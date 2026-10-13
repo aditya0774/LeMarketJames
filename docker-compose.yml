@@ -207,6 +207,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       MARKET_SERVICE_URL: http://market-service:8083
       ORDERS_SERVICE_URL: http://buy-sell-service:8085
+      # This stack is a test environment, so the settlement test control is on
+      # (contracts/C5-config.md). It sits under /internal on port 8084, never behind a gateway.
+      LMJ_SETTLEMENT_CONTROL_ENABLED: "true"
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
 
   # Aggregate, read-only reports for analysts (/api/v1/reports/**). The trading gateway has no
