@@ -89,40 +89,48 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExecutionControlController.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Disposable-stack controls for E2E execution recovery tests.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="ExecutionControlController.ControlRequest.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController.ControlRequest</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="ExecutionControlController.ControlState.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController.ControlState</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">The outcome of <a href="OrderExecutor.html#execute(com.lemarketjames.orders.entity.Order)"><code>OrderExecutor.execute(com.lemarketjames.orders.entity.Order)</code></a>: the status the order should move to next and,
  depending on it, the quote it fills at or the rejection reason.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ExecutionSettings.html" title="class in com.lemarketjames.orders.execution">ExecutionSettings</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExecutionSettings.html" title="class in com.lemarketjames.orders.execution">ExecutionSettings</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Execution controls; defaults are defined here rather than copied into deployment files.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="MarketOrderExecutor.html" title="class in com.lemarketjames.orders.execution">MarketOrderExecutor</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="MarketOrderExecutor.html" title="class in com.lemarketjames.orders.execution">MarketOrderExecutor</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Prices orders only from fresh market quotes; settlement rechecks cash and shares under lock.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderExecutionScheduler.html" title="class in com.lemarketjames.orders.execution">OrderExecutionScheduler</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderExecutionService.html" title="class in com.lemarketjames.orders.execution">OrderExecutionService</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderExecutionScheduler.html" title="class in com.lemarketjames.orders.execution">OrderExecutionScheduler</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderExecutionService.html" title="class in com.lemarketjames.orders.execution">OrderExecutionService</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Coordinates execution in two phases: persist intent first, then call holdings.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderExecutionTransactions.html" title="class in com.lemarketjames.orders.execution">OrderExecutionTransactions</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderExecutionTransactions.html" title="class in com.lemarketjames.orders.execution">OrderExecutionTransactions</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Transactional half of execution.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="OrderExecutor.html" title="interface in com.lemarketjames.orders.execution">OrderExecutor</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="OrderExecutor.html" title="interface in com.lemarketjames.orders.execution">OrderExecutor</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">The execution interface (contract C6): decides whether and at what price an accepted order
  fills.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderTransitions.html" title="class in com.lemarketjames.orders.execution">OrderTransitions</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderTransitions.html" title="class in com.lemarketjames.orders.execution">OrderTransitions</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Used inside the caller's order transaction, including recovery after a lost settlement response.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">The quote an order was priced from at execution.</div>
 </div>
 </div>
