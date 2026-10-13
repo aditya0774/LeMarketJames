@@ -1,0 +1,45 @@
+<mat-card class="volume-tile">
+  <mat-card-content>
+    <div class="tile-header">
+      <h2>Trading volume vs previous period</h2>
+      <button mat-button type="button" class="refresh" (click)="refresh()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+
+    <div class="sections">
+      @for (s of sections(); track s.periodType) {
+        <section class="section" [attr.data-period]="s.periodType">
+          <h3>{{ s.label }}</h3>
+
+          @if (s.loading) {
+            <p class="status loading">Loading…</p>
+          } @else if (s.error) {
+            <p class="status error" role="alert">Could not load this figure. Use Refresh to retry.</p>
+          } @else if (s.data; as d) {
+            <p class="range">{{ d.current.startDate }} – {{ d.current.endDate }}</p>
+            <p class="volume">{{ d.current.shareVolume | number }} <span class="unit">shares</span></p>
+
+            <p class="change {{ direction(d.change.shareVolume) }}">
+              <mat-icon aria-hidden="true">{{ icon(d.change.shareVolume) }}</mat-icon>
+              <span class="change-text">
+                {{ d.change.shareVolume > 0 ? '+' : '' }}{{ d.change.shareVolume | number }}
+                @if (d.change.shareVolumePercent !== null) {
+                  ({{ d.change.shareVolumePercent > 0 ? '+' : '' }}{{ d.change.shareVolumePercent | number: '1.2-2' }}%)
+                } @else {
+                  (n/a, no previous trades)
+                }
+              </span>
+            </p>
+
+            <p class="previous">
+              Previous ({{ d.previous.startDate }} – {{ d.previous.endDate }}):
+              {{ d.previous.shareVolume | number }} shares
+            </p>
+            <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
+          }
+        </section>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>

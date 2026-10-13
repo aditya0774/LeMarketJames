@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ANALYST_REPORTS } from './reports/analyst-reports';
+import { VolumeInsightTile } from './volume-insight-tile/volume-insight-tile';
 
 /** Report metadata for dashboard display */
 interface ReportMeta {
@@ -28,6 +29,7 @@ interface ReportMeta {
     MatCardModule,
     MatButtonModule,
     MatIconModule,
+    VolumeInsightTile,
   ],
   templateUrl: './analyst-dashboard.html',
   styleUrls: ['./analyst-dashboard.scss'],
