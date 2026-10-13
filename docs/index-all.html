@@ -109,6 +109,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>accountId</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#accountId()" class="member-name-link">accountId()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-accountId"><code>accountId</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/notifications/OrderStatusChangedMessage.html#accountId()" class="member-name-link">accountId()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/OrderStatusChangedMessage.html" title="class in com.lemarketjames.notifications">OrderStatusChangedMessage</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/notifications/OrderStatusChangedMessage.html#param-accountId"><code>accountId</code></a> record component.</div>
@@ -345,6 +349,14 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionControlController.html#badRequest(java.lang.IllegalArgumentException)" class="member-name-link">badRequest(IllegalArgumentException)</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionControlController.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementCheckpoint.html#beforeCommit(com.lemarketjames.holdings.dto.SettlementRequest)" class="member-name-link">beforeCommit(SettlementRequest)</a> - Method in interface com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a></dt>
+<dd>
+<div class="block">Called once for every settlement that is applied, never for one that is refused.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#beforeCommit(com.lemarketjames.holdings.dto.SettlementRequest)" class="member-name-link">beforeCommit(SettlementRequest)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>
+<div class="block">Fails the settlement of a named account.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.html#begin(com.lemarketjames.orders.submission.ValidationRule)" class="member-name-link">begin(ValidationRule)</a> - Method in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a></dt>
 <dd>
 <div class="block">Starts a check; it stays open until <a href="com/lemarketjames/orders/submission/SubmissionTrail.html#pass()"><code>SubmissionTrail.pass()</code></a>, <a href="com/lemarketjames/orders/submission/SubmissionTrail.html#fail(java.lang.String)"><code>SubmissionTrail.fail(java.lang.String)</code></a> or <a href="com/lemarketjames/orders/submission/SubmissionTrail.html#abandon()"><code>SubmissionTrail.abandon()</code></a>.</div>
@@ -831,6 +843,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="com/lemarketjames/instruments/InstrumentDto.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.instruments.<a href="com/lemarketjames/instruments/InstrumentDto.html" title="class in com.lemarketjames.instruments">InstrumentDto</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1062,10 +1078,34 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:F">F</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.html#fail(int)" class="member-name-link">fail(int)</a> - Method in class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.html" title="class in com.lemarketjames.holdings">SettlementControlController</a></dt>
+<dd>
+<div class="block">From now on every settlement for the account fails after its writes, and is rolled back.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.html#fail(java.lang.String)" class="member-name-link">fail(String)</a> - Method in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html#FAIL" class="member-name-link">FAIL</a> - Enum constant in enum class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html" title="enum class in com.lemarketjames.orders.submission">SubmissionTrail.Result</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#failFor(int)" class="member-name-link">failFor(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>
+<div class="block">From now on every settlement for this account fails.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#failing()" class="member-name-link">failing()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-failing"><code>failing</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#failsFor(int)" class="member-name-link">failsFor(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#failures()" class="member-name-link">failures()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-failures"><code>failures</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#failuresOf(int)" class="member-name-link">failuresOf(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#%3Cinit%3E(int,boolean,int)" class="member-name-link">FaultState(int, boolean, int)</a> - Constructor for record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>FaultState</code> record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.ControlState.html#feedMode()" class="member-name-link">feedMode()</a> - Method in record class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.ControlState.html" title="class in com.lemarketjames.market">MarketControlController.ControlState</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>feedMode</code> record component.</div>
@@ -2192,6 +2232,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
 <dt><a href="com/lemarketjames/instruments/InstrumentDto.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.instruments.<a href="com/lemarketjames/instruments/InstrumentDto.html" title="class in com.lemarketjames.instruments">InstrumentDto</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -2441,7 +2485,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Applies the cash and holdings side effects of a fill.</div>
 </dd>
-<dt><a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository)" class="member-name-link">HoldingsSettlementService(HoldingsRepository, AccountRepository, AuditRecorder, SettlementReceiptRepository)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html" title="class in com.lemarketjames.holdings.service">HoldingsSettlementService</a></dt>
+<dt><a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint)" class="member-name-link">HoldingsSettlementService(HoldingsRepository, AccountRepository, AuditRecorder, SettlementReceiptRepository, SettlementCheckpoint)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html" title="class in com.lemarketjames.holdings.service">HoldingsSettlementService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationClient.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a> - Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
@@ -4132,6 +4176,14 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/service/MarketSimulator.html#reset()" class="member-name-link">reset()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketSimulator.html" title="class in com.lemarketjames.market.service">MarketSimulator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#restore(int)" class="member-name-link">restore(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>
+<div class="block">Settlements for this account work again, and its count is forgotten.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.html#restore(int)" class="member-name-link">restore(int)</a> - Method in class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.html" title="class in com.lemarketjames.holdings">SettlementControlController</a></dt>
+<dd>
+<div class="block">Settlements for the account work again.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html#result()" class="member-name-link">result()</a> - Method in record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail.Check</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>result</code> record component.</div>
@@ -4718,6 +4770,26 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>settlementAvailable</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementCheckpoint.html" class="type-name-link" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a> - Interface in <a href="com/lemarketjames/holdings/service/package-summary.html">com.lemarketjames.holdings.service</a></dt>
+<dd>
+<div class="block">A point inside the settlement transaction: everything a settlement writes has been written, and
+ nothing has been committed yet.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.html" class="type-name-link" title="class in com.lemarketjames.holdings">SettlementControlController</a> - Class in <a href="com/lemarketjames/holdings/package-summary.html">com.lemarketjames.holdings</a></dt>
+<dd>
+<div class="block">Test control for settlement: make the settlements of one account fail part-way, and let them
+ work again, so failure handling can be tested on a running stack.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.html#%3Cinit%3E(com.lemarketjames.holdings.service.SettlementFaults)" class="member-name-link">SettlementControlController(SettlementFaults)</a> - Constructor for class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.html" title="class in com.lemarketjames.holdings">SettlementControlController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" class="type-name-link" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a> - Record Class in <a href="com/lemarketjames/holdings/package-summary.html">com.lemarketjames.holdings</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html" class="type-name-link" title="class in com.lemarketjames.holdings.service">SettlementFaults</a> - Class in <a href="com/lemarketjames/holdings/service/package-summary.html">com.lemarketjames.holdings.service</a></dt>
+<dd>
+<div class="block">Makes settlements fail part-way, on purpose, for the accounts a test has named.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#%3Cinit%3E(jakarta.persistence.EntityManager)" class="member-name-link">SettlementFaults(EntityManager)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/entity/SettlementReceipt.html" class="type-name-link" title="class in com.lemarketjames.holdings.entity">SettlementReceipt</a> - Class in <a href="com/lemarketjames/holdings/entity/package-summary.html">com.lemarketjames.holdings.entity</a></dt>
 <dd>
 <div class="block">One durable result per order, committed atomically with its cash and share changes.</div>
@@ -4887,6 +4959,8 @@ loadScripts(document, 'script');</script>
 <div class="block">The current feed mode and pinned tickers.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionControlController.html#state()" class="member-name-link">state()</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionControlController.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.html#state(int)" class="member-name-link">state(int)</a> - Method in class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.html" title="class in com.lemarketjames.holdings">SettlementControlController</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.NotificationView.html#status()" class="member-name-link">status()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.NotificationView.html" title="class in com.lemarketjames.notifications">NotificationController.NotificationView</a></dt>
 <dd>
@@ -5119,6 +5193,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsSettlementController.Outcome.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/HoldingsSettlementController.Outcome.html" title="class in com.lemarketjames.holdings">HoldingsSettlementController.Outcome</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
