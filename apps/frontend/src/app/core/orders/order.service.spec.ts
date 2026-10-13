@@ -163,6 +163,96 @@ describe('BUY order HTTP integration', () => {
     expect(history[1].rejectionReason).toBe('INSUFFICIENT_HOLDINGS');
   });
 
+  it('aggregates paginated account history until the backend returns a short page', () => {
+    let history: any[] = [];
+    service.getAllOrdersByAccountId(7).subscribe(orders => history = orders);
+
+    const page0 = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20');
+    page0.flush(Array.from({ length: 20 }, (_, i) => ({ submittedAt: `2026-03-08T05:${String(i).padStart(2, '0')}:00`, orderId: i + 1 })));
+
+    const page1 = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '1'
+      && request.params.get('size') === '20');
+    page1.flush([
+      { submittedAt: '2026-03-08T06:00:00', orderId: 21 },
+      { submittedAt: '2026-03-08T06:01:00', orderId: 22 },
+    ]);
+
+    expect(history.map(order => order.orderId)).toEqual(Array.from({ length: 22 }, (_, i) => i + 1));
+    expect(history[0].submittedAt).toBe('2026-03-08T05:00:00Z');
+    expect(history[21].submittedAt).toBe('2026-03-08T06:01:00Z');
+  });
+
+  it('passes date and timeZone through every paginated history request', () => {
+    let history: any[] = [];
+    service.getAllOrdersByAccountId(7, { date: '2026-03-08', timeZone: 'America/New_York' })
+      .subscribe(orders => history = orders);
+
+    const first = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20');
+    expect(first.request.params.get('date')).toBe('2026-03-08');
+    expect(first.request.params.get('timeZone')).toBe('America/New_York');
+    first.flush(Array.from({ length: 20 }, (_, i) => ({ submittedAt: `2026-03-08T05:${String(i).padStart(2, '0')}:00`, orderId: i + 1 })));
+
+    const second = http.expectOne(request =>
+      request.url.endsWith('/account/7')
+      && request.params.get('page') === '1'
+      && request.params.get('size') === '20');
+    expect(second.request.params.get('date')).toBe('2026-03-08');
+    expect(second.request.params.get('timeZone')).toBe('America/New_York');
+    second.flush([{ submittedAt: '2026-03-08T06:00:00', orderId: 21 }]);
+
+    expect(history).toHaveLength(21);
+  });
+
+  it('requests one explicit history page with page-size-date-timeZone contract params', () => {
+    let history: any[] = [];
+    service.getOrdersByAccountIdPage(7, { page: 2, size: 6 }, { date: '2026-11', timeZone: 'America/New_York' })
+      .subscribe(orders => history = orders);
+
+    const call = http.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/api/v1/orders/account/7`
+      && request.params.get('page') === '2'
+      && request.params.get('size') === '6');
+    expect(call.request.method).toBe('GET');
+    expect(call.request.params.get('date')).toBe('2026-11');
+    expect(call.request.params.get('timeZone')).toBe('America/New_York');
+
+    call.flush([
+      {
+        orderId: 700,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 9,
+        orderStatus: 'FILLED',
+        pricePerUnit: 222.01,
+        rejectionReason: null,
+        submittedAt: '2026-11-02T03:00:00',
+      },
+      {
+        orderId: 701,
+        symbol: 'TSLA',
+        orderType: 'SELL',
+        quantity: 2,
+        orderStatus: 'REJECTED',
+        pricePerUnit: null,
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-11-02T04:00:00Z',
+      },
+    ]);
+
+    expect(history).toHaveLength(2);
+    expect(history[0].submittedAt).toBe('2026-11-02T03:00:00Z');
+    expect(history[0].symbol).toBe('AAPL');
+    expect(history[1].rejectionReason).toBe('INSUFFICIENT_HOLDINGS');
+  });
+
   it('streams account orders and marks reconnecting after a transient failure', async () => {
     vi.useFakeTimers();
     try {

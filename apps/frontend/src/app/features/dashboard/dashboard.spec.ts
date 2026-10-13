@@ -5,6 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
+import { describe, expect, it } from 'vitest';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderResponse, OrdersStreamSnapshot, OrderService } from '../../core/orders/order.service';
@@ -25,21 +26,27 @@ function quote(symbol: string, price: number) {
 }
 
 function order(orderId: number, orderStatus: OrderResponse['orderStatus'], instrumentId = 1): OrderResponse {
+  const day = String(((orderId - 1) % 28) + 1).padStart(2, '0');
   return {
     success: true,
     orderId, accountId: 7, instrumentId, orderType: 'BUY', quantity: 1, orderStatus,
-    submittedAt: `2026-09-0${orderId}T10:00:00`, createdAt: '', updatedAt: '',
+    submittedAt: `2026-09-${day}T10:00:00`, createdAt: '', updatedAt: '',
   };
+}
+
+function rowTextCells(row: Element): string[] {
+  return Array.from(row.querySelectorAll('td')).map(cell => (cell.textContent ?? '').trim());
 }
 
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
-  let ordersResult: Observable<unknown>;
-  let requestedFilters: unknown[];
+  let allOrdersResult: Observable<unknown>;
+  let historyPageResult: Observable<unknown>;
+  let requestedHistoryRequests: Array<{ page: number; size: number; filter: unknown }>;
   let liveOrders: Subject<OrdersStreamSnapshot>;
 
   async function setup() {
-    requestedFilters = [];
+    requestedHistoryRequests = [];
     liveOrders = new Subject<OrdersStreamSnapshot>();
     await TestBed.configureTestingModule({
       imports: [Dashboard],
@@ -52,9 +59,10 @@ describe('Dashboard', () => {
         {
           provide: OrderService,
           useValue: {
-            getOrdersByAccountId: (_accountId: number, filter: unknown) => {
-              requestedFilters.push(filter);
-              return ordersResult;
+            getAllOrdersByAccountId: () => allOrdersResult,
+            getOrdersByAccountIdPage: (_accountId: number, request: { page: number; size: number }, filter: unknown) => {
+              requestedHistoryRequests.push({ page: request.page, size: request.size, filter });
+              return historyPageResult;
             },
             watchOrderStatusStream: () => liveOrders.asObservable(),
           },
@@ -83,11 +91,13 @@ describe('Dashboard', () => {
   const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
   it('refreshes history after an open order fills via live updates', async () => {
-    ordersResult = of([order(1, 'SUBMITTED')]);
+    allOrdersResult = of([order(1, 'SUBMITTED')]);
+    historyPageResult = of([order(1, 'SUBMITTED')]);
     await setup();
 
-    ordersResult = of([order(1, 'FILLED')]);
-    const before = requestedFilters.length;
+    allOrdersResult = of([order(1, 'FILLED')]);
+    historyPageResult = of([order(1, 'FILLED')]);
+    const before = requestedHistoryRequests.length;
     liveOrders.next({
       connection: 'live',
       event: { orderId: 1, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '2026-09-01T10:00:00Z' },
@@ -95,17 +105,19 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(requestedFilters.length).toBeGreaterThan(before); // SSE status events now refresh both orders and history.
+    expect(requestedHistoryRequests.length).toBeGreaterThan(before); // SSE status events now refresh both orders and history.
     expect(text()).toContain('Filled');
   });
 
   it('queues an orders refresh when a live event arrives during an in-flight orders request', async () => {
     const first = new Subject<OrderResponse[]>();
-    ordersResult = first;
+    allOrdersResult = first;
+    historyPageResult = of([order(1, 'SUBMITTED')]);
     await setup();
 
     // The queued follow-up request should read this newer state once the first request completes.
-    ordersResult = of([order(1, 'FILLED')]);
+    allOrdersResult = of([order(1, 'FILLED')]);
+    historyPageResult = of([order(1, 'FILLED')]);
     liveOrders.next({
       connection: 'live',
       event: { orderId: 1, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '2026-09-01T10:00:00Z' },
@@ -120,7 +132,8 @@ describe('Dashboard', () => {
   });
 
   it('shows portfolio totals and open order count', async () => {
-    ordersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
+    allOrdersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
+    historyPageResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
     await setup();
 
     const cards = Array.from(fixture.nativeElement.querySelectorAll('.stat-card .val')).map(
@@ -134,7 +147,8 @@ describe('Dashboard', () => {
   });
 
   it('lists every stock with its live price and a trend graph', async () => {
-    ordersResult = of([]);
+    allOrdersResult = of([]);
+    historyPageResult = of([]);
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
@@ -147,7 +161,8 @@ describe('Dashboard', () => {
   });
 
   it('opens the buy/sell popup when a stock is clicked, and closes it again', async () => {
-    ordersResult = of([]);
+    allOrdersResult = of([]);
+    historyPageResult = of([]);
     await setup();
 
     const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
@@ -165,7 +180,8 @@ describe('Dashboard', () => {
   });
 
   it('filters orders by status chip', async () => {
-    ordersResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
+    allOrdersResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
+    historyPageResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
     await setup();
 
     const chips = fixture.nativeElement.querySelectorAll('.chip') as NodeListOf<HTMLButtonElement>;
@@ -179,24 +195,28 @@ describe('Dashboard', () => {
   });
 
   it('shows the session-expired alert on 401', async () => {
-    ordersResult = throwError(() => new HttpErrorResponse({ status: 401 }));
+    allOrdersResult = of([]);
+    historyPageResult = throwError(() => new HttpErrorResponse({ status: 401 }));
     await setup();
 
     expect(text()).toContain('Your session has expired');
   });
   it('requests the local period, cancels stale requests, and clears without parameters', async () => {
-    ordersResult = of([order(1, 'SUBMITTED')]);
+    allOrdersResult = of([order(1, 'SUBMITTED')]);
+    historyPageResult = of([order(1, 'SUBMITTED')]);
     await setup();
     const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
     const previous = new Subject<unknown>();
-    ordersResult = previous;
+    historyPageResult = previous;
     input.value = '2026-03-08';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    expect(requestedFilters.at(-1)).toEqual({ date: '2026-03-08', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    expect(requestedHistoryRequests.at(-1)?.filter).toEqual({ date: '2026-03-08', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    expect(requestedHistoryRequests.at(-1)?.page).toBe(0);
+    expect(requestedHistoryRequests.at(-1)?.size).toBe(6);
     expect(previous.observed).toBe(true);
     const latest = new Subject<unknown>();
-    ordersResult = latest;
+    historyPageResult = latest;
     input.value = '2026-03-09';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
@@ -204,26 +224,147 @@ describe('Dashboard', () => {
     latest.next([]);
     fixture.detectChanges();
     expect(text()).toContain('No orders in this period');
-    ordersResult = of([order(1, 'SUBMITTED')]);
+    historyPageResult = of([order(1, 'SUBMITTED')]);
     fixture.nativeElement.querySelector('.date-filters button').click();
     fixture.detectChanges();
-    expect(requestedFilters.at(-1)).toBeUndefined();
+    expect(requestedHistoryRequests.at(-1)?.filter).toBeUndefined();
     expect(text()).not.toContain('No orders in this period');
   });
 
   it('allows clearing after a filtered request fails', async () => {
-    ordersResult = of([]);
+    allOrdersResult = of([]);
+    historyPageResult = of([]);
     await setup();
-    ordersResult = throwError(() => new HttpErrorResponse({ status: 500 }));
+    historyPageResult = throwError(() => new HttpErrorResponse({ status: 500 }));
     const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
     input.value = '2026-03-08';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     expect(text()).toContain('Unable to load orders');
     expect(text()).not.toContain('No orders in this period');
-    ordersResult = of([]);
+    historyPageResult = of([]);
     fixture.nativeElement.querySelector('.date-filters button').click();
     fixture.detectChanges();
     expect(text()).not.toContain('Unable to load orders');
+  });
+
+  it('requests the next backend page when pagination advances', async () => {
+    allOrdersResult = of(Array.from({ length: 12 }, (_, i) => order(i + 1, 'FILLED')));
+    historyPageResult = of(Array.from({ length: 6 }, (_, i) => order(12 - i, 'FILLED')));
+    await setup();
+
+    historyPageResult = of(Array.from({ length: 6 }, (_, i) => order(6 - i, 'FILLED')));
+    const nextPageButton = fixture.nativeElement.querySelector('app-orders-panel .pg-btn[aria-label="Next page"]') as HTMLButtonElement;
+    nextPageButton.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(requestedHistoryRequests.at(-1)?.page).toBe(1);
+    expect(requestedHistoryRequests.at(-1)?.size).toBe(6);
+  });
+
+  it('requests backend page 0 size 6 on first history load', async () => {
+    allOrdersResult = of(Array.from({ length: 4 }, (_, i) => order(i + 1, 'FILLED')));
+    historyPageResult = of(Array.from({ length: 4 }, (_, i) => order(4 - i, 'FILLED')));
+
+    await setup();
+
+    expect(requestedHistoryRequests[0]).toEqual({
+      page: 0,
+      size: 6,
+      filter: undefined,
+    });
+  });
+
+  it('maps paged API response fields into rendered order-history columns', async () => {
+    allOrdersResult = of([
+      {
+        success: true,
+        orderId: 1,
+        accountId: 7,
+        instrumentId: 1,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 11,
+        pricePerUnit: 201.5,
+        orderStatus: 'FILLED',
+        rejectionReason: null,
+        submittedAt: '2026-03-08T10:00:00',
+        createdAt: '2026-03-08T10:00:00',
+        updatedAt: '2026-03-08T10:00:01',
+        filledAt: '2026-03-08T10:00:01',
+      },
+      {
+        success: true,
+        orderId: 2,
+        accountId: 7,
+        instrumentId: 2,
+        symbol: 'TSLA',
+        orderType: 'SELL',
+        quantity: 4,
+        pricePerUnit: null,
+        orderStatus: 'REJECTED',
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-03-08T11:00:00',
+        createdAt: '2026-03-08T11:00:00',
+        updatedAt: '2026-03-08T11:00:00',
+        filledAt: null,
+      },
+    ]);
+    historyPageResult = of([
+      {
+        success: true,
+        orderId: 2,
+        accountId: 7,
+        instrumentId: 2,
+        symbol: 'TSLA',
+        orderType: 'SELL',
+        quantity: 4,
+        pricePerUnit: null,
+        orderStatus: 'REJECTED',
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-03-08T11:00:00',
+        createdAt: '2026-03-08T11:00:00',
+        updatedAt: '2026-03-08T11:00:00',
+        filledAt: null,
+      },
+      {
+        success: true,
+        orderId: 1,
+        accountId: 7,
+        instrumentId: 1,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 11,
+        pricePerUnit: 201.5,
+        orderStatus: 'FILLED',
+        rejectionReason: null,
+        submittedAt: '2026-03-08T10:00:00',
+        createdAt: '2026-03-08T10:00:00',
+        updatedAt: '2026-03-08T10:00:01',
+        filledAt: '2026-03-08T10:00:01',
+      },
+    ]);
+
+    await setup();
+
+    const rows = fixture.nativeElement.querySelectorAll('app-orders-panel tbody tr[data-order-id]');
+    expect(rows).toHaveLength(2);
+    const firstCells = rowTextCells(rows[0]);
+    const secondCells = rowTextCells(rows[1]);
+
+    expect(firstCells[1]).toContain('TSLA');
+    expect(firstCells[2]).toBe('SELL');
+    expect(firstCells[3]).toBe('4');
+    expect(firstCells[4]).toBe('Rejected');
+    expect(firstCells[5]).toBe('—');
+    expect(firstCells[6]).toContain('Order rejected because you do not hold enough shares to sell that quantity.');
+
+    expect(secondCells[1]).toContain('AAPL');
+    expect(secondCells[2]).toBe('BUY');
+    expect(secondCells[3]).toBe('11');
+    expect(secondCells[4]).toBe('Filled');
+    expect(secondCells[5]).toContain('$201.50');
+    expect(secondCells[6]).toBe('—');
   });
 });

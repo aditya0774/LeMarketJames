@@ -29,10 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * {@code POST /internal/holdings/settle} as buy-sell-service calls it (contract C6, "Automatic
- * execution and recovery"), for a buy (LMKT-71): the request goes through the real controller,
- * validation, service and database (H2), and the answer is checked together with what it left in
- * the account, the holding and the audit trail. Its own H2 database, so its accounts and orders
- * are nobody else's.
+ * execution and recovery"), for a buy (LMKT-71) and for a sell (LMKT-73): the request goes through
+ * the real controller, validation, service and database (H2), and the answer is checked together
+ * with what it left in the account, the holding and the audit trail. Its own H2 database, so its
+ * accounts and orders are nobody else's.
  *
  * <p>No test sends a token: the endpoint is server-to-server and outside the gateways, so a call
  * that gets through at all proves it needs none.
@@ -59,10 +59,23 @@ class SettlementApiIntegrationTest {
         return accounts.saveAndFlush(account).getAccountId();
     }
 
-    /** The request body in the publisher's own format: numbers as JSON numbers, the side by name. */
+    /** Puts the shares straight into the account, so a sell here does not depend on a buy settling first. */
+    private void holdingOf(int accountId, String quantity, String averageCost) {
+        holdings.saveAndFlush(new HoldingsEntity(accountId, INSTRUMENT, new BigDecimal(quantity), new BigDecimal(averageCost)));
+    }
+
     private static String buy(int accountId, int orderId, String quantity, String price) {
+        return body("BUY", accountId, orderId, quantity, price);
+    }
+
+    private static String sell(int accountId, int orderId, String quantity, String price) {
+        return body("SELL", accountId, orderId, quantity, price);
+    }
+
+    /** The request body in the publisher's own format: numbers as JSON numbers, the side by name. */
+    private static String body(String side, int accountId, int orderId, String quantity, String price) {
         return "{\"orderId\":" + orderId + ",\"accountId\":" + accountId + ",\"instrumentId\":" + INSTRUMENT
-            + ",\"orderType\":\"BUY\",\"quantity\":" + quantity + ",\"pricePerUnit\":" + price + "}";
+            + ",\"orderType\":\"" + side + "\",\"quantity\":" + quantity + ",\"pricePerUnit\":" + price + "}";
     }
 
     private ResultActions settle(String body) throws Exception {
@@ -177,6 +190,102 @@ class SettlementApiIntegrationTest {
 
         assertAmount("698.50", cashOf(accountId));
         assertEquals(1, settledEventsOf(orderId).size());
+    }
+
+    /** S18 AC1 and AC5: cash up by quantity x price, the holding down by the quantity, and both audited. */
+    @Test
+    void aSellIsSettledAndAudited() throws Exception {
+        int accountId = accountWithCash("1000");
+        holdingOf(accountId, "5", "80");
+        int orderId = accountId * 10;
+
+        settle(sell(accountId, orderId, "3", "100.50"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rejectionReason").doesNotExist());
+
+        assertAmount("1301.50", cashOf(accountId));
+        HoldingsEntity left = holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).orElseThrow();
+        assertAmount("2", left.getQuantity());
+        // The shares that remain cost what they did; the sale price does not enter into it.
+        assertAmount("80", left.getAverageCost());
+
+        List<AuditEventEntity> settled = settledEventsOf(orderId);
+        assertEquals(1, settled.size());
+        assertEquals(accountId, settled.get(0).getAccountId());
+        assertAmount("301.50", settled.get(0).getDetails().get("cashDelta"));
+        assertAmount("-3", settled.get(0).getDetails().get("quantityDelta"));
+    }
+
+    /** S18 AC1: a holding sold down to zero is removed, not kept as a row of no shares. */
+    @Test
+    void aSellOfTheWholePositionRemovesTheHolding() throws Exception {
+        int accountId = accountWithCash("1000");
+        holdingOf(accountId, "5", "80");
+        int orderId = accountId * 10;
+
+        settle(sell(accountId, orderId, "5", "100.50"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rejectionReason").doesNotExist());
+
+        assertAmount("1502.50", cashOf(accountId));
+        assertTrue(holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).isEmpty());
+        assertAmount("-5", settledEventsOf(orderId).get(0).getDetails().get("quantityDelta"));
+    }
+
+    /** S18 AC3: the same sell fill received twice credits the cash and takes the shares once. */
+    @Test
+    void theSameSellTwiceIsAppliedOnceAndAnswersTheSame() throws Exception {
+        int accountId = accountWithCash("1000");
+        holdingOf(accountId, "5", "80");
+        int orderId = accountId * 10;
+        String request = sell(accountId, orderId, "3", "100.50");
+
+        settle(request).andExpect(status().isOk()).andExpect(jsonPath("$.rejectionReason").doesNotExist());
+        settle(request).andExpect(status().isOk()).andExpect(jsonPath("$.rejectionReason").doesNotExist());
+
+        assertAmount("1301.50", cashOf(accountId));
+        assertAmount("2", holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).orElseThrow().getQuantity());
+        assertEquals(1, settledEventsOf(orderId).size());
+    }
+
+    /**
+     * S18 AC4: a sell for more shares than the account still holds is refused, not applied; a
+     * holding never goes below zero. The refusal code is what buy-sell-service rejects the order
+     * with, and what surveillance-service alerts Trading Ops to (contract C6).
+     */
+    @Test
+    void aSellThatWouldMakeTheHoldingNegativeIsRefusedAndChangesNothing() throws Exception {
+        int accountId = accountWithCash("1000");
+        holdingOf(accountId, "2", "80");
+        int orderId = accountId * 10;
+        String request = sell(accountId, orderId, "2.0001", "100");
+
+        settle(request)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rejectionReason").value("INSUFFICIENT_HOLDINGS"));
+
+        assertAmount("1000", cashOf(accountId));
+        assertAmount("2", holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).orElseThrow().getQuantity());
+        assertTrue(settledEventsOf(orderId).isEmpty());
+
+        // The refusal is the order's outcome: asked again, the answer is the same.
+        settle(request).andExpect(jsonPath("$.rejectionReason").value("INSUFFICIENT_HOLDINGS"));
+        assertAmount("1000", cashOf(accountId));
+        assertAmount("2", holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).orElseThrow().getQuantity());
+    }
+
+    @Test
+    void aSellWithNoHoldingIsRefused() throws Exception {
+        int accountId = accountWithCash("1000");
+        int orderId = accountId * 10;
+
+        settle(sell(accountId, orderId, "1", "100"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rejectionReason").value("INSUFFICIENT_HOLDINGS"));
+
+        assertAmount("1000", cashOf(accountId));
+        assertTrue(holdings.findByAccountIdAndInstrumentId(accountId, INSTRUMENT).isEmpty());
+        assertTrue(settledEventsOf(orderId).isEmpty());
     }
 
     @ParameterizedTest

@@ -30,9 +30,14 @@ export class OrdersPanel {
 
   readonly orders = input<readonly OrderResponse[]>([]);
   readonly dateChange = output<string>();
+  readonly pageChange = output<number>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly liveConnection = input<OrdersConnectionState>('connecting');
+  readonly serverPagination = input(false);
+  readonly currentPage = input(1);
+  readonly hasNextPage = input(false);
+  readonly totalOrders = input<number | null>(null);
 
   protected readonly filters = ORDER_FILTERS;
   protected readonly filter = signal<OrderFilter>('ALL');
@@ -62,20 +67,45 @@ export class OrdersPanel {
       .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt)),
   );
 
+  protected readonly isServerPagination = computed(() => this.serverPagination());
+  protected readonly activePage = computed(() => this.isServerPagination() ? this.currentPage() : this.page());
+
   protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
   protected readonly pages = computed(() => Array.from({ length: this.pageCount() }, (_, i) => i + 1));
 
   protected readonly pageRows = computed(() => {
+    if (this.isServerPagination()) {
+      return this.filtered();
+    }
     const start = (this.page() - 1) * PAGE_SIZE;
     return this.filtered().slice(start, start + PAGE_SIZE);
   });
 
-  protected readonly rangeStart = computed(() => (this.filtered().length ? (this.page() - 1) * PAGE_SIZE + 1 : 0));
-  protected readonly rangeEnd = computed(() => Math.min(this.page() * PAGE_SIZE, this.filtered().length));
+  protected readonly rangeStart = computed(() => {
+    if (!this.filtered().length) return 0;
+    if (this.isServerPagination()) return (this.activePage() - 1) * PAGE_SIZE + 1;
+    return (this.page() - 1) * PAGE_SIZE + 1;
+  });
+  protected readonly rangeEnd = computed(() => {
+    if (this.isServerPagination()) {
+      return this.rangeStart() + this.pageRows().length - 1;
+    }
+    return Math.min(this.page() * PAGE_SIZE, this.filtered().length);
+  });
+  protected readonly displayTotal = computed(() => this.totalOrders() ?? this.filtered().length);
+  protected readonly disablePrevious = computed(() => this.activePage() <= 1);
+  protected readonly disableNext = computed(() => {
+    if (this.isServerPagination()) {
+      return !this.hasNextPage();
+    }
+    return this.page() >= this.pageCount();
+  });
 
   setFilter(filter: OrderFilter): void {
     this.filter.set(filter);
-    this.page.set(1);
+    if (!this.isServerPagination()) {
+      this.page.set(1);
+    }
   }
 
   setPeriod(value: string): void {
@@ -87,6 +117,9 @@ export class OrdersPanel {
   setDate(value: string): void {
     this.dateValue.set(value);
     this.page.set(1);
+    if (this.isServerPagination()) {
+      this.pageChange.emit(1);
+    }
     // Wait for a complete year instead of requesting partial values while typing.
     if (!value || (this.period() === 'year' ? /^\d{4}$/.test(value) && Number(value) > 0 : true)) {
       this.dateChange.emit(value);
@@ -99,6 +132,11 @@ export class OrdersPanel {
   }
 
   goToPage(page: number): void {
+    if (this.isServerPagination()) {
+      if (page < 1) return;
+      this.pageChange.emit(page);
+      return;
+    }
     this.page.set(Math.min(Math.max(1, page), this.pageCount()));
   }
 

@@ -252,4 +252,40 @@ describe('OrdersPanel date filtering', () => {
     const symbol = fixture.nativeElement.querySelector('.sym')?.textContent?.trim();
     expect(symbol).toBe('AAPL');
   });
+
+  it('uses server pagination controls by emitting pageChange instead of local page toggles', () => {
+    const pageChanges: number[] = [];
+    fixture.componentRef.setInput('orders', seeds.slice(0, 5));
+    fixture.componentRef.setInput('serverPagination', true);
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('hasNextPage', true);
+    fixture.componentRef.setInput('totalOrders', 15);
+    fixture.componentInstance.pageChange.subscribe(page => pageChanges.push(page));
+    fixture.detectChanges();
+
+    const next = fixture.nativeElement.querySelector('.pg-btn[aria-label="Next page"]') as HTMLButtonElement;
+    const previous = fixture.nativeElement.querySelector('.pg-btn[aria-label="Previous page"]') as HTMLButtonElement;
+    next.click();
+    fixture.detectChanges();
+    previous.click();
+    fixture.detectChanges();
+
+    expect(pageChanges).toEqual([2]);
+    expect(previous.disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.pg-info').textContent).toContain('Showing 1–5 of 15 orders');
+    expect(fixture.nativeElement.querySelectorAll('.pg-row .pg-btn').length).toBe(2);
+  });
+
+  it('disables next in server pagination when hasNextPage is false', () => {
+    fixture.componentRef.setInput('serverPagination', true);
+    fixture.componentRef.setInput('currentPage', 2);
+    fixture.componentRef.setInput('hasNextPage', false);
+    fixture.componentRef.setInput('totalOrders', 9);
+    fixture.detectChanges();
+
+    const next = fixture.nativeElement.querySelector('.pg-btn[aria-label="Next page"]') as HTMLButtonElement;
+    const previous = fixture.nativeElement.querySelector('.pg-btn[aria-label="Previous page"]') as HTMLButtonElement;
+    expect(previous.disabled).toBe(false);
+    expect(next.disabled).toBe(true);
+  });
 });
