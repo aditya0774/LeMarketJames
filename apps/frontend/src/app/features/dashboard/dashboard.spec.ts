@@ -33,6 +33,10 @@ function order(orderId: number, orderStatus: OrderResponse['orderStatus'], instr
   };
 }
 
+function rowTextCells(row: Element): string[] {
+  return Array.from(row.querySelectorAll('td')).map(cell => (cell.textContent ?? '').trim());
+}
+
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let allOrdersResult: Observable<unknown>;
@@ -256,5 +260,110 @@ describe('Dashboard', () => {
 
     expect(requestedHistoryRequests.at(-1)?.page).toBe(1);
     expect(requestedHistoryRequests.at(-1)?.size).toBe(6);
+  });
+
+  it('requests backend page 0 size 6 on first history load', async () => {
+    allOrdersResult = of(Array.from({ length: 4 }, (_, i) => order(i + 1, 'FILLED')));
+    historyPageResult = of(Array.from({ length: 4 }, (_, i) => order(4 - i, 'FILLED')));
+
+    await setup();
+
+    expect(requestedHistoryRequests[0]).toEqual({
+      page: 0,
+      size: 6,
+      filter: undefined,
+    });
+  });
+
+  it('maps paged API response fields into rendered order-history columns', async () => {
+    allOrdersResult = of([
+      {
+        success: true,
+        orderId: 1,
+        accountId: 7,
+        instrumentId: 1,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 11,
+        pricePerUnit: 201.5,
+        orderStatus: 'FILLED',
+        rejectionReason: null,
+        submittedAt: '2026-03-08T10:00:00',
+        createdAt: '2026-03-08T10:00:00',
+        updatedAt: '2026-03-08T10:00:01',
+        filledAt: '2026-03-08T10:00:01',
+      },
+      {
+        success: true,
+        orderId: 2,
+        accountId: 7,
+        instrumentId: 2,
+        symbol: 'TSLA',
+        orderType: 'SELL',
+        quantity: 4,
+        pricePerUnit: null,
+        orderStatus: 'REJECTED',
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-03-08T11:00:00',
+        createdAt: '2026-03-08T11:00:00',
+        updatedAt: '2026-03-08T11:00:00',
+        filledAt: null,
+      },
+    ]);
+    historyPageResult = of([
+      {
+        success: true,
+        orderId: 2,
+        accountId: 7,
+        instrumentId: 2,
+        symbol: 'TSLA',
+        orderType: 'SELL',
+        quantity: 4,
+        pricePerUnit: null,
+        orderStatus: 'REJECTED',
+        rejectionReason: 'INSUFFICIENT_HOLDINGS',
+        submittedAt: '2026-03-08T11:00:00',
+        createdAt: '2026-03-08T11:00:00',
+        updatedAt: '2026-03-08T11:00:00',
+        filledAt: null,
+      },
+      {
+        success: true,
+        orderId: 1,
+        accountId: 7,
+        instrumentId: 1,
+        symbol: 'AAPL',
+        orderType: 'BUY',
+        quantity: 11,
+        pricePerUnit: 201.5,
+        orderStatus: 'FILLED',
+        rejectionReason: null,
+        submittedAt: '2026-03-08T10:00:00',
+        createdAt: '2026-03-08T10:00:00',
+        updatedAt: '2026-03-08T10:00:01',
+        filledAt: '2026-03-08T10:00:01',
+      },
+    ]);
+
+    await setup();
+
+    const rows = fixture.nativeElement.querySelectorAll('app-orders-panel tbody tr[data-order-id]');
+    expect(rows).toHaveLength(2);
+    const firstCells = rowTextCells(rows[0]);
+    const secondCells = rowTextCells(rows[1]);
+
+    expect(firstCells[1]).toContain('TSLA');
+    expect(firstCells[2]).toBe('SELL');
+    expect(firstCells[3]).toBe('4');
+    expect(firstCells[4]).toBe('Rejected');
+    expect(firstCells[5]).toBe('—');
+    expect(firstCells[6]).toContain('Order rejected because you do not hold enough shares to sell that quantity.');
+
+    expect(secondCells[1]).toContain('AAPL');
+    expect(secondCells[2]).toBe('BUY');
+    expect(secondCells[3]).toBe('11');
+    expect(secondCells[4]).toBe('Filled');
+    expect(secondCells[5]).toContain('$201.50');
+    expect(secondCells[6]).toBe('—');
   });
 });
