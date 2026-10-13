@@ -20,7 +20,7 @@ class PlatformSettingsTest {
         PlatformSettings settings = bind(Map.of());
 
         assertEquals(3, settings.getAuth().getLockout().getMaxAttempts());
-        assertEquals(Duration.ofSeconds(30), settings.getAuth().getLockout().getDuration());
+        assertEquals(Duration.ofMinutes(15), settings.getAuth().getLockout().getDuration());
         assertEquals(Duration.ofMinutes(30), settings.getSession().getInactivityTimeout());
         assertEquals(Duration.ofSeconds(5), settings.getMarket().getStalenessLimit());
         assertEquals(List.of(), settings.getOrders().getRestrictedLocations());
