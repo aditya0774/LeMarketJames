@@ -94,4 +94,26 @@ class OrderHistoryIntegrationTest {
         mvc.perform(get("/api/v1/orders/account/91002").param("date", "2026").param("timeZone", "UTC"))
             .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
     }
+
+    @Test
+    void paginatesHistoryWithPageAndSize() throws Exception {
+        save(ACCOUNT, LocalDateTime.parse("2026-01-01T00:00:00"), Order.OrderStatus.SUBMITTED);
+        save(ACCOUNT, LocalDateTime.parse("2026-01-02T00:00:00"), Order.OrderStatus.SUBMITTED);
+        save(ACCOUNT, LocalDateTime.parse("2026-01-03T00:00:00"), Order.OrderStatus.SUBMITTED);
+
+        mvc.perform(get(URL).param("page", "0").param("size", "2"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2));
+
+        mvc.perform(get(URL).param("page", "1").param("size", "2"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"-1,20", "0,0", "0,101"})
+    void invalidPaginationReturnsBadRequest(String page, String size) throws Exception {
+        mvc.perform(get(URL).param("page", page).param("size", size))
+            .andExpect(status().isBadRequest());
+    }
 }

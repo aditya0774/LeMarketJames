@@ -24,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,9 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final OrderRepository orderRepository;
     private final AccountAccess accountAccess;
@@ -177,12 +181,23 @@ public class OrderService {
     }
 
     public List<OrderResponse> getOrdersByAccountId(Integer accountId, String date, String timeZone) {
-        return getOrdersByAccountAndStatus(accountId, null, date, timeZone);
+        return getOrdersByAccountAndStatus(accountId, null, date, timeZone, DEFAULT_PAGE, DEFAULT_SIZE);
+    }
+
+    public List<OrderResponse> getOrdersByAccountId(
+            Integer accountId, String date, String timeZone, Integer page, Integer size) {
+        return getOrdersByAccountAndStatus(accountId, null, date, timeZone, page, size);
     }
 
     public List<OrderResponse> getOrdersByAccountAndStatus(
             Integer accountId, Order.OrderStatus status, String date, String timeZone) {
+        return getOrdersByAccountAndStatus(accountId, status, date, timeZone, DEFAULT_PAGE, DEFAULT_SIZE);
+    }
+
+    public List<OrderResponse> getOrdersByAccountAndStatus(
+            Integer accountId, Order.OrderStatus status, String date, String timeZone, Integer page, Integer size) {
         accountAccess.requireOwnAccount(accountId);
+        validatePagination(page, size);
         OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);
         List<Order> orders;
         if (period == null) {
@@ -191,7 +206,21 @@ public class OrderService {
         } else {
             orders = orderRepository.findHistory(accountId, status, period.start(), period.end());
         }
-        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());
+        int fromIndex = Math.min(page * size, orders.size());
+        int toIndex = Math.min(fromIndex + size, orders.size());
+        return orders.subList(fromIndex, toIndex).stream().map(OrderResponse::new).collect(Collectors.toList());
+    }
+
+    private static void validatePagination(Integer page, Integer size) {
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "page must be >= 0");
+        }
+        if (size == null || size < 1 || size > MAX_SIZE) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "size must be between 1 and " + MAX_SIZE
+            );
+        }
     }
 
     /**
