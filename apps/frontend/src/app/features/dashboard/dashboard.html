@@ -32,9 +32,14 @@
 <app-orders-panel
   [orders]="historyOrders()"
   (dateChange)="onHistoryDateChange($event)"
+  (pageChange)="onHistoryPageChange($event)"
   [loading]="ordersLoading()"
   [error]="ordersError()"
   [liveConnection]="ordersConnection()"
+  [serverPagination]="true"
+  [currentPage]="historyPage()"
+  [hasNextPage]="historyHasNext()"
+  [totalOrders]="historyTotal()"
 />
 
 @if (tradeSymbol(); as symbol) {

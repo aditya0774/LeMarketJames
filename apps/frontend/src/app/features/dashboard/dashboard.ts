@@ -36,6 +36,8 @@ export const MARKET_REFRESH_MS = 2000;
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit {
+  private static readonly HISTORY_PAGE_SIZE = 5;
+
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
   private readonly orderService = inject(OrderService);
@@ -51,6 +53,9 @@ export class Dashboard implements OnInit {
 
   protected readonly orders = signal<OrderResponse[]>([]);
   protected readonly historyOrders = signal<OrderResponse[]>([]);
+  protected readonly historyPage = signal(1);
+  protected readonly historyHasNext = signal(false);
+  protected readonly historyTotal = signal<number | null>(null);
   private historyDate = '';
   private historyRequest?: Subscription;
   private ordersRequest?: Subscription;
@@ -166,12 +171,15 @@ export class Dashboard implements OnInit {
       return;
     }
     this.ordersRequest = this.orderService
-      .getOrdersByAccountId(accountId)
+      .getAllOrdersByAccountId(accountId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (orders) => {
           const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
           this.orders.set(orders ?? []);
+          if (!this.historyDate) {
+            this.historyTotal.set((orders ?? []).length);
+          }
           if ((orders ?? []).some(order => previous.has(order.orderId)
               && previous.get(order.orderId) !== order.orderStatus)) {
             this.loadHoldings();
@@ -217,34 +225,61 @@ export class Dashboard implements OnInit {
 
   protected onHistoryDateChange(date: string): void {
     this.historyDate = date;
+    this.historyPage.set(1);
     this.loadHistory();
   }
 
-  private loadHistory(): void {
-    // Unsubscribe first so a slow earlier selection cannot replace newer results.
+  protected onHistoryPageChange(page: number): void {
+    this.historyPage.set(page);
+    this.loadHistory();
+  }
+
+  private loadHistoryPage(accountId: number, filter?: { date: string; timeZone: string }): void {
     this.historyRequest?.unsubscribe();
-    const accountId = this.auth.currentAccountId();
-    if (!accountId) return;
     this.ordersLoading.set(true);
     this.ordersError.set(null);
-    const filter = this.historyDate ? {
-      date: this.historyDate,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    } : undefined;
-    this.historyRequest = this.orderService.getOrdersByAccountId(accountId, filter)
+    const pageIndex = this.historyPage() - 1;
+    const requestSize = Dashboard.HISTORY_PAGE_SIZE + 1;
+    this.historyRequest = this.orderService.getOrdersByAccountIdPage(
+      accountId,
+      { page: pageIndex, size: requestSize },
+      filter,
+    )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: orders => {
-          this.historyOrders.set(orders ?? []);
+          const all = orders ?? [];
+          const hasNext = all.length > Dashboard.HISTORY_PAGE_SIZE;
+          const pageOrders = all.slice(0, Dashboard.HISTORY_PAGE_SIZE);
+          this.historyOrders.set(pageOrders);
+          this.historyHasNext.set(hasNext);
+          if (!this.historyDate) {
+            this.historyTotal.set(this.orders().length);
+          } else {
+            const lowerBound = pageIndex * Dashboard.HISTORY_PAGE_SIZE + pageOrders.length;
+            this.historyTotal.set(hasNext ? lowerBound + 1 : lowerBound);
+          }
           this.ordersLoading.set(false);
         },
         error: err => {
           this.historyOrders.set([]);
+          this.historyHasNext.set(false);
+          this.historyTotal.set(0);
           this.ordersError.set('Unable to load orders. Please try again.');
           this.ordersLoading.set(false);
           this.flagExpiredSession(err);
         },
       });
+  }
+
+  private loadHistory(): void {
+    const accountId = this.auth.currentAccountId();
+    if (!accountId) return;
+    const filter = this.historyDate ? {
+      date: this.historyDate,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    } : undefined;
+    this.loadHistoryPage(accountId, filter);
   }
 
   private loadBalance(): void {
