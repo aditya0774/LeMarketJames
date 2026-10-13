@@ -50,6 +50,7 @@ com.lemarketjames.reports
 com.lemarketjames.reports.controller
 com.lemarketjames.reports.dto
 com.lemarketjames.reports.entity
+com.lemarketjames.reports.insight
 com.lemarketjames.reports.period
 com.lemarketjames.reports.repository
 com.lemarketjames.reports.service
