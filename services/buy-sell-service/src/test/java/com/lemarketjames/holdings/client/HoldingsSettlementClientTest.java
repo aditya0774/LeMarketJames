@@ -1,6 +1,7 @@
 package com.lemarketjames.holdings.client;
 
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.execution.ExecutionSettings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class HoldingsSettlementClientTest {
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsSettlementClient(TEST_SERVICE_URL);
+        client = new HoldingsSettlementClient(TEST_SERVICE_URL, new ExecutionSettings());
     }
 
     // ========== Contract Validation Tests ==========
