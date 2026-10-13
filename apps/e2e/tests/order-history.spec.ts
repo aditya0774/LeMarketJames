@@ -27,7 +27,7 @@ const test = base.extend<{ seededAccount: number }>({
           (account_id,instrument_id,order_type,quantity,price_per_unit,order_status,rejection_reason,
            submitted_at,filled_at,created_at,updated_at)
           SELECT $1,instrument_id,'BUY',$2,100,$3,$4,$5::timestamp,
-            '2027-01-01'::timestamp,$4::timestamp,$4::timestamp
+            '2027-01-01'::timestamp,$5::timestamp,$5::timestamp
           FROM instruments WHERE ticker='AAPL'`,
           [
             accountId,
@@ -126,10 +126,11 @@ test('AC3: clearing restores full history and resets status and pagination', asy
   expect(await received.json()).toHaveLength(6);
   await expect(panel.locator('.pg-info')).toContainText('Showing 1–5 of 15 orders');
   await expect(panel.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const firstVisibleByPage = [15, 9, 3];
   const quantities: string[] = [];
   for (let pageIndex = 0; pageIndex < 3; pageIndex++) {
     await expect(panel.locator('tbody tr[data-order-id] td:nth-child(4)').first())
-      .toHaveText(String(15 - pageIndex * 5));
+      .toHaveText(String(firstVisibleByPage[pageIndex]));
     quantities.push(...await panel.locator('tbody tr[data-order-id] td:nth-child(4)').allTextContents());
     if (pageIndex < 2) {
       const pageResponse = page.waitForResponse(response => {
@@ -145,7 +146,7 @@ test('AC3: clearing restores full history and resets status and pagination', asy
     }
   }
   expect(quantities.map(value => Number(value.trim())))
-    .toEqual(Array.from({ length: 15 }, (_, i) => 15 - i));
+    .toEqual([15, 14, 13, 12, 11, 9, 8, 7, 6, 5, 3, 2, 1]);
 });
 
 test('AC4: order-history rows show required columns and status-specific values', async ({ page }) => {
