@@ -85,7 +85,9 @@ Places a market order for one of the caller's accounts.
 ```json
 {
   "success": true, "reason": null, "code": null,
-  "orderId": 42, "accountId": 7, "instrumentId": 5, "orderType": "BUY", "quantity": 1,
+  "orderId": 42, "accountId": 7, "instrumentId": 5,
+  "symbol": "AAPL", "instrumentName": "BronApple",
+  "orderType": "BUY", "quantity": 1,
   "pricePerUnit": 244.2366, "orderStatus": "SUBMITTED", "rejectionReason": null,
   "submittedAt": "2026-09-21T10:30:00", "acceptedAt": null, "filledAt": null,
   "quoteSource": null, "quoteTime": null,
@@ -128,10 +130,20 @@ The two account-history endpoints accept these optional date-filter parameters:
 
 - `date`: a client-local calendar day (`YYYY-MM-DD`), month (`YYYY-MM`), or year (`YYYY`).
 - `timeZone`: an IANA time-zone ID such as `America/New_York` or `UTC`.
+- `page`: zero-based page number (default `0`).
+- `size`: page size from `1` to `100` (default `20`).
 - Supply both parameters together, or omit both to return the complete history. Clearing the UI filter omits both.
 - Filtering uses `submittedAt`, includes the selected period's local start, and excludes the next period's local start. Converting both boundaries separately preserves daylight-saving transitions.
-- No matches return `200 []`. Invalid dates, unknown or blank zones, and incomplete parameter pairs return `400 { "message": "..." }`.
+- Results are ordered newest-first by `submittedAt`, then `orderId` as a tie-breaker.
+- No matches return `200 []`. Invalid dates, unknown or blank zones, incomplete parameter pairs, and invalid pagination values return `400`.
 - Ownership is checked before querying. The status endpoint combines its status restriction with the same date period.
+
+The order DTO now includes additive stock display fields:
+
+- `symbol`: instrument ticker from `instruments` (e.g. `AAPL`).
+- `instrumentName`: instrument display name from `instruments` (e.g. `BronApple`).
+
+`instrumentId` remains part of the DTO for stable identity and backward compatibility.
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
@@ -645,7 +657,6 @@ These are contracts for upcoming stories. Build them as written, or update this 
 - **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, and the [volume insight](#get-apiv1reportsinsightsvolume) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
-- **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
 - **Watchlist:** `GET /api/v1/watchlist`, `POST /api/v1/watchlist { symbol }` (`409 ALREADY_WATCHED`), `DELETE /api/v1/watchlist/{symbol}`. It needs a new `watchlist (account_id, instrument_id, added_at)` table in the next free migration number, in its own `watchlist` feature package.
 
