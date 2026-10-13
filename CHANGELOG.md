@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- LMKT-73: Sell settlement checked against S18's acceptance criteria. No behaviour changes:
+  `holdings-service` already credited the cash, reduced or removed the holding and audited
+  `SETTLED` in one transaction. New tests prove it for a sell through
+  `POST /internal/holdings/settle`, including a sell that fails part-way (nothing changes, even
+  when the holding had been deleted) and a sell for more shares than are held.
 - LMKT-71: Trading Ops are alerted when a settlement is refused. `OrderStatusChanged` carries a
   new `rejectionReason` (null unless the order was rejected), and `surveillance-service` now also
   reads `lemarket.orders.status-changed` and raises a `SETTLEMENT_REFUSED` alert when an order

@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,6 +111,9 @@ class HoldingsSettlementServiceTest {
         assertEquals(new BigDecimal("1480.00"), account.getCashBalance());
         verify(holdingsRepository).save(existing);
         verify(holdingsRepository, never()).delete(any());
+        // Contract C2: a sell's audit has the signs the other way round from a buy's.
+        verify(auditRecorder).record(eq(AuditEventType.SETTLED), any(), eq(1), eq(Map.of(
+                "cashDelta", new BigDecimal("480.00"), "quantityDelta", new BigDecimal("-4"))));
     }
 
     @Test
@@ -125,6 +129,7 @@ class HoldingsSettlementServiceTest {
 
         verify(holdingsRepository).delete(existing);
         verify(holdingsRepository, never()).save(any());
+        assertEquals(new BigDecimal("2200.00"), account.getCashBalance());
     }
 
     @Test
@@ -142,6 +147,25 @@ class HoldingsSettlementServiceTest {
 
         assertEquals("INSUFFICIENT_HOLDINGS", settlementService.settle(
                 request(1, 10, SettlementRequest.OrderType.SELL, new BigDecimal("4"), new BigDecimal("120.00"))));
+    }
+
+    /** A refused settlement is not a settlement: nothing moves, and there is no SETTLED to audit. */
+    @Test
+    void aRefusedSellMovesNothingAndIsNotAudited() {
+        AccountEntity account = accountWithBalance(new BigDecimal("1000.00"));
+        HoldingsEntity existing = new HoldingsEntity(1, 10, new BigDecimal("3"), new BigDecimal("100.00"));
+        when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+        when(holdingsRepository.findByAccountIdAndInstrumentId(1, 10)).thenReturn(Optional.of(existing));
+
+        assertEquals("INSUFFICIENT_HOLDINGS", settlementService.settle(
+                request(1, 10, SettlementRequest.OrderType.SELL, new BigDecimal("4"), new BigDecimal("120.00"))));
+
+        assertEquals(new BigDecimal("3"), existing.getQuantity());
+        assertEquals(new BigDecimal("1000.00"), account.getCashBalance());
+        verify(holdingsRepository, never()).save(any());
+        verify(holdingsRepository, never()).delete(any());
+        verify(accountRepository, never()).save(any());
+        verifyNoInteractions(auditRecorder);
     }
 
     private static SettlementRequest request(int accountId, int instrumentId, SettlementRequest.OrderType type,
