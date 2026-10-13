@@ -8,8 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -25,19 +24,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class OrderStatusStreamApiTest {
 
-    @MockBean
+    @MockitoBean
     private OrderService orderService;
 
-    @MockBean
+    @MockitoBean
     private CashValidationService cashValidationService;
 
-    @MockBean
+    @MockitoBean
     private AccountAccess accountAccess;
 
-    @MockBean
+    @MockitoBean
     private OrderStatusStreamService orderStatusStreamService;
 
-    @MockBean
+    @MockitoBean
     private com.lemarketjames.orders.execution.OrderExecutionService execution;
 
     @Autowired

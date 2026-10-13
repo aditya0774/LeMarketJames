@@ -21,7 +21,8 @@ class OrderStatusStreamListenerTest {
             7,
             Order.OrderStatus.SUBMITTED,
             Order.OrderStatus.ACCEPTED,
-            Instant.parse("2026-10-06T10:00:00Z")
+            Instant.parse("2026-10-06T10:00:00Z"),
+            null
         );
 
         listener.onOrderStatusChanged(event);

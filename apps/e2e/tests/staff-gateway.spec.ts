@@ -1,5 +1,6 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
+import { resetFeed } from './support/market-control';
 import { newUser, registerViaApi, TestUser } from './support/users';
 
 /**
@@ -37,6 +38,7 @@ async function cookieNames(context: APIRequestContext): Promise<string[]> {
 
 /** A fresh client with one placed order, set up through the trading gateway as a customer would. */
 async function clientWithOrder(request: APIRequestContext): Promise<{ user: TestUser; orderId: number }> {
+  await resetFeed(request);
   const user = newUser('staffgw');
   await registerViaApi(request, user);
   const accountId = await loginViaApi(request, user);

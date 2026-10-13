@@ -21,11 +21,11 @@ public class HoldingsSettlementController {
 <span class="fc" id="L21">        this.settlementService = settlementService;</span>
 <span class="fc" id="L22">    }</span>
 
-<span class="nc" id="L24">    public record Outcome(String rejectionReason) {}</span>
+<span class="fc" id="L24">    public record Outcome(String rejectionReason) {}</span>
 
     @PostMapping(&quot;/internal/holdings/settle&quot;)
     public ResponseEntity&lt;Outcome&gt; settle(@jakarta.validation.Valid @RequestBody SettlementRequest request) {
-<span class="nc" id="L28">        return ResponseEntity.ok(new Outcome(settlementService.settle(request)));</span>
+<span class="fc" id="L28">        return ResponseEntity.ok(new Outcome(settlementService.settle(request)));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

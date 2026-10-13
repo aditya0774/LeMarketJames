@@ -1,6 +1,6 @@
 """Populate the local LMKT-43 demo through normal order placement and settlement.
 
-Apply database/schema/019_segment_report_demo_clients.sql first. Requires the trading
+Apply database/schema/020_segment_report_demo_clients.sql first. Requires the trading
 stack, available quotes and an open market. Re-running resumes each dedicated demo
 account up to its target trade count; it never rewrites fills or audit records.
 Run only one copy at a time. Uses Python's standard library.

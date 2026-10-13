@@ -7,6 +7,12 @@
  */
 <span class="fc" id="L8">public enum AlertReason {</span>
     /** The order is for at least the large-order quantity (contract C5, {@code lmj.surveillance}). */
-<span class="fc" id="L10">    LARGE_ORDER</span>
+<span class="fc" id="L10">    LARGE_ORDER,</span>
+    /**
+     * The order was priced and sent to settlement, and holdings-service refused it: by then the
+     * account no longer had the cash (a BUY) or the shares (a SELL). The alert's rejection reason
+     * says which (contract C6).
+     */
+<span class="fc" id="L16">    SETTLEMENT_REFUSED</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
