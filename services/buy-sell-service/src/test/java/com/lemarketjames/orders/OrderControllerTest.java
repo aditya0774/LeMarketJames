@@ -18,6 +18,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -262,5 +263,47 @@ public class OrderControllerTest {
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error").value("Access denied"))
             .andExpect(jsonPath("$.code").value("ACCOUNT_ACCESS_DENIED"));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = "CLIENT")
+    void getOrdersByAccountForwardsPaginationAndFilters() throws Exception {
+        when(orderService.getOrdersByAccountId(7, "2026-10", "UTC", 2, 5))
+            .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/orders/account/7")
+                .param("date", "2026-10")
+                .param("timeZone", "UTC")
+                .param("page", "2")
+                .param("size", "5"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
+
+        verify(orderService).getOrdersByAccountId(7, "2026-10", "UTC", 2, 5);
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = "CLIENT")
+    void getOrdersByAccountUsesDefaultPagination() throws Exception {
+        when(orderService.getOrdersByAccountId(7, null, null, 0, 20)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/orders/account/7"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
+
+        verify(orderService).getOrdersByAccountId(7, null, null, 0, 20);
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = "CLIENT")
+    void getOrdersByAccountRejectsInvalidPagination() throws Exception {
+        mockMvc.perform(get("/api/v1/orders/account/7").param("page", "-1").param("size", "20"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/orders/account/7").param("page", "0").param("size", "0"))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/orders/account/7").param("page", "0").param("size", "101"))
+            .andExpect(status().isBadRequest());
+
+        verify(orderService, never()).getOrdersByAccountId(eq(7), any(), any(), anyInt(), anyInt());
     }
 }

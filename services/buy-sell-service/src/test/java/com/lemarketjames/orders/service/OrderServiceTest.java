@@ -39,10 +39,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -667,6 +670,40 @@ class OrderServiceTest {
         // Assert
         assertEquals(1, responses.size());
         assertEquals(Order.OrderStatus.SUBMITTED, responses.get(0).getOrderStatus());
+    }
+
+    @Test
+    @DisplayName("Paginated history forwards page, size and newest-first sort to repository")
+    void paginatedHistoryUsesRepositoryPageableWithNewestFirstSort() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+        when(orderRepository.findByAccountId(eq(1), any(Pageable.class))).thenReturn(Page.empty());
+
+        orderService.getOrdersByAccountId(1, null, null, 2, 5);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderRepository).findByAccountId(eq(1), pageableCaptor.capture());
+        Pageable pageable = pageableCaptor.getValue();
+        assertEquals(2, pageable.getPageNumber());
+        assertEquals(5, pageable.getPageSize());
+        assertEquals(org.springframework.data.domain.Sort.Direction.DESC,
+            pageable.getSort().getOrderFor("submittedAt").getDirection());
+        assertEquals(org.springframework.data.domain.Sort.Direction.DESC,
+            pageable.getSort().getOrderFor("orderId").getDirection());
+    }
+
+    @Test
+    @DisplayName("Invalid pagination is rejected")
+    void invalidPaginationIsRejected() {
+        when(accountRepository.existsByAccountIdAndUsername(1, "testuser")).thenReturn(true);
+
+        assertThrows(ResponseStatusException.class,
+            () -> orderService.getOrdersByAccountId(1, null, null, -1, 20));
+        assertThrows(ResponseStatusException.class,
+            () -> orderService.getOrdersByAccountId(1, null, null, 0, 0));
+        assertThrows(ResponseStatusException.class,
+            () -> orderService.getOrdersByAccountId(1, null, null, 0, 101));
+
+        verify(orderRepository, never()).findByAccountId(eq(1), any(Pageable.class));
     }
 
     /**
