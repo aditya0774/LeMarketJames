@@ -8,7 +8,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const isCi = !!process.env.CI;
 const FEED_FAILURE_TESTS = /feed-failure\.spec\.ts$/;
-const EXECUTION_RETRY_TESTS = /execution-retry\.spec\.ts$/;
+// The files that pause the execution worker for the whole stack.
+const EXECUTION_RETRY_TESTS = /(execution-retry|settlement)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests',
@@ -54,14 +55,16 @@ export default defineConfig({
     },
     // These tests make the quote feed stale or unavailable for the whole stack (contract C4),
     // which would refuse every other test's orders. Depending on the main project makes them
-    // start only once it has finished; Playwright skips them if it failed.
+    // start only once it has finished; Playwright skips them if it failed. They also wait for the
+    // project above: its tests place orders that a broken feed would refuse, and these tests'
+    // orders would never execute while that project has the worker paused.
     {
       name: 'feed-failure',
       // Different files still share one global feed; serialize all outage scenarios.
       workers: 1,
       use: { ...devices['Desktop Chrome'] },
       testMatch: FEED_FAILURE_TESTS,
-      dependencies: ['chromium'],
+      dependencies: ['chromium', 'execution-recovery'],
     },
   ],
 });

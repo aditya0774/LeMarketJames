@@ -36,13 +36,16 @@ public class HoldingsSettlementService {
     private final AccountRepository accountRepository;
     private final AuditRecorder auditRecorder;
     private final com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts;
+    private final SettlementCheckpoint checkpoint;
 
     public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository,
-                                     AuditRecorder auditRecorder, com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts) {
+                                     AuditRecorder auditRecorder, com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts,
+                                     SettlementCheckpoint checkpoint) {
         this.holdingsRepository = holdingsRepository;
         this.accountRepository = accountRepository;
         this.auditRecorder = auditRecorder;
         this.receipts = receipts;
+        this.checkpoint = checkpoint;
     }
 
     /**
@@ -80,6 +83,8 @@ public class HoldingsSettlementService {
         auditRecorder.record(AuditEventType.SETTLED, request.getOrderId(), request.getAccountId(), Map.of(
                 "cashDelta", buy ? cost.negate() : cost,
                 "quantityDelta", buy ? request.getQuantity() : request.getQuantity().negate()));
+        // Everything is written and nothing is committed: where a test may make the settlement fail.
+        checkpoint.beforeCommit(request);
         log.info("Settled order={} account={} instrument={} type={} qty={} price={}",
                 request.getOrderId(), request.getAccountId(), request.getInstrumentId(),
                 request.getOrderType(), request.getQuantity(), request.getPricePerUnit());

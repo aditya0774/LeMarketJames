@@ -64,3 +64,32 @@ export async function storedOrder(db: Client, orderId: number): Promise<StoredOr
      FROM orders WHERE order_id=$1`, [orderId]);
   return result.rows[0];
 }
+
+/**
+ * Whether the order has a fill waiting to be settled: buy-sell-service sets the flag before it
+ * calls holdings-service and clears it with the outcome (C6). No API shows it.
+ */
+export async function settlementPending(db: Client, orderId: number): Promise<boolean> {
+  const result = await db.query('SELECT settlement_pending FROM orders WHERE order_id=$1', [orderId]);
+  return result.rows[0].settlement_pending;
+}
+
+export interface SettlementReceipt {
+  order_type: string;
+  /** NUMERIC comes back as a string, so no precision is lost. */
+  quantity: string;
+  price_per_unit: string;
+  /** Null for a settlement that was applied. */
+  rejection_reason: string | null;
+}
+
+/**
+ * Every outcome holdings-service has stored for the order. There is one per order once it has
+ * been settled or refused, and none while every attempt has failed (C6).
+ */
+export async function settlementReceipts(db: Client, orderId: number): Promise<SettlementReceipt[]> {
+  const result = await db.query(
+    'SELECT order_type, quantity, price_per_unit, rejection_reason FROM settlement_receipts WHERE order_id=$1',
+    [orderId]);
+  return result.rows;
+}
