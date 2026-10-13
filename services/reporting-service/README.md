@@ -54,6 +54,23 @@ for 100,000 synthetic trades across five segments and 1,000 clients. That baseli
 execution and JSON serialization, excludes startup and fixture setup, and does not simulate
 concurrent traffic or the public view's underlying joins. No shared data is modified.
 
+`apps/e2e/tests-staff/staff-by-segment-report.spec.ts` covers LMKT-116 through the real
+staff login, Analyst dashboard, staff gateway and reporting API, with no mocked responses:
+
+| LMKT-43 criterion | End-to-end check |
+|---|---|
+| AC1 | Two selected historical ranges: raw view records are independently summed and compared with the API and rendered table; an empty range shows the empty state. |
+| AC2 | A typical historical report refresh and its rendered table complete within ten seconds, excluding login and date-entry setup. |
+| AC3 | Only the aggregate response fields and table cells are exposed; the report offers no client drill-down or identifying fields. |
+| AC4 | Signed-out users receive 401; clients and Trading Ops receive 403 even with valid sessions. The report page also denies access. |
+
+Run against the seeded stack with `cd apps/e2e` then
+`npm run test:staff -- staff-by-segment-report.spec.ts --workers=1`.
+The totals check uses `tests/support/database.ts`: supply `E2E_DATABASE_URL`, or
+`E2E_ALLOW_DATABASE_SEED=true` with the `PG*` connection variables, as in Jenkins.
+This spec only reads data; historical windows exclude current executions, and segment names
+come from C3's data. Jenkins already discovers it in the staff Playwright stage.
+
 Run the PostgreSQL checks against the disposable test database using `TEST_DATABASE_*`:
 
 ```powershell
