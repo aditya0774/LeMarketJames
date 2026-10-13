@@ -216,11 +216,11 @@ class AuthServiceTest {
 
         IllegalArgumentException lockedException = assertThrows(IllegalArgumentException.class,
             () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
-        assertEquals("Account locked for 15 minutes.", lockedException.getMessage());
+        assertEquals("Account locked for 1 minute.", lockedException.getMessage());
 
         IllegalArgumentException blockedException = assertThrows(IllegalArgumentException.class,
                 () -> authService.login(new LoginRequest("alice@example.com", "Pass123!")));
-        assertEquals("Account temporarily locked. Try again in 15 minutes.", blockedException.getMessage());
+        assertEquals("Account temporarily locked. Try again in 1 minute.", blockedException.getMessage());
     }
 
         @Test
