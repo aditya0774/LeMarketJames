@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { OrderResponse } from '../../../core/orders/order.service';
 import { toOrderHistoryRow } from './order-history-row';
 

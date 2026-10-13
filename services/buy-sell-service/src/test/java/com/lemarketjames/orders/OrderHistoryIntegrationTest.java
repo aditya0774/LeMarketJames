@@ -105,7 +105,9 @@ class OrderHistoryIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].orderId").value(third.getOrderId()))
-            .andExpect(jsonPath("$[1].orderId").value(second.getOrderId()));
+            .andExpect(jsonPath("$[1].orderId").value(second.getOrderId()))
+            .andExpect(jsonPath("$[0].symbol").isNotEmpty())
+            .andExpect(jsonPath("$[0].instrumentName").isNotEmpty());
 
         mvc.perform(get(URL).param("page", "1").param("size", "2"))
             .andExpect(status().isOk())

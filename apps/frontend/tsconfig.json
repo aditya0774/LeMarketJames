@@ -22,6 +22,7 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true
   },
-  "files": []
-  /* "references" removed: causes TypeScript composite project issues with incremental compilation */
+  "files": [
+    "src/main.ts"
+  ]
 }

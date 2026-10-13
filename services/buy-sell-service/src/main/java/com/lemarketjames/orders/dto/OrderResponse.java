@@ -12,6 +12,8 @@ public class OrderResponse {
     private Integer orderId;
     private Integer accountId;
     private Integer instrumentId;
+    private String symbol;
+    private String instrumentName;
     private Order.OrderType orderType;
     private BigDecimal quantity;
     private BigDecimal pricePerUnit;
@@ -85,6 +87,14 @@ public class OrderResponse {
     public Integer getInstrumentId() {
         return instrumentId;
     }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public String getInstrumentName() {
+        return instrumentName;
+    }
     
     public Order.OrderType getOrderType() {
         return orderType;
@@ -143,5 +153,13 @@ public class OrderResponse {
     
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public void setInstrumentName(String instrumentName) {
+        this.instrumentName = instrumentName;
     }
 }

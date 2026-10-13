@@ -107,7 +107,8 @@ class OrderServiceTest {
         orderService = new OrderService(orderRepository, accountAccess, validator,
             new SubmissionRecorder(orderRepository, auditRecorder, events),
             new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events),
-            auditEventRepository);
+            auditEventRepository,
+            instrumentRepository);
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
