@@ -15,21 +15,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:executionRecovery;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+@SpringBootTest(properties = {
+    "spring.datasource.url=jdbc:h2:mem:executionRecovery;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+    "lmj.execution.enabled=true"
+})
 class ExecutionRecoveryIntegrationTest {
     @Autowired OrderRepository orders;
     @Autowired AccountRepository accounts;
     @Autowired OrderExecutionService execution;
+    @Autowired OrderExecutionScheduler scheduler;
     @Autowired OrderExecutionTransactions transactions;
     @Autowired OrderService service;
     @MockBean OrderExecutor executor;
     @MockBean HoldingsSettlementClient settlement;
+    // Register scheduled work without running it in the background: each test controls
+    // execution and invokes the real scheduler's poll() explicitly for recovery.
+    @MockBean TaskScheduler taskScheduler;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     Order seed() {
@@ -88,5 +96,39 @@ class ExecutionRecoveryIntegrationTest {
         assertEquals(Order.OrderStatus.REJECTED, rejected.getOrderStatus());
         assertEquals("INSUFFICIENT_HOLDINGS", rejected.getRejectionReason());
         assertFalse(rejected.isSettlementPending());
+    }
+
+    @Test void schedulerRetriesPendingIntentAfterTemporaryFailure() {
+        Order order = seed(); int id = order.getOrderId();
+        Instant quoteTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        when(executor.execute(any())).thenReturn(ExecutionResult.filled(
+            new QuoteUsed(new BigDecimal("101.2500"), "SIMULATED_FEED", quoteTime)));
+
+        AtomicInteger settlementCalls = new AtomicInteger();
+        doAnswer(invocation -> {
+            if (settlementCalls.incrementAndGet() == 1) {
+                throw new IllegalStateException("Temporary outage");
+            }
+            return null;
+        }).when(settlement).settle(any());
+
+        assertThrows(IllegalStateException.class, () -> execution.execute(id, false));
+        Order pending = orders.findById(id).orElseThrow();
+        assertEquals(Order.OrderStatus.PENDING, pending.getOrderStatus());
+        assertTrue(pending.isSettlementPending());
+
+        // Automatic recovery path: scheduler retries pending intents without repricing.
+        scheduler.poll();
+
+        Order filled = orders.findById(id).orElseThrow();
+        assertEquals(Order.OrderStatus.FILLED, filled.getOrderStatus());
+        assertFalse(filled.isSettlementPending());
+        assertEquals(0, new BigDecimal("101.2500").compareTo(filled.getPricePerUnit()));
+        assertEquals("SIMULATED_FEED", filled.getQuoteSource());
+        assertEquals(quoteTime, filled.getQuoteTime());
+
+        verify(executor, times(1)).execute(any());
+        verify(settlement, times(2)).settle(any());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE order_id=? AND action='FILLED'", Integer.class, id));
     }
 }

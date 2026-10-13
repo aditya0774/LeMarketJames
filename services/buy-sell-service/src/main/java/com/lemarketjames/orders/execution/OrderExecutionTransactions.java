@@ -8,7 +8,10 @@ import com.lemarketjames.orders.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Separate bean ensures the durable intent commits BEFORE any remote settlement call. */
+/**
+ * Transactional half of execution.
+ * Separate bean ensures the durable intent commits BEFORE any remote settlement call.
+ */
 @Service
 public class OrderExecutionTransactions {
     private final OrderRepository orders;
@@ -20,6 +23,7 @@ public class OrderExecutionTransactions {
     @Transactional
     public Order prepare(int id, boolean manual) {
         Order order = orders.findLockedById(id).orElseThrow();
+        // Retry path: if settlement was already in-flight, reuse that exact persisted intent.
         if (order.isSettlementPending()) return order;
         if (!order.getOrderStatus().isOpen()) {
             if (manual) throw new InvalidStatusTransitionException(order.getOrderStatus(), OrderStatus.FILLED);
@@ -32,7 +36,7 @@ public class OrderExecutionTransactions {
         ExecutionResult result = executor.execute(order);
         if (result.nextStatus() == OrderStatus.FILLED) {
             if (order.getOrderStatus() != OrderStatus.PENDING) transitions.move(order, OrderStatus.PENDING, null);
-            // The quote is part of the durable intent: a retry settles at this price and keeps its provenance.
+            // Persist fill quote before remote settlement so retries never re-price a pending order.
             order.setPricePerUnit(result.fillPrice());
             order.setQuoteSource(result.quote().source());
             order.setQuoteTime(result.quote().quoteTime());
@@ -45,7 +49,7 @@ public class OrderExecutionTransactions {
     @Transactional
     public void finish(int id, RejectionReason rejection) {
         Order order = orders.findLockedById(id).orElseThrow();
-        // Another worker may have completed the same idempotent request in the meantime.
+        // Idempotent completion: if another worker already reconciled, do nothing.
         if (!order.isSettlementPending()) return;
         transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);
         order.setSettlementPending(false);

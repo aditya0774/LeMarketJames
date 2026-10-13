@@ -15,12 +15,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrderController {
+    private static final int MAX_SIZE = 100;
     
     private final OrderService orderService;
     private final AccountAccess accountAccess;
@@ -86,8 +88,11 @@ public class OrderController {
     @GetMapping("/account/{accountId}")
     public ResponseEntity<List<OrderResponse>> getOrdersByAccountId(@PathVariable Integer accountId,
             @RequestParam(required = false) String date,
-            @RequestParam(required = false) String timeZone) {
-        List<OrderResponse> orders = orderService.getOrdersByAccountId(accountId, date, timeZone);
+            @RequestParam(required = false) String timeZone,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        validatePagination(page, size);
+        List<OrderResponse> orders = orderService.getOrdersByAccountId(accountId, date, timeZone, page, size);
         return ResponseEntity.ok(orders);
     }
     
@@ -100,9 +105,24 @@ public class OrderController {
             @PathVariable Integer accountId,
             @PathVariable Order.OrderStatus status,
             @RequestParam(required = false) String date,
-            @RequestParam(required = false) String timeZone) {
-        List<OrderResponse> orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone);
+            @RequestParam(required = false) String timeZone,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        validatePagination(page, size);
+        List<OrderResponse> orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone, page, size);
         return ResponseEntity.ok(orders);
+    }
+
+    private static void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0");
+        }
+        if (size < 1 || size > MAX_SIZE) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "size must be between 1 and " + MAX_SIZE
+            );
+        }
     }
     
     /**

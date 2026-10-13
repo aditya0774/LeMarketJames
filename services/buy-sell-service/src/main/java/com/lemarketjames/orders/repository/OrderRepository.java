@@ -1,6 +1,8 @@
 package com.lemarketjames.orders.repository;
 
 import com.lemarketjames.orders.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,19 +26,24 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         AND (:status IS NULL OR o.orderStatus = :status)
         AND o.submittedAt >= :start AND o.submittedAt < :end
         """)
-    List<Order> findHistory(@Param("accountId") Integer accountId,
+    Page<Order> findHistory(@Param("accountId") Integer accountId,
         @Param("status") Order.OrderStatus status,
-        @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+        @Param("start") LocalDateTime start, @Param("end") LocalDateTime end,
+        Pageable pageable);
 
     /**
      * Find all orders for a specific account
      */
     List<Order> findByAccountId(Integer accountId);
+
+    Page<Order> findByAccountId(Integer accountId, Pageable pageable);
     
     /**
      * Find all orders for a specific account with a given status
      */
     List<Order> findByAccountIdAndOrderStatus(Integer accountId, Order.OrderStatus orderStatus);
+
+    Page<Order> findByAccountIdAndOrderStatus(Integer accountId, Order.OrderStatus orderStatus, Pageable pageable);
     
     /**
      * Find all orders for a specific instrument

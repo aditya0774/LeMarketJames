@@ -32,7 +32,30 @@ The last two are set on each connection when the pool opens it, so they hold for
 |---|---|---|
 | [ReportAccessTest](src/test/java/com/lemarketjames/reports/ReportAccessTest.java) | No token gets `401`, every role but `ANALYST` gets `403`, `ANALYST` gets `200` | `mvn -B -pl services/reporting-service -am test` |
 | [ReportCalendarTest](src/test/java/com/lemarketjames/reports/period/ReportCalendarTest.java) | Day, week, month and year ranges, day boundaries and daylight-saving changes | same |
+| [VolumeInsightControllerTest](src/test/java/com/lemarketjames/reports/insight/VolumeInsightControllerTest.java) | The volume insight's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`), response shape and `400`s | same |
+| [VolumeInsightServiceTest](src/test/java/com/lemarketjames/reports/insight/VolumeInsightServiceTest.java) | Which two periods are compared for each period type, the change and percent (including no previous trades), time-zone and daylight-saving boundaries | same |
 | [ReadSideSafeguardsIntegrationTest](src/test/java/com/lemarketjames/ReadSideSafeguardsIntegrationTest.java) | The three safeguards, on a real PostgreSQL | Jenkins' integration stage; locally, the command in its Javadoc |
 | [reporting-access.spec.ts](../../apps/e2e/tests/reporting-access.spec.ts) | The same access rules on the running service, with the seed logins | `cd apps/e2e && npm test` |
 
 The Java tests need no H2 database: the access tests load only the web layer, and the safeguards test is skipped unless the `postgres-test` profile is active.
+
+## Activity by client segment (LMKT-43)
+
+`GET /api/v1/reports/activity` implements the [C6 segment report](../../contracts/C6-api.md#get-apiv1reportsactivity).
+Its controller handles HTTP, its service obtains date boundaries from `ReportCalendar`, and its
+repository performs one grouped SQL query over the view. Distinct client counting spans accounts;
+only aggregate DTOs leave the service. The existing security and read-side limits apply.
+
+`SegmentActivityControllerTest` and `SegmentActivityServiceTest` cover the response allowlist,
+role refusals, date validation, defaults and daylight-saving boundaries in the usual unit run.
+`SegmentActivityIntegrationTest` runs under `postgres-test`, including in Jenkins. It checks the
+real view, exact aggregation on isolated session-local fixtures, and an under-ten-second baseline
+for 100,000 synthetic trades across five segments and 1,000 clients. That baseline includes SQL
+execution and JSON serialization, excludes startup and fixture setup, and does not simulate
+concurrent traffic or the public view's underlying joins. No shared data is modified.
+
+Run the PostgreSQL checks against the disposable test database using `TEST_DATABASE_*`:
+
+```powershell
+mvn -B -pl services/reporting-service -am "-Dspring.profiles.active=postgres-test" "-Dtest=SegmentActivityIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+```

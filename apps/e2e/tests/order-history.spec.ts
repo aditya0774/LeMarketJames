@@ -76,9 +76,9 @@ for (const scenario of [
       .toEqual(scenario.quantities);
     const rows = page.locator('app-orders-panel tbody tr[data-order-id]');
     await expect(rows).toHaveCount(scenario.quantities.length);
-    await expect(rows.locator('td:nth-child(3)')).toHaveText(scenario.quantities.map(String));
+    await expect(rows.locator('td:nth-child(4)')).toHaveText(scenario.quantities.map(String));
     if (scenario.display) {
-      await expect(rows.locator('td:last-child')).toHaveText(scenario.quantities.map(() => scenario.display!));
+      await expect(rows.locator('td:nth-child(1)')).toContainText(scenario.quantities.map(() => scenario.display!));
     }
     // Filtering history must not change the account-wide open-order count.
     await expect(page.locator('.stat-card .val').last()).toHaveText('0');
@@ -108,9 +108,9 @@ test('AC3: clearing restores full history and resets status and pagination', asy
   await expect(panel.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const quantities: string[] = [];
   for (let pageIndex = 0; pageIndex < 3; pageIndex++) {
-    await expect(panel.locator('tbody tr[data-order-id] td:nth-child(3)').first())
+    await expect(panel.locator('tbody tr[data-order-id] td:nth-child(4)').first())
       .toHaveText(String(15 - pageIndex * 5));
-    quantities.push(...await panel.locator('tbody tr[data-order-id] td:nth-child(3)').allTextContents());
+    quantities.push(...await panel.locator('tbody tr[data-order-id] td:nth-child(4)').allTextContents());
     if (pageIndex < 2) await panel.getByRole('button', { name: 'Next page' }).click();
   }
   expect(quantities.map(value => Number(value.trim())))

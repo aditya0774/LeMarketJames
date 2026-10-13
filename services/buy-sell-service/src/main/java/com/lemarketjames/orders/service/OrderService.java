@@ -4,6 +4,8 @@ import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.audit.AuditRecorder;
 import com.lemarketjames.common.audit.AuditEventEntity;
 import com.lemarketjames.common.audit.AuditEventRepository;
+import com.lemarketjames.common.instruments.Instrument;
+import com.lemarketjames.common.instruments.InstrumentRepository;
 import com.lemarketjames.common.security.Role;
 import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
@@ -19,18 +21,27 @@ import com.lemarketjames.orders.submission.SubmissionValidator;
 import com.lemarketjames.orders.submission.ValidationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_SIZE = 100;
 
     private final OrderRepository orderRepository;
     private final AccountAccess accountAccess;
@@ -38,19 +49,22 @@ public class OrderService {
     private final SubmissionRecorder submissions;
     private final OrderTransitions transitions;
     private final AuditEventRepository auditEventRepository;
+    private final InstrumentRepository instrumentRepository;
 
     public OrderService(OrderRepository orderRepository,
                         AccountAccess accountAccess,
                         SubmissionValidator validator,
                         SubmissionRecorder submissions,
                         OrderTransitions transitions,
-                        AuditEventRepository auditEventRepository) {
+                        AuditEventRepository auditEventRepository,
+                        InstrumentRepository instrumentRepository) {
         this.orderRepository = orderRepository;
         this.accountAccess = accountAccess;
         this.validator = validator;
         this.submissions = submissions;
         this.transitions = transitions;
         this.auditEventRepository = auditEventRepository;
+        this.instrumentRepository = instrumentRepository;
     }
 
     /**
@@ -151,7 +165,7 @@ public class OrderService {
      * Get order by ID
      */
     public OrderResponse getOrderById(Integer orderId) {
-        return new OrderResponse(findOwnOrder(orderId));
+        return toResponse(findOwnOrder(orderId));
     }
 
     /**
@@ -159,10 +173,7 @@ public class OrderService {
      */
     public List<OrderResponse> getOrdersByAccountId(Integer accountId) {
         accountAccess.requireOwnAccount(accountId);
-        return orderRepository.findByAccountId(accountId)
-            .stream()
-            .map(OrderResponse::new)
-            .collect(Collectors.toList());
+        return toResponses(orderRepository.findByAccountId(accountId));
     }
 
     /**
@@ -170,38 +181,59 @@ public class OrderService {
      */
     public List<OrderResponse> getOrdersByAccountAndStatus(Integer accountId, Order.OrderStatus status) {
         accountAccess.requireOwnAccount(accountId);
-        return orderRepository.findByAccountIdAndOrderStatus(accountId, status)
-            .stream()
-            .map(OrderResponse::new)
-            .collect(Collectors.toList());
+        return toResponses(orderRepository.findByAccountIdAndOrderStatus(accountId, status));
     }
 
     public List<OrderResponse> getOrdersByAccountId(Integer accountId, String date, String timeZone) {
-        return getOrdersByAccountAndStatus(accountId, null, date, timeZone);
+        return getOrdersByAccountAndStatus(accountId, null, date, timeZone, DEFAULT_PAGE, DEFAULT_SIZE);
+    }
+
+    public List<OrderResponse> getOrdersByAccountId(
+            Integer accountId, String date, String timeZone, Integer page, Integer size) {
+        return getOrdersByAccountAndStatus(accountId, null, date, timeZone, page, size);
     }
 
     public List<OrderResponse> getOrdersByAccountAndStatus(
             Integer accountId, Order.OrderStatus status, String date, String timeZone) {
+        return getOrdersByAccountAndStatus(accountId, status, date, timeZone, DEFAULT_PAGE, DEFAULT_SIZE);
+    }
+
+    public List<OrderResponse> getOrdersByAccountAndStatus(
+            Integer accountId, Order.OrderStatus status, String date, String timeZone, Integer page, Integer size) {
         accountAccess.requireOwnAccount(accountId);
+        validatePagination(page, size);
+        Pageable pageable = PageRequest.of(page, size,
+            Sort.by(Sort.Order.desc("submittedAt"), Sort.Order.desc("orderId")));
         OrderHistoryPeriod period = OrderHistoryPeriod.parse(date, timeZone);
         List<Order> orders;
         if (period == null) {
-            orders = status == null ? orderRepository.findByAccountId(accountId)
-                : orderRepository.findByAccountIdAndOrderStatus(accountId, status);
+            orders = status == null
+                ? orderRepository.findByAccountId(accountId, pageable).getContent()
+                : orderRepository.findByAccountIdAndOrderStatus(accountId, status, pageable).getContent();
         } else {
-            orders = orderRepository.findHistory(accountId, status, period.start(), period.end());
+            orders = orderRepository.findHistory(accountId, status, period.start(), period.end(), pageable)
+                .getContent();
         }
-        return orders.stream().map(OrderResponse::new).collect(Collectors.toList());
+        return toResponses(orders);
+    }
+
+    private static void validatePagination(Integer page, Integer size) {
+        if (page == null || page < 0) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "page must be >= 0");
+        }
+        if (size == null || size < 1 || size > MAX_SIZE) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "size must be between 1 and " + MAX_SIZE
+            );
+        }
     }
 
     /**
      * Get all orders for an instrument
      */
     public List<OrderResponse> getOrdersByInstrumentId(Integer instrumentId) {
-        return orderRepository.findOwnByInstrumentId(instrumentId, accountAccess.authenticatedUsername())
-            .stream()
-            .map(OrderResponse::new)
-            .collect(Collectors.toList());
+        return toResponses(orderRepository.findOwnByInstrumentId(instrumentId, accountAccess.authenticatedUsername()));
     }
 
     /**
@@ -224,7 +256,7 @@ public class OrderService {
             newStatus == Order.OrderStatus.REJECTED ? RejectionReason.REJECTED_BY_OPERATIONS : null);
 
         Order updatedOrder = orderRepository.save(order);
-        return new OrderResponse(updatedOrder);
+        return toResponse(updatedOrder);
     }
 
     /**
@@ -240,7 +272,31 @@ public class OrderService {
 
         transitions.move(order, Order.OrderStatus.REJECTED, reason);
         Order rejectedOrder = orderRepository.save(order);
-        return new OrderResponse(rejectedOrder);
+        return toResponse(rejectedOrder);
+    }
+
+    private List<OrderResponse> toResponses(List<Order> orders) {
+        Map<Integer, Instrument> instrumentsById = instrumentRepository.findAllById(
+            orders.stream().map(Order::getInstrumentId).distinct().toList())
+            .stream()
+            .collect(Collectors.toMap(Instrument::getInstrumentId, instrument -> instrument));
+
+        return orders.stream().map(order -> toResponse(order, instrumentsById.get(order.getInstrumentId())))
+            .toList();
+    }
+
+    private OrderResponse toResponse(Order order) {
+        Instrument instrument = instrumentRepository.findById(order.getInstrumentId()).orElse(null);
+        return toResponse(order, instrument);
+    }
+
+    private static OrderResponse toResponse(Order order, Instrument instrument) {
+        OrderResponse response = new OrderResponse(order);
+        if (instrument != null) {
+            response.setSymbol(instrument.getTicker());
+            response.setInstrumentName(instrument.getName());
+        }
+        return response;
     }
 
     /**

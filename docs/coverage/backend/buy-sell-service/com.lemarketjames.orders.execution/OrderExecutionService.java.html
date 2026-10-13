@@ -4,25 +4,35 @@ import com.lemarketjames.holdings.client.HoldingsSettlementClient;
 import com.lemarketjames.holdings.client.SettlementRejectedException;
 import org.springframework.stereotype.Service;
 
-/** No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock. */
+/**
+ * Coordinates execution in two phases: persist intent first, then call holdings.
+ * No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock.
+ */
 @Service
 public class OrderExecutionService {
     private final OrderExecutionTransactions transactions;
     private final HoldingsSettlementClient settlement;
-<span class="fc" id="L12">    public OrderExecutionService(OrderExecutionTransactions transactions, HoldingsSettlementClient settlement) {</span>
-<span class="fc" id="L13">        this.transactions = transactions; this.settlement = settlement;</span>
-<span class="fc" id="L14">    }</span>
+<span class="fc" id="L15">    public OrderExecutionService(OrderExecutionTransactions transactions, HoldingsSettlementClient settlement) {</span>
+<span class="fc" id="L16">        this.transactions = transactions; this.settlement = settlement;</span>
+<span class="fc" id="L17">    }</span>
+
+    /**
+     * Runs one execution attempt.
+     *
+     * &lt;p&gt;Definite settlement refusals are finalized immediately. Unknown failures are intentionally
+     * left unresolved so the persisted intent is retried by the scheduler or after restart.
+     */
     public void execute(int id, boolean manual) {
-<span class="fc" id="L16">        var intent = transactions.prepare(id, manual);</span>
-<span class="fc bfc" id="L17" title="All 2 branches covered.">        if (intent == null) return;</span>
+<span class="fc" id="L26">        var intent = transactions.prepare(id, manual);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (intent == null) return;</span>
         try {
-<span class="fc" id="L19">            settlement.settle(intent);</span>
-<span class="fc" id="L20">        } catch (SettlementRejectedException rejected) {</span>
-<span class="fc" id="L21">            transactions.finish(id, rejected.getReason());</span>
-<span class="fc" id="L22">            return;</span>
-<span class="fc" id="L23">        }</span>
-        // Unknown/network failures leave the immutable intent pending for the next poll/restart.
-<span class="fc" id="L25">        transactions.finish(id, null);</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L29">            settlement.settle(intent);</span>
+<span class="fc" id="L30">        } catch (SettlementRejectedException rejected) {</span>
+<span class="fc" id="L31">            transactions.finish(id, rejected.getReason());</span>
+<span class="fc" id="L32">            return;</span>
+<span class="fc" id="L33">        }</span>
+        // A successful settle response can now finalize the persisted intent.
+<span class="fc" id="L35">        transactions.finish(id, null);</span>
+<span class="fc" id="L36">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

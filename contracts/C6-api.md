@@ -85,7 +85,9 @@ Places a market order for one of the caller's accounts.
 ```json
 {
   "success": true, "reason": null, "code": null,
-  "orderId": 42, "accountId": 7, "instrumentId": 5, "orderType": "BUY", "quantity": 1,
+  "orderId": 42, "accountId": 7, "instrumentId": 5,
+  "symbol": "AAPL", "instrumentName": "BronApple",
+  "orderType": "BUY", "quantity": 1,
   "pricePerUnit": 244.2366, "orderStatus": "SUBMITTED", "rejectionReason": null,
   "submittedAt": "2026-09-21T10:30:00", "acceptedAt": null, "filledAt": null,
   "quoteSource": null, "quoteTime": null,
@@ -128,10 +130,20 @@ The two account-history endpoints accept these optional date-filter parameters:
 
 - `date`: a client-local calendar day (`YYYY-MM-DD`), month (`YYYY-MM`), or year (`YYYY`).
 - `timeZone`: an IANA time-zone ID such as `America/New_York` or `UTC`.
+- `page`: zero-based page number (default `0`).
+- `size`: page size from `1` to `100` (default `20`).
 - Supply both parameters together, or omit both to return the complete history. Clearing the UI filter omits both.
 - Filtering uses `submittedAt`, includes the selected period's local start, and excludes the next period's local start. Converting both boundaries separately preserves daylight-saving transitions.
-- No matches return `200 []`. Invalid dates, unknown or blank zones, and incomplete parameter pairs return `400 { "message": "..." }`.
+- Results are ordered newest-first by `submittedAt`, then `orderId` as a tie-breaker.
+- No matches return `200 []`. Invalid dates, unknown or blank zones, incomplete parameter pairs, and invalid pagination values return `400`.
 - Ownership is checked before querying. The status endpoint combines its status restriction with the same date period.
+
+The order DTO now includes additive stock display fields:
+
+- `symbol`: instrument ticker from `instruments` (e.g. `AAPL`).
+- `instrumentName`: instrument display name from `instruments` (e.g. `BronApple`).
+
+`instrumentId` remains part of the DTO for stable identity and backward compatibility.
 
 The dashboard sends the browser's IANA time zone with every complete selection, cancels an older history request when the selection changes, and interprets offset-free order timestamps as UTC before local display. Status chips and pagination apply to the returned period; the dashboard's open-order total remains account-wide.
 
@@ -315,14 +327,15 @@ Holdings locks the account and persists one outcome per order in `settlement_rec
 with any cash/share changes. `POST /internal/holdings/settle` returns `200 { rejectionReason }`:
 null for success, otherwise `INSUFFICIENT_CASH` or `INSUFFICIENT_HOLDINGS`. Repeating an identical
 request returns that original outcome; changed payloads get 409. Malformed requests get 400.
-Network errors and unknown failures retain the intent for retry without repricing. A confirmed
-outcome becomes FILLED or REJECTED; a subsequent worker sees the final status and does nothing.
-A refused settlement is also brought to Trading Ops' attention: the order's `OrderStatusChanged`
-to REJECTED carries the refusal code, and surveillance-service raises a `SETTLEMENT_REFUSED`
-[alert](#get-apiv1surveillancealerts-trading_ops-only) from it.
+Network errors and unknown failures retain the intent for retry without repricing. Recovery is
+automatic: the execution worker retries persisted open orders after startup and on each poll,
+including orders already marked `PENDING` with `settlement_pending=true`.
+A confirmed outcome becomes FILLED or REJECTED; subsequent workers see the final status and do
+nothing.
 
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
-The dashboard polls while orders are open and refreshes holdings/history when statuses change.
+The dashboard opens `GET /api/v1/orders/stream` for live order-status events and refreshes
+orders, holdings and history whenever a status-change event arrives.
 Holdings reads order history and buying-power data from buy-sell, never core.
 
 ## Holdings, balance, profile, trades (holdings-service)
@@ -371,6 +384,40 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 ```
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
+
+### GET /api/v1/reports/activity
+
+Trading activity grouped by the client's segment (LMKT-43), for `ANALYST` only.
+The staff app calls this through the staff gateway.
+
+- `startDate`, `endDate`: optional ISO calendar dates (`YYYY-MM-DD`), both inclusive in
+  the configured reports time zone. Omitted boundaries use the defaults defined in
+  [SegmentActivityService](../services/reporting-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
+- Filtering uses `filled_at`, converted to a half-open UTC range by `ReportCalendar`.
+- One row per segment with matching trades, sorted by segment name; no matching trades returns
+  `200 { "success": true, "data": [] }`. Segments without matching trades are omitted.
+- `activeClients` counts distinct clients across all their accounts, `tradeCount` counts filled
+  orders, and `totalTradedValue` sums `gross_amount` for both buys and sells in USD, without
+  rounding the stored amounts.
+- Segment names come from the view, with sample definitions supplied by [C3](C3-seed-data.md).
+  The API has no hard-coded segment list.
+- Responses contain only the four aggregate fields below. No client, account, order, name or
+  contact information is returned; there is no individual-client filtering or drill-down.
+- Malformed or reversed dates return `400`; missing/invalid authentication returns `401`;
+  non-Analyst roles (including `CLIENT` and `TRADING_OPS`) return `403`.
+
+```json
+{
+  "success": true,
+  "data": [
+    { "segment": "RETAIL", "activeClients": 42, "tradeCount": 180, "totalTradedValue": 215090.1250 }
+  ]
+}
+```
+
+The report target is under ten seconds. The PostgreSQL integration test exercises an explicit
+100,000-trade synthetic baseline through query execution and response serialization. Production
+capacity and concurrency require measurement on the deployed dataset and hardware.
 
 ### GET /api/v1/reports/trades
 
@@ -428,6 +475,38 @@ Each period aggregates:
 | 400 | Missing `periodType`, invalid format, or `from` > `to` | `{ "message": "..." }` |
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role | see access rules above |
+
+### GET /api/v1/reports/insights/volume
+
+Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. Both periods are whole periods: a period still in progress would always look like a drop against a finished one.
+
+**Parameters:**
+
+- `periodType` (required): `DAY`, `WEEK`, `MONTH` or `YEAR`, in any letter case. The periods are those of [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the day before today in the reports time zone for `DAY`, the last Monday-to-Sunday week for `WEEK`, and so on.
+
+**Response `200`:**
+
+```json
+{
+  "periodType": "WEEK",
+  "current":  { "startDate": "2026-10-05", "endDate": "2026-10-11", "tradeCount": 40, "shareVolume": 1200, "grossAmount": 54000.00 },
+  "previous": { "startDate": "2026-09-28", "endDate": "2026-10-04", "tradeCount": 32, "shareVolume": 1000, "grossAmount": 41000.00 },
+  "change":   { "shareVolume": 200, "shareVolumePercent": 20.00, "grossAmount": 13000.00, "grossAmountPercent": 31.71 },
+  "generatedAt": "2026-10-12T14:00:00Z"
+}
+```
+
+- `startDate` and `endDate` are both included, days in the reports time zone.
+- `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-reporting-service)).
+- `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | `periodType` missing or not one of the four values | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
 ## The consumers (notification-, surveillance- and activity-service)
 
@@ -609,10 +688,9 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, and `GET /api/v1/reports/trades` are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, and the [volume insight](#get-apiv1reportsinsightsvolume) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
-- **Order symbol fields:** add `symbol` and `instrumentName` to the order DTO, taken from `instruments`. This is non-breaking and lets `orders-panel.ts` stop resolving ids itself.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
 - **Watchlist:** `GET /api/v1/watchlist`, `POST /api/v1/watchlist { symbol }` (`409 ALREADY_WATCHED`), `DELETE /api/v1/watchlist/{symbol}`. It needs a new `watchlist (account_id, instrument_id, added_at)` table in the next free migration number, in its own `watchlist` feature package.
 

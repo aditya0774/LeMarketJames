@@ -1,12 +1,12 @@
 {
-  "commit": "a50bead7",
-  "date": "2026-10-12",
+  "commit": "bca5ed6c",
+  "date": "2026-10-13",
   "backend": {
-    "line": 83.71,
-    "branch": 80.87
+    "line": 84.1,
+    "branch": 82.05
   },
   "frontend": {
-    "line": 89.18,
-    "branch": 80.13
+    "line": 89.37,
+    "branch": 80.79
   }
 }

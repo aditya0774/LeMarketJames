@@ -12,6 +12,19 @@ export interface OrdersWatchSnapshot {
   connection: OrdersConnectionState;
 }
 
+export interface OrderStatusChangedEvent {
+  orderId: number;
+  accountId: number;
+  from: OrderResponse['orderStatus'];
+  to: OrderResponse['orderStatus'];
+  occurredAt: string;
+}
+
+export interface OrdersStreamSnapshot {
+  connection: OrdersConnectionState;
+  event?: OrderStatusChangedEvent;
+}
+
 export interface OrderRequest {
   accountId: number;
   instrumentId: number;
@@ -34,6 +47,7 @@ export interface OrderResponse {
   orderId: number;
   accountId: number;
   instrumentId: number;
+  symbol?: string | null;
   orderType: 'BUY' | 'SELL';
   quantity: number;
   pricePerUnit?: number | null;
@@ -119,6 +133,30 @@ export class OrderService {
     return this.http.get<OrderResponse[]>(`${this.apiUrl}/account/${accountId}`, { params }).pipe(
       map(orders => orders.map(order => ({ ...order, submittedAt: orderTimestamp(order.submittedAt) }))),
     );
+  }
+
+  /**
+   * Watch backend order-status SSE events for the signed-in account.
+   */
+  watchOrderStatusStream(): Observable<OrdersStreamSnapshot> {
+    return new Observable<OrdersStreamSnapshot>((subscriber) => {
+      subscriber.next({ connection: 'connecting' });
+
+      const stream = new EventSource(`${this.apiUrl}/stream`);
+
+      stream.onopen = () => subscriber.next({ connection: 'live' });
+      stream.onerror = () => subscriber.next({ connection: 'reconnecting' });
+      stream.addEventListener('order-status-changed', (event) => {
+        try {
+          const payload = JSON.parse((event as MessageEvent<string>).data) as OrderStatusChangedEvent;
+          subscriber.next({ connection: 'live', event: payload });
+        } catch {
+          // Ignore malformed payloads; keep the stream open for the next valid event.
+        }
+      });
+
+      return () => stream.close();
+    });
   }
 
   /**
