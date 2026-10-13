@@ -49,7 +49,11 @@ test.describe('Seed data', () => {
 
     const clearedResponse = page.waitForResponse(response => {
       const url = new URL(response.url());
-      return url.pathname.includes('/orders/account/') && !url.search;
+      return url.pathname.includes('/orders/account/')
+        && !url.searchParams.get('date')
+        && !url.searchParams.get('timeZone')
+        && url.searchParams.get('page') === '0'
+        && url.searchParams.get('size') === '6';
     });
     await orders.getByRole('button', { name: 'Clear filter' }).click();
     expect((await clearedResponse).status()).toBe(200);
