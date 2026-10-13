@@ -11,19 +11,22 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(&quot;lmj.execution&quot;)
 <span class="fc" id="L12">public class ExecutionSettings {</span>
 <span class="fc" id="L13">    private boolean enabled = true;</span>
-<span class="fc" id="L14">    private boolean respectMarketHours = true;</span>
-<span class="fc" id="L15">    private long pollMs = 1000;</span>
-<span class="fc" id="L16">    private Set&lt;LocalDate&gt; holidays = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L17">    public boolean isEnabled() { return enabled; }</span>
-<span class="fc" id="L18">    public void setEnabled(boolean value) { enabled = value; }</span>
-<span class="fc" id="L19">    public boolean isRespectMarketHours() { return respectMarketHours; }</span>
-<span class="fc" id="L20">    public void setRespectMarketHours(boolean value) { respectMarketHours = value; }</span>
-<span class="fc" id="L21">    public long getPollMs() { return pollMs; }</span>
+<span class="fc" id="L14">    private boolean settlementAvailable = true;</span>
+<span class="fc" id="L15">    private boolean respectMarketHours = true;</span>
+<span class="fc" id="L16">    private long pollMs = 1000;</span>
+<span class="fc" id="L17">    private Set&lt;LocalDate&gt; holidays = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L18">    public boolean isEnabled() { return enabled; }</span>
+<span class="fc" id="L19">    public void setEnabled(boolean value) { enabled = value; }</span>
+<span class="fc" id="L20">    public boolean isSettlementAvailable() { return settlementAvailable; }</span>
+<span class="nc" id="L21">    public void setSettlementAvailable(boolean value) { settlementAvailable = value; }</span>
+<span class="fc" id="L22">    public boolean isRespectMarketHours() { return respectMarketHours; }</span>
+<span class="fc" id="L23">    public void setRespectMarketHours(boolean value) { respectMarketHours = value; }</span>
+<span class="fc" id="L24">    public long getPollMs() { return pollMs; }</span>
     public void setPollMs(long value) {
-<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (value &lt; 100) throw new IllegalArgumentException(&quot;Execution polling must be at least 100ms&quot;);</span>
-<span class="nc" id="L24">        pollMs = value;</span>
-<span class="nc" id="L25">    }</span>
-<span class="fc" id="L26">    public Set&lt;LocalDate&gt; getHolidays() { return holidays; }</span>
-<span class="nc" id="L27">    public void setHolidays(Set&lt;LocalDate&gt; value) { holidays = value; }</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (value &lt; 100) throw new IllegalArgumentException(&quot;Execution polling must be at least 100ms&quot;);</span>
+<span class="nc" id="L27">        pollMs = value;</span>
+<span class="nc" id="L28">    }</span>
+<span class="fc" id="L29">    public Set&lt;LocalDate&gt; getHolidays() { return holidays; }</span>
+<span class="nc" id="L30">    public void setHolidays(Set&lt;LocalDate&gt; value) { holidays = value; }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

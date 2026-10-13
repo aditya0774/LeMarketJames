@@ -131,4 +131,29 @@ class ExecutionRecoveryIntegrationTest {
         verify(settlement, times(2)).settle(any());
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE order_id=? AND action='FILLED'", Integer.class, id));
     }
+
+    @Test void executorFailureLeavesOrderPendingForAutomaticRetry() {
+        Order order = seed(); int id = order.getOrderId();
+        Instant quoteTime = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        when(executor.execute(any()))
+            .thenThrow(new IllegalStateException("execution service unavailable"))
+            .thenReturn(ExecutionResult.filled(
+                new QuoteUsed(new BigDecimal("102.5000"), "SIMULATED_FEED", quoteTime)));
+
+        execution.execute(id, false);
+
+        Order pending = orders.findById(id).orElseThrow();
+        assertEquals(Order.OrderStatus.PENDING, pending.getOrderStatus());
+        assertNull(pending.getRejectionReason());
+
+        // A fresh coordinator simulates a platform restart with the pending order persisted.
+        new OrderExecutionService(transactions, settlement).execute(id, false);
+
+        Order filled = orders.findById(id).orElseThrow();
+        assertEquals(Order.OrderStatus.FILLED, filled.getOrderStatus());
+        assertEquals(0, new BigDecimal("102.5000").compareTo(filled.getPricePerUnit()));
+        verify(executor, times(2)).execute(any());
+        verify(settlement, times(1)).settle(any());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE order_id=? AND action='FILLED'", Integer.class, id));
+    }
 }

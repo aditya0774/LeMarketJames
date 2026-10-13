@@ -11,11 +11,14 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("lmj.execution")
 public class ExecutionSettings {
     private boolean enabled = true;
+    private boolean settlementAvailable = true;
     private boolean respectMarketHours = true;
     private long pollMs = 1000;
     private Set<LocalDate> holidays = new HashSet<>();
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean value) { enabled = value; }
+    public boolean isSettlementAvailable() { return settlementAvailable; }
+    public void setSettlementAvailable(boolean value) { settlementAvailable = value; }
     public boolean isRespectMarketHours() { return respectMarketHours; }
     public void setRespectMarketHours(boolean value) { respectMarketHours = value; }
     public long getPollMs() { return pollMs; }
