@@ -209,15 +209,38 @@ class AuthServiceTest {
     void loginLocksAccountAfterThreeFailedAttempts() {
         authService.register(validRegisterRequest("alice"));
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             assertThrows(IllegalArgumentException.class,
                     () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
         IllegalArgumentException lockedException = assertThrows(IllegalArgumentException.class,
+            () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        assertEquals("Account locked for 15 minutes.", lockedException.getMessage());
+
+        IllegalArgumentException blockedException = assertThrows(IllegalArgumentException.class,
                 () -> authService.login(new LoginRequest("alice@example.com", "Pass123!")));
-        assertTrue(lockedException.getMessage().contains("locked"));
+        assertEquals("Account temporarily locked. Try again in 15 minutes.", blockedException.getMessage());
     }
+
+        @Test
+        void successfulLoginResetsFailedAttemptCount() {
+        authService.register(validRegisterRequest("alice"));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        assertThrows(IllegalArgumentException.class,
+            () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+
+        assertEquals("alice", authService.login(new LoginRequest("alice@example.com", "Pass123!")).getUsername());
+        assertEquals(0, clientsByEmail.get("alice@example.com").getFailedLoginAttempts());
+
+        assertThrows(IllegalArgumentException.class,
+            () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        assertThrows(IllegalArgumentException.class,
+            () -> authService.login(new LoginRequest("alice@example.com", "WrongPass!")));
+        assertEquals(2, clientsByEmail.get("alice@example.com").getFailedLoginAttempts());
+        }
 
     // Once the lockout duration has passed, the account should accept correct credentials again.
     @Test
@@ -234,7 +257,7 @@ class AuthServiceTest {
                     () -> service.login(new LoginRequest("alice@example.com", "WrongPass!")));
         }
 
-        clock.advance(new PlatformSettings().getAuth().getLockout().getDuration().plusMillis(1));
+        clock.advance(shortLockout.getAuth().getLockout().getDuration().plusMillis(1));
 
         AuthService.LoginResult result = service.login(new LoginRequest("alice@example.com", "Pass123!"));
         assertEquals("alice", result.getUsername());

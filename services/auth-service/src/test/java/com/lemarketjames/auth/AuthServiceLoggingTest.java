@@ -102,6 +102,23 @@ class AuthServiceLoggingTest {
         assertTrue(logContains("Login failed"), "expected a login-failed log entry");
     }
 
+    @Test
+    void accountLockIsLoggedAsSecurityEvent() {
+        authService.register(validRegisterRequest("alice"));
+        logAppender.list.clear();
+
+        for (int i = 0; i < 3; i++) {
+            try {
+                authService.login(new LoginRequest("alice@example.com", "WrongPass!"));
+            } catch (IllegalArgumentException expected) {
+                // The lock transition is asserted through the captured security event below.
+            }
+        }
+
+        assertTrue(logContains("ACCOUNT_LOCKED"), "expected an account-locked security event");
+        assertTrue(logContains("15 minutes"), "expected the security event to include the duration");
+    }
+
     private boolean logContains(String expectedSubstring) {
         return logAppender.list.stream()
                 .anyMatch(event -> event.getFormattedMessage().contains(expectedSubstring));

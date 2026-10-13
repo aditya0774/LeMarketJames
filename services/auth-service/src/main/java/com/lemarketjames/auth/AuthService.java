@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -193,11 +195,16 @@ public class AuthService {
 
         if (account.getLockedUntil() != null && clock.instant().isBefore(account.getLockedUntil())) {
             log.warn("Login blocked for email={} due to active lockout", email);
-            throw new IllegalArgumentException("Account temporarily locked due to too many failed attempts. Try again later.");
+                throw new IllegalArgumentException(lockoutMessage("Account temporarily locked. Try again in ",
+                    Duration.between(clock.instant(), account.getLockedUntil())));
         }
 
         if (!matchesPassword(password, account.getPassword())) {
-            registerFailedAttempt(account);
+            Instant lockedUntil = registerFailedAttempt(account);
+            if (lockedUntil != null) {
+                log.warn("ACCOUNT_LOCKED email={} duration={}", email, formatDuration(lockout.getDuration()));
+                throw new IllegalArgumentException(lockoutMessage("Account locked for ", lockout.getDuration()));
+            }
             log.warn("Login failed for email={}", email);
             throw new IllegalArgumentException("Invalid email or password");
         }
@@ -225,14 +232,27 @@ public class AuthService {
 
     // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
     // The lock is timed from now, after the (slow) password check, so it lasts the full duration.
-    private void registerFailedAttempt(LoginAccount account) {
+    private Instant registerFailedAttempt(LoginAccount account) {
         int attempts = account.getFailedLoginAttempts() + 1;
+        Instant lockedUntil = null;
         if (attempts >= lockout.getMaxAttempts()) {
-            account.setLockedUntil(clock.instant().plus(lockout.getDuration()));
+            lockedUntil = clock.instant().plus(lockout.getDuration());
+            account.setLockedUntil(lockedUntil);
             attempts = 0;
         }
         account.setFailedLoginAttempts(attempts);
         persist(account);
+        return lockedUntil;
+    }
+
+    private String lockoutMessage(String prefix, Duration duration) {
+        return prefix + formatDuration(duration) + ".";
+    }
+
+    private String formatDuration(Duration duration) {
+        long seconds = Math.max(1, duration.getSeconds());
+        long minutes = (seconds + 59) / 60;
+        return minutes == 1 ? "1 minute" : minutes + " minutes";
     }
 
     private void persist(LoginAccount account) {
