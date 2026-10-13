@@ -84,10 +84,12 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>org.springframework.http.ResponseEntity<wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;&gt;</code></div>
-<div class="col-second even-row-color"><span class="type-name-label">OrderController.</span><code><a href="../../OrderController.html#getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String)" class="member-name-link">getOrdersByAccountAndStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+<div class="col-second even-row-color"><span class="type-name-label">OrderController.</span><code><a href="../../OrderController.html#getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String,int,int)" class="member-name-link">getOrdersByAccountAndStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ int&nbsp;page,
+ int&nbsp;size)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Get orders for an account with a specific status
  GET /api/v1/orders/account/{accountId}/status/{status}</div>
@@ -280,12 +282,18 @@ the order they are declared.</div>
 <div class="col-last even-row-color">
 <div class="block">Find all orders for a specific account with a given status</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&gt;</code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findHistory(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">findHistory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+<div class="col-first odd-row-color"><code>org.springframework.data.domain.Page<wbr>&lt;<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&gt;</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findByAccountIdAndOrderStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,org.springframework.data.domain.Pageable)" class="member-name-link">findByAccountIdAndOrderStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;orderStatus,
+ org.springframework.data.domain.Pageable&nbsp;pageable)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code>org.springframework.data.domain.Page<wbr>&lt;<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findHistory(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.time.LocalDateTime,java.time.LocalDateTime,org.springframework.data.domain.Pageable)" class="member-name-link">findHistory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;start,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;end)</code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;end,
+ org.springframework.data.domain.Pageable&nbsp;pageable)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <div class="caption"><span>Method parameters in <a href="../../repository/package-summary.html">com.lemarketjames.orders.repository</a> with type arguments of type <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a></span></div>
 <div class="summary-table three-column-summary">
@@ -318,10 +326,18 @@ the order they are declared.</div>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><code><a href="../../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">OrderService.</span><code><a href="../../service/OrderService.html#updateOrderStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">updateOrderStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
+<div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="../../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">OrderService.</span><code><a href="../../service/OrderService.html#getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String,java.lang.Integer,java.lang.Integer)" class="member-name-link">getOrdersByAccountAndStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;page,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;size)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="../../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderService.</span><code><a href="../../service/OrderService.html#updateOrderStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">updateOrderStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
  <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;newStatus)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Moves an order to its next status (contract C1); an illegal move throws
  InvalidStatusTransitionException.</div>
 </div>

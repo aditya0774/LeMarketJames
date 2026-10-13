@@ -139,18 +139,22 @@ loadScripts(document, 'script');</script>
  GET /api/v1/orders/{orderId}</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String)" class="member-name-link">getOrdersByAccountAndStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String,int,int)" class="member-name-link">getOrdersByAccountAndStatus</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ int&nbsp;page,
+ int&nbsp;size)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get orders for an account with a specific status
  GET /api/v1/orders/account/{accountId}/status/{status}</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrdersByAccountId(java.lang.Integer,java.lang.String,java.lang.String)" class="member-name-link">getOrdersByAccountId</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrdersByAccountId(java.lang.Integer,java.lang.String,java.lang.String,int,int)" class="member-name-link">getOrdersByAccountId</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ int&nbsp;page,
+ int&nbsp;size)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get all orders for an account
  GET /api/v1/orders/account/{accountId}</div>
@@ -252,7 +256,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="getOrdersByAccountId(java.lang.Integer,java.lang.String,java.lang.String)">
+<section class="detail" id="getOrdersByAccountId(java.lang.Integer,java.lang.String,java.lang.String,int,int)">
 <h3>getOrdersByAccountId</h3>
 <div class="member-signature"><span class="annotations">@GetMapping("/account/{accountId}")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;&gt;</span>&nbsp;<span class="element-name">getOrdersByAccountId</span><wbr><span class="parameters">(@PathVariable
@@ -260,13 +264,17 @@ loadScripts(document, 'script');</script>
  @RequestParam(required=false)
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
  @RequestParam(required=false)
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ @RequestParam(defaultValue="0")
+ int&nbsp;page,
+ @RequestParam(defaultValue="20")
+ int&nbsp;size)</span></div>
 <div class="block">Get all orders for an account
  GET /api/v1/orders/account/{accountId}</div>
 </section>
 </li>
 <li>
-<section class="detail" id="getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String)">
+<section class="detail" id="getOrdersByAccountAndStatus(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.lang.String,java.lang.String,int,int)">
 <h3>getOrdersByAccountAndStatus</h3>
 <div class="member-signature"><span class="annotations">@GetMapping("/account/{accountId}/status/{status}")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&gt;&gt;</span>&nbsp;<span class="element-name">getOrdersByAccountAndStatus</span><wbr><span class="parameters">(@PathVariable
@@ -276,7 +284,11 @@ loadScripts(document, 'script');</script>
  @RequestParam(required=false)
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;date,
  @RequestParam(required=false)
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;timeZone,
+ @RequestParam(defaultValue="0")
+ int&nbsp;page,
+ @RequestParam(defaultValue="20")
+ int&nbsp;size)</span></div>
 <div class="block">Get orders for an account with a specific status
  GET /api/v1/orders/account/{accountId}/status/{status}</div>
 </section>
