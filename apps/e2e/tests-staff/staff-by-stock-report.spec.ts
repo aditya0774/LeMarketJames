@@ -37,11 +37,13 @@ async function selectSeedDataRange(page: Page): Promise<void> {
 }
 
 /** Signs in as the analyst through the staff login, then opens the report. */
-async function openReport(page: Page): Promise<void> {
+async function openReport(page: Page, includeSeedData = true): Promise<void> {
   await signIn(page, ANALYST);
   await expect(page).toHaveURL(/\/analyst$/);
   await page.goto(REPORT);
-  await selectSeedDataRange(page);
+  if (includeSeedData) {
+    await selectSeedDataRange(page);
+  }
 }
 
 test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
@@ -168,9 +170,11 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Report loads within 15 seconds', async ({ page }) => {
+    await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
+    await page.goto(REPORT);
     const startTime = Date.now();
-
-    await openReport(page);
+    await selectSeedDataRange(page);
 
     // Measure time to load and render table
     const table = page.locator('table, .aggregate-table');
@@ -197,7 +201,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       (response) => response.url().includes('/api/v1/reports/trades-by-stock') && response.status() === 403
     );
 
-    await openReport(page);
+    await openReport(page, false);
     await reportCall;
 
     // Wait for error message to appear
