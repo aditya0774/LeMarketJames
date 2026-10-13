@@ -61,7 +61,6 @@ const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture 
     } finally {
       try {
         for (const user of users) {
-          // audit_log is immutable (contract C2), do not delete from it
           await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [user.username]);
           await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
           await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
@@ -78,7 +77,7 @@ test.use({ timezoneId: 'America/New_York' });
 /** Signs in as Trading Ops, which lands on trade search: it is that role's start page. */
 async function openTradeSearch(page: Page): Promise<void> {
   await signIn(page, TRADING_OPS);
-  await expect(page).toHaveURL(/\/trading-ops$/);
+  await expect(page).toHaveURL(/\/trade-search$/);
 }
 
 async function search(page: Page, expected: Record<string, string>) {

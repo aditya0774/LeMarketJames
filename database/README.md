@@ -414,3 +414,19 @@ Get-Content database/schema/019_order_alert_reasons.sql | psql -v ON_ERROR_STOP=
 
 The migration is idempotent; new Docker databases apply it automatically. Existing alerts are
 kept: each is about a placement, so its `occurred_at` is set to its `submitted_at`.
+
+## 020 — Segment report demo clients
+
+`schema/020_segment_report_demo_clients.sql` adds dedicated fictional clients and funded
+accounts for the LMKT-43 proof of concept. It derives segments from 011's seed clients
+and is safe to reapply without resetting account balances. Apply it as the database owner:
+
+```powershell
+psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket -f database/schema/020_segment_report_demo_clients.sql
+python scripts/windows/seed-segment-report.py
+```
+
+The second command requires the running trading stack and an open market. It places trades
+through the API, keeping cash, holdings, settlement receipts and audit events consistent.
+See [C3](../contracts/C3-seed-data.md#segment-report-proof-of-concept) for the demo personas
+and rerun behavior. No existing history is deleted or backdated.

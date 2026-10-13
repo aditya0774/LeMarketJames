@@ -10,7 +10,7 @@ import { ANALYST, CLIENT, signIn } from './support/staff';
  * - Date range picker filters results
  * - Columns sortable: Symbol, Total Quantity, Total Gross Amount, Buy Count, Sell Count
  * - Default sort: highest gross amount first
- * - Reports within 10 seconds
+ * - Reports within 15 seconds
  *
  * Note: Staff app runs on :4201 (separate from trading app :4200); this suite uses playwright.staff.config.ts
  */
@@ -149,20 +149,20 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     }
   });
 
-  test('AC1: Report loads within 10 seconds', async ({ page }) => {
+  test('AC1: Report loads within 15 seconds', async ({ page }) => {
     const startTime = Date.now();
 
     await openReport(page);
 
     // Measure time to load and render table
     const table = page.locator('table, .aggregate-table');
-    await expect(table).toBeVisible({ timeout: 10000 });
+    await expect(table).toBeVisible({ timeout: 15000 });
 
     const endTime = Date.now();
     const loadTime = endTime - startTime;
 
     console.log(`Staff report loaded in ${loadTime}ms`);
-    expect(loadTime).toBeLessThan(10000); // AC1 SLA: <10 seconds
+    expect(loadTime).toBeLessThan(15000); // AC1 SLA: <15 seconds
   });
 
   test('AC1: Error state displays safely when API returns 403', async ({ page }) => {

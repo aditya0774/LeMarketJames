@@ -19,7 +19,7 @@ test.describe('Staff login', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole('heading', { name: 'Staff Login' })).toBeVisible();
 
-    for (const address of ['/trade-search', '/trading-ops', '/analyst', '/analyst/reports/activity-by-stock']) {
+    for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
       await page.goto(address);
       await expect(page, address).toHaveURL(/\/login$/);
     }
@@ -28,7 +28,7 @@ test.describe('Staff login', () => {
   test('Trading Ops lands on trade search', async ({ page }) => {
     await signIn(page, TRADING_OPS);
 
-    await expect(page).toHaveURL(/\/trading-ops$/);
+    await expect(page).toHaveURL(/\/trade-search$/);
     await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toBeVisible();
   });
 
@@ -46,7 +46,7 @@ test.describe('Staff login', () => {
 
   test('Trading Ops is refused on the Analyst pages', async ({ page }) => {
     await signIn(page, TRADING_OPS);
-    await expect(page).toHaveURL(/\/trading-ops$/);
+    await expect(page).toHaveURL(/\/trade-search$/);
     await expect(page.getByRole('link', { name: 'Analyst', exact: true })).toHaveCount(0);
 
     // Typed into the address bar: a full page load, so the session is read back from the cookie.
@@ -66,9 +66,9 @@ test.describe('Staff login', () => {
     await expectAccessDenied(page);
     await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
 
-    // /trading-ops is now a guarded route for TRADING_OPS only.
+    // /trading-ops is no longer a page: it falls through to the start page, the Analyst's own dashboard.
     await page.goto('/trading-ops');
-    await expectAccessDenied(page);
+    await expect(page).toHaveURL(/\/analyst$/);
   });
 
   test('a client is refused on the staff login and is left signed out', async ({ page, context }) => {
@@ -89,7 +89,7 @@ test.describe('Staff login', () => {
 
   test('signing out returns to the staff login and ends the session', async ({ page }) => {
     await signIn(page, TRADING_OPS);
-    await expect(page).toHaveURL(/\/trading-ops$/);
+    await expect(page).toHaveURL(/\/trade-search$/);
 
     await page.getByRole('button', { name: 'Log out' }).click();
     await expect(page).toHaveURL(/\/login$/);

@@ -116,4 +116,26 @@ describe('ReportingService', () => {
     );
     req.flush('Forbidden', { status: 403, statusText: 'Forbidden' });
   });
+  it('fetches segment aggregates with the selected dates', () => {
+    const response = { success: true, data: [
+      { segment: 'RETAIL', activeClients: 2, tradeCount: 3, totalTradedValue: 60.1237 },
+    ] };
+    service.getActivityByClientSegment('2026-03-08', '2026-03-08')
+      .subscribe(result => expect(result).toEqual(response));
+    const req = httpMock.expectOne(request =>
+      request.url === '/api/v1/reports/activity' &&
+      request.params.get('startDate') === '2026-03-08' &&
+      request.params.get('endDate') === '2026-03-08');
+    expect(req.request.method).toBe('GET');
+    req.flush(response);
+  });
+
+  it('propagates a missing segment endpoint instead of displaying sample data', () => {
+    service.getActivityByClientSegment().subscribe({
+      next: () => { throw new Error('Expected the API error'); },
+      error: error => expect(error.status).toBe(404),
+    });
+    httpMock.expectOne('/api/v1/reports/activity')
+      .flush('Not Found', { status: 404, statusText: 'Not Found' });
+  });
 });
