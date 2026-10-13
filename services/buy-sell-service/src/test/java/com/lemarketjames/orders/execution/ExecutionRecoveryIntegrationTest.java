@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +35,9 @@ class ExecutionRecoveryIntegrationTest {
     @Autowired OrderService service;
     @MockBean OrderExecutor executor;
     @MockBean HoldingsSettlementClient settlement;
+    // Register scheduled work without running it in the background: each test controls
+    // execution and invokes the real scheduler's poll() explicitly for recovery.
+    @MockBean TaskScheduler taskScheduler;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     Order seed() {
