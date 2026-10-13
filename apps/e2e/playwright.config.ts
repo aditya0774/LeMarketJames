@@ -8,6 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const isCi = !!process.env.CI;
 const FEED_FAILURE_TESTS = /feed-failure\.spec\.ts$/;
+const EXECUTION_RETRY_TESTS = /execution-retry\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests',
@@ -39,7 +40,18 @@ export default defineConfig({
     },
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: FEED_FAILURE_TESTS },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: [FEED_FAILURE_TESTS, EXECUTION_RETRY_TESTS],
+    },
+    {
+      name: 'execution-recovery',
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: EXECUTION_RETRY_TESTS,
+      dependencies: ['chromium'],
+    },
     // These tests make the quote feed stale or unavailable for the whole stack (contract C4),
     // which would refuse every other test's orders. Depending on the main project makes them
     // start only once it has finished; Playwright skips them if it failed.

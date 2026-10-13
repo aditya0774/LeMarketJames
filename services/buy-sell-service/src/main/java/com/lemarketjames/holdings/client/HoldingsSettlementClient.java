@@ -1,6 +1,7 @@
 package com.lemarketjames.holdings.client;
 
 import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.execution.ExecutionSettings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -16,8 +17,11 @@ import org.springframework.web.client.RestClientException;
 public class HoldingsSettlementClient {
 
     private final RestClient restClient;
+    private final ExecutionSettings settings;
 
-    public HoldingsSettlementClient(@Value("${holdings.service.url}") String holdingsServiceUrl) {
+    public HoldingsSettlementClient(@Value("${holdings.service.url}") String holdingsServiceUrl,
+            ExecutionSettings settings) {
+        this.settings = settings;
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(java.time.Duration.ofSeconds(3));
         factory.setReadTimeout(java.time.Duration.ofSeconds(5));
@@ -27,6 +31,9 @@ public class HoldingsSettlementClient {
     private record Outcome(String rejectionReason) {}
 
     public void settle(Order order) {
+        if (!settings.isSettlementAvailable()) {
+            throw new IllegalStateException("Settlement service unavailable");
+        }
         SettlementRequest request = new SettlementRequest(
                 order.getOrderId(), order.getAccountId(), order.getInstrumentId(),
                 order.getOrderType(), order.getQuantity(), order.getPricePerUnit());

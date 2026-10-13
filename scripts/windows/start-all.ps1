@@ -56,7 +56,8 @@ Start-Window 'market-service :8083'   $repoRoot '$env:SIM_CONTROL_ENABLED = ''tr
 Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
 Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
 # The same setting Docker Compose gives it; the broker address defaults to localhost:9092.
-$buySell = 'mvn -B -pl services/buy-sell-service spring-boot:run'
+$buySell = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +
+    'mvn -B -pl services/buy-sell-service spring-boot:run'
 if ($Kafka) { $buySell = '$env:LMJ_EVENTS_PUBLISHER = ''kafka''; ' + $buySell }
 Start-Window 'buy-sell-service :8085' $repoRoot $buySell
 Start-Window 'holdings-service :8084' $repoRoot 'mvn -B -pl services/holdings-service spring-boot:run'
