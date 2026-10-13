@@ -33,7 +33,15 @@ public class OrderExecutionTransactions {
             if (manual) throw new InvalidStatusTransitionException(OrderStatus.SUBMITTED, OrderStatus.FILLED);
             transitions.move(order, OrderStatus.ACCEPTED, null);
         }
-        ExecutionResult result = executor.execute(order);
+        ExecutionResult result;
+        try {
+            result = executor.execute(order);
+        } catch (RuntimeException failure) {
+            if (order.getOrderStatus() != OrderStatus.PENDING) {
+                transitions.move(order, OrderStatus.PENDING, null);
+            }
+            return null;
+        }
         if (result.nextStatus() == OrderStatus.FILLED) {
             if (order.getOrderStatus() != OrderStatus.PENDING) transitions.move(order, OrderStatus.PENDING, null);
             // Persist fill quote before remote settlement so retries never re-price a pending order.
