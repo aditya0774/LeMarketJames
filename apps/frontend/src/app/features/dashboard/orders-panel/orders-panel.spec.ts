@@ -33,6 +33,42 @@ function rejectedOrder(reason: string): OrderResponse {
   };
 }
 
+function backendSymbolOrder(symbol: string): OrderResponse {
+  return {
+    success: true,
+    orderId: 1001,
+    accountId: 7,
+    instrumentId: 1,
+    symbol,
+    orderType: 'BUY',
+    quantity: 3,
+    pricePerUnit: 99.5,
+    orderStatus: 'FILLED',
+    submittedAt: '2026-10-12T12:00:00',
+    createdAt: '2026-10-12T12:00:00',
+    updatedAt: '2026-10-12T12:00:00',
+    filledAt: '2026-10-12T12:00:02',
+  };
+}
+
+function pendingOrder(orderId: number, submittedAt: string): OrderResponse {
+  return {
+    success: true,
+    orderId,
+    accountId: 7,
+    instrumentId: 1,
+    orderType: 'SELL',
+    quantity: 4,
+    pricePerUnit: null,
+    orderStatus: 'PENDING',
+    submittedAt,
+    createdAt: submittedAt,
+    updatedAt: submittedAt,
+    acceptedAt: null,
+    filledAt: null,
+  };
+}
+
 describe('OrdersPanel date filtering', () => {
   let fixture: ComponentFixture<OrdersPanel>;
   const seeds = [
@@ -73,6 +109,25 @@ describe('OrdersPanel date filtering', () => {
       (element: any) => element.textContent.trim());
   }
 
+  function orderIdsInView(): number[] {
+    return Array.from(
+      fixture.nativeElement.querySelectorAll('tbody tr[data-order-id]'),
+      (element: HTMLElement) => Number(element.dataset['orderId']),
+    );
+  }
+
+  function rowCellText(row: number, col: number): string {
+    const rows = fixture.nativeElement.querySelectorAll('tbody tr[data-order-id]');
+    const cells = rows[row].querySelectorAll('td');
+    return (cells[col]?.textContent ?? '').trim();
+  }
+
+  function cellTextForOrder(orderId: number, col: number): string {
+    const row = fixture.nativeElement.querySelector(`tbody tr[data-order-id="${orderId}"]`) as HTMLElement | null;
+    const cell = row?.querySelectorAll('td').item(col);
+    return (cell?.textContent ?? '').trim();
+  }
+
   it('emits day, month and year selections for the container to fetch', () => {
     const changes: string[] = [];
     fixture.componentInstance.dateChange.subscribe(value => changes.push(value));
@@ -85,6 +140,16 @@ describe('OrdersPanel date filtering', () => {
   it('does not locally re-filter the server response', () => {
     choose('year', '2023');
     expect(symbols().length).toBe(5);
+  });
+
+  it('renders newest-first rows by submitted timestamp', () => {
+    fixture.componentRef.setInput('orders', [
+      order(101, '2026-01-01T00:00:00'),
+      order(102, '2026-03-01T00:00:00'),
+      order(103, '2026-02-01T00:00:00'),
+    ]);
+    fixture.detectChanges();
+    expect(orderIdsInView()).toEqual([102, 103, 101]);
   });
 
   it('does not request incomplete years', () => {
@@ -118,6 +183,20 @@ describe('OrdersPanel date filtering', () => {
     expect(fixture.nativeElement.querySelector('input').value).toBe('');
   });
 
+  it('navigates between pages for six orders', () => {
+    expect(orderIdsInView()).toEqual([906, 905, 904, 903, 902]);
+
+    fixture.componentInstance.goToPage(2);
+    fixture.detectChanges();
+
+    expect(orderIdsInView()).toEqual([901]);
+    expect(fixture.nativeElement.querySelector('.pg-info').textContent).toContain('Showing 6–6 of 6 orders');
+
+    fixture.componentInstance.goToPage(1);
+    fixture.detectChanges();
+    expect(orderIdsInView()).toEqual([906, 905, 904, 903, 902]);
+  });
+
   it('keeps loading and failures distinct from empty results', () => {
     choose('year', '2023');
     fixture.componentRef.setInput('loading', true);
@@ -143,5 +222,34 @@ describe('OrdersPanel date filtering', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent)
       .toContain('Order rejected because your available cash is too low for this buy order.');
+  });
+
+  it('renders fill price for filled rows and dash for non-filled rows', () => {
+    fixture.componentRef.setInput('orders', [
+      order(2001, '2026-03-08T12:00:00'),
+      pendingOrder(2002, '2026-03-08T12:01:00'),
+    ]);
+    fixture.detectChanges();
+
+    expect(cellTextForOrder(2001, 5)).toContain('$');
+    expect(cellTextForOrder(2002, 5)).toBe('—');
+  });
+
+  it('renders rejection reason only for rejected rows', () => {
+    fixture.componentRef.setInput('orders', [
+      rejectedOrder('INSUFFICIENT_CASH'),
+      pendingOrder(3002, '2026-03-08T12:01:00'),
+    ]);
+    fixture.detectChanges();
+
+    expect(cellTextForOrder(999, 6)).toContain('Order rejected because your available cash is too low for this buy order.');
+    expect(cellTextForOrder(3002, 6)).toBe('—');
+  });
+
+  it('renders backend symbol when provided in the API payload', () => {
+    fixture.componentRef.setInput('orders', [backendSymbolOrder('AAPL')]);
+    fixture.detectChanges();
+    const symbol = fixture.nativeElement.querySelector('.sym')?.textContent?.trim();
+    expect(symbol).toBe('AAPL');
   });
 });

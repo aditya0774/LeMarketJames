@@ -34,46 +34,45 @@
   <div class="panel-scroll">
     <table aria-label="Orders">
       <thead>
-        <tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>Date</th></tr>
+        <tr>
+          <th>Date/Time</th>
+          <th>Stock</th>
+          <th>Side</th>
+          <th>Qty</th>
+          <th>Status</th>
+          <th>Fill Price</th>
+          <th>Rejection Reason</th>
+        </tr>
       </thead>
       <tbody>
         @if (dateError()) {
-          <tr><td colspan="6" class="empty-row">{{ dateError() }}</td></tr>
+          <tr><td colspan="7" class="empty-row">{{ dateError() }}</td></tr>
         } @else if (loading()) {
-          <tr><td colspan="6" class="empty-row">Loading orders…</td></tr>
+          <tr><td colspan="7" class="empty-row">Loading orders…</td></tr>
         } @else if (error()) {
-          <tr><td colspan="6" class="empty-row">{{ error() }}</td></tr>
+          <tr><td colspan="7" class="empty-row">{{ error() }}</td></tr>
         } @else {
-          @for (order of pageRows(); track order.orderId) {
-            <tr [attr.data-order-id]="order.orderId">
-              <td><span class="sym">{{ symbolFor(order) }}</span><span class="sym-sub">{{ nameFor(order) }}</span></td>
+          @for (row of pageRows(); track row.order.orderId) {
+            <tr [attr.data-order-id]="row.order.orderId">
+              <td class="tabular">{{ row.submittedAt | date: 'MMM d, y, HH:mm:ss z' }}</td>
+              <td><span class="sym">{{ row.symbol }}</span><span class="sym-sub">{{ row.instrumentName }}</span></td>
               <td>
-                <span class="pill" [class.pill-buy]="order.orderType === 'BUY'" [class.pill-sell]="order.orderType === 'SELL'">
-                  {{ order.orderType }}
+                <span class="pill" [class.pill-buy]="row.order.orderType === 'BUY'" [class.pill-sell]="row.order.orderType === 'SELL'">
+                  {{ row.order.orderType }}
                 </span>
               </td>
-              <td class="tabular">{{ order.quantity | number: '1.0-4' }}</td>
-              <td class="tabular">
-                {{ order.pricePerUnit != null ? (order.pricePerUnit | currency: 'USD') : 'Market' }}
-              </td>
+              <td class="tabular">{{ row.order.quantity | number: '1.0-4' }}</td>
               <td>
-                <span class="pill {{ statusPillClass(order.orderStatus) }}" [attr.title]="order.rejectionReason || null">
-                  {{ statusLabel(order.orderStatus) }}
+                <span class="pill {{ statusPillClass(row.order.orderStatus) }}" [attr.title]="row.rejectionReason || null">
+                  {{ statusLabel(row.order.orderStatus) }}
                 </span>
-                @if (isFilled(order) && order.pricePerUnit != null) {
-                  <div class="status-detail">
-                    Filled {{ order.quantity | number: '1.0-4' }} @ {{ order.pricePerUnit | currency: 'USD' }}
-                  </div>
-                }
-                @if (order.orderStatus === 'REJECTED' && rejectionReasonLabel(order.rejectionReason); as reason) {
-                  <div class="status-detail" [attr.title]="order.rejectionReason || null">{{ reason }}</div>
-                }
               </td>
-              <td class="tabular">{{ order.submittedAt | date: 'MMM d, y' }}</td>
+              <td class="tabular">{{ fillPriceFor(row) != null ? (fillPriceFor(row) | currency: 'USD') : '—' }}</td>
+              <td [attr.title]="row.rejectionReason || null">{{ rejectionReasonFor(row) ?? '—' }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="empty-row">
+              <td colspan="7" class="empty-row">
                 {{ dateValue() ? 'No orders in this period' : orders().length ? 'No orders match this filter.' : 'No orders yet. Search for a stock to place your first trade.' }}
               </td>
             </tr>
