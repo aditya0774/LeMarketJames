@@ -1,5 +1,6 @@
 package com.lemarketjames.common.error;
 
+import com.lemarketjames.common.security.AccountInactiveException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -44,6 +45,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * A sign-in refused because the account is no longer active (LMKT-57). {@code message} is kept
+     * alongside {@code error} because the login screens show {@code message}.
+     */
+    @ExceptionHandler(AccountInactiveException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountInactive(AccountInactiveException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                    "success", false,
+                    "code", AccountInactiveException.CODE,
+                    "error", ex.getMessage(),
+                    "message", ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

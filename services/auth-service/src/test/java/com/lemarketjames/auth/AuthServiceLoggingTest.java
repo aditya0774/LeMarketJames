@@ -5,6 +5,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.AccountStatus;
 import com.lemarketjames.common.domain.AddressEntity;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientEntity;
@@ -13,18 +14,26 @@ import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.AccountInactiveException;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.SecurityEventLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -34,7 +43,10 @@ import static org.mockito.Mockito.when;
 class AuthServiceLoggingTest {
 
     private AuthService authService;
+    private Map<String, ClientEntity> clientsByEmail;
     private Logger authServiceLogger;
+    // Security events (ACCESS_REVOKED) are written by the shared SecurityEventLog, on its own logger.
+    private Logger securityEventLogger;
     private ListAppender<ILoggingEvent> logAppender;
 
     @BeforeEach
@@ -43,7 +55,7 @@ class AuthServiceLoggingTest {
         AddressRepository addressRepository = mock(AddressRepository.class);
         AccountRepository accountRepository = mock(AccountRepository.class);
 
-        Map<String, ClientEntity> clientsByEmail = new ConcurrentHashMap<>();
+        clientsByEmail = new ConcurrentHashMap<>();
         when(clientRepository.existsByUsername(anyString())).thenReturn(false);
         when(clientRepository.existsByEmail(anyString())).thenReturn(false);
         when(clientRepository.findByEmail(anyString())).thenAnswer(invocation ->
@@ -69,11 +81,14 @@ class AuthServiceLoggingTest {
         logAppender = new ListAppender<>();
         logAppender.start();
         authServiceLogger.addAppender(logAppender);
+        securityEventLogger = (Logger) LoggerFactory.getLogger(SecurityEventLog.class);
+        securityEventLogger.addAppender(logAppender);
     }
 
     @AfterEach
     void tearDown() {
         authServiceLogger.detachAppender(logAppender);
+        securityEventLogger.detachAppender(logAppender);
     }
 
     // A successful login must produce an audit log entry naming the user.
@@ -117,6 +132,43 @@ class AuthServiceLoggingTest {
 
         assertTrue(logContains("ACCOUNT_LOCKED"), "expected an account-locked security event");
         assertTrue(logContains("15 minutes"), "expected the security event to include the duration");
+    }
+
+    // LMKT-57 AC3: a refused sign-in is a security event naming the account, the reason and a UTC time.
+    @Test
+    void refusedSignInIsLoggedAsAccessRevoked() {
+        authService.register(validRegisterRequest("carl"));
+        clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
+        logAppender.list.clear();
+        LoginRequest request = new LoginRequest("carl@example.com", "Pass123!");
+
+        assertThrows(AccountInactiveException.class, () -> authService.login(request));
+
+        String event = logAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .filter(message -> message.startsWith("ACCESS_REVOKED"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected an ACCESS_REVOKED security event"));
+        Matcher fields = Pattern.compile("ACCESS_REVOKED username=(\\S+) reason=(\\S+) at=(\\S+)").matcher(event);
+        assertTrue(fields.matches(), event);
+        assertEquals("carl", fields.group(1));
+        assertEquals("CLOSED", fields.group(2));
+        assertTrue(fields.group(3).endsWith("Z"), "timestamp must be UTC: " + fields.group(3));
+        Instant.parse(fields.group(3));
+        assertFalse(event.contains("Pass123!"), "the password must never be logged");
+    }
+
+    // A wrong password is not a revocation: it must not reveal (even in the log) that the account is closed.
+    @Test
+    void wrongPasswordForAClosedAccountIsNotLoggedAsAccessRevoked() {
+        authService.register(validRegisterRequest("carl"));
+        clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
+        logAppender.list.clear();
+        LoginRequest request = new LoginRequest("carl@example.com", "WrongPass!");
+
+        assertThrows(IllegalArgumentException.class, () -> authService.login(request));
+
+        assertFalse(logContains("ACCESS_REVOKED"), "a wrong password must not log ACCESS_REVOKED");
     }
 
     private boolean logContains(String expectedSubstring) {

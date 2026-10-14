@@ -45,7 +45,8 @@ Each gateway's route list is its configuration file; this table says what they a
 
 - Clients and staff sign in with the same endpoint, each through their own gateway. The staff gateway serves login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
-- Login fails with `400 { message }` for a wrong email or password, a locked login ([C5](C5-config.md) lockout), or a login that isn't allowed in (e.g. a closed client, see [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)).
+- Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).
+- The right password for a login that may no longer be used gets `403 { "success": false, "code": "ACCOUNT_INACTIVE", "error", "message" }`, with both texts "This account is no longer active. Please contact the firm." That is any client that isn't `ACTIVE` ([AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)) or a staff login whose `active` flag is off. Match on `code` ([AccountInactiveException](../libs/common/src/main/java/com/lemarketjames/common/security/AccountInactiveException.java)), not the text. A wrong password never gets this response, so it never reveals an account's status, and an account that no longer exists gets the wrong-password `400`.
 - Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
 
 ## Instruments (core-service)

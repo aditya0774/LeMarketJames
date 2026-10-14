@@ -1,5 +1,6 @@
 package com.lemarketjames.auth;
 
+import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -242,6 +246,23 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Invalid email or password"));
     }
 
+    // LMKT-57 AC1: the right password for a closed account gets a distinct code the front end can match on.
+    @Test
+    void loginRefusesAClosedAccountWithAccountInactive() throws Exception {
+        authService.register(validRegisterRequest("closeduser"));
+        jdbcTemplate.update("update clients set account_status = 'CLOSED' where username = ?", "closeduser");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "username": "closeduser@example.com", "password": "Pass123!" }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("ACCOUNT_INACTIVE"))
+                .andExpect(jsonPath("$.message").value("This account is no longer active. Please contact the firm."));
+    }
+
     @Test
     void loginCookieIsHardenedForSecureReturnVisits() throws Exception {
         String registerJson = """
@@ -287,5 +308,21 @@ class AuthControllerTest {
         assertTrue(setCookieHeader.contains("HttpOnly"));
         assertTrue(setCookieHeader.contains("Secure"));
         assertTrue(setCookieHeader.contains("SameSite=Lax"));
+    }
+
+    private RegisterRequest validRegisterRequest(String username) {
+        RegisterRequest request = new RegisterRequest(username, "Pass123!", username + "@example.com", "Test User");
+        request.setStreetAddress("123 Main St");
+        request.setCity("Springfield");
+        request.setState("IL");
+        request.setZipCode("62701");
+        request.setCountry("US");
+        request.setSsn("123-45-6789");
+        request.setInitialDeposit(BigDecimal.valueOf(500));
+        request.setInvestmentExperience("beginner");
+        request.setEmploymentStatus("employed");
+        request.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        request.setPhoneNumber("(555) 123-4567");
+        return request;
     }
 }
