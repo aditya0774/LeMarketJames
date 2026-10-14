@@ -295,6 +295,7 @@ test.describe('LMKT-46 volume insight', () => {
 
   test('AC1: a range that runs backwards is refused with a clear message, not shown as figures', async ({ page }) => {
     await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
     const response = await page.request.get(COMPARE, {
       params: { currentFrom: today, currentTo: addDays(today, -1), previousFrom: addDays(today, -3), previousTo: addDays(today, -2) },
     });
@@ -307,6 +308,7 @@ test.describe('LMKT-46 volume insight', () => {
 
   test('AC1: the daily insight endpoint still compares the last completed day and week', async ({ page }) => {
     await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
     for (const periodType of ['DAY', 'WEEK']) {
       const response = await page.request.get(INSIGHT, { params: { periodType } });
       expect(response.status(), await response.text()).toBe(200);
