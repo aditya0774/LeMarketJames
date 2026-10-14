@@ -85,6 +85,7 @@ Run Maven commands from the repo root.
 | Staff app tests / build / dev server | `cd apps/frontend && ng test staff` / `ng build staff` / `ng serve staff` |
 | End-to-end tests (stack must be running on :4200) | `cd apps/e2e && npm install && npm test` |
 | Staff app end-to-end tests (stack must be running on :4201) | `cd apps/e2e && npm install && npm run test:staff` |
+| Report load test (stack on :4200 and :4201, `SIM_RESPECT_MARKET_HOURS=false`) | `cd apps/e2e && npm install && npm run test:load` |
 | Full stack (Docker, Linux/Jenkins) | `docker compose up -d --build` |
 | Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1`; stop with `.\scripts\windows\stop-all.ps1` |
 
