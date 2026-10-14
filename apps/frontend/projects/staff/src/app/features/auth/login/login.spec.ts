@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
-import { Login } from './login';
+import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
 
 describe('Staff login', () => {
   for (const status of [0, 500, 502, 401]) {
@@ -27,6 +27,7 @@ describe('Staff login', () => {
       expect(fixture.nativeElement.querySelector('.alert').textContent).toContain(
         status === 401 ? 'Invalid email or password.' : 'Staff login is unavailable.',
       );
+      expect(fixture.nativeElement.querySelector('.alert b').textContent).toBe('Login failed');
       http.verify();
     });
   }
@@ -104,6 +105,38 @@ describe('Staff login', () => {
 
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
       .toContain('Account locked for 15 minutes.');
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
+    http.verify();
+  });
+
+  // LMKT-56: a deactivated staff login gets a fixed message, chosen by the code, not the text.
+  it('shows the fixed message when the account is no longer active', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(Login);
+    let navigated = false;
+    TestBed.inject(Router).navigate = async () => { navigated = true; return true; };
+    await fixture.whenStable();
+    for (const [selector, value] of [['#username', 'ops@seed.lemarket.com'], ['#password', 'Pass123!']]) {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector(selector);
+      input.value = value; input.dispatchEvent(new Event('input'));
+    }
+
+    const submitted = fixture.componentInstance.submit();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/auth/login').flush(
+      { success: false, code: 'ACCOUNT_INACTIVE', error: 'server text', message: 'server text' },
+      { status: 403, statusText: 'Forbidden' },
+    );
+    await submitted;
+    fixture.detectChanges();
+
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.querySelector('b')!.textContent).toBe('Account not active');
+    expect(alert.textContent).toContain(ACCOUNT_INACTIVE_MESSAGE);
+    expect(alert.textContent).not.toContain('server text');
+    expect(navigated).toBe(false);
     http.verify();
   });
 });
