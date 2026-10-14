@@ -102,12 +102,12 @@ describe('Login', () => {
     expect((component as any).errorMessage()).toBe('Invalid email or password');
   });
 
-  it('should show lockout delay message after repeated failed attempts', async () => {
+  it('should show the lockout duration from the server', async () => {
     authMock.login = async () => {
       throw new HttpErrorResponse({
         status: 400,
         error: {
-          message: 'Account temporarily locked due to too many failed attempts. Try again later.',
+          message: 'Account locked for 15 minutes.',
         },
       });
     };
@@ -115,6 +115,9 @@ describe('Login', () => {
     (component as any).form.setValue({ username: 'alice@example.com', password: 'Pass123!' });
     await component.submit();
 
-    expect((component as any).errorMessage()).toContain('temporarily locked');
+    expect((component as any).errorMessage()).toBe('Account locked for 15 minutes.');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
+      .toContain('Account locked for 15 minutes.');
   });
 });

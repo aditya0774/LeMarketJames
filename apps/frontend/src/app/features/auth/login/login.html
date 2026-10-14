@@ -12,7 +12,7 @@
       <div class="sub">Enter your credentials to access your account.</div>
 
       @if (errorMessage()) {
-        <div class="alert err">
+        <div class="alert err" role="alert">
           <span aria-hidden="true">&#9888;</span>
           <div><b>Login failed</b>{{ errorMessage() }}</div>
         </div>

@@ -83,4 +83,27 @@ describe('Staff login', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('This login is for staff only');
     http.verify();
   });
+
+  it('shows the lockout duration from the server', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(Login);
+    await fixture.whenStable();
+    for (const [selector, value] of [['#username', 'ops@seed.lemarket.com'], ['#password', 'Pass123!']]) {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector(selector);
+      input.value = value; input.dispatchEvent(new Event('input'));
+    }
+
+    const submitted = fixture.componentInstance.submit();
+    const http = TestBed.inject(HttpTestingController);
+    const request = http.expectOne('/api/auth/login');
+    request.flush({ message: 'Account locked for 15 minutes.' }, { status: 400, statusText: 'Login failed' });
+    await submitted;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
+      .toContain('Account locked for 15 minutes.');
+    http.verify();
+  });
 });
