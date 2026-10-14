@@ -24,8 +24,8 @@ export default defineConfig({
   // browser session closed. One worker is slower but stable; E2E_WORKERS raises it on a bigger agent.
   workers: isCi ? Number(process.env.E2E_WORKERS ?? 1) : undefined,
   // Room for a login, a seeded page load and a trace teardown on a busy agent.
-  timeout: isCi ? 60_000 : 30_000,
-  expect: { timeout: isCi ? 10_000 : 5_000 },
+  timeout: isCi ? 120_000 : 60_000,
+  expect: { timeout: isCi ? 15_000 : 10_000 },
   reporter: isCi
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],

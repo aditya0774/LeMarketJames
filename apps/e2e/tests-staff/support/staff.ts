@@ -19,5 +19,12 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.locator('#username').fill(user.email);
   await page.locator('#password').fill(user.password);
+  const loginResponse = page.waitForResponse(
+    response => response.url().includes('/api/auth/login'),
+  );
   await page.getByRole('button', { name: 'Log in' }).click();
+  const response = await loginResponse;
+  if (!response.ok()) {
+    throw new Error(`Staff login failed: ${response.status()} ${await response.text()}`);
+  }
 }
