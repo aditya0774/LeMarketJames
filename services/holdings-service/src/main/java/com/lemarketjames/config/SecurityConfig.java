@@ -1,5 +1,6 @@
 package com.lemarketjames.config;
 
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import jakarta.servlet.DispatcherType;
@@ -31,7 +32,8 @@ public class SecurityConfig {
     private String allowedOrigin;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+                                                   AccountAccessCheck accessCheck) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -43,7 +45,7 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/actuator/health", "/internal/**").permitAll()
                 .anyRequest().authenticated())
-            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

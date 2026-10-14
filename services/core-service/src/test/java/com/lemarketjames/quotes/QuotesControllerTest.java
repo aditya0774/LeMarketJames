@@ -1,5 +1,7 @@
 package com.lemarketjames.quotes;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.market.client.MarketFeedStatus;
@@ -34,6 +36,11 @@ class QuotesControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    // These tests sign tokens for users with no account row; the per-request account check (LMKT-57)
+    // is tested in libs/common, and a mock answers "allowed".
+    @MockitoBean
+    private AccountAccessCheck accessCheck;
 
     @Autowired
     private JwtService jwtService;

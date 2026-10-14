@@ -1,5 +1,6 @@
 package com.lemarketjames.config;
 
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.common.security.Role;
@@ -33,11 +34,13 @@ public class SecurityConfig {
      *
      * @param http the HttpSecurity to configure
      * @param jwtService the JWT service for token validation
+     * @param accessCheck ends the session of an account that may no longer be used (LMKT-57)
      * @return the configured SecurityFilterChain
      * @throws Exception if an error occurs during configuration
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+                                                   AccountAccessCheck accessCheck) throws Exception {
         http
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
@@ -51,7 +54,7 @@ public class SecurityConfig {
                 // Nothing else is served here; an endpoint added elsewhere is closed until it
                 // gets a rule of its own.
                 .anyRequest().denyAll())
-            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

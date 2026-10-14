@@ -154,4 +154,20 @@ class OwnDataIntegrationTest {
         mvc.perform(get("/api/v1/orders/" + aliceOrder)).andExpect(status().isUnauthorized());
     }
 
+    // LMKT-57 AC2: closing the account ends a session that is already open, on its very next request,
+    // even though the cookie's token is still validly signed and unexpired.
+    @Test
+    void aSessionOpenedBeforeTheAccountWasClosedIsRefusedOnItsNextRequest() throws Exception {
+        mvc.perform(get("/api/v1/orders/" + aliceOrder).cookie(cookie)).andExpect(status().isOk());
+
+        ClientEntity client = clients.findByUsername(alice).orElseThrow();
+        client.setAccountStatus(com.lemarketjames.common.domain.AccountStatus.CLOSED);
+        clients.saveAndFlush(client);
+
+        mvc.perform(get("/api/v1/orders/" + aliceOrder).cookie(cookie))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.code").value("ACCOUNT_INACTIVE"));
+    }
+
 }

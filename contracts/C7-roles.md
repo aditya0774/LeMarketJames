@@ -8,7 +8,7 @@ Internal views (audit, reports, insights) can enforce access now, without waitin
 |---|---|
 | The roles, and what each one is for | [Role.java](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) |
 | Staff logins | the `staff_users` table ([010](../database/schema/010_shared_contracts.sql)), [StaffUserEntity.java](../libs/common/src/main/java/com/lemarketjames/common/domain/StaffUserEntity.java) |
-| Who may log in at all | [AccountStatus.java](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for clients, the `active` flag for staff |
+| Who may log in at all | [AccountStatus.java](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for clients, the `active` flag for staff. Enforced at sign-in and again on every request by [JpaAccountAccessCheck](../libs/common/src/main/java/com/lemarketjames/common/security/JpaAccountAccessCheck.java), so an open session ends as soon as the login loses access ([C6](C6-api.md#rules-for-every-public-endpoint)) |
 
 ## How roles travel
 

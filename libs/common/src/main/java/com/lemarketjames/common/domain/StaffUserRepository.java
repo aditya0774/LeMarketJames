@@ -1,6 +1,8 @@
 package com.lemarketjames.common.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -8,4 +10,8 @@ import java.util.Optional;
 public interface StaffUserRepository extends JpaRepository<StaffUserEntity, Integer> {
 
     Optional<StaffUserEntity> findByEmail(String email);
+
+    /** Only the active flag, for the per-request access check (LMKT-57); empty when the login no longer exists. */
+    @Query("select s.active from StaffUserEntity s where s.username = :username")
+    Optional<Boolean> findActiveByUsername(@Param("username") String username);
 }

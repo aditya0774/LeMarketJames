@@ -14,7 +14,7 @@ Every seed login, client or staff, uses the password **`Pass123!`**. Log in with
 | `seed_trader@seed.lemarket.com` | Active, `ACTIVE_TRADER` | Frequent trading; a second account for segment reports |
 | `seed_hnw@seed.lemarket.com` | Active, `HIGH_NET_WORTH` | Large positions and balances |
 | `seed_closed@seed.lemarket.com` | `CLOSED` | Login is refused; the history of a closed account |
-| `seed_expired@seed.lemarket.com` | `EXPIRED` | Can log in and view, but orders are refused with `ACCOUNT_RESTRICTED` |
+| `seed_expired@seed.lemarket.com` | `EXPIRED` | Login is refused, like a closed account (LMKT-57); the history of an account whose documents lapsed |
 | `seed_locked@seed.lemarket.com` | Locked out (lock never expires) | The lockout message, even with the right password |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled on the account | Orders refused with `ACCOUNT_RESTRICTED`; has one such rejected order, and one refused submission in the audit trail |
 

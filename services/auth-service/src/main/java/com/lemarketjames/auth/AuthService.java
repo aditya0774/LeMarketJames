@@ -13,7 +13,9 @@ import com.lemarketjames.common.domain.StaffUserEntity;
 import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.AccountInactiveException;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.SecurityEventLog;
 import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.slf4j.Logger;
@@ -175,7 +177,8 @@ public class AuthService {
      *
      * @param request the login request containing the email (as username) and password
      * @return a LoginResult with the username, success message, JWT token and roles
-     * @throws IllegalArgumentException if validation fails, the login is locked or barred, or credentials are invalid
+     * @throws IllegalArgumentException if validation fails, the login is locked, or credentials are invalid
+     * @throws AccountInactiveException if the password is right but the login may no longer be used (LMKT-57)
      */
     public LoginResult login(LoginRequest request) {
         validateLoginRequest(request);
@@ -211,8 +214,8 @@ public class AuthService {
 
         // Checked only after the password, so a wrong guess never reveals an account's status.
         if (!account.canLogIn()) {
-            log.warn("Login refused for email={}: account is not active", email);
-            throw new IllegalArgumentException("This account is not active. Please contact support.");
+            SecurityEventLog.accessRevoked(account.getUsername(), inactiveReason(account), clock.instant());
+            throw new AccountInactiveException();
         }
 
         account.setFailedLoginAttempts(0);
@@ -243,6 +246,14 @@ public class AuthService {
         account.setFailedLoginAttempts(attempts);
         persist(account);
         return lockedUntil;
+    }
+
+    // A client's reason is its status (CLOSED, SUSPENDED, EXPIRED); staff only have an active flag.
+    private String inactiveReason(LoginAccount account) {
+        if (account instanceof ClientEntity client && client.getAccountStatus() != null) {
+            return client.getAccountStatus().name();
+        }
+        return SecurityEventLog.REASON_DEACTIVATED;
     }
 
     private String lockoutMessage(String prefix, Duration duration) {

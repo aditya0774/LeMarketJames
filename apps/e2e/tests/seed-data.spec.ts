@@ -78,7 +78,16 @@ test.describe('Seed data', () => {
     await loginViaUi(page, seed('seed_closed'));
 
     await expect(page.getByText('Login failed')).toBeVisible();
-    await expect(page.getByText('not active')).toBeVisible();
+    await expect(page.getByText('no longer active')).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  // LMKT-57: an expired client loses access too, with the same message.
+  test('an expired client cannot log in', async ({ page }) => {
+    await loginViaUi(page, seed('seed_expired'));
+
+    await expect(page.getByText('Login failed')).toBeVisible();
+    await expect(page.getByText('no longer active')).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 });

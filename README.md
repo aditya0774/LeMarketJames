@@ -1310,9 +1310,10 @@ sequenceDiagram
             AuthService->>Database: UPDATE failed_login_attempts, locked_until
             AuthService-->>AuthController: IllegalArgumentException
             AuthController-->>User: 400 Bad Request<br/>{message: "Invalid email or password"}
-        else Password valid, but canLogIn() is false (closed client, inactive staff)
-            AuthService-->>AuthController: IllegalArgumentException
-            AuthController-->>User: 400 Bad Request<br/>{message: "This account is not active..."}
+        else Password valid, but canLogIn() is false (closed, suspended or expired client, inactive staff)
+            AuthService->>AuthService: log ACCESS_REVOKED (username, reason, UTC time)
+            AuthService-->>AuthController: AccountInactiveException
+            AuthController-->>User: 403 Forbidden<br/>{code: "ACCOUNT_INACTIVE", message: "This account is no longer active..."}
         else Password valid
             AuthService->>Database: UPDATE reset failed attempts and lock<br/>(clients also last_login)
             AuthService->>JwtService: generateToken(username, roles)

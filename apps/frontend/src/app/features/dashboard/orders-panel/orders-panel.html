@@ -84,7 +84,7 @@
 
   @if (!dateError() && !loading() && !error() && filtered().length) {
     <div class="panel-foot">
-      <div class="pg-info">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ displayTotal() }} orders</div>
+      <div class="pg-info">Showing {{ rangeStart() }}–{{ rangeEnd() }}@if (displayTotal() !== null) { of {{ displayTotal() }}} orders</div>
       <div class="pg-row">
         <button type="button" class="pg-btn" aria-label="Previous page" [disabled]="disablePrevious()" (click)="goToPage(activePage() - 1)">&lsaquo;</button>
         @if (!isServerPagination()) {

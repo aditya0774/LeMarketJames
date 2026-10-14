@@ -56,6 +56,8 @@ export class Dashboard implements OnInit {
   protected readonly historyPage = signal(1);
   protected readonly historyHasNext = signal(false);
   protected readonly historyTotal = signal<number | null>(null);
+  // The unfiltered total is the full order list's length, so it isn't known until that list arrives.
+  private allOrdersLoaded = false;
   private historyDate = '';
   private historyRequest?: Subscription;
   private ordersRequest?: Subscription;
@@ -177,6 +179,7 @@ export class Dashboard implements OnInit {
         next: (orders) => {
           const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
           this.orders.set(orders ?? []);
+          this.allOrdersLoaded = true;
           if (!this.historyDate) {
             this.historyTotal.set((orders ?? []).length);
           }
@@ -254,7 +257,11 @@ export class Dashboard implements OnInit {
           this.historyOrders.set(pageOrders);
           this.historyHasNext.set(hasNext);
           if (!this.historyDate) {
-            this.historyTotal.set(this.orders().length);
+            // A history page can beat the full list back; leave the total unknown rather than show 0,
+            // and let the full list set it when it arrives.
+            if (this.allOrdersLoaded) {
+              this.historyTotal.set(this.orders().length);
+            }
           } else {
             const lowerBound = pageIndex * Dashboard.HISTORY_PAGE_SIZE + pageOrders.length;
             this.historyTotal.set(hasNext ? lowerBound + 1 : lowerBound);

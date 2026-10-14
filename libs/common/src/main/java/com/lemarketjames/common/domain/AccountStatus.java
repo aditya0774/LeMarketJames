@@ -12,12 +12,15 @@ public enum AccountStatus {
     SUSPENDED,
     /** Closed at the client's request: may not log in. */
     CLOSED,
-    /** Identity or KYC documents lapsed: may log in and view, but may not trade until renewed. */
+    /** Identity or KYC documents lapsed: may not log in (LMKT-57) and may not trade until renewed. */
     EXPIRED;
 
-    /** Whether a client in this status may log in at all. */
+    /**
+     * Whether a client in this status may log in at all. Only ACTIVE may: every other status loses
+     * access at sign-in and, for a session opened before the change, on its next request (LMKT-57).
+     */
     public boolean canLogIn() {
-        return this == ACTIVE || this == EXPIRED;
+        return this == ACTIVE;
     }
 
     /** Whether a client in this status may place orders (the account must also have trading enabled). */

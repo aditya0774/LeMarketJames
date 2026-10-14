@@ -12,11 +12,14 @@ import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.AccountInactiveException;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -323,18 +326,54 @@ class AuthServiceTest {
         assertEquals(Set.of(Role.TRADING_OPS), result.getRoles());
     }
 
-    // A closed client knows their password but may not log in; an expired one may (they just can't trade).
-    @Test
-    void closedClientIsRefusedButExpiredClientMayLogIn() {
+    // LMKT-57 AC1: a client that is no longer ACTIVE knows their password but is refused with ACCOUNT_INACTIVE.
+    @ParameterizedTest
+    @EnumSource(value = AccountStatus.class, names = {"CLOSED", "SUSPENDED", "EXPIRED"})
+    void inactiveClientIsRefusedAfterACorrectPassword(AccountStatus status) {
         authService.register(validRegisterRequest("carl"));
-        authService.register(validRegisterRequest("eve"));
-        clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
-        clientsByEmail.get("eve@example.com").setAccountStatus(AccountStatus.EXPIRED);
+        clientsByEmail.get("carl@example.com").setAccountStatus(status);
 
-        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
-                () -> authService.login(new LoginRequest("carl@example.com", "Pass123!")));
-        assertTrue(refused.getMessage().contains("not active"));
-        assertEquals("eve", authService.login(new LoginRequest("eve@example.com", "Pass123!")).getUsername());
+        LoginRequest request = new LoginRequest("carl@example.com", "Pass123!");
+
+        AccountInactiveException refused = assertThrows(AccountInactiveException.class, () -> authService.login(request));
+        assertEquals("This account is no longer active. Please contact the firm.", refused.getMessage());
+    }
+
+    // Staff follow their active flag: a deactivated staff login is refused the same way.
+    @Test
+    void deactivatedStaffIsRefusedAfterACorrectPassword() {
+        StaffUserEntity ops = new StaffUserEntity();
+        ops.setUsername("olivia_ops");
+        ops.setEmail("ops@example.com");
+        ops.setPassword(authService.encodePassword("Pass123!"));
+        ops.setFullName("Olivia Ops");
+        ops.setRole(Role.TRADING_OPS);
+        ops.setActive(false);
+        staffByEmail.put(ops.getEmail(), ops);
+
+        LoginRequest request = new LoginRequest("ops@example.com", "Pass123!");
+
+        assertThrows(AccountInactiveException.class, () -> authService.login(request));
+    }
+
+    // The status is only checked after the password, so a wrong guess never reveals that an account is closed.
+    @Test
+    void wrongPasswordForAClosedAccountStillSaysInvalidCredentials() {
+        authService.register(validRegisterRequest("carl"));
+        clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
+
+        LoginRequest request = new LoginRequest("carl@example.com", "WrongPass!");
+
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class, () -> authService.login(request));
+        assertEquals("Invalid email or password", refused.getMessage());
+    }
+
+    // A deleted account has no password to check, so it gets the same reply as an unknown email.
+    @Test
+    void missingAccountGetsTheGenericInvalidCredentialsMessage() {
+        LoginRequest request = new LoginRequest("gone@example.com", "Pass123!");
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class, () -> authService.login(request));
+        assertEquals("Invalid email or password", refused.getMessage());
     }
 
     private RegisterRequest validRegisterRequest(String username) {

@@ -1,5 +1,7 @@
 package com.lemarketjames.reports;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
@@ -41,6 +43,9 @@ class TradesReportControllerTest {
     private static final String TRADES_BY_STOCK = "/api/v1/reports/trades-by-stock";
 
     @Autowired MockMvc mvc;
+    // These tests sign tokens for users with no account row; the per-request account check (LMKT-57)
+    // is tested in libs/common, and a mock answers "allowed".
+    @MockitoBean AccountAccessCheck accessCheck;
     @Autowired JwtService jwt;
     
     @MockBean TradesReportService tradesReportService;
