@@ -138,4 +138,42 @@ class VolumeInsightControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
     }
+
+    private static final String COMPARE = VOLUME + "/compare";
+
+    @Test
+    void analystComparesTwoChosenRanges() throws Exception {
+        var current = sample().current();
+        var previous = sample().previous();
+        var from = LocalDate.parse("2026-10-05");
+        var to = LocalDate.parse("2026-10-11");
+        when(service.compareRanges(from, to, LocalDate.parse("2026-09-28"), LocalDate.parse("2026-10-04")))
+                .thenReturn(new VolumeComparisonResponse(current, previous, sample().change(),
+                        Instant.parse("2026-10-12T14:00:00Z")));
+
+        mvc.perform(get(COMPARE).param("currentFrom", "2026-10-05").param("currentTo", "2026-10-11")
+                        .param("previousFrom", "2026-09-28").param("previousTo", "2026-10-04")
+                        .cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.current.shareVolume").value(1200))
+                .andExpect(jsonPath("$.previous.shareVolume").value(1000))
+                .andExpect(jsonPath("$.change.shareVolume").value(200));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = "ANALYST")
+    void everyOtherRoleIsForbiddenFromComparing(Role role) throws Exception {
+        mvc.perform(get(COMPARE).cookie(tokenFor(role))).andExpect(status().isForbidden());
+        verify(service, never()).compareRanges(any(), any(), any(), any());
+    }
+
+    @Test
+    void aBadChosenRangeIsABadRequest() throws Exception {
+        when(service.compareRanges(any(), any(), any(), any()))
+                .thenThrow(new IllegalArgumentException("The report's last day must not be before its first day"));
+
+        mvc.perform(get(COMPARE).cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
+    }
 }

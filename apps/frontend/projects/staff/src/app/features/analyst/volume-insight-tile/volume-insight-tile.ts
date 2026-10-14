@@ -1,68 +1,108 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { interval } from 'rxjs';
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 import { VolumeInsightService } from '../../../shared/services/volume-insight.service';
-import { VolumeInsightPeriodType, VolumeInsightResponse } from '../../../shared/models/volume-insight.model';
+import { VolumeComparisonResponse, VolumeRangeRequest } from '../../../shared/models/volume-insight.model';
+import { toIsoDay, volumePresets } from '../../../shared/utils/volume-ranges';
 
 type Direction = 'up' | 'down' | 'flat';
 
-/** Per-section state, so one failing request never blanks the other section. */
-interface Section {
-  periodType: VolumeInsightPeriodType;
-  /** C6 compares completed periods only, so DAY is yesterday and WEEK is last week. */
+const CUSTOM = 'CUSTOM';
+
+/** One comparison on screen: what was asked, and where the request stands. */
+interface Card {
+  key: string;
   label: string;
+  request: VolumeRangeRequest;
   loading: boolean;
   error: boolean;
-  data: VolumeInsightResponse | null;
+  data: VolumeComparisonResponse | null;
 }
 
 /** How often the tile reloads by itself, so a trade made now shows up without pressing Refresh. */
 export const AUTO_REFRESH_MS = 30_000;
 
-const SECTIONS: readonly { periodType: VolumeInsightPeriodType; label: string }[] = [
-  { periodType: 'DAY', label: 'Yesterday' },
-  { periodType: 'WEEK', label: 'Last week' },
-];
+function newCard(key: string, label: string, request: VolumeRangeRequest): Card {
+  return { key, label, request, loading: true, error: false, data: null };
+}
 
-/**
- * Analyst dashboard tile: traded share volume for the last completed day and week,
- * each compared with the period before it (LMKT-46). Fetching is delegated to
- * VolumeInsightService; this component only owns the display state.
- */
 @Component({
   selector: 'staff-volume-insight-tile',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatCardModule, MatIconModule],
+  imports: [
+    DatePipe, DecimalPipe, NgTemplateOutlet, ReactiveFormsModule,
+    MatButtonModule, MatCardModule, MatDatepickerModule, MatFormFieldModule,
+    MatIconModule, MatInputModule, MatNativeDateModule,
+  ],
   templateUrl: './volume-insight-tile.html',
   styleUrls: ['./volume-insight-tile.scss'],
 })
 export class VolumeInsightTile {
   private readonly insights = inject(VolumeInsightService);
 
-  readonly sections = signal<Section[]>(
-    SECTIONS.map((s) => ({ ...s, loading: true, error: false, data: null })),
+  /** Today, this week so far and last week, each against the period before it. */
+  readonly presets = signal<Card[]>(
+    volumePresets(new Date()).map((p) => newCard(p.key, p.label, p.request)),
   );
 
+  /** The comparison the user picked; null until they press Compare. */
+  readonly custom = signal<Card | null>(null);
+
+  /** Two ranges to compare, starting as this week against the same days of last week. */
+  readonly pick = new FormGroup({
+    currentFrom: new FormControl<Date | null>(null),
+    currentTo: new FormControl<Date | null>(null),
+    previousFrom: new FormControl<Date | null>(null),
+    previousTo: new FormControl<Date | null>(null),
+  });
+
   constructor() {
+    this.fillPickFromThisWeek();
     this.refresh();
+    // Background reloads keep the figures on screen instead of flashing "Loading…".
+    interval(AUTO_REFRESH_MS).pipe(takeUntilDestroyed()).subscribe(() => this.refresh(true));
   }
 
-  /** Re-fetch both periods; nothing is cached server-side, so this shows fresh figures. */
-  refresh(): void {
-    for (const s of SECTIONS) {
-      this.update(s.periodType, { loading: true, error: false });
-      this.insights.get(s.periodType).subscribe({
-        next: (data) => this.update(s.periodType, { loading: false, data }),
-        error: () => this.update(s.periodType, { loading: false, error: true, data: null }),
-      });
+  /** Reloads every card. A silent reload keeps what is on screen, including after a failure. */
+  refresh(silent = false): void {
+    // Dates are worked out again so a tile left open overnight rolls over to the new day.
+    const fresh = volumePresets(new Date());
+    this.presets.update((all) => all.map((c, i) => ({ ...c, request: fresh[i].request })));
+    for (const card of this.presets()) {
+      this.load(card.key, silent);
+    }
+    if (this.custom()?.data || this.custom()?.loading) {
+      this.load(CUSTOM, silent);
     }
   }
 
-  /** Up, down or flat, so the tile never relies on colour alone. */
+  /** Compares the two ranges in the form. All four days are needed. */
+  compare(): void {
+    const v = this.pick.getRawValue();
+    if (!v.currentFrom || !v.currentTo || !v.previousFrom || !v.previousTo) {
+      const none: VolumeRangeRequest = { currentFrom: '', currentTo: '', previousFrom: '', previousTo: '' };
+      this.custom.set({ ...newCard(CUSTOM, 'Custom', none), loading: false, error: true });
+      return;
+    }
+    const request: VolumeRangeRequest = {
+      currentFrom: toIsoDay(v.currentFrom),
+      currentTo: toIsoDay(v.currentTo),
+      previousFrom: toIsoDay(v.previousFrom),
+      previousTo: toIsoDay(v.previousTo),
+    };
+    this.custom.set(newCard(CUSTOM, 'Custom', request));
+    this.load(CUSTOM, false);
+  }
+
   direction(change: number): Direction {
     return change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
   }
@@ -71,7 +111,37 @@ export class VolumeInsightTile {
     return { up: 'arrow_upward', down: 'arrow_downward', flat: 'remove' }[this.direction(change)];
   }
 
-  private update(periodType: VolumeInsightPeriodType, patch: Partial<Section>): void {
-    this.sections.update((all) => all.map((s) => (s.periodType === periodType ? { ...s, ...patch } : s)));
+  private load(key: string, silent: boolean): void {
+    const card = key === CUSTOM ? this.custom() : this.presets().find((c) => c.key === key);
+    if (!card) {
+      return;
+    }
+    if (!silent) {
+      this.patch(key, { loading: true, error: false });
+    }
+    this.insights.compare(card.request).subscribe({
+      next: (data) => this.patch(key, { loading: false, error: false, data }),
+      // A failed background reload keeps the last good figures; only a manual one shows the error.
+      error: () => (silent ? undefined : this.patch(key, { loading: false, error: true, data: null })),
+    });
+  }
+
+  private patch(key: string, change: Partial<Card>): void {
+    if (key === CUSTOM) {
+      this.custom.update((c) => (c ? { ...c, ...change } : c));
+    } else {
+      this.presets.update((all) => all.map((c) => (c.key === key ? { ...c, ...change } : c)));
+    }
+  }
+
+  private fillPickFromThisWeek(): void {
+    const thisWeek = this.presets().find((c) => c.key === 'THIS_WEEK')!.request;
+    const asDate = (iso: string) => new Date(`${iso}T00:00:00`);
+    this.pick.setValue({
+      currentFrom: asDate(thisWeek.currentFrom),
+      currentTo: asDate(thisWeek.currentTo),
+      previousFrom: asDate(thisWeek.previousFrom),
+      previousTo: asDate(thisWeek.previousTo),
+    });
   }
 }

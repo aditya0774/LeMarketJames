@@ -23,8 +23,24 @@ export interface VolumeInsightResponse {
   current: VolumePeriod;
   previous: VolumePeriod;
   /** The period still running, totalled up to today. Not part of `change`. */
-  inProgress: VolumePeriod;
+  inProgress?: VolumePeriod;
   change: VolumeChange;
   /** ISO instant at which the server computed the figures: the "last refreshed" time. */
+  generatedAt: string;
+}
+
+/** The two date ranges to compare (C6, GET /api/v1/reports/insights/volume/compare), YYYY-MM-DD, both ends included. */
+export interface VolumeRangeRequest {
+  currentFrom: string;
+  currentTo: string;
+  previousFrom: string;
+  previousTo: string;
+}
+
+/** Two chosen ranges compared: the same figures as the insight, without the period type. */
+export interface VolumeComparisonResponse {
+  current: VolumePeriod;
+  previous: VolumePeriod;
+  change: VolumeChange;
   generatedAt: string;
 }

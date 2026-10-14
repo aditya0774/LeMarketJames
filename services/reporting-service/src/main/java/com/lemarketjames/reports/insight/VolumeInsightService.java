@@ -59,6 +59,24 @@ public class VolumeInsightService {
                 change(currentVolume, previousVolume), Instant.now(clock));
     }
 
+    /**
+     * Compares two ranges the caller picked. Each range runs from its first to its last day, both
+     * included, in the reports time zone; ranges may overlap and need not be the same length.
+     *
+     * @throws IllegalArgumentException when a day is missing or a range is reversed (answered with 400)
+     */
+    public VolumeComparisonResponse compareRanges(LocalDate currentFrom, LocalDate currentTo,
+                                                  LocalDate previousFrom, LocalDate previousTo) {
+        ReportPeriod current = calendar.between(currentFrom, currentTo);
+        ReportPeriod previous = calendar.between(previousFrom, previousTo);
+
+        PeriodVolume currentVolume = volumeOf(current, currentTo);
+        PeriodVolume previousVolume = volumeOf(previous, previousTo);
+
+        return new VolumeComparisonResponse(currentVolume, previousVolume,
+                change(currentVolume, previousVolume), Instant.now(clock));
+    }
+
     private PeriodVolume volumeOf(ReportPeriod period) {
         // The period ends at the next one's first local midnight, so its last day is the day before.
         return volumeOf(period, calendar.reportDay(period.end()).minusDays(1));

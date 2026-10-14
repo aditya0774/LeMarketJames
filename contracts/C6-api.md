@@ -478,7 +478,7 @@ Each period aggregates:
 
 ### GET /api/v1/reports/insights/volume
 
-Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. `current` and `previous` are whole periods, so `change` never compares an unfinished period with a finished one (it would always look like a drop). The period still running is reported separately as `inProgress`, so a trade made now shows up on the next request; the staff tile reloads every 30 seconds.
+Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. `current` and `previous` are whole periods, so `change` never compares an unfinished period with a finished one (it would always look like a drop). The period still running is reported separately as `inProgress`, so a trade made now shows up on the next request. The staff tile no longer calls this endpoint: it uses [`/volume/compare`](#get-apiv1reportsinsightsvolumecompare).
 
 **Parameters:**
 
@@ -506,6 +506,36 @@ Insight: the traded volume of the last completed period compared with the period
 | HTTP | When | Body |
 |---|---|---|
 | 400 | `periodType` missing or not one of the four values | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
+### GET /api/v1/reports/insights/volume/compare
+
+The traded volume of two date ranges the caller chooses, compared. The staff tile uses it for its Today, This week and Last week cards (each against the period just before it) and for the ranges an analyst picks. Computed from `reporting_trades` on every request, like the insight above.
+
+**Parameters** (all four required, `YYYY-MM-DD`, days in the reports time zone):
+
+- `currentFrom`, `currentTo`: the range being looked at, both days included.
+- `previousFrom`, `previousTo`: the range it is compared with, both days included. The ranges may overlap and need not be the same length.
+
+**Response `200`:**
+
+```json
+{
+  "current":  { "startDate": "2026-10-12", "endDate": "2026-10-14", "tradeCount": 9, "shareVolume": 420, "grossAmount": 15000.00 },
+  "previous": { "startDate": "2026-10-05", "endDate": "2026-10-07", "tradeCount": 6, "shareVolume": 300, "grossAmount": 11000.00 },
+  "change":   { "shareVolume": 120, "shareVolumePercent": 40.00, "grossAmount": 4000.00, "grossAmountPercent": 36.36 },
+  "generatedAt": "2026-10-14T14:00:00Z"
+}
+```
+
+`current`, `previous` and `change` follow the rules of the insight above. A range that includes today counts the trades made so far, so a trade made now shows up on the next request.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | A date is missing or not `YYYY-MM-DD`, or a `*From` is after its `*To` | `{ "message": "..." }` |
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 

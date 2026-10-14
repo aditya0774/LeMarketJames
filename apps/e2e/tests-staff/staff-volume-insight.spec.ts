@@ -8,33 +8,36 @@ import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
  * LMKT-46: the volume insight tile on the Analyst dashboard, end to end (S38-INT). Everything
  * goes through the real staff app, staff gateway and reporting-service, without mocks.
  *
- * AC1  the tile compares the last completed day and week with the period before, from real data
- * AC2  the tile shows when the figures were last refreshed
+ * AC1  the tile compares today, this week and last week with the period before, from real data,
+ *      and the user can compare two date ranges of their own
+ * AC2  the tile shows when the figures were last refreshed, and a trade made now shows up
  * AC3  an Analyst sees it; a client and Trading Ops are denied
  *
- * The seed fills are monthly, so yesterday and last week would hold no trades and every figure
- * would be zero. A throwaway client therefore gets fills placed in those periods (the order-history
- * and trade-search specs do the same), and the expected figures are folded from reporting_trades
- * in the test, not taken from the API under test. Only data setup uses SQL.
+ * The seed fills are monthly, so the tile's periods would hold no trades and every figure would be
+ * zero. A throwaway client therefore gets fills placed in those periods (the order-history and
+ * trade-search specs do the same). The expected figures are folded from reporting_trades in the
+ * test, for the exact ranges the tile asked for, not taken from the API under test. Only data
+ * setup uses SQL.
  */
 const INSIGHT = '/api/v1/reports/insights/volume';
+const COMPARE = `${INSIGHT}/compare`;
 // Clients register through the trading app; the staff gateway has no registration route.
 const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const TILE = 'staff-volume-insight-tile';
-const SECTIONS = { DAY: 'Yesterday', WEEK: 'Last week' } as const;
-type PeriodType = keyof typeof SECTIONS;
+const PRESETS = { TODAY: 'Today', THIS_WEEK: 'This week', LAST_WEEK: 'Last week' } as const;
+type PresetKey = keyof typeof PRESETS;
+const PRESET_KEYS = Object.keys(PRESETS) as PresetKey[];
 
 interface Totals { startDate: string; endDate: string; tradeCount: number; shareVolume: number; grossAmount: number }
-interface Insight {
-  periodType: PeriodType;
+interface Comparison {
   current: Totals;
   previous: Totals;
-  inProgress: Totals;
   change: { shareVolume: number; shareVolumePercent: number | null; grossAmount: number; grossAmountPercent: number | null };
   generatedAt: string;
 }
+interface Ranges { currentFrom: string; currentTo: string; previousFrom: string; previousTo: string }
 
-// ---- Calendar: whole days, weeks (Monday to Sunday) in the reports time zone, as in C6 ----
+// ---- Calendar: whole days in the reports time zone, as in C6 ----
 
 /** A calendar day as YYYY-MM-DD, moved by whole days. UTC arithmetic keeps DST out of it. */
 function addDays(day: string, days: number): string {
@@ -47,38 +50,27 @@ function todayIn(timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 
-/** The completed day and week before `today`, each with the period before it. */
-function periodsFor(today: string): Record<PeriodType, { current: [string, string]; previous: [string, string] }> {
-  const sinceMonday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
-  const thisMonday = addDays(today, -sinceMonday);
-  return {
-    DAY: {
-      current: [addDays(today, -1), addDays(today, -1)],
-      previous: [addDays(today, -2), addDays(today, -2)],
-    },
-    WEEK: {
-      current: [addDays(thisMonday, -7), addDays(thisMonday, -1)],
-      previous: [addDays(thisMonday, -14), addDays(thisMonday, -8)],
-    },
-  };
+/** YYYY-MM-DD as the m/d/yyyy a date picker input takes. */
+function pickerText(day: string): string {
+  const [year, month, date] = day.split('-').map(Number);
+  return `${month}/${date}/${year}`;
 }
 
 // ---- Fixtures: one throwaway client with fills in the periods the tile compares ----
 
 interface Fill { day: string; side: 'BUY' | 'SELL'; quantity: number; price: number }
 
-/**
- * Yesterday beats the day before, so the day shows an increase. Last week is far smaller than the
- * week before, so the week shows a decrease; the gap is wide enough that the fills above (which can
- * fall in either week, depending on the weekday) or other suites' fills cannot turn it around.
- */
-function fillsFor(periods: ReturnType<typeof periodsFor>): Fill[] {
+/** Fills today, yesterday, the day before, and in the last two weeks, so every card has trades. */
+function fillsFor(today: string): Fill[] {
+  const sinceMonday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const lastMonday = addDays(addDays(today, -sinceMonday), -7);
   return [
-    { day: periods.DAY.current[0], side: 'BUY', quantity: 2000, price: 100 },
-    { day: periods.DAY.current[0], side: 'SELL', quantity: 1000, price: 150 },
-    { day: periods.DAY.previous[0], side: 'BUY', quantity: 1000, price: 200 },
-    { day: periods.WEEK.current[0], side: 'BUY', quantity: 1000, price: 120 },
-    { day: periods.WEEK.previous[0], side: 'BUY', quantity: 50000, price: 10 },
+    { day: today, side: 'BUY', quantity: 300, price: 100 },
+    { day: addDays(today, -1), side: 'BUY', quantity: 2000, price: 100 },
+    { day: addDays(today, -1), side: 'SELL', quantity: 1000, price: 150 },
+    { day: addDays(today, -2), side: 'BUY', quantity: 1000, price: 200 },
+    { day: lastMonday, side: 'BUY', quantity: 1000, price: 120 },
+    { day: addDays(lastMonday, -7), side: 'BUY', quantity: 50000, price: 10 },
   ];
 }
 
@@ -105,7 +97,7 @@ async function removeClient(db: Client, username: string): Promise<void> {
 
 // ---- Oracle: the same figures, folded from the data source in the test ----
 
-async function expectedTotals(db: Client, timeZone: string, [start, end]: [string, string]): Promise<Totals> {
+async function expectedTotals(db: Client, timeZone: string, start: string, end: string): Promise<Totals> {
   const { rows } = await db.query(
     `SELECT COUNT(*)::int AS trades, COALESCE(SUM(quantity), 0)::text AS shares, COALESCE(SUM(gross_amount), 0)::text AS gross
      FROM reporting_trades
@@ -124,20 +116,86 @@ const percentText = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, m
 const signed = (value: number, text: string) => `${value > 0 ? '+' : ''}${text}`;
 const squash = (text: string | null) => (text ?? '').replace(/\s+/g, ' ').trim();
 
-function insightResponse(page: Page, periodType: PeriodType): Promise<Response> {
-  return page.waitForResponse(r => {
-    const url = new URL(r.url());
-    return url.pathname === INSIGHT && url.searchParams.get('periodType') === periodType;
-  });
+const isCompare = (r: Response) => new URL(r.url()).pathname === COMPARE;
+const rangesOf = (r: Response): Ranges => {
+  const params = new URL(r.url()).searchParams;
+  return {
+    currentFrom: params.get('currentFrom')!, currentTo: params.get('currentTo')!,
+    previousFrom: params.get('previousFrom')!, previousTo: params.get('previousTo')!,
+  };
+};
+
+/** Collects every answer to the compare endpoint, so a test can wait for the three presets. */
+function collectComparisons(page: Page): Response[] {
+  const seen: Response[] = [];
+  page.on('response', r => { if (isCompare(r)) seen.push(r); });
+  return seen;
 }
 
-async function read(response: Response): Promise<Insight> {
+async function read(response: Response): Promise<Comparison> {
   expect(response.status(), await response.text()).toBe(200);
   expect(response.request().method()).toBe('GET');
   return response.json();
 }
 
-const section = (page: Page, periodType: PeriodType) => page.locator(`${TILE} [data-period="${periodType}"]`);
+/** The presets' answers, keyed by card: the tile asks in the order today, this week, last week. */
+async function presetAnswers(seen: Response[], from: number): Promise<Record<PresetKey, Response>> {
+  await expect.poll(() => seen.length, { timeout: 15000 }).toBeGreaterThanOrEqual(from + 3);
+  const batch = seen.slice(from, from + 3);
+  // Requests are sent in a fixed order but may be answered in any order, so sort by what was asked.
+  const byAsk = [...batch].sort((a, b) => rangesOf(a).currentFrom.localeCompare(rangesOf(b).currentFrom) ||
+    rangesOf(a).currentTo.localeCompare(rangesOf(b).currentTo));
+  // Today is the one set against the day just before it (on a Monday, this week is one day too).
+  const today = batch.find(r => rangesOf(r).previousFrom === addDays(rangesOf(r).currentFrom, -1) &&
+    rangesOf(r).currentFrom === rangesOf(r).currentTo)!;
+  const rest = byAsk.filter(r => r !== today);
+  // Last week starts earlier than this week.
+  return { TODAY: today, LAST_WEEK: rest[0], THIS_WEEK: rest[1] };
+}
+
+const card = (page: Page, key: string) => page.locator(`${TILE} [data-period="${key}"]`);
+
+async function expectCard(page: Page, db: Client, timeZone: string, key: string, response: Response) {
+  const body = await read(response);
+  const ranges = rangesOf(response);
+
+  // An allowlist catches new identifiers as well as known personal-data fields.
+  expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'previous']);
+  for (const totals of [body.current, body.previous]) {
+    expect(Object.keys(totals).sort()).toEqual(['endDate', 'grossAmount', 'shareVolume', 'startDate', 'tradeCount']);
+  }
+  expect(Object.keys(body.change).sort()).toEqual(['grossAmount', 'grossAmountPercent', 'shareVolume', 'shareVolumePercent']);
+
+  const current = await expectedTotals(db, timeZone, ranges.currentFrom, ranges.currentTo);
+  const previous = await expectedTotals(db, timeZone, ranges.previousFrom, ranges.previousTo);
+  for (const [actual, expected] of [[body.current, current], [body.previous, previous]] as const) {
+    expect(actual).toMatchObject({
+      startDate: expected.startDate, endDate: expected.endDate,
+      tradeCount: expected.tradeCount, shareVolume: expected.shareVolume,
+    });
+    expect(actual.grossAmount).toBeCloseTo(expected.grossAmount, 2);
+  }
+  const volumeChange = current.shareVolume - previous.shareVolume;
+  const grossChange = current.grossAmount - previous.grossAmount;
+  expect(body.change.shareVolume).toBe(volumeChange);
+  expect(body.change.grossAmount).toBeCloseTo(grossChange, 2);
+  expect(body.change.shareVolumePercent).toBeCloseTo(percent(volumeChange, previous.shareVolume) ?? 0, 2);
+  if (previous.shareVolume === 0) expect(body.change.shareVolumePercent).toBeNull();
+
+  // The same figures, on screen.
+  const tile = card(page, key);
+  await expect(tile.locator('.range')).toHaveText(`${current.startDate} – ${current.endDate}`);
+  await expect(tile.locator('.volume')).toContainText(`${number.format(current.shareVolume)} shares`);
+  const change = squash(await tile.locator('.change').textContent());
+  expect(change).toContain(signed(volumeChange, number.format(volumeChange)));
+  const pct = percent(volumeChange, previous.shareVolume);
+  expect(change).toContain(pct === null ? 'n/a' : `(${signed(volumeChange, percentText.format(pct))}%)`);
+  expect(squash(await tile.locator('.previous').textContent()))
+    .toBe(`Compared with ${previous.startDate} – ${previous.endDate}: ${number.format(previous.shareVolume)} shares`);
+  // Direction is shown by class and icon as well as by the sign.
+  await expect(tile.locator('.change')).toHaveClass(volumeChange > 0 ? /\bup\b/ : volumeChange < 0 ? /\bdown\b/ : /\bflat\b/);
+  return { body, current, previous };
+}
 
 test.describe('LMKT-46 volume insight', () => {
   // One set of fixtures serves every test; no other spec reads the insight, so nothing races them.
@@ -145,7 +203,8 @@ test.describe('LMKT-46 volume insight', () => {
 
   let db: Client;
   let timeZone: string;
-  let periods: ReturnType<typeof periodsFor>;
+  let today: string;
+  let accountId: number;
   let client: TestUser;
 
   test.beforeAll(async ({ playwright }) => {
@@ -162,11 +221,12 @@ test.describe('LMKT-46 volume insight', () => {
       expect(ping.status()).toBe(200);
       timeZone = (await ping.json()).timeZone;
 
-      periods = periodsFor(todayIn(timeZone));
+      today = todayIn(timeZone);
       const { rows } = await db.query(
         'SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1', [client.username]);
       expect(rows).toHaveLength(1);
-      for (const fill of fillsFor(periods)) await insertFill(db, rows[0].account_id, timeZone, fill);
+      accountId = rows[0].account_id;
+      for (const fill of fillsFor(today)) await insertFill(db, accountId, timeZone, fill);
     } catch (error) {
       await removeClient(db, client.username);
       await db.end();
@@ -181,95 +241,136 @@ test.describe('LMKT-46 volume insight', () => {
     try { await removeClient(db, client.username); } finally { await db.end(); }
   });
 
-  test('AC1: the tile compares the last day and week with the period before, from real data', async ({ page }) => {
-    const responses = { DAY: insightResponse(page, 'DAY'), WEEK: insightResponse(page, 'WEEK') };
+  test('AC1: the tile compares today, this week and last week with the period before, from real data', async ({ page }) => {
+    const seen = collectComparisons(page);
     await signIn(page, ANALYST);
     await expect(page).toHaveURL(/\/analyst$/);
 
-    for (const periodType of ['DAY', 'WEEK'] as const) {
-      const response = await responses[periodType];
-      expect(new URL(response.url()).origin).toBe(new URL(page.url()).origin);
-      const body = await read(response);
-
-      // An allowlist catches new identifiers as well as known personal-data fields.
-      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'inProgress', 'periodType', 'previous']);
-      for (const totals of [body.current, body.previous, body.inProgress]) {
-        expect(Object.keys(totals).sort()).toEqual(['endDate', 'grossAmount', 'shareVolume', 'startDate', 'tradeCount']);
-      }
-      expect(Object.keys(body.change).sort()).toEqual(['grossAmount', 'grossAmountPercent', 'shareVolume', 'shareVolumePercent']);
-      expect(body.periodType).toBe(periodType);
-
-      const current = await expectedTotals(db, timeZone, periods[periodType].current);
-      const previous = await expectedTotals(db, timeZone, periods[periodType].previous);
-      expect(current.shareVolume, 'the fixtures put trades in the period').toBeGreaterThan(0);
-      expect(previous.shareVolume, 'the fixtures put trades in the previous period').toBeGreaterThan(0);
-      for (const [actual, expected] of [[body.current, current], [body.previous, previous]] as const) {
-        expect(actual).toMatchObject({
-          startDate: expected.startDate, endDate: expected.endDate,
-          tradeCount: expected.tradeCount, shareVolume: expected.shareVolume,
-        });
-        expect(actual.grossAmount).toBeCloseTo(expected.grossAmount, 2);
-      }
-      const volumeChange = current.shareVolume - previous.shareVolume;
-      const grossChange = current.grossAmount - previous.grossAmount;
-      expect(body.change.shareVolume).toBe(volumeChange);
-      expect(body.change.grossAmount).toBeCloseTo(grossChange, 2);
-      expect(body.change.shareVolumePercent).toBeCloseTo(percent(volumeChange, previous.shareVolume)!, 2);
-      expect(body.change.grossAmountPercent).toBeCloseTo(percent(grossChange, previous.grossAmount)!, 2);
-
-      // The same figures, on screen.
-      const tile = section(page, periodType);
-      await expect(tile.locator('h3')).toHaveText(SECTIONS[periodType]);
-      await expect(tile.locator('.range')).toHaveText(`${current.startDate} – ${current.endDate}`);
-      await expect(tile.locator('.volume')).toContainText(`${number.format(current.shareVolume)} shares`);
-      const change = squash(await tile.locator('.change').textContent());
-      expect(change).toContain(signed(volumeChange, number.format(volumeChange)));
-      expect(change).toContain(`(${signed(volumeChange, percentText.format(percent(volumeChange, previous.shareVolume)!))}%)`);
-      const earlier = squash(await tile.locator('.previous').textContent());
-      expect(earlier).toBe(`Previous (${previous.startDate} – ${previous.endDate}): ${number.format(previous.shareVolume)} shares`);
-      // Direction is shown by class and icon as well as by the sign.
-      await expect(tile.locator('.change')).toHaveClass(volumeChange > 0 ? /\bup\b/ : /\bdown\b/);
+    const answers = await presetAnswers(seen, 0);
+    for (const key of PRESET_KEYS) {
+      expect(new URL(answers[key].url()).origin).toBe(new URL(page.url()).origin);
+      await expect(card(page, key).locator('h3')).toHaveText(PRESETS[key]);
+      const { current, previous } = await expectCard(page, db, timeZone, key, answers[key]);
+      expect(current.shareVolume, `${key}: the fixtures put trades in the period`).toBeGreaterThan(0);
+      if (key !== 'TODAY') expect(previous.shareVolume, `${key}: and in the period before`).toBeGreaterThan(0);
     }
 
-    // The fixtures were chosen so the two sections show both directions.
-    await expect(section(page, 'DAY').locator('.change')).toHaveClass(/\bup\b/);
-    await expect(section(page, 'WEEK').locator('.change')).toHaveClass(/\bdown\b/);
+    // Today is one day against the day before; the week so far is set against as many days of last week.
+    const ranges = Object.fromEntries(PRESET_KEYS.map(k => [k, rangesOf(answers[k])])) as Record<PresetKey, Ranges>;
+    expect(ranges.TODAY.currentFrom).toBe(ranges.TODAY.currentTo);
+    expect(ranges.TODAY.previousFrom).toBe(addDays(ranges.TODAY.currentFrom, -1));
+    expect(ranges.THIS_WEEK.previousFrom).toBe(addDays(ranges.THIS_WEEK.currentFrom, -7));
+    expect(ranges.THIS_WEEK.previousTo).toBe(addDays(ranges.THIS_WEEK.currentTo, -7));
+    expect(ranges.LAST_WEEK.currentTo).toBe(addDays(ranges.THIS_WEEK.currentFrom, -1));
+    expect(addDays(ranges.LAST_WEEK.currentFrom, 6)).toBe(ranges.LAST_WEEK.currentTo);
+  });
+
+  test('AC1: the user can compare two date ranges of their own', async ({ page }) => {
+    const seen = collectComparisons(page);
+    await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
+    await presetAnswers(seen, 0);
+
+    // Yesterday against the day before: both hold fixture trades.
+    const wanted: Ranges = {
+      currentFrom: addDays(today, -1), currentTo: addDays(today, -1),
+      previousFrom: addDays(today, -2), previousTo: addDays(today, -2),
+    };
+    const form = page.locator(`${TILE} form.custom`);
+    await form.getByLabel('Range from').fill(pickerText(wanted.currentFrom));
+    await form.getByLabel('Range to').fill(pickerText(wanted.currentTo));
+    await form.getByLabel('Compared from').fill(pickerText(wanted.previousFrom));
+    await form.getByLabel('Compared to').fill(pickerText(wanted.previousTo));
+
+    const answer = page.waitForResponse(r => isCompare(r) && rangesOf(r).currentFrom === wanted.currentFrom);
+    await form.getByRole('button', { name: 'Compare', exact: true }).click();
+    const response = await answer;
+
+    expect(rangesOf(response)).toEqual(wanted);
+    const { current, previous } = await expectCard(page, db, timeZone, 'CUSTOM', response);
+    // Other suites' fills may add to these days, so only the fixtures' share is certain.
+    expect(current.shareVolume).toBeGreaterThanOrEqual(3000);
+    expect(previous.shareVolume).toBeGreaterThanOrEqual(1000);
+  });
+
+  test('AC1: a range that runs backwards is refused with a clear message, not shown as figures', async ({ page }) => {
+    await signIn(page, ANALYST);
+    const response = await page.request.get(COMPARE, {
+      params: { currentFrom: today, currentTo: addDays(today, -1), previousFrom: addDays(today, -3), previousTo: addDays(today, -2) },
+    });
+    expect(response.status(), await response.text()).toBe(400);
+    expect((await response.json()).message).toBeTruthy();
+
+    const missing = await page.request.get(COMPARE);
+    expect(missing.status()).toBe(400);
+  });
+
+  test('AC1: the daily insight endpoint still compares the last completed day and week', async ({ page }) => {
+    await signIn(page, ANALYST);
+    for (const periodType of ['DAY', 'WEEK']) {
+      const response = await page.request.get(INSIGHT, { params: { periodType } });
+      expect(response.status(), await response.text()).toBe(200);
+      const body = await response.json();
+      expect(body.periodType).toBe(periodType);
+      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'inProgress', 'periodType', 'previous']);
+      // The running period is reported on its own and never feeds the change.
+      expect(body.inProgress.endDate).toBe(today);
+      expect(body.change.shareVolume).toBe(body.current.shareVolume - body.previous.shareVolume);
+    }
   });
 
   test('AC2: the tile shows when the figures were last refreshed, and Refresh updates it', async ({ page }) => {
-    const first = { DAY: insightResponse(page, 'DAY'), WEEK: insightResponse(page, 'WEEK') };
+    const seen = collectComparisons(page);
     const before = Date.now();
     await signIn(page, ANALYST);
     await expect(page).toHaveURL(/\/analyst$/);
-    const loaded = { DAY: await read(await first.DAY), WEEK: await read(await first.WEEK) };
+    const first = await presetAnswers(seen, 0);
+    const loaded = Object.fromEntries(await Promise.all(PRESET_KEYS.map(async k => [k, await read(first[k])]))) as Record<PresetKey, Comparison>;
     const after = Date.now();
 
     // The server stamps the answer when it computes it, so the stamp lies inside this window
     // (a second of slack for the whole-second resolution of some clocks).
-    for (const periodType of ['DAY', 'WEEK'] as const) {
-      const stamp = Date.parse(loaded[periodType].generatedAt);
+    for (const key of PRESET_KEYS) {
+      const stamp = Date.parse(loaded[key].generatedAt);
       expect(stamp).toBeGreaterThanOrEqual(before - 1000);
       expect(stamp).toBeLessThanOrEqual(after + 1000);
     }
 
     // Rendered the way the app does ('medium' date and time, in the browser's zone).
-    const shown = (periodType: PeriodType, generatedAt: string) =>
+    const shown = (generatedAt: string) =>
       page.evaluate(
         stamp => new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(stamp)),
         generatedAt).then(text => `Last refreshed ${squash(text)}`);
-    for (const periodType of ['DAY', 'WEEK'] as const) {
-      await expect.poll(async () => squash(await section(page, periodType).locator('.refreshed').textContent()))
-        .toBe(await shown(periodType, loaded[periodType].generatedAt));
+    for (const key of PRESET_KEYS) {
+      await expect.poll(async () => squash(await card(page, key).locator('.refreshed').textContent()))
+        .toBe(await shown(loaded[key].generatedAt));
     }
 
-    const second = { DAY: insightResponse(page, 'DAY'), WEEK: insightResponse(page, 'WEEK') };
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-    const refreshed = { DAY: await read(await second.DAY), WEEK: await read(await second.WEEK) };
-    for (const periodType of ['DAY', 'WEEK'] as const) {
-      expect(Date.parse(refreshed[periodType].generatedAt)).toBeGreaterThan(Date.parse(loaded[periodType].generatedAt));
-      await expect.poll(async () => squash(await section(page, periodType).locator('.refreshed').textContent()))
-        .toBe(await shown(periodType, refreshed[periodType].generatedAt));
+    const second = await presetAnswers(seen, 3);
+    for (const key of PRESET_KEYS) {
+      const refreshed = await read(second[key]);
+      expect(Date.parse(refreshed.generatedAt)).toBeGreaterThan(Date.parse(loaded[key].generatedAt));
+      await expect.poll(async () => squash(await card(page, key).locator('.refreshed').textContent()))
+        .toBe(await shown(refreshed.generatedAt));
     }
+  });
+
+  test('AC2: a trade made now shows up on the Today and This week cards after a refresh', async ({ page }) => {
+    const seen = collectComparisons(page);
+    await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
+    const first = await presetAnswers(seen, 0);
+    const todayBefore = (await read(first.TODAY)).current.shareVolume;
+    const weekBefore = (await read(first.THIS_WEEK)).current.shareVolume;
+
+    await insertFill(db, accountId, timeZone, { day: today, side: 'BUY', quantity: 777, price: 10 });
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    const second = await presetAnswers(seen, 3);
+
+    expect((await read(second.TODAY)).current.shareVolume).toBe(todayBefore + 777);
+    expect((await read(second.THIS_WEEK)).current.shareVolume).toBe(weekBefore + 777);
+    await expect(card(page, 'TODAY').locator('.volume')).toContainText(`${number.format(todayBefore + 777)} shares`);
   });
 
   test.describe('AC3: access', () => {
@@ -278,13 +379,12 @@ test.describe('LMKT-46 volume insight', () => {
       await expect(page).toHaveURL(/\/analyst$/);
       await expect(page.locator(TILE)).toBeVisible();
       await expect(page.locator(TILE).getByRole('heading', { name: 'Trading volume vs previous period' })).toBeVisible();
-      await expect(section(page, 'DAY').locator('.volume')).toBeVisible();
-      await expect(section(page, 'WEEK').locator('.volume')).toBeVisible();
+      for (const key of PRESET_KEYS) await expect(card(page, key).locator('.volume')).toBeVisible();
     });
 
     test('Trading Ops never gets the tile or the figures', async ({ page }) => {
       const requested: string[] = [];
-      page.on('request', r => { if (new URL(r.url()).pathname === INSIGHT) requested.push(r.url()); });
+      page.on('request', r => { if (new URL(r.url()).pathname.startsWith(INSIGHT)) requested.push(r.url()); });
 
       await signIn(page, TRADING_OPS);
       await expect(page).toHaveURL(/\/trade-search$/);
@@ -296,7 +396,12 @@ test.describe('LMKT-46 volume insight', () => {
       // Asking for the figures directly, with the Trading Ops session, is refused by the service too.
       const response = await page.request.get(INSIGHT, { params: { periodType: 'WEEK' } });
       expect(response.status(), await response.text()).toBe(403);
-      expect(requested.filter(url => !url.includes('periodType=WEEK'))).toEqual([]);
+      const range = await page.request.get(COMPARE, {
+        params: { currentFrom: today, currentTo: today, previousFrom: addDays(today, -1), previousTo: addDays(today, -1) },
+      });
+      expect(range.status(), await range.text()).toBe(403);
+      // The only requests the page made are the two this test sent itself.
+      expect(requested.filter(url => !url.includes('periodType=WEEK') && !url.includes('/compare'))).toEqual([]);
     });
 
     test('a client is refused on the staff login and gets no figures', async ({ page }) => {
@@ -306,6 +411,10 @@ test.describe('LMKT-46 volume insight', () => {
 
       const response = await page.request.get(INSIGHT, { params: { periodType: 'DAY' } });
       expect(response.status(), await response.text()).toBe(401);
+      const range = await page.request.get(COMPARE, {
+        params: { currentFrom: today, currentTo: today, previousFrom: addDays(today, -1), previousTo: addDays(today, -1) },
+      });
+      expect(range.status(), await range.text()).toBe(401);
       await page.goto('/analyst');
       await expect(page).toHaveURL(/\/login$/);
       await expect(page.locator(TILE)).toHaveCount(0);

@@ -201,4 +201,31 @@ class VolumeInsightServiceTest {
     void aMissingOrUnknownPeriodTypeIsRejected(String type) {
         assertThrows(IllegalArgumentException.class, () -> serviceAt(MONDAY_MORNING).compareWithPreviousPeriod(type));
     }
+
+    @Test
+    void comparesTwoChosenRangesWithBothEndsIncluded() {
+        // Tue 6 Oct to Thu 8 Oct 00:00 EDT .. Fri 9 Oct 00:00 EDT, as UTC; and the three days before.
+        register("2026-10-06T04:00:00", "2026-10-09T04:00:00", totals(6, "300", "9000.00"));
+        register("2026-10-03T04:00:00", "2026-10-06T04:00:00", totals(4, "200", "6000.00"));
+
+        VolumeComparisonResponse r = serviceAt(MONDAY_MORNING).compareRanges(
+                LocalDate.parse("2026-10-06"), LocalDate.parse("2026-10-08"),
+                LocalDate.parse("2026-10-03"), LocalDate.parse("2026-10-05"));
+
+        assertEquals(LocalDate.parse("2026-10-08"), r.current().endDate());
+        assertEquals(new BigDecimal("300"), r.current().shareVolume());
+        assertEquals(new BigDecimal("200"), r.previous().shareVolume());
+        assertEquals(new BigDecimal("100"), r.change().shareVolume());
+        assertEquals(new BigDecimal("50.00"), r.change().shareVolumePercent());
+    }
+
+    @Test
+    void aReversedOrMissingChosenRangeIsRejected() {
+        VolumeInsightService service = serviceAt(MONDAY_MORNING);
+        LocalDate a = LocalDate.parse("2026-10-06");
+        LocalDate b = LocalDate.parse("2026-10-08");
+
+        assertThrows(IllegalArgumentException.class, () -> service.compareRanges(b, a, a, b));
+        assertThrows(IllegalArgumentException.class, () -> service.compareRanges(a, b, null, b));
+    }
 }

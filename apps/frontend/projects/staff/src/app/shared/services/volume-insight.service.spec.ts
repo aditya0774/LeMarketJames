@@ -25,4 +25,17 @@ describe('VolumeInsightService', () => {
     expect(req.request.params.get('periodType')).toBe('WEEK');
     req.flush({});
   });
+
+  it('GETs a comparison of two date ranges', () => {
+    service.compare({
+      currentFrom: '2026-10-12', currentTo: '2026-10-14',
+      previousFrom: '2026-10-05', previousTo: '2026-10-07',
+    }).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === '/api/v1/reports/insights/volume/compare');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('currentFrom')).toBe('2026-10-12');
+    expect(req.request.params.get('previousTo')).toBe('2026-10-07');
+    req.flush({});
+  });
 });

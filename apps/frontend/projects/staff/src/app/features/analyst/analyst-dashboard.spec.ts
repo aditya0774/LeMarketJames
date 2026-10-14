@@ -27,11 +27,11 @@ describe('AnalystDashboard', () => {
     ]);
   });
 
-  it('shows the volume insight tile, which asks for the day and week insights', async () => {
+  it('shows the volume insight tile, which asks for today, this week and last week', async () => {
     const fixture = await create();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('staff-volume-insight-tile')).not.toBeNull();
     const http = TestBed.inject(HttpTestingController);
-    expect(http.match((r) => r.url === '/api/v1/reports/insights/volume').length).toBe(2);
+    expect(http.match((r) => r.url === '/api/v1/reports/insights/volume/compare').length).toBe(3);
   });
 });
