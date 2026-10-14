@@ -146,6 +146,25 @@ describe('Dashboard', () => {
     expect(text()).toContain('Showing 1–3 of 3 orders');
   });
 
+  // The first history page can come back before the full order list; the total must never read 0 meanwhile.
+  it('does not show a total of 0 while the full order list is still loading', async () => {
+    const allOrders = new Subject<OrderResponse[]>();
+    const seven = [1, 2, 3, 4, 5, 6, 7].map(id => order(id, 'FILLED'));
+    allOrdersResult = allOrders;
+    historyPageResult = of(seven.slice(0, 6));
+    await setup();
+
+    expect(text()).toContain('Showing 1–5 orders');
+    expect(text()).not.toContain('of 0 orders');
+
+    allOrders.next(seven);
+    allOrders.complete();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(text()).toContain('Showing 1–5 of 7 orders');
+  });
+
   it('lists every stock with its live price and a trend graph', async () => {
     allOrdersResult = of([]);
     historyPageResult = of([]);

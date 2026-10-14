@@ -276,6 +276,20 @@ describe('OrdersPanel date filtering', () => {
     expect(fixture.nativeElement.querySelectorAll('.pg-row .pg-btn').length).toBe(2);
   });
 
+  // One page of rows is not the total, so an unknown server total is left out rather than shown wrong.
+  it('leaves the total out of the footer while a server-paged total is unknown', () => {
+    fixture.componentRef.setInput('orders', seeds.slice(0, 5));
+    fixture.componentRef.setInput('serverPagination', true);
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('hasNextPage', true);
+    fixture.componentRef.setInput('totalOrders', null);
+    fixture.detectChanges();
+
+    const info = fixture.nativeElement.querySelector('.pg-info').textContent;
+    expect(info).toContain('Showing 1–5 orders');
+    expect(info).not.toContain(' of ');
+  });
+
   it('disables next in server pagination when hasNextPage is false', () => {
     fixture.componentRef.setInput('serverPagination', true);
     fixture.componentRef.setInput('currentPage', 2);

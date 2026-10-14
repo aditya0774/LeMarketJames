@@ -92,7 +92,12 @@ export class OrdersPanel {
     }
     return Math.min(this.page() * PAGE_SIZE, this.filtered().length);
   });
-  protected readonly displayTotal = computed(() => this.totalOrders() ?? this.filtered().length);
+  /**
+   * Null while a server-paged total is still unknown: the rows in hand are one page, not the total,
+   * so the footer leaves "of N" out rather than show a wrong number.
+   */
+  protected readonly displayTotal = computed(() =>
+    this.totalOrders() ?? (this.isServerPagination() ? null : this.filtered().length));
   protected readonly disablePrevious = computed(() => this.activePage() <= 1);
   protected readonly disableNext = computed(() => {
     if (this.isServerPagination()) {
