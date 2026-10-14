@@ -126,9 +126,17 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#compareWithPreviousPeriod(java.lang.String)" class="member-name-link">compareWithPreviousPeriod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#compareRanges(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">compareRanges</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentTo,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousTo)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Compares two ranges the caller picked.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#compareWithPreviousPeriod(java.lang.String)" class="member-name-link">compareWithPreviousPeriod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -171,6 +179,21 @@ loadScripts(document, 'script');</script>
 <dd><code>periodType</code> - DAY, WEEK, MONTH or YEAR, in any letter case</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - when the type is missing or unknown; answered with 400</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="compareRanges(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)">
+<h3>compareRanges</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></span>&nbsp;<span class="element-name">compareRanges</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentTo,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousTo)</span></div>
+<div class="block">Compares two ranges the caller picked. Each range runs from its first to its last day, both
+ included, in the reports time zone; ranges may overlap and need not be the same length.</div>
+<dl class="notes">
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - when a day is missing or a range is reversed (answered with 400)</dd>
 </dl>
 </section>
 </li>

@@ -123,9 +123,17 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#volume(java.lang.String)" class="member-name-link">volume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#compare(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">compare</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentTo,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousFrom,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousTo)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Traded volume of two date ranges the caller chose.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#volume(java.lang.String)" class="member-name-link">volume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Traded volume of the last completed period against the one before it.</div>
 </div>
 </div>
@@ -166,6 +174,22 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></span>&nbsp;<span class="element-name">volume</span><wbr><span class="parameters">(@RequestParam(required=false)
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType)</span></div>
 <div class="block">Traded volume of the last completed period against the one before it.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="compare(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)">
+<h3>compare</h3>
+<div class="member-signature"><span class="annotations">@GetMapping("/volume/compare")
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></span>&nbsp;<span class="element-name">compare</span><wbr><span class="parameters">(@RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentFrom,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;currentTo,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousFrom,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousTo)</span></div>
+<div class="block">Traded volume of two date ranges the caller chose. A missing, malformed or reversed date is
+ answered with 400 by the shared exception handler.</div>
 </section>
 </li>
 </ul>

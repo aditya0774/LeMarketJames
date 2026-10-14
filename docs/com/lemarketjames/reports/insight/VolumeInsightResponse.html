@@ -96,11 +96,13 @@ loadScripts(document, 'script');</script>
 <dd><code><span id="param-periodType">periodType</span></code> - the kind of period compared: DAY, WEEK, MONTH or YEAR</dd>
 <dd><code><span id="param-current">current</span></code> - the last completed period</dd>
 <dd><code><span id="param-previous">previous</span></code> - the period just before <code>current</code></dd>
+<dd><code><span id="param-inProgress">inProgress</span></code> - the period still running, totalled up to today. Not part of <code>change</code>: an
+                   unfinished period would always look like a drop against a finished one</dd>
 <dd><code><span id="param-change">change</span></code> - <code>current</code> minus <code>previous</code></dd>
 <dd><code><span id="param-generatedAt">generatedAt</span></code> - when the figures were computed</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">VolumeInsightResponse</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType, <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;current, <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;previous, <a href="VolumeInsightResponse.VolumeChange.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.VolumeChange</a>&nbsp;change, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">VolumeInsightResponse</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType, <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;current, <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;previous, <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;inProgress, <a href="VolumeInsightResponse.VolumeChange.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.VolumeChange</a>&nbsp;change, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
 <div class="block">The volume insight: the last completed period against the one before it. Totals only, so no
  client, account or order can be identified from it.</div>
@@ -137,9 +139,10 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.VolumeChange,java.time.Instant)" class="member-name-link">VolumeInsightResponse</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.VolumeChange,java.time.Instant)" class="member-name-link">VolumeInsightResponse</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType,
  <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;current,
  <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;previous,
+ <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;inProgress,
  <a href="VolumeInsightResponse.VolumeChange.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.VolumeChange</a>&nbsp;change,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)</code></div>
 <div class="col-last even-row-color">
@@ -184,19 +187,24 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a hash code value for this object.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#periodType()" class="member-name-link">periodType</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#inProgress()" class="member-name-link">inProgress</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-inProgress"><code>inProgress</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#periodType()" class="member-name-link">periodType</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-periodType"><code>periodType</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#previous()" class="member-name-link">previous</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#previous()" class="member-name-link">previous</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-previous"><code>previous</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
 </div>
@@ -217,11 +225,12 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.VolumeChange,java.time.Instant)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.PeriodVolume,com.lemarketjames.reports.insight.VolumeInsightResponse.VolumeChange,java.time.Instant)">
 <h3>VolumeInsightResponse</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">VolumeInsightResponse</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;periodType,
  <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;current,
  <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;previous,
+ <a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a>&nbsp;inProgress,
  <a href="VolumeInsightResponse.VolumeChange.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.VolumeChange</a>&nbsp;change,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)</span></div>
 <div class="block">Creates an instance of a <code>VolumeInsightResponse</code> record class.</div>
@@ -230,6 +239,7 @@ loadScripts(document, 'script');</script>
 <dd><code>periodType</code> - the value for the <a href="#param-periodType"><code>periodType</code></a> record component</dd>
 <dd><code>current</code> - the value for the <a href="#param-current"><code>current</code></a> record component</dd>
 <dd><code>previous</code> - the value for the <a href="#param-previous"><code>previous</code></a> record component</dd>
+<dd><code>inProgress</code> - the value for the <a href="#param-inProgress"><code>inProgress</code></a> record component</dd>
 <dd><code>change</code> - the value for the <a href="#param-change"><code>change</code></a> record component</dd>
 <dd><code>generatedAt</code> - the value for the <a href="#param-generatedAt"><code>generatedAt</code></a> record component</dd>
 </dl>
@@ -314,6 +324,17 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <a href="#param-previous"><code>previous</code></a> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="inProgress()">
+<h3>inProgress</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></span>&nbsp;<span class="element-name">inProgress</span>()</div>
+<div class="block">Returns the value of the <a href="#param-inProgress"><code>inProgress</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-inProgress"><code>inProgress</code></a> record component</dd>
 </dl>
 </section>
 </li>
