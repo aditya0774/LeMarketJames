@@ -51,42 +51,66 @@ public class VolumeInsightService {
 
 <span class="fc" id="L52">        PeriodVolume currentVolume = volumeOf(current);</span>
 <span class="fc" id="L53">        PeriodVolume previousVolume = volumeOf(previous);</span>
+        // The running period is reported on its own so a trade made now shows up; it stays out of
+        // the change, which compares whole periods only.
+<span class="fc" id="L56">        PeriodVolume inProgressVolume = volumeOf(inProgress, today);</span>
 
-<span class="fc" id="L55">        return new VolumeInsightResponse(bucket.name(), currentVolume, previousVolume,</span>
-<span class="fc" id="L56">                change(currentVolume, previousVolume), Instant.now(clock));</span>
+<span class="fc" id="L58">        return new VolumeInsightResponse(bucket.name(), currentVolume, previousVolume, inProgressVolume,</span>
+<span class="fc" id="L59">                change(currentVolume, previousVolume), Instant.now(clock));</span>
+    }
+
+    /**
+     * Compares two ranges the caller picked. Each range runs from its first to its last day, both
+     * included, in the reports time zone; ranges may overlap and need not be the same length.
+     *
+     * @throws IllegalArgumentException when a day is missing or a range is reversed (answered with 400)
+     */
+    public VolumeComparisonResponse compareRanges(LocalDate currentFrom, LocalDate currentTo,
+                                                  LocalDate previousFrom, LocalDate previousTo) {
+<span class="fc" id="L70">        ReportPeriod current = calendar.between(currentFrom, currentTo);</span>
+<span class="fc" id="L71">        ReportPeriod previous = calendar.between(previousFrom, previousTo);</span>
+
+<span class="fc" id="L73">        PeriodVolume currentVolume = volumeOf(current, currentTo);</span>
+<span class="fc" id="L74">        PeriodVolume previousVolume = volumeOf(previous, previousTo);</span>
+
+<span class="fc" id="L76">        return new VolumeComparisonResponse(currentVolume, previousVolume,</span>
+<span class="fc" id="L77">                change(currentVolume, previousVolume), Instant.now(clock));</span>
     }
 
     private PeriodVolume volumeOf(ReportPeriod period) {
-<span class="fc" id="L60">        VolumeTotals totals = repository.totalsBetween(period.start(), period.end());</span>
         // The period ends at the next one's first local midnight, so its last day is the day before.
-<span class="fc" id="L62">        LocalDate lastDay = calendar.reportDay(period.end()).minusDays(1);</span>
-<span class="fc" id="L63">        return new PeriodVolume(period.firstDay(), lastDay, totals.getTradeCount(),</span>
-<span class="fc" id="L64">                totals.getShareVolume(), totals.getGrossAmount());</span>
+<span class="fc" id="L82">        return volumeOf(period, calendar.reportDay(period.end()).minusDays(1));</span>
+    }
+
+    private PeriodVolume volumeOf(ReportPeriod period, LocalDate lastDay) {
+<span class="fc" id="L86">        VolumeTotals totals = repository.totalsBetween(period.start(), period.end());</span>
+<span class="fc" id="L87">        return new PeriodVolume(period.firstDay(), lastDay, totals.getTradeCount(),</span>
+<span class="fc" id="L88">                totals.getShareVolume(), totals.getGrossAmount());</span>
     }
 
     private static VolumeChange change(PeriodVolume current, PeriodVolume previous) {
-<span class="fc" id="L68">        BigDecimal shares = current.shareVolume().subtract(previous.shareVolume());</span>
-<span class="fc" id="L69">        BigDecimal amount = current.grossAmount().subtract(previous.grossAmount());</span>
-<span class="fc" id="L70">        return new VolumeChange(shares, percent(shares, previous.shareVolume()),</span>
-<span class="fc" id="L71">                amount, percent(amount, previous.grossAmount()));</span>
+<span class="fc" id="L92">        BigDecimal shares = current.shareVolume().subtract(previous.shareVolume());</span>
+<span class="fc" id="L93">        BigDecimal amount = current.grossAmount().subtract(previous.grossAmount());</span>
+<span class="fc" id="L94">        return new VolumeChange(shares, percent(shares, previous.shareVolume()),</span>
+<span class="fc" id="L95">                amount, percent(amount, previous.grossAmount()));</span>
     }
 
     /** The change as a percent of the previous value, or null when there was nothing to compare with. */
     private static BigDecimal percent(BigDecimal change, BigDecimal previous) {
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (previous.signum() == 0) {</span>
-<span class="fc" id="L77">            return null;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (previous.signum() == 0) {</span>
+<span class="fc" id="L101">            return null;</span>
         }
-<span class="fc" id="L79">        return change.multiply(HUNDRED).divide(previous, PERCENT_SCALE, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L103">        return change.multiply(HUNDRED).divide(previous, PERCENT_SCALE, RoundingMode.HALF_UP);</span>
     }
 
     private static ReportBucket parse(String periodType) {
-<span class="fc bfc" id="L83" title="All 4 branches covered.">        if (periodType == null || periodType.isBlank()) {</span>
-<span class="fc" id="L84">            throw new IllegalArgumentException(&quot;periodType is required (DAY, WEEK, MONTH or YEAR)&quot;);</span>
+<span class="fc bfc" id="L107" title="All 4 branches covered.">        if (periodType == null || periodType.isBlank()) {</span>
+<span class="fc" id="L108">            throw new IllegalArgumentException(&quot;periodType is required (DAY, WEEK, MONTH or YEAR)&quot;);</span>
         }
         try {
-<span class="fc" id="L87">            return ReportBucket.valueOf(periodType.trim().toUpperCase(Locale.ROOT));</span>
-<span class="fc" id="L88">        } catch (IllegalArgumentException e) {</span>
-<span class="fc" id="L89">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L111">            return ReportBucket.valueOf(periodType.trim().toUpperCase(Locale.ROOT));</span>
+<span class="fc" id="L112">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L113">            throw new IllegalArgumentException(</span>
                     &quot;Invalid periodType: &quot; + periodType + &quot;. Valid values: DAY, WEEK, MONTH, YEAR&quot;);
         }
     }
