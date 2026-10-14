@@ -1,9 +1,9 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
-import { isAccountInactive } from '../../../core/auth/account-inactive';
+import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 
 /** Shown, with the heading "Account not active", for an account the firm has closed or suspended (C6). */
 export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
@@ -33,11 +33,16 @@ export class Login {
     private readonly fb: FormBuilder,
     private readonly auth: Auth,
     private readonly router: Router,
+    route: ActivatedRoute,
   ) {
     this.form = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+    // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
+    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+      this.showAccountInactive();
+    }
   }
 
   async submit(): Promise<void> {

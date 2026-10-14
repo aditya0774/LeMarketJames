@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
@@ -159,5 +160,34 @@ describe('Login', () => {
 
     expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
     expect((component as any).errorMessage()).toBe('Invalid email or password');
+  });
+});
+
+// LMKT-56: accountInactiveInterceptor sends a cut-off session here with ?reason=inactive.
+describe('Login opened after the session was cut off', () => {
+  async function open(url: string): Promise<HTMLElement> {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'login', component: Login }]),
+        { provide: Auth, useValue: { hasRole: () => false } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url, Login);
+    return harness.routeNativeElement!;
+  }
+
+  it('shows the fixed heading and message on load', async () => {
+    const alert = (await open('/login?reason=inactive')).querySelector('[role="alert"]')!;
+
+    expect(alert.querySelector('b')!.textContent).toBe('Account not active');
+    expect(alert.textContent).toContain(ACCOUNT_INACTIVE_MESSAGE);
+  });
+
+  it('shows no message on a plain visit', async () => {
+    expect((await open('/login')).querySelector('[role="alert"]')).toBeNull();
   });
 });
