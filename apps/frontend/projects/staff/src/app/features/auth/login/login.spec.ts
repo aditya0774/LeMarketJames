@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { Auth } from '../../../core/auth/auth';
 import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
 
@@ -139,4 +140,24 @@ describe('Staff login', () => {
     expect(navigated).toBe(false);
     http.verify();
   });
+
+  // LMKT-56: accountInactiveInterceptor sends a cut-off session here with ?reason=inactive.
+  for (const [url, shown] of [['/login?reason=inactive', true], ['/login', false]] as const) {
+    it((shown ? 'shows' : 'shows no') + ' account-not-active message on load at ' + url, async () => {
+      await TestBed.configureTestingModule({
+        providers: [provideRouter([{ path: 'login', component: Login }]), provideHttpClient(), provideHttpClientTesting()],
+      }).compileComponents();
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(url, Login);
+
+      const alert: HTMLElement | null = harness.routeNativeElement!.querySelector('[role="alert"]');
+      if (shown) {
+        expect(alert!.querySelector('b')!.textContent).toBe('Account not active');
+        expect(alert!.textContent).toContain(ACCOUNT_INACTIVE_MESSAGE);
+      } else {
+        expect(alert).toBeNull();
+      }
+      TestBed.inject(HttpTestingController).verify();
+    });
+  }
 });

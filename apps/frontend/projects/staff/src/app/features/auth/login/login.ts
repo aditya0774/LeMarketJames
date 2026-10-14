@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { homeFor } from '../../../core/auth/staff-home';
-import { isAccountInactive } from '../../../core/auth/account-inactive';
+import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 
 /** Shown to a client who signs in here; their session is ended before it is shown. */
 export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
@@ -35,11 +35,16 @@ export class Login {
     private readonly fb: FormBuilder,
     private readonly auth: Auth,
     private readonly router: Router,
+    route: ActivatedRoute,
   ) {
     this.form = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+    // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
+    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+      this.showAccountInactive();
+    }
   }
 
   async submit(): Promise<void> {
