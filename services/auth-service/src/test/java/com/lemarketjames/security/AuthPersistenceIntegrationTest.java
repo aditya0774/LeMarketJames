@@ -5,11 +5,16 @@ import com.lemarketjames.auth.AuthService;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.domain.AccountStatus;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.domain.StaffUserEntity;
 import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.common.config.PlatformSettings;
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
+import com.lemarketjames.common.security.SecurityEventLog;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +27,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,6 +55,7 @@ class AuthPersistenceIntegrationTest {
     @Autowired JwtService jwt;
     @Autowired StaffUserRepository staff;
     @Autowired PlatformSettings settings;
+    @Autowired AccountAccessCheck accessCheck;
     String alice;
     Integer aliceAccount;
     Cookie cookie;
@@ -92,5 +100,37 @@ class AuthPersistenceIntegrationTest {
         request.setPassword("Pass123!");
         assertEquals(alice, restarted.login(request).getUsername());
         assertEquals(aliceAccount, restarted.getAccountId(alice));
+    }
+
+    // LMKT-57: the per-request check's two lookups, run against the real tables (PostgreSQL in Jenkins).
+    @Test
+    void accessCheckReadsAClientsStatusFromTheDatabase() {
+        assertEquals(Optional.empty(), accessCheck.revokedReason(alice, Set.of(Role.CLIENT)));
+
+        var client = clients.findByUsername(alice).orElseThrow();
+        client.setAccountStatus(AccountStatus.SUSPENDED);
+        clients.saveAndFlush(client);
+
+        assertEquals(Optional.of("SUSPENDED"), accessCheck.revokedReason(alice, Set.of(Role.CLIENT)));
+        assertEquals(Optional.of(SecurityEventLog.REASON_NOT_FOUND),
+            accessCheck.revokedReason("nobody-" + alice, Set.of(Role.CLIENT)));
+    }
+
+    @Test
+    void accessCheckReadsAStaffUsersActiveFlagFromTheDatabase() {
+        StaffUserEntity ops = new StaffUserEntity();
+        ops.setUsername("ops-" + alice);
+        ops.setEmail("ops-" + alice + "@example.com");
+        ops.setPassword(auth.encodePassword("Pass123!"));
+        ops.setFullName("Olivia Ops");
+        ops.setRole(Role.TRADING_OPS);
+        staff.saveAndFlush(ops);
+        assertEquals(Optional.empty(), accessCheck.revokedReason(ops.getUsername(), Set.of(Role.TRADING_OPS)));
+
+        ops.setActive(false);
+        staff.saveAndFlush(ops);
+
+        assertEquals(Optional.of(SecurityEventLog.REASON_DEACTIVATED),
+            accessCheck.revokedReason(ops.getUsername(), Set.of(Role.TRADING_OPS)));
     }
 }
