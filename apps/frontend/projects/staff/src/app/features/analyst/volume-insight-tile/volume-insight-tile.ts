@@ -1,4 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -18,6 +20,9 @@ interface Section {
   error: boolean;
   data: VolumeInsightResponse | null;
 }
+
+/** How often the tile reloads by itself, so a trade made now shows up without pressing Refresh. */
+export const AUTO_REFRESH_MS = 30_000;
 
 const SECTIONS: readonly { periodType: VolumeInsightPeriodType; label: string }[] = [
   { periodType: 'DAY', label: 'Yesterday' },

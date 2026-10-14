@@ -478,7 +478,7 @@ Each period aggregates:
 
 ### GET /api/v1/reports/insights/volume
 
-Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. Both periods are whole periods: a period still in progress would always look like a drop against a finished one.
+Insight: the traded volume of the last completed period compared with the period before it. Computed from `reporting_trades` on every request (nothing is cached), so the figures move forward by themselves as each day in the reports time zone ends. `current` and `previous` are whole periods, so `change` never compares an unfinished period with a finished one (it would always look like a drop). The period still running is reported separately as `inProgress`, so a trade made now shows up on the next request; the staff tile reloads every 30 seconds.
 
 **Parameters:**
 
@@ -491,12 +491,13 @@ Insight: the traded volume of the last completed period compared with the period
   "periodType": "WEEK",
   "current":  { "startDate": "2026-10-05", "endDate": "2026-10-11", "tradeCount": 40, "shareVolume": 1200, "grossAmount": 54000.00 },
   "previous": { "startDate": "2026-09-28", "endDate": "2026-10-04", "tradeCount": 32, "shareVolume": 1000, "grossAmount": 41000.00 },
+  "inProgress": { "startDate": "2026-10-12", "endDate": "2026-10-12", "tradeCount": 3, "shareVolume": 75, "grossAmount": 900.00 },
   "change":   { "shareVolume": 200, "shareVolumePercent": 20.00, "grossAmount": 13000.00, "grossAmountPercent": 31.71 },
   "generatedAt": "2026-10-12T14:00:00Z"
 }
 ```
 
-- `startDate` and `endDate` are both included, days in the reports time zone.
+- `startDate` and `endDate` are both included, days in the reports time zone. For `inProgress`, `endDate` is today.
 - `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-reporting-service)).
 - `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
 

@@ -10,6 +10,7 @@ function insight(overrides: Partial<VolumeInsightResponse> = {}): VolumeInsightR
     periodType: 'WEEK',
     current: { startDate: '2026-10-05', endDate: '2026-10-11', tradeCount: 40, shareVolume: 1200, grossAmount: 54000 },
     previous: { startDate: '2026-09-28', endDate: '2026-10-04', tradeCount: 32, shareVolume: 1000, grossAmount: 41000 },
+    inProgress: { startDate: '2026-10-12', endDate: '2026-10-12', tradeCount: 3, shareVolume: 75, grossAmount: 900 },
     change: { shareVolume: 200, shareVolumePercent: 20, grossAmount: 13000, grossAmountPercent: 31.71 },
     generatedAt: '2026-10-12T14:00:00Z',
     ...overrides,

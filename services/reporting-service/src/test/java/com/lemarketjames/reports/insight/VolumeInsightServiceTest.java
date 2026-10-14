@@ -90,11 +90,28 @@ class VolumeInsightServiceTest {
     void weekRunsMondayToSundayInReportTime() {
         serviceAt(MONDAY_MORNING).compareWithPreviousPeriod("WEEK");
 
-        // Current week: Mon 5 Oct 00:00 EDT to Mon 12 Oct 00:00 EDT, as UTC; previous: the week before.
+        // Current week: Mon 5 Oct 00:00 EDT to Mon 12 Oct 00:00 EDT, as UTC; previous: the week before;
+        // then the week in progress.
         assertEquals(List.of(
                 List.of(LocalDateTime.parse("2026-10-05T04:00:00"), LocalDateTime.parse("2026-10-12T04:00:00")),
-                List.of(LocalDateTime.parse("2026-09-28T04:00:00"), LocalDateTime.parse("2026-10-05T04:00:00"))),
+                List.of(LocalDateTime.parse("2026-09-28T04:00:00"), LocalDateTime.parse("2026-10-05T04:00:00")),
+                List.of(LocalDateTime.parse("2026-10-12T04:00:00"), LocalDateTime.parse("2026-10-19T04:00:00"))),
                 rangesAsked);
+    }
+
+    @Test
+    void reportsThePeriodInProgressUpToTodayWithoutTouchingTheChange() {
+        register("2026-10-05T04:00:00", "2026-10-12T04:00:00", totals(40, "1200", "54000.00"));
+        register("2026-09-28T04:00:00", "2026-10-05T04:00:00", totals(32, "1000", "41000.00"));
+        register("2026-10-12T04:00:00", "2026-10-19T04:00:00", totals(3, "75", "900.00"));
+
+        VolumeInsightResponse r = serviceAt(MONDAY_MORNING).compareWithPreviousPeriod("WEEK");
+
+        assertEquals(LocalDate.parse("2026-10-12"), r.inProgress().startDate());
+        assertEquals(LocalDate.parse("2026-10-12"), r.inProgress().endDate());
+        assertEquals(3, r.inProgress().tradeCount());
+        assertEquals(new BigDecimal("75"), r.inProgress().shareVolume());
+        assertEquals(new BigDecimal("200"), r.change().shareVolume());
     }
 
     @Test

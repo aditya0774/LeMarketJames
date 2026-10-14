@@ -55,7 +55,7 @@ class VolumeInsightControllerTest {
                 LocalDate.parse("2026-10-04"), 32, new BigDecimal("1000"), new BigDecimal("41000.00"));
         var change = new VolumeInsightResponse.VolumeChange(new BigDecimal("200"), new BigDecimal("20.00"),
                 new BigDecimal("13000.00"), null);
-        return new VolumeInsightResponse("WEEK", current, previous, change, Instant.parse("2026-10-12T14:00:00Z"));
+        return new VolumeInsightResponse("WEEK", current, previous, current, change, Instant.parse("2026-10-12T14:00:00Z"));
     }
 
     @Test
@@ -100,6 +100,7 @@ class VolumeInsightControllerTest {
                 .andExpect(jsonPath("$.current.tradeCount").value(40))
                 .andExpect(jsonPath("$.current.shareVolume").value(1200))
                 .andExpect(jsonPath("$.previous.grossAmount").value(41000.00))
+                .andExpect(jsonPath("$.inProgress.shareVolume").value(1200))
                 .andExpect(jsonPath("$.change.shareVolume").value(200))
                 .andExpect(jsonPath("$.change.shareVolumePercent").value(20.00))
                 .andExpect(jsonPath("$.change.grossAmountPercent").doesNotExist())

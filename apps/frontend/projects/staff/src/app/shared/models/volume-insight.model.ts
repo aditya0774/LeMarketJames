@@ -22,6 +22,8 @@ export interface VolumeInsightResponse {
   periodType: VolumeInsightPeriodType;
   current: VolumePeriod;
   previous: VolumePeriod;
+  /** The period still running, totalled up to today. Not part of `change`. */
+  inProgress: VolumePeriod;
   change: VolumeChange;
   /** ISO instant at which the server computed the figures: the "last refreshed" time. */
   generatedAt: string;

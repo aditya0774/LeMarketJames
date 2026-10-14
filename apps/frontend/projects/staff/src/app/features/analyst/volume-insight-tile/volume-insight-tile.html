@@ -36,6 +36,10 @@
               Previous ({{ d.previous.startDate }} – {{ d.previous.endDate }}):
               {{ d.previous.shareVolume | number }} shares
             </p>
+            <p class="in-progress">
+              {{ s.periodType === 'DAY' ? 'Today' : 'This week' }} so far:
+              {{ d.inProgress.shareVolume | number }} shares in {{ d.inProgress.tradeCount | number }} trades
+            </p>
             <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
           }
         </section>

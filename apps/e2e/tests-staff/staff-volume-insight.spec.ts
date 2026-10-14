@@ -29,6 +29,7 @@ interface Insight {
   periodType: PeriodType;
   current: Totals;
   previous: Totals;
+  inProgress: Totals;
   change: { shareVolume: number; shareVolumePercent: number | null; grossAmount: number; grossAmountPercent: number | null };
   generatedAt: string;
 }
@@ -191,8 +192,8 @@ test.describe('LMKT-46 volume insight', () => {
       const body = await read(response);
 
       // An allowlist catches new identifiers as well as known personal-data fields.
-      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'periodType', 'previous']);
-      for (const totals of [body.current, body.previous]) {
+      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'inProgress', 'periodType', 'previous']);
+      for (const totals of [body.current, body.previous, body.inProgress]) {
         expect(Object.keys(totals).sort()).toEqual(['endDate', 'grossAmount', 'shareVolume', 'startDate', 'tradeCount']);
       }
       expect(Object.keys(body.change).sort()).toEqual(['grossAmount', 'grossAmountPercent', 'shareVolume', 'shareVolumePercent']);
