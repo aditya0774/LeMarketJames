@@ -1,6 +1,7 @@
 package com.lemarketjames.reports.controller;
 
 import com.lemarketjames.reports.dto.SegmentActivityResponse;
+import com.lemarketjames.reports.dto.SegmentComparisonResponse;
 import com.lemarketjames.reports.service.SegmentActivityService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,15 @@ public class SegmentActivityController {
 
     public SegmentActivityController(SegmentActivityService service) {
         this.service = service;
+    }
+
+    @GetMapping("/api/v1/reports/activity/comparison")
+    public SegmentComparisonResponse comparison(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate comparisonStartDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate comparisonEndDate) {
+        return service.compare(startDate, endDate, comparisonStartDate, comparisonEndDate);
     }
 
     @GetMapping("/api/v1/reports/activity")

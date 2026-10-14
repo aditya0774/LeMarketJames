@@ -62,6 +62,90 @@ describe('ActivityByClientSegment Component', () => {
     httpTestingController.verify();
   });
 
+  it('renders both periods, zero-baseline N/A and negative changes', () => {
+    fixture.detectChanges();
+    const request = httpTestingController.expectOne(r => r.url === '/api/v1/reports/activity/comparison');
+    request.flush({ success: true, data: [], startDate: '2026-10-01', endDate: '2026-10-07',
+      comparisonStartDate: '2026-09-24', comparisonEndDate: '2026-09-30', timeZone: 'America/New_York',
+      comparison: [{ segment: 'RETAIL',
+        current: { segment: 'RETAIL', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
+        previous: { segment: 'RETAIL', activeClients: 1, tradeCount: 1, totalTradedValue: 0 },
+        activeClients: { absolute: -1, percent: -100 }, tradeCount: { absolute: -1, percent: -100 },
+        totalTradedValue: { absolute: 0, percent: null } }] });
+    fixture.detectChanges();
+    const charts = fixture.nativeElement.querySelector('staff-segment-comparison-charts');
+    expect(charts.textContent).toContain('-100.00%');
+    expect(charts.textContent).toContain('N/A');
+    expect(fixture.nativeElement.textContent).toContain('2026-09-24');
+  });
+
+  it('validates paired comparison dates and sends a custom range', () => {
+    fixture.detectChanges();
+    httpTestingController.expectOne(r => r.url.includes('/activity')).flush({ success: true, data: [] });
+    component.dateRangeForm.controls.comparisonMode.setValue('custom');
+    component['onComparisonModeChange']();
+    component.dateRangeForm.patchValue({ comparisonStartDate: new Date(2026, 8, 1) });
+    component['onDateRangeChange']();
+    httpTestingController.expectNone(r => r.url.includes('/activity'));
+    expect(component['error']()).toContain('both comparison dates');
+    component.dateRangeForm.patchValue({ comparisonEndDate: new Date(2026, 8, 30) });
+    component['onDateRangeChange']();
+    const req = httpTestingController.expectOne(r => r.url.includes('/activity/comparison'));
+    expect(req.request.params.get('comparisonStartDate')).toBe('2026-09-01');
+    expect(req.request.params.get('comparisonEndDate')).toBe('2026-09-30');
+    req.flush({ success: true, data: [] });
+  });
+
+  it('hides custom dates by default and ignores them when returning to previous period', () => {
+    fixture.detectChanges();
+    const initial = httpTestingController.expectOne(r => r.url.includes('/activity'));
+    expect(initial.request.params.has('comparisonStartDate')).toBe(false);
+    initial.flush({ success: true, data: [] });
+    expect(fixture.nativeElement.querySelector('[formControlName="comparisonStartDate"]')).toBeNull();
+
+    component.dateRangeForm.controls.comparisonMode.setValue('custom');
+    component['onComparisonModeChange']();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[formControlName="comparisonStartDate"]')).toBeTruthy();
+    component['onDateRangeChange']();
+    httpTestingController.expectNone(r => r.url.includes('/activity'));
+    expect(component['error']()).toContain('both comparison dates');
+
+    component.dateRangeForm.patchValue({ comparisonStartDate: new Date(2026, 8, 30), comparisonEndDate: new Date(2026, 8, 1) });
+    component.dateRangeForm.controls.comparisonMode.setValue('previous');
+    component['onComparisonModeChange']();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[formControlName="comparisonStartDate"]')).toBeNull();
+    const automatic = httpTestingController.expectOne(r => r.url.includes('/activity'));
+    expect(automatic.request.params.has('comparisonStartDate')).toBe(false);
+    expect(automatic.request.params.has('comparisonEndDate')).toBe(false);
+    automatic.flush({ success: true, data: [] });
+  });
+
+  it('cancels an older request when the selected dates change', () => {
+    fixture.detectChanges();
+    const old = httpTestingController.expectOne(r => r.url.includes('/activity'));
+    component['onDateRangeChange']();
+    expect(old.cancelled).toBe(true);
+    httpTestingController.expectOne(r => r.url.includes('/activity')).flush({ success: true, data: [] });
+  });
+
+  it('keeps all-time totals independent of the selected dates, including empty periods', () => {
+    fixture.detectChanges();
+    const allTimeData = [{ segment: 'RETAIL', activeClients: 3, tradeCount: 100, totalTradedValue: 12000 }];
+    httpTestingController.expectOne(r => r.url.includes('/activity')).flush({ success: true, data: mockSegmentData, allTimeData });
+    expect(component['totalActiveClients']()).toBe(3);
+    expect(component['totalTrades']()).toBe(100);
+    component.dateRangeForm.patchValue({ startDate: new Date(2000, 0, 1), endDate: new Date(2000, 0, 31) });
+    component['onDateRangeChange']();
+    httpTestingController.expectOne(r => r.url.includes('/activity')).flush({ success: true, data: [], allTimeData });
+    fixture.detectChanges();
+    expect(component['totalTradedValue']()).toBe(12000);
+    expect(component['totalActiveClients']()).toBe(3);
+    expect(fixture.nativeElement.querySelector('.stats-grid').textContent).toContain('100');
+    expect(fixture.nativeElement.querySelector('.chart-row').textContent).toContain('$12,000.00');
+  });
+
   describe('Initialization', () => {
     it('sets default date range to last 30 days on init', () => {
       const today = new Date();
@@ -223,10 +307,10 @@ describe('ActivityByClientSegment Component', () => {
   });
 
   describe('Proportional chart', () => {
-    it('renders unequal and zero values on one scale alongside the segment table', () => {
+    it('renders unequal and zero values on one scale', () => {
       fixture.detectChanges();
       const req = httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity'));
-      req.flush({ success: true, data: [
+      req.flush({ success: true, data: [], allTimeData: [
         { segment: 'RETAIL', activeClients: 2, tradeCount: 4, totalTradedValue: 478 },
         { segment: 'ACTIVE_TRADER', activeClients: 1, tradeCount: 2, totalTradedValue: 522 },
         { segment: 'HIGH_NET_WORTH', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
@@ -235,14 +319,13 @@ describe('ActivityByClientSegment Component', () => {
 
       const bars = fixture.nativeElement.querySelectorAll('.bar-fill');
       expect(Array.from(bars).map((bar: any) => bar.style.width)).toEqual(['52.2%', '47.8%', '0%']);
-      expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(3);
       expect(fixture.nativeElement.textContent).toContain('47.8% of total');
     });
 
     it('renders all-zero values without invalid widths', () => {
       fixture.detectChanges();
       const req = httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity'));
-      req.flush({ success: true, data: [
+      req.flush({ success: true, data: [], allTimeData: [
         { segment: 'RETAIL', activeClients: 0, tradeCount: 0, totalTradedValue: 0 },
       ] });
       fixture.detectChanges();
