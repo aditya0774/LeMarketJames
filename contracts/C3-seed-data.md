@@ -62,3 +62,30 @@ An open market and healthy quote feed are required. Run only one copy at a time.
 The script resumes each dedicated demo account to its target rather than duplicating
 completed trades. Dates are the actual execution dates; choose a report range including
 the day it ran. Existing seed and user activity is included alongside these demo trades.
+
+### Historical client-segment demo (2026)
+
+[021](../database/schema/021_historical_segment_demo_clients.sql) adds fictional
+`demo_history_01` through `demo_history_30` clients, with emails formed like the other
+seed logins and the same password. Their segments are inherited from the existing
+seed personas. Client counts, opening deposits and registration dates live in 021.
+
+After applying 021, run `scripts/windows/seed-historical-segment-report.ps1 -Apply`.
+Without `-Apply`, the script previews and rolls back the history. The standalone
+[fixture writer](../scripts/seed/HistoricalSegmentSeed.java) owns the month-by-month
+activity plan, synthetic prices and sizes. It creates June-September 2026 history,
+including June and July comparisons with meaningful nonzero baselines. Retail
+clients have smaller orders, active traders trade more often, and high-net-worth
+clients place larger orders. Some clients enter or leave the monthly active cohort.
+
+Orders are explicitly marked with a synthetic quote source. Each buy is followed
+by a sell of the same shares, with modest gains or losses. Cash, holdings and
+settlement receipts are written atomically, and audit events go through the existing
+`AuditRecorder` with a fixture clock; no audit record is rewritten. This is an offline
+historical fixture, not actual historical market execution. It does not publish Kafka
+events, so notification, surveillance and market-activity consumer tables are not seeded.
+
+The entire history commits once under an advisory lock. Reruns verify existing
+history and leave it unchanged; existing clients outside this dedicated set are untouched.
+Compare July 1-31 with June 1-30 using custom comparison dates (calendar months differ
+in length). The report also includes any earlier seed or user trades in those ranges.
