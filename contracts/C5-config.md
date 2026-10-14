@@ -69,6 +69,9 @@ limits, not business settings, so they are not in `PlatformSettings`. They are d
 their defaults and environment overrides, in its
 [application.properties](../services/reporting-service/src/main/resources/application.properties)
 and explained in its [README](../services/reporting-service/README.md#read-side-safeguards).
+The report load test ([report-load.spec.ts](../apps/e2e/load/report-load.spec.ts), LMKT-44)
+checks that they are enough to keep order confirmations on target. Its thresholds are test
+settings, defined with their `LOAD_*` overrides at the top of that file.
 
 ## Order execution
 

@@ -26,6 +26,12 @@ Reports share the database with live trading. Three limits, set in [application.
 
 The last two are set on each connection when the pool opens it, so they hold for every query whether or not it runs in a Spring transaction. A report that hits the timeout fails; make the query cheaper rather than raising the limit.
 
+That these limits are *enough* is shown by the report load test (LMKT-44, below). It times client orders until they fill, first alone and then while analysts run reports nonstop over a year of trades, and fails if reports make them noticeably slower. Run it after changing a limit or adding a report. Its thresholds and load levels are defined, with their overrides, at the top of [report-load.spec.ts](../../apps/e2e/load/report-load.spec.ts). If it fails, the agreed fallback is a Kafka-fed copy of fills owned by this service.
+
+What the load test taught us, so a new report doesn't undo it:
+- **Group in SQL.** Return one row per group, never the trades themselves. The trades report used to load every trade in its range and count in Java, which held the database long enough to slow order execution.
+- **The pool is one connection on purpose.** Report queries are CPU-bound in PostgreSQL, so each busy connection takes a core from order execution. The reasoning and the measurements are next to the setting in [application.properties](src/main/resources/application.properties).
+
 ## Tests
 
 | Test | Checks | Runs |
@@ -44,6 +50,7 @@ The last two are set on each connection when the pool opens it, so they hold for
 | [OvernightRunsIntegrationTest](src/test/java/com/lemarketjames/reports/overnight/OvernightRunsIntegrationTest.java) | On a real PostgreSQL: the run writer gets past the read-only default, a report runs once a night, READY by the ready-by time and LATE after it, a run only moves forward, a missed night is recorded once and an interrupted run is failed, the stub reads the real view, and every other write is still refused | same as the safeguards test |
 | [staff-overnight-reports.spec.ts](../../apps/e2e/tests-staff/staff-overnight-reports.spec.ts) | Overnight reports through the real staff app, staff gateway and service: runs written into `report_runs` show as Ready, Late and Failed with their times and reason, Refresh picks up a change, and signed-out visitors and Trading Ops are refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins (`E2E_ALLOW_DATABASE_SEED=true` and the `PG*` variables) |
 | [reporting-access.spec.ts](../../apps/e2e/tests/reporting-access.spec.ts) | The same access rules on the running service, with the seed logins | `cd apps/e2e && npm test` |
+| [report-load.spec.ts](../../apps/e2e/load/report-load.spec.ts) | Order confirmations stay on target while reports run (LMKT-44) | Jenkins' "Run report load test" stage; locally, `cd apps/e2e && npm run test:load` against a running stack |
 
 The Java tests need no H2 database: the access tests load only the web layer, and the safeguards test is skipped unless the `postgres-test` profile is active.
 
