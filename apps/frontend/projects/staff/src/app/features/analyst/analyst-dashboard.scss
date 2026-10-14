@@ -13,14 +13,14 @@
     margin: 0 0 8px 0;
     font-size: 32px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--gold);
     letter-spacing: -0.5px;
   }
 
   .subtitle {
     margin: 0;
     font-size: 16px;
-    color: #666;
+    color: var(--text-dim);
     font-weight: 400;
     line-height: 1.5;
   }
@@ -36,16 +36,18 @@
 
 /* Report Card */
 .report-card {
+  background: var(--ink-2);
+  color: var(--text);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--purple-line);
   border-radius: 8px;
   overflow: hidden;
 
   &:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     transform: translateY(-4px);
-    border-color: #1976d2;
+    border-color: var(--gold);
   }
 
   &:active {
@@ -67,12 +69,12 @@
   justify-content: center;
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-deep) 100%);
   border-radius: 8px;
   flex-shrink: 0;
 
   .report-icon {
-    color: #fff;
+    color: var(--gold);
     font-size: 28px;
     width: 28px;
     height: 28px;
@@ -88,14 +90,14 @@
     margin: 0 0 6px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--gold);
     line-height: 1.3;
   }
 
   .report-description {
     margin: 0;
     font-size: 14px;
-    color: #666;
+    color: var(--text-dim);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -112,7 +114,7 @@
   flex-shrink: 0;
 
   .action-arrow {
-    color: #1976d2;
+    color: var(--gold);
     font-size: 20px;
     width: 20px;
     height: 20px;
@@ -130,8 +132,8 @@
   padding: 64px 24px;
 
   mat-card {
-    background-color: #f5f5f5;
-    border: 1px solid #e0e0e0;
+    background-color: var(--ink-2);
+    border: 1px solid var(--purple-line);
 
     mat-card-content {
       padding: 48px 24px;
@@ -140,7 +142,7 @@
         font-size: 64px;
         width: 64px;
         height: 64px;
-        color: #bdbdbd;
+        color: var(--text-dim);
         margin: 0 auto 16px;
         display: block;
       }
@@ -149,13 +151,13 @@
         margin: 0 0 8px 0;
         font-size: 20px;
         font-weight: 500;
-        color: #333;
+        color: var(--gold);
       }
 
       p {
         margin: 0;
         font-size: 14px;
-        color: #999;
+        color: var(--text-dim);
       }
     }
   }
@@ -271,6 +273,6 @@
 
 /* Accessibility */
 .report-card:focus-visible {
-  outline: 2px solid #1976d2;
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
