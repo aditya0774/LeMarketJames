@@ -1,5 +1,6 @@
 package com.lemarketjames.notifications;
 
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
@@ -37,6 +38,9 @@ class NotificationFlowTest {
     private static final String NOTIFICATIONS = "/api/v1/notifications";
 
     @Autowired MockMvc mvc;
+    // These tests sign tokens for users with no account row; the per-request account check (LMKT-57)
+    // is tested in libs/common, and a mock answers "allowed".
+    @MockitoBean AccountAccessCheck accessCheck;
     @Autowired JwtService jwt;
     @Autowired OrderStatusListener listener;
     @Autowired NotificationRepository stored;
