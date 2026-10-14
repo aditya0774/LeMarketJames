@@ -10,6 +10,7 @@ const isCi = !!process.env.CI;
 const FEED_FAILURE_TESTS = /feed-failure\.spec\.ts$/;
 // The files that pause the execution worker for the whole stack.
 const EXECUTION_RETRY_TESTS = /(execution-retry|settlement)\.spec\.ts$/;
+const LOCKOUT_TESTS = /lockout\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests',
@@ -44,7 +45,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [FEED_FAILURE_TESTS, EXECUTION_RETRY_TESTS],
+      testIgnore: [FEED_FAILURE_TESTS, EXECUTION_RETRY_TESTS, LOCKOUT_TESTS],
     },
     {
       name: 'execution-recovery',
@@ -52,6 +53,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testMatch: EXECUTION_RETRY_TESTS,
       dependencies: ['chromium'],
+    },
+    {
+      name: 'lockout-recovery',
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: LOCKOUT_TESTS,
+      dependencies: ['chromium', 'execution-recovery'],
     },
     // These tests make the quote feed stale or unavailable for the whole stack (contract C4),
     // which would refuse every other test's orders. Depending on the main project makes them
@@ -64,7 +72,7 @@ export default defineConfig({
       workers: 1,
       use: { ...devices['Desktop Chrome'] },
       testMatch: FEED_FAILURE_TESTS,
-      dependencies: ['chromium', 'execution-recovery'],
+      dependencies: ['chromium', 'execution-recovery', 'lockout-recovery'],
     },
   ],
 });

@@ -15,6 +15,7 @@ pipeline {
         NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
         // CI exercises fills regardless of the wall-clock time; production defaults still respect sessions.
         SIM_RESPECT_MARKET_HOURS = 'false'
+        AUTH_LOCKOUT_DURATION = '2s'
         CI_HEALTH_RETRIES = '180'
         CI_HEALTH_SLEEP_SECONDS = '1'
     }
