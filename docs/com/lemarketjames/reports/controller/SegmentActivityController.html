@@ -125,6 +125,12 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#activity(java.time.LocalDate,java.time.LocalDate)" class="member-name-link">activity</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#comparison(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">comparison</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;comparisonStartDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;comparisonEndDate)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -156,6 +162,20 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="comparison(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)">
+<h3>comparison</h3>
+<div class="member-signature"><span class="annotations">@GetMapping("/api/v1/reports/activity/comparison")
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></span>&nbsp;<span class="element-name">comparison</span><wbr><span class="parameters">(@RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;comparisonStartDate,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;comparisonEndDate)</span></div>
+</section>
+</li>
 <li>
 <section class="detail" id="activity(java.time.LocalDate,java.time.LocalDate)">
 <h3>activity</h3>
