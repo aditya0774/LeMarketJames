@@ -59,7 +59,7 @@ public class AuditEventEntity {
     @Column(name = "created_at", nullable = false)
     private Instant occurredAt;
 
-    /** Set once the event is older than the online retention window (contract C5). */
+    /** Reserved, always false: archival is derived from age, never written to the row (C2). */
     @Column(nullable = false)
     private boolean archived;
 

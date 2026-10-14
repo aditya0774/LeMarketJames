@@ -29,6 +29,7 @@ Each gateway's route list is its configuration file; this table says what they a
 | `/api/v1/market-activity/**` | activity-service | yes | no |
 | `/api/v1/surveillance/**` | surveillance-service | no: these paths fall through to core-service, which has no such endpoint | yes |
 | Everything else under `/api/**` | core-service | yes | no |
+| `GET /api/v1/audit/archive` | buy-sell-service | no: falls through to core-service | yes |
 
 - A gateway decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either gateway: a `CLIENT` who signs in through the staff gateway gets `403` on every staff route.
 - The session cookie has a different name at each gateway ([C7](C7-roles.md#the-staff-session-cookie)), so a session from one is not a session at the other.
@@ -738,6 +739,19 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `filledAt` | time | When the fill happened |
 | `quoteSource` | text | The feed that quote came from |
 | `quoteTime` | time | When the feed produced that quote |
+
+## Audit archive (buy-sell-service)
+
+`GET /api/v1/audit/archive` is available through the staff gateway to `TRADING_OPS` only.
+It returns `{ success: true, events: [{ auditId, eventType, orderId, accountId, clientId,
+requestId, occurredAt, details }] }`, oldest first, with audit ID breaking timestamp ties.
+Optional filters `orderId`, `requestId`, `clientId`, `from`, and `to` combine with AND.
+Dates are ISO-8601 instants: `from` is inclusive and `to` exclusive. Only records strictly
+older than the configured online window are returned; there is no maximum record age.
+Pagination uses `limit` and `offset`; defaults and bounds are defined in
+`ArchiveController` and `ArchiveService`. An empty search returns an empty events list.
+Invalid filters/ranges/pagination return 400, unauthenticated requests 401, and other roles 403.
+No endpoint changes or deletes records. See [C2](C2-audit.md#archive-retrieval-lmkt-38).
 
 ## Planned (agreed, not built)
 

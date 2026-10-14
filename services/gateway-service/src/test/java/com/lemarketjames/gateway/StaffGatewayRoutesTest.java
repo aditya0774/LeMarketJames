@@ -44,6 +44,7 @@ class StaffGatewayRoutesTest {
 
     @Test
     void staffPathsReachTheirServices() {
+        assertEquals(Optional.of("staff-trading-ops"), routeFor("/api/v1/audit/archive?clientId=1"));
         assertEquals(Optional.of("staff-reports"), routeFor("/api/v1/reports/ping"));
         assertEquals(Optional.of("staff-reports"), routeFor("/api/v1/reports/trades/by-period"));
         for (String path : List.of("/api/auth/login", "/api/auth/logout", "/api/auth/me")) {

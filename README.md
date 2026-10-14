@@ -541,7 +541,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Backend entry point |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, the Trading Ops trade search and order timeline to buy-sell-service, and `/api/v1/surveillance/**` to surveillance-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, the Trading Ops trade search, order timeline and archived audit retrieval to buy-sell-service, and `/api/v1/surveillance/**` to surveillance-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -711,7 +711,7 @@ To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linu
 The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
 
 - The quote-feed test controls ([C4](contracts/C4-quote-feed.md)) on market-service, reached directly at `http://localhost:8083`; set `E2E_MARKET_URL` if it is elsewhere.
-- The same database access as the order-history suite, to read the audit trail, which has no API yet.
+- The same database access as the order-history suite, to inspect the audit trail when needed; archived records are retrieved through the staff API at `/api/v1/audit/archive`.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
 
 `reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls reporting-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
@@ -762,6 +762,7 @@ Once the application is running (via any of the three methods), you can access:
 | **Notifications** | `GET http://localhost:8089/api/v1/notifications` | notification-service: the signed-in client's order notifications, built from Kafka events |
 | **Market activity** | `GET http://localhost:8089/api/v1/market-activity` | activity-service: traded volume per stock over the last 24 hours, built from Kafka events |
 | **Surveillance alerts (staff)** | `GET http://localhost:8090/api/v1/surveillance/alerts` | surveillance-service, through the staff gateway; `TRADING_OPS` login only, built from Kafka events |
+| **Archived audit records (staff)** | `GET http://localhost:8090/api/v1/audit/archive` | buy-sell-service, through the staff gateway: records older than the configured online window; `TRADING_OPS` login only |
 | **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/trades?periodType=MONTH` | reporting-service, through the staff gateway: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 | **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service to the three consumer services (Method 3 only; not HTTP) |

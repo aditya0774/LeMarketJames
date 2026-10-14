@@ -39,7 +39,7 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Place orders; own dashboard, holdings, balance, profile, trades | `CLIENT` (own data only) | Enforced: needs the caller's own account |
 | Move an order through its lifecycle, reject orders | `TRADING_OPS` (any client's orders) | Enforced in buy-sell-service `SecurityConfig` |
 | Search trades by order ID or client and date range | `TRADING_OPS` (any client's filled orders) | Enforced in buy-sell-service `SecurityConfig`; [C6](C6-api.md#trade-search-trading_ops-only) |
-| Audit trail | `TRADING_OPS` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
+| Archived audit trail (`GET /api/v1/audit/archive`) | `TRADING_OPS` | Enforced in buy-sell-service `SecurityConfig`; available through the staff gateway ([C6](C6-api.md#audit-archive-buy-sell-service)) |
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in reporting-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-reporting-service)) |
 | Insights (`/api/v1/reports/insights/**`) | `ANALYST` | Enforced by the same reporting-service rule as reports; every other role gets `403` ([C6](C6-api.md#get-apiv1reportsinsightsvolume)) |
 | Notifications about one's own orders (`/api/v1/notifications/**`) | `CLIENT` (own account only) | Enforced in notification-service `SecurityConfig`; staff get `403` ([C6](C6-api.md#get-apiv1notifications-client-only)) |

@@ -158,6 +158,9 @@ public class PlatformSettings {
         }
 
         public void setOnlineRetention(Duration onlineRetention) {
+            if (onlineRetention == null || onlineRetention.isNegative() || onlineRetention.isZero()) {
+                throw new IllegalArgumentException("Audit online retention must be positive");
+            }
             this.onlineRetention = onlineRetention;
         }
     }

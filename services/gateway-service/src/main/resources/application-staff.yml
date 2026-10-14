@@ -47,7 +47,7 @@ spring:
             - id: staff-trading-ops
               uri: ${services.buy-sell-url}
               predicates:
-                - Path=/api/v1/orders/trades/search,/api/v1/orders/trades/clients,/api/v1/orders/{orderId}/timeline
+                - Path=/api/v1/orders/trades/search,/api/v1/orders/trades/clients,/api/v1/orders/{orderId}/timeline,/api/v1/audit/archive
             # The Trading Ops alerts that surveillance-service raises from the order events on Kafka.
             - id: staff-surveillance
               uri: ${services.surveillance-url}

@@ -73,7 +73,22 @@ A BUY refused for lack of cash:
   response, `SETTLED` can temporarily exist without `FILLED`. The persisted execution intent is
   retried with the same price; holdings returns its original receipt without moving funds again,
   and buy-sell records `FILLED` once. Thus `SETTLED` precedes `FILLED` in the completed audit trail.
-- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. If archival ever needs to record more than that, it goes in a table of its own. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
+- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. The archive retrieval API is defined in [C6](C6-api.md#audit-archive-buy-sell-service).
+
+## Archive retrieval (LMKT-38)
+
+Archival is logical, in the same `audit_log` table: `created_at < now - onlineRetention`.
+The exact cutoff remains online. Classification uses the configured duration and the server's
+UTC clock on each request, so no scheduled job or flag update is needed. Changing the window
+reclassifies records by age. Records are retained indefinitely, including at least seven years
+from creation; there is no expiry or purge. Existing database lockdown protections remain in force.
+
+Risk & Compliance uses the existing `TRADING_OPS` role to retrieve archived records through
+`GET /api/v1/audit/archive` on the staff gateway ([C6](C6-api.md#audit-archive-buy-sell-service)).
+The archive reader is separate from the append-only writer and returns original event details,
+including refused submissions with no order. Automated coverage: `ArchiveApiIntegrationTest`
+for age boundaries, retention beyond seven years, retrieval and authorization; existing
+`AuditLockdownIntegrationTest` covers the PostgreSQL immutability protections.
 
 ## The lockdown
 

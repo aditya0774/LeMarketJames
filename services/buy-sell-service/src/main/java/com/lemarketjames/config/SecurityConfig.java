@@ -55,6 +55,7 @@ public class SecurityConfig {
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/actuator/health", "/internal/execution/control/**").permitAll()
+                .requestMatchers("/api/v1/audit/**").hasRole(Role.TRADING_OPS.name())
                 // Dispute searches may read any client's fills, so only operations may call them.
                 .requestMatchers("/api/v1/orders/trades/search", "/api/v1/orders/trades/clients").hasRole(Role.TRADING_OPS.name())
                 // Moving orders through their lifecycle is an operations task (contract C7).
