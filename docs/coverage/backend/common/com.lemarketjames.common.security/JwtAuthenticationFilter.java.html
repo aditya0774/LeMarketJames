@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,32 +13,61 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Spring Security filter that extracts JWT tokens from cookies and authenticates requests.
  * Runs once per request to set up the security context with the authenticated user.
+ *
+ * &lt;p&gt;A valid signature is not enough on its own: the account behind the token is checked on every
+ * request, so a session opened before the account was closed, suspended, expired, deleted or
+ * deactivated ends on its next request with {@code 401 ACCOUNT_INACTIVE} (LMKT-57).
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /** The name of the cookie containing the JWT token */
     public static final String COOKIE_NAME = &quot;jwt&quot;;
 
+    // Server-to-server and health calls are not a person's session, so they are never refused here.
+<span class="fc" id="L36">    private static final List&lt;String&gt; UNCHECKED_PREFIXES = List.of(&quot;/internal/&quot;, &quot;/actuator/&quot;);</span>
+
+    // A stale cookie from a closed account must not stop anyone signing in, registering or signing out.
+<span class="fc" id="L39">    private static final Set&lt;String&gt; UNCHECKED_PATHS = Set.of(</span>
+            &quot;/api/auth/login&quot;, &quot;/api/auth/register&quot;, &quot;/api/auth/logout&quot;);
+
+    // The constant parts need no escaping, so the body is built without a JSON library.
+    private static final String REVOKED_BODY = &quot;{\&quot;success\&quot;:false,\&quot;code\&quot;:\&quot;&quot; + AccountInactiveException.CODE
+            + &quot;\&quot;,\&quot;error\&quot;:\&quot;&quot; + AccountInactiveException.MESSAGE + &quot;\&quot;}&quot;;
+
     private final JwtService jwtService;
+    private final AccountAccessCheck accessCheck;
+    private final Clock clock;
 
     /**
-     * Constructs a JwtAuthenticationFilter with the given JwtService.
+     * Constructs a JwtAuthenticationFilter.
      *
-     * @param jwtService the JWT service for token validation
+     * @param jwtService  the JWT service for token validation
+     * @param accessCheck decides whether the token's account may still be used
      */
-<span class="fc" id="L34">    public JwtAuthenticationFilter(JwtService jwtService) {</span>
-<span class="fc" id="L35">        this.jwtService = jwtService;</span>
-<span class="fc" id="L36">    }</span>
+    public JwtAuthenticationFilter(JwtService jwtService, AccountAccessCheck accessCheck) {
+<span class="nc" id="L57">        this(jwtService, accessCheck, Clock.systemUTC());</span>
+<span class="nc" id="L58">    }</span>
+
+    /** Takes the clock the security event is stamped with, so tests can fix the time. */
+<span class="fc" id="L61">    JwtAuthenticationFilter(JwtService jwtService, AccountAccessCheck accessCheck, Clock clock) {</span>
+<span class="fc" id="L62">        this.jwtService = jwtService;</span>
+<span class="fc" id="L63">        this.accessCheck = accessCheck;</span>
+<span class="fc" id="L64">        this.clock = clock;</span>
+<span class="fc" id="L65">    }</span>
 
     /**
      * Processes incoming requests to extract and validate JWT tokens from cookies.
-     * Sets up authentication in the security context if a valid token is found.
+     * Sets up authentication in the security context if a valid token is found and its account
+     * may still be used; answers 401 itself if it may not.
      *
      * @param request the HTTP request
      * @param response the HTTP response
@@ -49,19 +79,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                      @NonNull HttpServletResponse response,
                                      @NonNull FilterChain filterChain) throws ServletException, IOException {
-<span class="fc" id="L52">        extractTokenFromCookie(request)</span>
-<span class="fc" id="L53">                .flatMap(jwtService::extractClaims)</span>
-<span class="fc" id="L54">                .ifPresent(claims -&gt; {</span>
-                    // Roles become ROLE_* authorities so endpoints can guard with hasRole(...).
-<span class="fc" id="L56">                    List&lt;SimpleGrantedAuthority&gt; authorities = claims.roles().stream()</span>
-<span class="fc" id="L57">                            .map(role -&gt; new SimpleGrantedAuthority(role.authority()))</span>
-<span class="fc" id="L58">                            .toList();</span>
-<span class="fc" id="L59">                    var authentication = new UsernamePasswordAuthenticationToken(claims.username(), null, authorities);</span>
-<span class="fc" id="L60">                    SecurityContextHolder.getContext().setAuthentication(authentication);</span>
-<span class="fc" id="L61">                });</span>
+<span class="fc" id="L82">        Optional&lt;TokenClaims&gt; claims = extractTokenFromCookie(request).flatMap(jwtService::extractClaims);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (claims.isPresent()) {</span>
+<span class="fc" id="L84">            TokenClaims token = claims.get();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (isChecked(request)) {</span>
+<span class="fc" id="L86">                Optional&lt;String&gt; revoked = accessCheck.revokedReason(token.username(), token.roles());</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                if (revoked.isPresent()) {</span>
+<span class="fc" id="L88">                    reject(token.username(), revoked.get(), response);</span>
+<span class="fc" id="L89">                    return;</span>
+                }
+            }
+<span class="fc" id="L92">            authenticate(token);</span>
+        }
 
-<span class="fc" id="L63">        filterChain.doFilter(request, response);</span>
-<span class="fc" id="L64">    }</span>
+<span class="fc" id="L95">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L96">    }</span>
+
+    private void authenticate(TokenClaims claims) {
+        // Roles become ROLE_* authorities so endpoints can guard with hasRole(...).
+<span class="fc" id="L100">        List&lt;SimpleGrantedAuthority&gt; authorities = claims.roles().stream()</span>
+<span class="fc" id="L101">                .map(role -&gt; new SimpleGrantedAuthority(role.authority()))</span>
+<span class="fc" id="L102">                .toList();</span>
+<span class="fc" id="L103">        var authentication = new UsernamePasswordAuthenticationToken(claims.username(), null, authorities);</span>
+<span class="fc" id="L104">        SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="fc" id="L105">    }</span>
+
+    // Logged once per rejected request, then the request goes no further.
+    private void reject(String username, String reason, HttpServletResponse response) throws IOException {
+<span class="fc" id="L109">        SecurityEventLog.accessRevoked(username, reason, clock.instant());</span>
+<span class="fc" id="L110">        SecurityContextHolder.clearContext();</span>
+<span class="fc" id="L111">        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);</span>
+<span class="fc" id="L112">        response.setContentType(MediaType.APPLICATION_JSON_VALUE);</span>
+<span class="fc" id="L113">        response.setCharacterEncoding(StandardCharsets.UTF_8.name());</span>
+<span class="fc" id="L114">        response.getWriter().write(REVOKED_BODY);</span>
+<span class="fc" id="L115">    }</span>
+
+    private boolean isChecked(HttpServletRequest request) {
+<span class="fc" id="L118">        String path = request.getRequestURI().substring(request.getContextPath().length());</span>
+<span class="fc bfc" id="L119" title="All 4 branches covered.">        return !UNCHECKED_PATHS.contains(path) &amp;&amp; UNCHECKED_PREFIXES.stream().noneMatch(path::startsWith);</span>
+    }
 
     /**
      * Extracts the JWT token from the cookies in the request.
@@ -70,14 +126,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @return an Optional containing the token value if found, or empty if no JWT cookie is present
      */
     private Optional&lt;String&gt; extractTokenFromCookie(HttpServletRequest request) {
-<span class="fc" id="L73">        Cookie[] cookies = request.getCookies();</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (cookies == null) {</span>
-<span class="fc" id="L75">            return Optional.empty();</span>
+<span class="fc" id="L129">        Cookie[] cookies = request.getCookies();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (cookies == null) {</span>
+<span class="fc" id="L131">            return Optional.empty();</span>
         }
-<span class="fc" id="L77">        return java.util.Arrays.stream(cookies)</span>
-<span class="fc" id="L78">                .filter(cookie -&gt; COOKIE_NAME.equals(cookie.getName()))</span>
-<span class="fc" id="L79">                .map(Cookie::getValue)</span>
-<span class="fc" id="L80">                .findFirst();</span>
+<span class="fc" id="L133">        return java.util.Arrays.stream(cookies)</span>
+<span class="fc" id="L134">                .filter(cookie -&gt; COOKIE_NAME.equals(cookie.getName()))</span>
+<span class="fc" id="L135">                .map(Cookie::getValue)</span>
+<span class="fc" id="L136">                .findFirst();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

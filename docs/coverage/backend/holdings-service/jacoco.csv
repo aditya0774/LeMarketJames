@@ -29,7 +29,7 @@ LeMarketJames Holdings Service,com.lemarketjames.holdings.service,HoldingsSettle
 LeMarketJames Holdings Service,com.lemarketjames.holdings.service,SettlementFaults,0,71,0,4,0,17,0,8,0,6
 LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,InsufficientHoldingsException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,UnauthorizedException,0,4,0,0,0,2,0,1,0,1
-LeMarketJames Holdings Service,com.lemarketjames.config,SecurityConfig,0,109,0,0,0,21,0,8,0,8
+LeMarketJames Holdings Service,com.lemarketjames.config,SecurityConfig,0,110,0,0,0,21,0,8,0,8
 LeMarketJames Holdings Service,com.lemarketjames.profile.dto,ProfileDto,9,48,0,0,3,17,3,7,3,7
 LeMarketJames Holdings Service,com.lemarketjames.orders.client,OrdersClient,10,83,2,4,2,21,1,7,0,5
 LeMarketJames Holdings Service,com.lemarketjames.orders.client,OrderSummary,1,43,1,1,1,5,1,4,0,4

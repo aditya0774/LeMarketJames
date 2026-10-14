@@ -13,7 +13,9 @@ import com.lemarketjames.common.domain.StaffUserEntity;
 import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.security.AccountInactiveException;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.SecurityEventLog;
 import com.lemarketjames.common.security.Role;
 import com.lemarketjames.common.error.ValidationException;
 import org.slf4j.Logger;
@@ -42,7 +44,7 @@ import java.util.Set;
 @Service
 public class AuthService {
 
-<span class="fc" id="L45">    private static final Logger log = LoggerFactory.getLogger(AuthService.class);</span>
+<span class="fc" id="L47">    private static final Logger log = LoggerFactory.getLogger(AuthService.class);</span>
 
     private final ClientRepository clientRepository;
     private final AddressRepository addressRepository;
@@ -55,8 +57,8 @@ public class AuthService {
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
-<span class="fc" id="L58">        return accountRepository.findAccountIdByUsername(username)</span>
-<span class="pc" id="L59">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+<span class="fc" id="L60">        return accountRepository.findAccountIdByUsername(username)</span>
+<span class="pc" id="L61">            .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
     }
 
     /**
@@ -77,9 +79,9 @@ public class AuthService {
             AccountRepository accountRepository,
             StaffUserRepository staffUserRepository,
             PlatformSettings settings) {
-<span class="fc" id="L80">        this(jwtService, clientRepository, addressRepository, accountRepository, staffUserRepository, settings,</span>
-<span class="fc" id="L81">                Clock.systemUTC());</span>
-<span class="fc" id="L82">    }</span>
+<span class="fc" id="L82">        this(jwtService, clientRepository, addressRepository, accountRepository, staffUserRepository, settings,</span>
+<span class="fc" id="L83">                Clock.systemUTC());</span>
+<span class="fc" id="L84">    }</span>
 
     /** Takes the clock the lockout is timed with, so tests can move time instead of sleeping. */
     AuthService(
@@ -89,16 +91,16 @@ public class AuthService {
             AccountRepository accountRepository,
             StaffUserRepository staffUserRepository,
             PlatformSettings settings,
-<span class="fc" id="L92">            Clock clock) {</span>
-<span class="fc" id="L93">        this.clientRepository = clientRepository;</span>
-<span class="fc" id="L94">        this.addressRepository = addressRepository;</span>
-<span class="fc" id="L95">        this.accountRepository = accountRepository;</span>
-<span class="fc" id="L96">        this.staffUserRepository = staffUserRepository;</span>
-<span class="fc" id="L97">        this.passwordEncoder = new BCryptPasswordEncoder();</span>
-<span class="fc" id="L98">        this.jwtService = jwtService;</span>
-<span class="fc" id="L99">        this.lockout = settings.getAuth().getLockout();</span>
-<span class="fc" id="L100">        this.clock = clock;</span>
-<span class="fc" id="L101">    }</span>
+<span class="fc" id="L94">            Clock clock) {</span>
+<span class="fc" id="L95">        this.clientRepository = clientRepository;</span>
+<span class="fc" id="L96">        this.addressRepository = addressRepository;</span>
+<span class="fc" id="L97">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L98">        this.staffUserRepository = staffUserRepository;</span>
+<span class="fc" id="L99">        this.passwordEncoder = new BCryptPasswordEncoder();</span>
+<span class="fc" id="L100">        this.jwtService = jwtService;</span>
+<span class="fc" id="L101">        this.lockout = settings.getAuth().getLockout();</span>
+<span class="fc" id="L102">        this.clock = clock;</span>
+<span class="fc" id="L103">    }</span>
 
     /**
      * Registers a new user with the provided registration request.
@@ -109,58 +111,58 @@ public class AuthService {
      * @throws IllegalArgumentException if validation fails or username is already taken
      */
     public AuthResponse register(RegisterRequest request) {
-<span class="fc" id="L112">        validateRegisterRequest(request);</span>
+<span class="fc" id="L114">        validateRegisterRequest(request);</span>
 
-<span class="fc" id="L114">        String username = request.getUsername();</span>
-<span class="fc" id="L115">        String email = request.getEmail().toLowerCase();</span>
+<span class="fc" id="L116">        String username = request.getUsername();</span>
+<span class="fc" id="L117">        String email = request.getEmail().toLowerCase();</span>
 
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (clientRepository.existsByUsername(username)) {</span>
-<span class="fc" id="L118">            throw new IllegalArgumentException(&quot;Username is already taken&quot;);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (clientRepository.existsByUsername(username)) {</span>
+<span class="fc" id="L120">            throw new IllegalArgumentException(&quot;Username is already taken&quot;);</span>
         }
 
-<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (clientRepository.existsByEmail(email)) {</span>
-<span class="fc" id="L122">            throw new IllegalArgumentException(&quot;Email is already registered&quot;);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (clientRepository.existsByEmail(email)) {</span>
+<span class="fc" id="L124">            throw new IllegalArgumentException(&quot;Email is already registered&quot;);</span>
         }
 
-<span class="fc" id="L125">        ClientEntity client = new ClientEntity();</span>
-<span class="fc" id="L126">        client.setUsername(username);</span>
-<span class="fc" id="L127">        String encodedPassword = encodePassword(request.getPassword());</span>
-<span class="fc" id="L128">        client.setPassword(encodedPassword);</span>
-<span class="fc" id="L129">        client.setEmail(email);</span>
-<span class="fc" id="L130">        client.setFullName(request.getFullName());</span>
-<span class="fc" id="L131">        client.setDateOfBirth(request.getDateOfBirth());</span>
-<span class="fc" id="L132">        client.setPhone(request.getPhoneNumber());</span>
-<span class="fc" id="L133">        client.setRegisteredDate(LocalDateTime.now());</span>
+<span class="fc" id="L127">        ClientEntity client = new ClientEntity();</span>
+<span class="fc" id="L128">        client.setUsername(username);</span>
+<span class="fc" id="L129">        String encodedPassword = encodePassword(request.getPassword());</span>
+<span class="fc" id="L130">        client.setPassword(encodedPassword);</span>
+<span class="fc" id="L131">        client.setEmail(email);</span>
+<span class="fc" id="L132">        client.setFullName(request.getFullName());</span>
+<span class="fc" id="L133">        client.setDateOfBirth(request.getDateOfBirth());</span>
+<span class="fc" id="L134">        client.setPhone(request.getPhoneNumber());</span>
+<span class="fc" id="L135">        client.setRegisteredDate(LocalDateTime.now());</span>
         // SSN is hashed like a password: it's never used for lookups or validation.
-<span class="fc" id="L135">        client.setSsn(encodePassword(request.getSsn()));</span>
-<span class="fc" id="L136">        client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());</span>
+<span class="fc" id="L137">        client.setSsn(encodePassword(request.getSsn()));</span>
+<span class="fc" id="L138">        client.setEmploymentStatus(request.getEmploymentStatus().trim().toUpperCase());</span>
         // PostgreSQL's investment_experience constraint uses lowercase values.
-<span class="fc" id="L138">        client.setInvestmentExperience(request.getInvestmentExperience().trim().toLowerCase(Locale.ROOT));</span>
-<span class="fc" id="L139">        client.setAccountStatus(AccountStatus.ACTIVE);</span>
-<span class="fc" id="L140">        client = clientRepository.save(client);</span>
+<span class="fc" id="L140">        client.setInvestmentExperience(request.getInvestmentExperience().trim().toLowerCase(Locale.ROOT));</span>
+<span class="fc" id="L141">        client.setAccountStatus(AccountStatus.ACTIVE);</span>
+<span class="fc" id="L142">        client = clientRepository.save(client);</span>
 
-<span class="fc" id="L142">        AddressEntity address = new AddressEntity();</span>
-<span class="fc" id="L143">        address.setClientId(client.getClientId());</span>
-<span class="fc" id="L144">        address.setAddressType(&quot;RESIDENTIAL&quot;);</span>
-<span class="fc" id="L145">        address.setStreetAddress(request.getStreetAddress());</span>
-<span class="fc" id="L146">        address.setCity(request.getCity());</span>
-<span class="fc" id="L147">        address.setState(request.getState());</span>
-<span class="fc" id="L148">        address.setPostalCode(request.getZipCode());</span>
-<span class="fc" id="L149">        String country = request.getCountry();</span>
-<span class="pc bpc" id="L150" title="2 of 4 branches missed.">        address.setCountry(country == null || country.isBlank() ? &quot;US&quot; : country);</span>
-<span class="fc" id="L151">        addressRepository.save(address);</span>
+<span class="fc" id="L144">        AddressEntity address = new AddressEntity();</span>
+<span class="fc" id="L145">        address.setClientId(client.getClientId());</span>
+<span class="fc" id="L146">        address.setAddressType(&quot;RESIDENTIAL&quot;);</span>
+<span class="fc" id="L147">        address.setStreetAddress(request.getStreetAddress());</span>
+<span class="fc" id="L148">        address.setCity(request.getCity());</span>
+<span class="fc" id="L149">        address.setState(request.getState());</span>
+<span class="fc" id="L150">        address.setPostalCode(request.getZipCode());</span>
+<span class="fc" id="L151">        String country = request.getCountry();</span>
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">        address.setCountry(country == null || country.isBlank() ? &quot;US&quot; : country);</span>
+<span class="fc" id="L153">        addressRepository.save(address);</span>
 
-<span class="fc" id="L153">        AccountEntity account = new AccountEntity();</span>
-<span class="fc" id="L154">        account.setClientId(client.getClientId());</span>
-<span class="fc" id="L155">        account.setCashBalance(request.getInitialDeposit());</span>
-<span class="fc" id="L156">        account.setCurrency(&quot;USD&quot;);</span>
-<span class="fc" id="L157">        account.setTradingEnabled(true);</span>
-<span class="fc" id="L158">        account.setOpenedDate(LocalDate.now());</span>
-<span class="fc" id="L159">        accountRepository.save(account);</span>
+<span class="fc" id="L155">        AccountEntity account = new AccountEntity();</span>
+<span class="fc" id="L156">        account.setClientId(client.getClientId());</span>
+<span class="fc" id="L157">        account.setCashBalance(request.getInitialDeposit());</span>
+<span class="fc" id="L158">        account.setCurrency(&quot;USD&quot;);</span>
+<span class="fc" id="L159">        account.setTradingEnabled(true);</span>
+<span class="fc" id="L160">        account.setOpenedDate(LocalDate.now());</span>
+<span class="fc" id="L161">        accountRepository.save(account);</span>
 
-<span class="fc" id="L161">        log.info(&quot;Registration succeeded for username={}&quot;, username);</span>
+<span class="fc" id="L163">        log.info(&quot;Registration succeeded for username={}&quot;, username);</span>
 
-<span class="fc" id="L163">        return new AuthResponse(username, &quot;User registered successfully&quot;);</span>
+<span class="fc" id="L165">        return new AuthResponse(username, &quot;User registered successfully&quot;);</span>
     }
 
     /**
@@ -175,93 +177,102 @@ public class AuthService {
      *
      * @param request the login request containing the email (as username) and password
      * @return a LoginResult with the username, success message, JWT token and roles
-     * @throws IllegalArgumentException if validation fails, the login is locked or barred, or credentials are invalid
+     * @throws IllegalArgumentException if validation fails, the login is locked, or credentials are invalid
+     * @throws AccountInactiveException if the password is right but the login may no longer be used (LMKT-57)
      */
     public LoginResult login(LoginRequest request) {
-<span class="fc" id="L181">        validateLoginRequest(request);</span>
+<span class="fc" id="L184">        validateLoginRequest(request);</span>
 
-<span class="fc" id="L183">        String email = request.getUsername().trim().toLowerCase(Locale.ROOT);</span>
-<span class="fc" id="L184">        String password = request.getPassword();</span>
+<span class="fc" id="L186">        String email = request.getUsername().trim().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L187">        String password = request.getPassword();</span>
 
         // Clients first: they are the vast majority of logins. Staff never share an email with a client.
-<span class="fc" id="L187">        LoginAccount account = clientRepository.findByEmail(email)</span>
-<span class="fc" id="L188">                .&lt;LoginAccount&gt;map(client -&gt; client)</span>
-<span class="fc" id="L189">                .or(() -&gt; staffUserRepository.findByEmail(email))</span>
-<span class="fc" id="L190">                .orElse(null);</span>
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (account == null) {</span>
-<span class="fc" id="L192">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
-<span class="fc" id="L193">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
+<span class="fc" id="L190">        LoginAccount account = clientRepository.findByEmail(email)</span>
+<span class="fc" id="L191">                .&lt;LoginAccount&gt;map(client -&gt; client)</span>
+<span class="fc" id="L192">                .or(() -&gt; staffUserRepository.findByEmail(email))</span>
+<span class="fc" id="L193">                .orElse(null);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (account == null) {</span>
+<span class="fc" id="L195">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
+<span class="fc" id="L196">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
         }
 
-<span class="fc bfc" id="L196" title="All 4 branches covered.">        if (account.getLockedUntil() != null &amp;&amp; clock.instant().isBefore(account.getLockedUntil())) {</span>
-<span class="fc" id="L197">            log.warn(&quot;Login blocked for email={} due to active lockout&quot;, email);</span>
-<span class="fc" id="L198">                throw new IllegalArgumentException(lockoutMessage(&quot;Account temporarily locked. Try again in &quot;,</span>
-<span class="fc" id="L199">                    Duration.between(clock.instant(), account.getLockedUntil())));</span>
+<span class="fc bfc" id="L199" title="All 4 branches covered.">        if (account.getLockedUntil() != null &amp;&amp; clock.instant().isBefore(account.getLockedUntil())) {</span>
+<span class="fc" id="L200">            log.warn(&quot;Login blocked for email={} due to active lockout&quot;, email);</span>
+<span class="fc" id="L201">                throw new IllegalArgumentException(lockoutMessage(&quot;Account temporarily locked. Try again in &quot;,</span>
+<span class="fc" id="L202">                    Duration.between(clock.instant(), account.getLockedUntil())));</span>
         }
 
-<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (!matchesPassword(password, account.getPassword())) {</span>
-<span class="fc" id="L203">            Instant lockedUntil = registerFailedAttempt(account);</span>
-<span class="fc bfc" id="L204" title="All 2 branches covered.">            if (lockedUntil != null) {</span>
-<span class="fc" id="L205">                log.warn(&quot;ACCOUNT_LOCKED email={} duration={}&quot;, email, formatDuration(lockout.getDuration()));</span>
-<span class="fc" id="L206">                throw new IllegalArgumentException(lockoutMessage(&quot;Account locked for &quot;, lockout.getDuration()));</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (!matchesPassword(password, account.getPassword())) {</span>
+<span class="fc" id="L206">            Instant lockedUntil = registerFailedAttempt(account);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (lockedUntil != null) {</span>
+<span class="fc" id="L208">                log.warn(&quot;ACCOUNT_LOCKED email={} duration={}&quot;, email, formatDuration(lockout.getDuration()));</span>
+<span class="fc" id="L209">                throw new IllegalArgumentException(lockoutMessage(&quot;Account locked for &quot;, lockout.getDuration()));</span>
             }
-<span class="fc" id="L208">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
-<span class="fc" id="L209">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
+<span class="fc" id="L211">            log.warn(&quot;Login failed for email={}&quot;, email);</span>
+<span class="fc" id="L212">            throw new IllegalArgumentException(&quot;Invalid email or password&quot;);</span>
         }
 
         // Checked only after the password, so a wrong guess never reveals an account's status.
-<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (!account.canLogIn()) {</span>
-<span class="fc" id="L214">            log.warn(&quot;Login refused for email={}: account is not active&quot;, email);</span>
-<span class="fc" id="L215">            throw new IllegalArgumentException(&quot;This account is not active. Please contact support.&quot;);</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (!account.canLogIn()) {</span>
+<span class="fc" id="L217">            SecurityEventLog.accessRevoked(account.getUsername(), inactiveReason(account), clock.instant());</span>
+<span class="fc" id="L218">            throw new AccountInactiveException();</span>
         }
 
-<span class="fc" id="L218">        account.setFailedLoginAttempts(0);</span>
-<span class="fc" id="L219">        account.setLockedUntil(null);</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
-<span class="fc" id="L221">            client.setLastLogin(LocalDateTime.now());</span>
+<span class="fc" id="L221">        account.setFailedLoginAttempts(0);</span>
+<span class="fc" id="L222">        account.setLockedUntil(null);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
+<span class="fc" id="L224">            client.setLastLogin(LocalDateTime.now());</span>
         }
-<span class="fc" id="L223">        persist(account);</span>
+<span class="fc" id="L226">        persist(account);</span>
 
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
-<span class="fc" id="L226">        String username = account.getUsername();</span>
-<span class="fc" id="L227">        Set&lt;Role&gt; roles = account.roles();</span>
-<span class="fc" id="L228">        String token = jwtService.generateToken(username, roles);</span>
-<span class="fc" id="L229">        log.info(&quot;Login succeeded for username={} roles={}&quot;, username, roles);</span>
-<span class="fc" id="L230">        return new LoginResult(username, &quot;Login successful&quot;, token, roles);</span>
+<span class="fc" id="L229">        String username = account.getUsername();</span>
+<span class="fc" id="L230">        Set&lt;Role&gt; roles = account.roles();</span>
+<span class="fc" id="L231">        String token = jwtService.generateToken(username, roles);</span>
+<span class="fc" id="L232">        log.info(&quot;Login succeeded for username={} roles={}&quot;, username, roles);</span>
+<span class="fc" id="L233">        return new LoginResult(username, &quot;Login successful&quot;, token, roles);</span>
     }
 
     // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
     // The lock is timed from now, after the (slow) password check, so it lasts the full duration.
     private Instant registerFailedAttempt(LoginAccount account) {
-<span class="fc" id="L236">        int attempts = account.getFailedLoginAttempts() + 1;</span>
-<span class="fc" id="L237">        Instant lockedUntil = null;</span>
-<span class="fc bfc" id="L238" title="All 2 branches covered.">        if (attempts &gt;= lockout.getMaxAttempts()) {</span>
-<span class="fc" id="L239">            lockedUntil = clock.instant().plus(lockout.getDuration());</span>
-<span class="fc" id="L240">            account.setLockedUntil(lockedUntil);</span>
-<span class="fc" id="L241">            attempts = 0;</span>
+<span class="fc" id="L239">        int attempts = account.getFailedLoginAttempts() + 1;</span>
+<span class="fc" id="L240">        Instant lockedUntil = null;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (attempts &gt;= lockout.getMaxAttempts()) {</span>
+<span class="fc" id="L242">            lockedUntil = clock.instant().plus(lockout.getDuration());</span>
+<span class="fc" id="L243">            account.setLockedUntil(lockedUntil);</span>
+<span class="fc" id="L244">            attempts = 0;</span>
         }
-<span class="fc" id="L243">        account.setFailedLoginAttempts(attempts);</span>
-<span class="fc" id="L244">        persist(account);</span>
-<span class="fc" id="L245">        return lockedUntil;</span>
+<span class="fc" id="L246">        account.setFailedLoginAttempts(attempts);</span>
+<span class="fc" id="L247">        persist(account);</span>
+<span class="fc" id="L248">        return lockedUntil;</span>
+    }
+
+    // A client's reason is its status (CLOSED, SUSPENDED, EXPIRED); staff only have an active flag.
+    private String inactiveReason(LoginAccount account) {
+<span class="pc bpc" id="L253" title="1 of 4 branches missed.">        if (account instanceof ClientEntity client &amp;&amp; client.getAccountStatus() != null) {</span>
+<span class="fc" id="L254">            return client.getAccountStatus().name();</span>
+        }
+<span class="fc" id="L256">        return SecurityEventLog.REASON_DEACTIVATED;</span>
     }
 
     private String lockoutMessage(String prefix, Duration duration) {
-<span class="fc" id="L249">        return prefix + formatDuration(duration) + &quot;.&quot;;</span>
+<span class="fc" id="L260">        return prefix + formatDuration(duration) + &quot;.&quot;;</span>
     }
 
     private String formatDuration(Duration duration) {
-<span class="fc" id="L253">        long seconds = Math.max(1, duration.getSeconds());</span>
-<span class="fc" id="L254">        long minutes = (seconds + 59) / 60;</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        return minutes == 1 ? &quot;1 minute&quot; : minutes + &quot; minutes&quot;;</span>
+<span class="fc" id="L264">        long seconds = Math.max(1, duration.getSeconds());</span>
+<span class="fc" id="L265">        long minutes = (seconds + 59) / 60;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        return minutes == 1 ? &quot;1 minute&quot; : minutes + &quot; minutes&quot;;</span>
     }
 
     private void persist(LoginAccount account) {
-<span class="fc bfc" id="L259" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
-<span class="fc" id="L260">            clientRepository.save(client);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (account instanceof ClientEntity client) {</span>
+<span class="fc" id="L271">            clientRepository.save(client);</span>
         } else {
-<span class="fc" id="L262">            staffUserRepository.save((StaffUserEntity) account);</span>
+<span class="fc" id="L273">            staffUserRepository.save((StaffUserEntity) account);</span>
         }
-<span class="fc" id="L264">    }</span>
+<span class="fc" id="L275">    }</span>
 
     /**
      * Encodes a raw password using BCrypt with a salt.
@@ -270,7 +281,7 @@ public class AuthService {
      * @return the encoded password hash
      */
     public String encodePassword(String rawPassword) {
-<span class="fc" id="L273">        return passwordEncoder.encode(rawPassword);</span>
+<span class="fc" id="L284">        return passwordEncoder.encode(rawPassword);</span>
     }
 
     /**
@@ -281,7 +292,7 @@ public class AuthService {
      * @return true if the passwords match, false otherwise
      */
     public boolean matchesPassword(String rawPassword, String encodedPassword) {
-<span class="fc" id="L284">        return passwordEncoder.matches(rawPassword, encodedPassword);</span>
+<span class="fc" id="L295">        return passwordEncoder.matches(rawPassword, encodedPassword);</span>
     }
 
     /**
@@ -290,7 +301,7 @@ public class AuthService {
      * @return the token expiration time in seconds
      */
     public long getTokenExpirySeconds() {
-<span class="fc" id="L293">        return jwtService.getExpirationSeconds();</span>
+<span class="fc" id="L304">        return jwtService.getExpirationSeconds();</span>
     }
 
     /**
@@ -300,34 +311,34 @@ public class AuthService {
      * @throws IllegalArgumentException if any required field is missing or invalid
      */
     private void validateRegisterRequest(RegisterRequest request) {
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        if (request == null) {</span>
-<span class="nc" id="L304">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L315">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
         }
 
-<span class="fc" id="L307">        Map&lt;String, String&gt; errors = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L308">        requireField(errors, &quot;username&quot;, request.getUsername(), &quot;Username is required&quot;);</span>
-<span class="fc" id="L309">        requireField(errors, &quot;password&quot;, request.getPassword(), &quot;Password is required&quot;);</span>
-<span class="fc" id="L310">        requireField(errors, &quot;email&quot;, request.getEmail(), &quot;Email is required&quot;);</span>
-<span class="fc" id="L311">        requireField(errors, &quot;fullName&quot;, request.getFullName(), &quot;Full name is required&quot;);</span>
-<span class="fc" id="L312">        requireField(errors, &quot;streetAddress&quot;, request.getStreetAddress(), &quot;Street address is required&quot;);</span>
-<span class="fc" id="L313">        requireField(errors, &quot;city&quot;, request.getCity(), &quot;City is required&quot;);</span>
-<span class="fc" id="L314">        requireField(errors, &quot;state&quot;, request.getState(), &quot;State is required&quot;);</span>
-<span class="fc" id="L315">        requireField(errors, &quot;zipCode&quot;, request.getZipCode(), &quot;ZIP code is required&quot;);</span>
-<span class="fc" id="L316">        requireField(errors, &quot;ssn&quot;, request.getSsn(), &quot;SSN is required&quot;);</span>
-<span class="fc" id="L317">        requireField(errors, &quot;phoneNumber&quot;, request.getPhoneNumber(), &quot;Phone number is required&quot;);</span>
-<span class="fc" id="L318">        requireField(errors, &quot;investmentExperience&quot;, request.getInvestmentExperience(), &quot;Investment experience is required&quot;);</span>
-<span class="fc" id="L319">        requireField(errors, &quot;employmentStatus&quot;, request.getEmploymentStatus(), &quot;Employment status is required&quot;);</span>
-<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (request.getInitialDeposit() == null) {</span>
-<span class="fc" id="L321">            errors.put(&quot;initialDeposit&quot;, &quot;Initial deposit amount is required&quot;);</span>
+<span class="fc" id="L318">        Map&lt;String, String&gt; errors = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L319">        requireField(errors, &quot;username&quot;, request.getUsername(), &quot;Username is required&quot;);</span>
+<span class="fc" id="L320">        requireField(errors, &quot;password&quot;, request.getPassword(), &quot;Password is required&quot;);</span>
+<span class="fc" id="L321">        requireField(errors, &quot;email&quot;, request.getEmail(), &quot;Email is required&quot;);</span>
+<span class="fc" id="L322">        requireField(errors, &quot;fullName&quot;, request.getFullName(), &quot;Full name is required&quot;);</span>
+<span class="fc" id="L323">        requireField(errors, &quot;streetAddress&quot;, request.getStreetAddress(), &quot;Street address is required&quot;);</span>
+<span class="fc" id="L324">        requireField(errors, &quot;city&quot;, request.getCity(), &quot;City is required&quot;);</span>
+<span class="fc" id="L325">        requireField(errors, &quot;state&quot;, request.getState(), &quot;State is required&quot;);</span>
+<span class="fc" id="L326">        requireField(errors, &quot;zipCode&quot;, request.getZipCode(), &quot;ZIP code is required&quot;);</span>
+<span class="fc" id="L327">        requireField(errors, &quot;ssn&quot;, request.getSsn(), &quot;SSN is required&quot;);</span>
+<span class="fc" id="L328">        requireField(errors, &quot;phoneNumber&quot;, request.getPhoneNumber(), &quot;Phone number is required&quot;);</span>
+<span class="fc" id="L329">        requireField(errors, &quot;investmentExperience&quot;, request.getInvestmentExperience(), &quot;Investment experience is required&quot;);</span>
+<span class="fc" id="L330">        requireField(errors, &quot;employmentStatus&quot;, request.getEmploymentStatus(), &quot;Employment status is required&quot;);</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (request.getInitialDeposit() == null) {</span>
+<span class="fc" id="L332">            errors.put(&quot;initialDeposit&quot;, &quot;Initial deposit amount is required&quot;);</span>
         }
-<span class="fc bfc" id="L323" title="All 2 branches covered.">        if (request.getDateOfBirth() == null) {</span>
-<span class="fc" id="L324">            errors.put(&quot;dateOfBirth&quot;, &quot;Date of birth is required&quot;);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (request.getDateOfBirth() == null) {</span>
+<span class="fc" id="L335">            errors.put(&quot;dateOfBirth&quot;, &quot;Date of birth is required&quot;);</span>
         }
 
-<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (!errors.isEmpty()) {</span>
-<span class="fc" id="L328">            throw new ValidationException(errors);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (!errors.isEmpty()) {</span>
+<span class="fc" id="L339">            throw new ValidationException(errors);</span>
         }
-<span class="fc" id="L330">    }</span>
+<span class="fc" id="L341">    }</span>
 
     /**
      * Validates a login request ensuring all required fields are present and non-empty.
@@ -336,24 +347,24 @@ public class AuthService {
      * @throws IllegalArgumentException if any required field is missing or invalid
      */
     private void validateLoginRequest(LoginRequest request) {
-<span class="pc bpc" id="L339" title="1 of 2 branches missed.">        if (request == null) {</span>
-<span class="nc" id="L340">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">        if (request == null) {</span>
+<span class="nc" id="L351">            throw new IllegalArgumentException(&quot;Request is required&quot;);</span>
         }
-<span class="fc" id="L342">        validateRequired(request.getUsername(), &quot;Email is required&quot;);</span>
-<span class="fc" id="L343">        validateRequired(request.getPassword(), &quot;Password is required&quot;);</span>
-<span class="fc" id="L344">    }</span>
+<span class="fc" id="L353">        validateRequired(request.getUsername(), &quot;Email is required&quot;);</span>
+<span class="fc" id="L354">        validateRequired(request.getPassword(), &quot;Password is required&quot;);</span>
+<span class="fc" id="L355">    }</span>
 
     private void requireField(Map&lt;String, String&gt; errors, String field, String value, String message) {
-<span class="pc bpc" id="L347" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
-<span class="fc" id="L348">            errors.put(field, message);</span>
+<span class="pc bpc" id="L358" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L359">            errors.put(field, message);</span>
         }
-<span class="fc" id="L350">    }</span>
+<span class="fc" id="L361">    }</span>
 
     private void validateRequired(String value, String message) {
-<span class="pc bpc" id="L353" title="2 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
-<span class="nc" id="L354">            throw new IllegalArgumentException(message);</span>
+<span class="pc bpc" id="L364" title="2 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L365">            throw new IllegalArgumentException(message);</span>
         }
-<span class="fc" id="L356">    }</span>
+<span class="fc" id="L367">    }</span>
 
     /**
      * Response object for authentication operations containing username and message.
@@ -362,17 +373,17 @@ public class AuthService {
         private final String username;
         private final String message;
 
-<span class="fc" id="L365">        public AuthResponse(String username, String message) {</span>
-<span class="fc" id="L366">            this.username = username;</span>
-<span class="fc" id="L367">            this.message = message;</span>
-<span class="fc" id="L368">        }</span>
+<span class="fc" id="L376">        public AuthResponse(String username, String message) {</span>
+<span class="fc" id="L377">            this.username = username;</span>
+<span class="fc" id="L378">            this.message = message;</span>
+<span class="fc" id="L379">        }</span>
 
         public String getUsername() {
-<span class="fc" id="L371">            return username;</span>
+<span class="fc" id="L382">            return username;</span>
         }
 
         public String getMessage() {
-<span class="fc" id="L375">            return message;</span>
+<span class="fc" id="L386">            return message;</span>
         }
     }
 
@@ -387,28 +398,28 @@ public class AuthService {
         private final String token;
         private final Set&lt;Role&gt; roles;
 
-<span class="fc" id="L390">        public LoginResult(String username, String message, String token, Set&lt;Role&gt; roles) {</span>
-<span class="fc" id="L391">            this.username = username;</span>
-<span class="fc" id="L392">            this.message = message;</span>
-<span class="fc" id="L393">            this.token = token;</span>
-<span class="fc" id="L394">            this.roles = roles;</span>
-<span class="fc" id="L395">        }</span>
+<span class="fc" id="L401">        public LoginResult(String username, String message, String token, Set&lt;Role&gt; roles) {</span>
+<span class="fc" id="L402">            this.username = username;</span>
+<span class="fc" id="L403">            this.message = message;</span>
+<span class="fc" id="L404">            this.token = token;</span>
+<span class="fc" id="L405">            this.roles = roles;</span>
+<span class="fc" id="L406">        }</span>
 
         /** The roles written into the token; tells the controller whether this login has an account. */
         public Set&lt;Role&gt; getRoles() {
-<span class="fc" id="L399">            return roles;</span>
+<span class="fc" id="L410">            return roles;</span>
         }
 
         public String getUsername() {
-<span class="fc" id="L403">            return username;</span>
+<span class="fc" id="L414">            return username;</span>
         }
 
         public String getMessage() {
-<span class="fc" id="L407">            return message;</span>
+<span class="fc" id="L418">            return message;</span>
         }
 
         public String getToken() {
-<span class="fc" id="L411">            return token;</span>
+<span class="fc" id="L422">            return token;</span>
         }
     }
 }

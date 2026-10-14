@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Buy Sell Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.config</a> &gt; <span class="el_source">SecurityConfig.java</span></div><h1>SecurityConfig.java</h1><pre class="source lang-java linenums">package com.lemarketjames.config;
 
+import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.common.security.Role;
@@ -26,7 +27,7 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
-<span class="fc" id="L29">public class SecurityConfig {</span>
+<span class="fc" id="L30">public class SecurityConfig {</span>
 
     @Value(&quot;${app.cors.allowed-origin}&quot;)
     private String allowedOrigin;
@@ -37,33 +38,35 @@ import java.util.List;
      *
      * @param http the HttpSecurity to configure
      * @param jwtService the JWT service for token validation
+     * @param accessCheck ends the session of an account that may no longer be used (LMKT-57)
      * @return the configured SecurityFilterChain
      * @throws Exception if an error occurs during configuration
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
-<span class="fc" id="L45">        http</span>
-<span class="fc" id="L46">            .csrf(AbstractHttpConfigurer::disable)</span>
-<span class="fc" id="L47">            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</span>
-<span class="fc" id="L48">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
-<span class="fc" id="L49">            .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(</span>
-<span class="fc" id="L50">                    (request, response, authException) -&gt; response.sendError(401)))</span>
-<span class="fc" id="L51">            .authorizeHttpRequests(auth -&gt; auth</span>
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+                                                   AccountAccessCheck accessCheck) throws Exception {
+<span class="fc" id="L48">        http</span>
+<span class="fc" id="L49">            .csrf(AbstractHttpConfigurer::disable)</span>
+<span class="fc" id="L50">            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</span>
+<span class="fc" id="L51">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="fc" id="L52">            .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(</span>
+<span class="fc" id="L53">                    (request, response, authException) -&gt; response.sendError(401)))</span>
+<span class="fc" id="L54">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
-<span class="fc" id="L53">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L54">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/internal/execution/control/**&quot;).permitAll()</span>
+<span class="fc" id="L56">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
+<span class="fc" id="L57">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/internal/execution/control/**&quot;).permitAll()</span>
                 // Dispute searches may read any client's fills, so only operations may call them.
-<span class="fc" id="L56">                .requestMatchers(&quot;/api/v1/orders/trades/search&quot;, &quot;/api/v1/orders/trades/clients&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L59">                .requestMatchers(&quot;/api/v1/orders/trades/search&quot;, &quot;/api/v1/orders/trades/clients&quot;).hasRole(Role.TRADING_OPS.name())</span>
                 // Moving orders through their lifecycle is an operations task (contract C7).
-<span class="fc" id="L58">                .requestMatchers(HttpMethod.PUT, &quot;/api/v1/orders/*/status/*&quot;).hasRole(Role.TRADING_OPS.name())</span>
-<span class="fc" id="L59">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders/*/reject&quot;).hasRole(Role.TRADING_OPS.name())</span>
-<span class="fc" id="L60">                .requestMatchers(&quot;/api/v1/orders/*/timeline&quot;).hasRole(Role.TRADING_OPS.name())</span>
-<span class="fc" id="L61">                .requestMatchers(HttpMethod.GET, &quot;/api/v1/orders/stream&quot;).hasRole(Role.CLIENT.name())</span>
-<span class="fc" id="L62">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders&quot;, &quot;/api/v1/buy-orders&quot;).hasRole(Role.CLIENT.name())</span>
-<span class="fc" id="L63">                .anyRequest().authenticated())</span>
-<span class="fc" id="L64">            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);</span>
+<span class="fc" id="L61">                .requestMatchers(HttpMethod.PUT, &quot;/api/v1/orders/*/status/*&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L62">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders/*/reject&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L63">                .requestMatchers(&quot;/api/v1/orders/*/timeline&quot;).hasRole(Role.TRADING_OPS.name())</span>
+<span class="fc" id="L64">                .requestMatchers(HttpMethod.GET, &quot;/api/v1/orders/stream&quot;).hasRole(Role.CLIENT.name())</span>
+<span class="fc" id="L65">                .requestMatchers(HttpMethod.POST, &quot;/api/v1/orders&quot;, &quot;/api/v1/buy-orders&quot;).hasRole(Role.CLIENT.name())</span>
+<span class="fc" id="L66">                .anyRequest().authenticated())</span>
+<span class="fc" id="L67">            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);</span>
 
-<span class="fc" id="L66">        return http.build();</span>
+<span class="fc" id="L69">        return http.build();</span>
     }
 
     /**
@@ -74,16 +77,16 @@ import java.util.List;
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-<span class="fc" id="L77">        CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L80">        CorsConfiguration configuration = new CorsConfiguration();</span>
         // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
-<span class="fc" id="L79">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8081&quot;));</span>
-<span class="fc" id="L80">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
-<span class="fc" id="L81">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
-<span class="fc" id="L82">        configuration.setAllowCredentials(true);</span>
+<span class="fc" id="L82">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8081&quot;));</span>
+<span class="fc" id="L83">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L84">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
+<span class="fc" id="L85">        configuration.setAllowCredentials(true);</span>
 
-<span class="fc" id="L84">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
-<span class="fc" id="L85">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
-<span class="fc" id="L86">        return source;</span>
+<span class="fc" id="L87">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc" id="L88">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L89">        return source;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

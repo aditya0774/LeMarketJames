@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.error</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.error;
 
+import com.lemarketjames.common.security.AccountInactiveException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,40 +18,55 @@ import java.util.Map;
  * exceptions are mapped by each service's own advice (e.g. core-service's CoreExceptionHandler).
  */
 @RestControllerAdvice
-<span class="nc" id="L20">public class GlobalExceptionHandler {</span>
+<span class="nc" id="L21">public class GlobalExceptionHandler {</span>
 
     /** The code a caller gets when an account isn't theirs; also what the audit trail records for it. */
     public static final String ACCOUNT_ACCESS_DENIED = &quot;ACCOUNT_ACCESS_DENIED&quot;;
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidation(ValidationException ex) {
-<span class="nc" id="L27">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L28">                .body(Map.of(&quot;errors&quot;, ex.getFieldErrors()));</span>
+<span class="nc" id="L28">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L29">                .body(Map.of(&quot;errors&quot;, ex.getFieldErrors()));</span>
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-<span class="nc" id="L33">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L34">        Map&lt;String, String&gt; errors = new HashMap&lt;&gt;();</span>
 
-<span class="nc bnc" id="L35" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
-<span class="nc" id="L36">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
-<span class="nc" id="L37">        }</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="nc" id="L37">            errors.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="nc" id="L38">        }</span>
 
-<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L40">                .body(Map.of(&quot;errors&quot;, errors));</span>
+<span class="nc" id="L40">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L41">                .body(Map.of(&quot;errors&quot;, errors));</span>
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleIllegalArgument(IllegalArgumentException ex) {
-<span class="nc" id="L45">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
-<span class="nc" id="L46">                .body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
+<span class="nc" id="L46">        return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L47">                .body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
+    }
+
+    /**
+     * A sign-in refused because the account is no longer active (LMKT-57). {@code message} is kept
+     * alongside {@code error} because the login screens show {@code message}.
+     */
+    @ExceptionHandler(AccountInactiveException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAccountInactive(AccountInactiveException ex) {
+<span class="nc" id="L56">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
+<span class="nc" id="L57">                .body(Map.of(</span>
+<span class="nc" id="L58">                    &quot;success&quot;, false,</span>
+                    &quot;code&quot;, AccountInactiveException.CODE,
+<span class="nc" id="L60">                    &quot;error&quot;, ex.getMessage(),</span>
+<span class="nc" id="L61">                    &quot;message&quot;, ex.getMessage()</span>
+                ));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAccessDenied(AccessDeniedException ex) {
-<span class="nc" id="L51">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
-<span class="nc" id="L52">                .body(Map.of(</span>
-<span class="nc" id="L53">                    &quot;success&quot;, false,</span>
+<span class="nc" id="L67">        return ResponseEntity.status(HttpStatus.FORBIDDEN)</span>
+<span class="nc" id="L68">                .body(Map.of(</span>
+<span class="nc" id="L69">                    &quot;success&quot;, false,</span>
                     &quot;error&quot;, &quot;Access denied&quot;,
                     &quot;code&quot;, ACCOUNT_ACCESS_DENIED
                 ));
