@@ -126,6 +126,25 @@ async function expectChart(page: Page, rows: SegmentRow[]) {
   }
 }
 
+/** Verify selected-period values in the paired charts that replaced the detailed table. */
+async function expectSelectedPeriodCharts(page: Page, rows: SegmentRow[], start: string, end: string) {
+  const charts = page.locator(`${CONTENT} staff-segment-comparison-charts`);
+  await expect(charts.locator('h3')).toHaveText(['Active clients', 'Filled trades', 'Traded value (USD)']);
+  const metrics = ['activeClients', 'tradeCount', 'totalTradedValue'] as const;
+  for (const [index, metric] of metrics.entries()) {
+    const chart = charts.locator('.metric-chart').nth(index);
+    const formatter = new Intl.NumberFormat('en-US', metric === 'totalTradedValue'
+      ? { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      : { maximumFractionDigits: 0 });
+    for (const row of rows) {
+      const label = row.segment.toLowerCase().split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
+      const pair = chart.locator('.segment-pair').filter({ has: page.getByText(label, { exact: true }) });
+      const selectedBar = pair.locator('.period-bar').filter({ hasText: `${start} to ${end}` });
+      await expect(selectedBar.locator('.period-value')).toHaveText(formatter.format(row[metric]));
+    }
+  }
+}
+
 test('LMKT-43 AC1/AC3: selected dates show real segment aggregates without client details', async ({ page }) => {
   await openReport(page);
   const end = daysAgo(2);
@@ -136,14 +155,12 @@ test('LMKT-43 AC1/AC3: selected dates show real segment aggregates without clien
     await chooseRange(page, start, end);
     const actual = await refresh(page, start, end);
     expect(actual).toEqual(expected);
+    await expectSelectedPeriodCharts(page, actual, start, end);
     await expectChart(page, await expectedRows(page, start, end, true));
     results.push(actual);
   }
   expect(results[0]).not.toEqual(results[1]);
   const content = page.locator(`${CONTENT} .report-content`);
-  await expect(content.locator('th')).toHaveText([
-    /Segment/, /Active Clients/, /Trade Count/, /Total Traded Value/,
-  ]);
   await expect(content.locator('a, button, input')).toHaveCount(0);
   await expect(content).not.toContainText(/@|client\s*id|account\s*id|order\s*id|email|phone|SSN/i);
 });
