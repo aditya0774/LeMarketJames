@@ -1310,7 +1310,7 @@ sequenceDiagram
             AuthService->>Database: UPDATE failed_login_attempts, locked_until
             AuthService-->>AuthController: IllegalArgumentException
             AuthController-->>User: 400 Bad Request<br/>{message: "Invalid email or password"}
-        else Password valid, but canLogIn() is false (closed client, inactive staff)
+        else Password valid, but canLogIn() is false (closed, suspended or expired client, inactive staff)
             AuthService-->>AuthController: IllegalArgumentException
             AuthController-->>User: 400 Bad Request<br/>{message: "This account is not active..."}
         else Password valid

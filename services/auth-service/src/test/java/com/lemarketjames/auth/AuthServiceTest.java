@@ -323,18 +323,20 @@ class AuthServiceTest {
         assertEquals(Set.of(Role.TRADING_OPS), result.getRoles());
     }
 
-    // A closed client knows their password but may not log in; an expired one may (they just can't trade).
+    // Closed and expired clients both know their password but may no longer log in (LMKT-57).
     @Test
-    void closedClientIsRefusedButExpiredClientMayLogIn() {
+    void closedAndExpiredClientsAreRefused() {
         authService.register(validRegisterRequest("carl"));
         authService.register(validRegisterRequest("eve"));
         clientsByEmail.get("carl@example.com").setAccountStatus(AccountStatus.CLOSED);
         clientsByEmail.get("eve@example.com").setAccountStatus(AccountStatus.EXPIRED);
 
-        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException closed = assertThrows(IllegalArgumentException.class,
                 () -> authService.login(new LoginRequest("carl@example.com", "Pass123!")));
-        assertTrue(refused.getMessage().contains("not active"));
-        assertEquals("eve", authService.login(new LoginRequest("eve@example.com", "Pass123!")).getUsername());
+        IllegalArgumentException expired = assertThrows(IllegalArgumentException.class,
+                () -> authService.login(new LoginRequest("eve@example.com", "Pass123!")));
+        assertTrue(closed.getMessage().contains("not active"));
+        assertTrue(expired.getMessage().contains("not active"));
     }
 
     private RegisterRequest validRegisterRequest(String username) {
