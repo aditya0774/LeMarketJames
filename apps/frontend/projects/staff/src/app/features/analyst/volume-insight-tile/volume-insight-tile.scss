@@ -36,6 +36,7 @@
 
 .range,
 .previous,
+.in-progress,
 .refreshed,
 .unit {
   color: #666;
@@ -65,4 +66,30 @@
 
 .error {
   color: #b3261e;
+}
+
+.custom {
+  margin-top: 24px;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.versus {
+  color: #666;
+  font-weight: 600;
+}
+
+.custom-result {
+  margin-top: 16px;
 }

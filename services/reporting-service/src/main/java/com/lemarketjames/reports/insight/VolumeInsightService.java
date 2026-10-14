@@ -51,15 +51,39 @@ public class VolumeInsightService {
 
         PeriodVolume currentVolume = volumeOf(current);
         PeriodVolume previousVolume = volumeOf(previous);
+        // The running period is reported on its own so a trade made now shows up; it stays out of
+        // the change, which compares whole periods only.
+        PeriodVolume inProgressVolume = volumeOf(inProgress, today);
 
-        return new VolumeInsightResponse(bucket.name(), currentVolume, previousVolume,
+        return new VolumeInsightResponse(bucket.name(), currentVolume, previousVolume, inProgressVolume,
+                change(currentVolume, previousVolume), Instant.now(clock));
+    }
+
+    /**
+     * Compares two ranges the caller picked. Each range runs from its first to its last day, both
+     * included, in the reports time zone; ranges may overlap and need not be the same length.
+     *
+     * @throws IllegalArgumentException when a day is missing or a range is reversed (answered with 400)
+     */
+    public VolumeComparisonResponse compareRanges(LocalDate currentFrom, LocalDate currentTo,
+                                                  LocalDate previousFrom, LocalDate previousTo) {
+        ReportPeriod current = calendar.between(currentFrom, currentTo);
+        ReportPeriod previous = calendar.between(previousFrom, previousTo);
+
+        PeriodVolume currentVolume = volumeOf(current, currentTo);
+        PeriodVolume previousVolume = volumeOf(previous, previousTo);
+
+        return new VolumeComparisonResponse(currentVolume, previousVolume,
                 change(currentVolume, previousVolume), Instant.now(clock));
     }
 
     private PeriodVolume volumeOf(ReportPeriod period) {
-        VolumeTotals totals = repository.totalsBetween(period.start(), period.end());
         // The period ends at the next one's first local midnight, so its last day is the day before.
-        LocalDate lastDay = calendar.reportDay(period.end()).minusDays(1);
+        return volumeOf(period, calendar.reportDay(period.end()).minusDays(1));
+    }
+
+    private PeriodVolume volumeOf(ReportPeriod period, LocalDate lastDay) {
+        VolumeTotals totals = repository.totalsBetween(period.start(), period.end());
         return new PeriodVolume(period.firstDay(), lastDay, totals.getTradeCount(),
                 totals.getShareVolume(), totals.getGrossAmount());
     }

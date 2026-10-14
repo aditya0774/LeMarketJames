@@ -11,11 +11,13 @@ import java.time.LocalDate;
  * @param periodType the kind of period compared: DAY, WEEK, MONTH or YEAR
  * @param current    the last completed period
  * @param previous   the period just before {@code current}
+ * @param inProgress the period still running, totalled up to today. Not part of {@code change}: an
+ *                   unfinished period would always look like a drop against a finished one
  * @param change     {@code current} minus {@code previous}
  * @param generatedAt when the figures were computed
  */
 public record VolumeInsightResponse(String periodType, PeriodVolume current, PeriodVolume previous,
-                                    VolumeChange change, Instant generatedAt) {
+                                    PeriodVolume inProgress, VolumeChange change, Instant generatedAt) {
 
     /**
      * One period's totals. {@code startDate} and {@code endDate} are both included and are days in

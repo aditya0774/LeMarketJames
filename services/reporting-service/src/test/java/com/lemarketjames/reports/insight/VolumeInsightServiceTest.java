@@ -90,11 +90,28 @@ class VolumeInsightServiceTest {
     void weekRunsMondayToSundayInReportTime() {
         serviceAt(MONDAY_MORNING).compareWithPreviousPeriod("WEEK");
 
-        // Current week: Mon 5 Oct 00:00 EDT to Mon 12 Oct 00:00 EDT, as UTC; previous: the week before.
+        // Current week: Mon 5 Oct 00:00 EDT to Mon 12 Oct 00:00 EDT, as UTC; previous: the week before;
+        // then the week in progress.
         assertEquals(List.of(
                 List.of(LocalDateTime.parse("2026-10-05T04:00:00"), LocalDateTime.parse("2026-10-12T04:00:00")),
-                List.of(LocalDateTime.parse("2026-09-28T04:00:00"), LocalDateTime.parse("2026-10-05T04:00:00"))),
+                List.of(LocalDateTime.parse("2026-09-28T04:00:00"), LocalDateTime.parse("2026-10-05T04:00:00")),
+                List.of(LocalDateTime.parse("2026-10-12T04:00:00"), LocalDateTime.parse("2026-10-19T04:00:00"))),
                 rangesAsked);
+    }
+
+    @Test
+    void reportsThePeriodInProgressUpToTodayWithoutTouchingTheChange() {
+        register("2026-10-05T04:00:00", "2026-10-12T04:00:00", totals(40, "1200", "54000.00"));
+        register("2026-09-28T04:00:00", "2026-10-05T04:00:00", totals(32, "1000", "41000.00"));
+        register("2026-10-12T04:00:00", "2026-10-19T04:00:00", totals(3, "75", "900.00"));
+
+        VolumeInsightResponse r = serviceAt(MONDAY_MORNING).compareWithPreviousPeriod("WEEK");
+
+        assertEquals(LocalDate.parse("2026-10-12"), r.inProgress().startDate());
+        assertEquals(LocalDate.parse("2026-10-12"), r.inProgress().endDate());
+        assertEquals(3, r.inProgress().tradeCount());
+        assertEquals(new BigDecimal("75"), r.inProgress().shareVolume());
+        assertEquals(new BigDecimal("200"), r.change().shareVolume());
     }
 
     @Test
@@ -183,5 +200,32 @@ class VolumeInsightServiceTest {
     @CsvSource(value = {"NULL", "''", "'  '", "DAILY", "fortnight"}, nullValues = "NULL")
     void aMissingOrUnknownPeriodTypeIsRejected(String type) {
         assertThrows(IllegalArgumentException.class, () -> serviceAt(MONDAY_MORNING).compareWithPreviousPeriod(type));
+    }
+
+    @Test
+    void comparesTwoChosenRangesWithBothEndsIncluded() {
+        // Tue 6 Oct to Thu 8 Oct 00:00 EDT .. Fri 9 Oct 00:00 EDT, as UTC; and the three days before.
+        register("2026-10-06T04:00:00", "2026-10-09T04:00:00", totals(6, "300", "9000.00"));
+        register("2026-10-03T04:00:00", "2026-10-06T04:00:00", totals(4, "200", "6000.00"));
+
+        VolumeComparisonResponse r = serviceAt(MONDAY_MORNING).compareRanges(
+                LocalDate.parse("2026-10-06"), LocalDate.parse("2026-10-08"),
+                LocalDate.parse("2026-10-03"), LocalDate.parse("2026-10-05"));
+
+        assertEquals(LocalDate.parse("2026-10-08"), r.current().endDate());
+        assertEquals(new BigDecimal("300"), r.current().shareVolume());
+        assertEquals(new BigDecimal("200"), r.previous().shareVolume());
+        assertEquals(new BigDecimal("100"), r.change().shareVolume());
+        assertEquals(new BigDecimal("50.00"), r.change().shareVolumePercent());
+    }
+
+    @Test
+    void aReversedOrMissingChosenRangeIsRejected() {
+        VolumeInsightService service = serviceAt(MONDAY_MORNING);
+        LocalDate a = LocalDate.parse("2026-10-06");
+        LocalDate b = LocalDate.parse("2026-10-08");
+
+        assertThrows(IllegalArgumentException.class, () -> service.compareRanges(b, a, a, b));
+        assertThrows(IllegalArgumentException.class, () -> service.compareRanges(a, b, null, b));
     }
 }

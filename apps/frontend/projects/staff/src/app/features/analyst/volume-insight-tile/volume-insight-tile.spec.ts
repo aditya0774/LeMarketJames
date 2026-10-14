@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
-import { VolumeInsightResponse } from '../../../shared/models/volume-insight.model';
+import { VolumeComparisonResponse } from '../../../shared/models/volume-insight.model';
 import { VolumeInsightTile } from './volume-insight-tile';
 
+const COMPARE = '/api/v1/reports/insights/volume/compare';
+
 /** The C6 example, with the change and previous period adjustable per test. */
-function insight(overrides: Partial<VolumeInsightResponse> = {}): VolumeInsightResponse {
+function comparison(overrides: Partial<VolumeComparisonResponse> = {}): VolumeComparisonResponse {
   return {
-    periodType: 'WEEK',
     current: { startDate: '2026-10-05', endDate: '2026-10-11', tradeCount: 40, shareVolume: 1200, grossAmount: 54000 },
     previous: { startDate: '2026-09-28', endDate: '2026-10-04', tradeCount: 32, shareVolume: 1000, grossAmount: 41000 },
     change: { shareVolume: 200, shareVolumePercent: 20, grossAmount: 13000, grossAmountPercent: 31.71 },
@@ -21,9 +22,10 @@ describe('VolumeInsightTile', () => {
   let httpMock: HttpTestingController;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const section = (period: string) => el().querySelector(`[data-period="${period}"]`) as HTMLElement;
-  const request = (period: string): TestRequest =>
-    httpMock.expectOne((r) => r.url === '/api/v1/reports/insights/volume' && r.params.get('periodType') === period);
+  const card = (key: string) => el().querySelector(`[data-period="${key}"]`) as HTMLElement;
+
+  /** The three preset requests, in the order the tile asks for them: today, this week, last week. */
+  const presetRequests = (): TestRequest[] => httpMock.match((r) => r.url === COMPARE);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -37,85 +39,140 @@ describe('VolumeInsightTile', () => {
 
   afterEach(() => httpMock.verify());
 
-  async function flushBoth(day: VolumeInsightResponse, week: VolumeInsightResponse) {
-    request('DAY').flush(day);
-    request('WEEK').flush(week);
+  async function flushPresets(...responses: VolumeComparisonResponse[]) {
+    const requests = presetRequests();
+    requests.forEach((r, i) => r.flush(responses[i] ?? comparison()));
     await fixture.whenStable();
     fixture.detectChanges();
   }
 
-  it('requests DAY and WEEK and shows loading until they answer', () => {
-    expect(section('DAY').textContent).toContain('Loading');
-    expect(section('WEEK').textContent).toContain('Loading');
-    request('DAY');
-    request('WEEK');
+  it('asks for today, this week and last week, each against the period before, and shows loading', () => {
+    expect(card('TODAY').textContent).toContain('Loading');
+    expect(card('THIS_WEEK').textContent).toContain('Loading');
+    expect(card('LAST_WEEK').textContent).toContain('Loading');
+
+    const requests = presetRequests();
+    expect(requests.length).toBe(3);
+    for (const r of requests) {
+      for (const p of ['currentFrom', 'currentTo', 'previousFrom', 'previousTo']) {
+        expect(r.request.params.get(p)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    }
+    // Today is one day against yesterday; last week ends the day before this week starts.
+    const [today, thisWeek, lastWeek] = requests.map((r) => r.request.params);
+    expect(today.get('currentFrom')).toBe(today.get('currentTo'));
+    expect(lastWeek.get('currentTo')! < thisWeek.get('currentFrom')!).toBe(true);
   });
 
-  it('shows volume, change, date ranges and last-refreshed time', async () => {
-    await flushBoth(insight({ periodType: 'DAY' }), insight());
+  it('shows volume, change, date ranges and last-refreshed time on every card', async () => {
+    await flushPresets();
 
-    const week = section('WEEK');
-    expect(week.textContent).toContain('Last week');
-    expect(week.textContent).toContain('2026-10-05 – 2026-10-11');
-    expect(week.querySelector('.volume')!.textContent).toContain('1,200');
-    expect(week.querySelector('.change')!.textContent).toContain('+200');
-    expect(week.querySelector('.change')!.textContent).toContain('+20.00%');
-    expect(week.querySelector('.change')!.classList).toContain('up');
-    expect(week.querySelector('.previous')!.textContent).toContain('1,000');
-    expect(week.querySelector('.refreshed')!.textContent).toContain('Last refreshed');
-    expect(section('DAY').textContent).toContain('Yesterday');
+    for (const [key, label] of [['TODAY', 'Today'], ['THIS_WEEK', 'This week'], ['LAST_WEEK', 'Last week']]) {
+      const c = card(key);
+      expect(c.textContent).toContain(label);
+      expect(c.querySelector('.range')!.textContent).toContain('2026-10-05 – 2026-10-11');
+      expect(c.querySelector('.volume')!.textContent).toContain('1,200');
+      expect(c.querySelector('.change')!.textContent).toContain('+200');
+      expect(c.querySelector('.change')!.textContent).toContain('+20.00%');
+      expect(c.querySelector('.change')!.classList).toContain('up');
+      expect(c.querySelector('.previous')!.textContent).toContain('1,000');
+      expect(c.querySelector('.refreshed')!.textContent).toContain('Last refreshed');
+    }
   });
 
   it('marks a drop as down with a minus sign', async () => {
-    const drop = insight({
-      change: { shareVolume: -300, shareVolumePercent: -25, grossAmount: -1, grossAmountPercent: -1 },
+    const drop = comparison({
+      current: { startDate: '2026-10-05', endDate: '2026-10-11', tradeCount: 5, shareVolume: 750, grossAmount: 10000 },
+      change: { shareVolume: -250, shareVolumePercent: -25, grossAmount: -10000, grossAmountPercent: -50 },
     });
-    await flushBoth(insight({ periodType: 'DAY' }), drop);
+    await flushPresets(drop, drop, drop);
 
-    const change = section('WEEK').querySelector('.change')!;
-    expect(change.classList).toContain('down');
-    expect(change.textContent).toContain('-300');
+    const change = card('THIS_WEEK').querySelector('.change')!;
+    expect(change.textContent).toContain('-250');
     expect(change.textContent).toContain('-25.00%');
+    expect(change.classList).toContain('down');
   });
 
-  it('shows n/a when there is no previous period to compare with', async () => {
-    const none = insight({
-      previous: { startDate: '2026-09-28', endDate: '2026-10-04', tradeCount: 0, shareVolume: 0, grossAmount: 0 },
-      change: { shareVolume: 1200, shareVolumePercent: null, grossAmount: 54000, grossAmountPercent: null },
+  it('says there is nothing to compare with when the previous period had no trades', async () => {
+    const none = comparison({
+      change: { shareVolume: 100, shareVolumePercent: null, grossAmount: 500, grossAmountPercent: null },
     });
-    await flushBoth(insight({ periodType: 'DAY' }), none);
+    await flushPresets(none, none, none);
 
-    expect(section('WEEK').querySelector('.change')!.textContent).toContain('n/a');
+    expect(card('TODAY').querySelector('.change')!.textContent).toContain('n/a');
   });
 
-  it('shows zeros as flat, not an error', async () => {
-    const zero = { startDate: '2026-10-11', endDate: '2026-10-11', tradeCount: 0, shareVolume: 0, grossAmount: 0 };
-    const flat = insight({
-      periodType: 'DAY',
-      current: zero,
-      previous: zero,
-      change: { shareVolume: 0, shareVolumePercent: null, grossAmount: 0, grossAmountPercent: null },
-    });
-    await flushBoth(flat, insight());
-
-    expect(section('DAY').querySelector('.change')!.classList).toContain('flat');
-    expect(section('DAY').querySelector('.error')).toBeNull();
-  });
-
-  it('keeps one section when the other fails, and Refresh retries', async () => {
-    request('DAY').flush('boom', { status: 500, statusText: 'Server Error' });
-    request('WEEK').flush(insight());
+  it('shows an error on the card that failed without hiding the others', async () => {
+    const [today, thisWeek, lastWeek] = presetRequests();
+    today.flush(comparison());
+    thisWeek.flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    lastWeek.flush(comparison());
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(section('DAY').querySelector('.error')).not.toBeNull();
-    expect(section('DAY').textContent).not.toContain('boom');
-    expect(section('WEEK').querySelector('.volume')!.textContent).toContain('1,200');
+    expect(card('THIS_WEEK').querySelector('[role="alert"]')).not.toBeNull();
+    expect(card('TODAY').querySelector('.volume')).not.toBeNull();
+    expect(card('LAST_WEEK').querySelector('.volume')).not.toBeNull();
+  });
 
-    (el().querySelector('.refresh') as HTMLButtonElement).click();
-    await flushBoth(insight({ periodType: 'DAY' }), insight());
+  it('Refresh asks for all three again', async () => {
+    await flushPresets();
 
-    expect(section('DAY').querySelector('.error')).toBeNull();
-    expect(section('DAY').querySelector('.volume')).not.toBeNull();
+    (el().querySelector('button.refresh') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(presetRequests().length).toBe(3);
+  });
+
+  it('a background reload keeps the figures on screen', async () => {
+    await flushPresets();
+
+    fixture.componentInstance.refresh(true);
+    fixture.detectChanges();
+
+    expect(card('TODAY').textContent).not.toContain('Loading');
+    const requests = presetRequests();
+    requests[0].flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    requests[1].flush(comparison());
+    requests[2].flush(comparison());
+    fixture.detectChanges();
+
+    expect(card('TODAY').querySelector('.volume')).not.toBeNull();
+    expect(card('TODAY').querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('compares the two ranges the user picked', async () => {
+    await flushPresets();
+
+    fixture.componentInstance.pick.setValue({
+      currentFrom: new Date(2026, 9, 1),
+      currentTo: new Date(2026, 9, 7),
+      previousFrom: new Date(2026, 8, 1),
+      previousTo: new Date(2026, 8, 7),
+    });
+    (el().querySelector('button.compare') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const [custom] = presetRequests();
+    expect(custom.request.params.get('currentFrom')).toBe('2026-10-01');
+    expect(custom.request.params.get('currentTo')).toBe('2026-10-07');
+    expect(custom.request.params.get('previousFrom')).toBe('2026-09-01');
+    expect(custom.request.params.get('previousTo')).toBe('2026-09-07');
+    custom.flush(comparison());
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(card('CUSTOM').querySelector('.volume')!.textContent).toContain('1,200');
+  });
+
+  it('asks for the missing dates instead of calling the server', async () => {
+    await flushPresets();
+
+    fixture.componentInstance.pick.patchValue({ previousTo: null });
+    (el().querySelector('button.compare') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(presetRequests().length).toBe(0);
+    expect(card('CUSTOM').querySelector('[role="alert"]')).not.toBeNull();
   });
 });
