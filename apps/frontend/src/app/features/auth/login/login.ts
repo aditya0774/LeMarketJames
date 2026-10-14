@@ -3,6 +3,10 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
+import { isAccountInactive } from '../../../core/auth/account-inactive';
+
+/** Shown, with the heading "Account not active", for an account the firm has closed or suspended (C6). */
+export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -19,6 +23,7 @@ import { Auth } from '../../../core/auth/auth';
  */
 export class Login {
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly errorHeading = signal('Login failed');
   protected readonly submitting = signal(false);
   protected readonly form: ReturnType<FormBuilder['group']>;
   // Tracks whether the password field currently shows plain text or is masked.
@@ -42,6 +47,7 @@ export class Login {
     }
 
     this.errorMessage.set(null);
+    this.errorHeading.set('Login failed');
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.getRawValue() as { username: string; password: string });
@@ -53,6 +59,10 @@ export class Login {
       }
       await this.router.navigate(['/dashboard']);
     } catch (error) {
+      if (isAccountInactive(error)) {
+        this.showAccountInactive();
+        return;
+      }
       const serverMessage =
         error instanceof HttpErrorResponse &&
         typeof error.error === 'object' &&
@@ -63,6 +73,11 @@ export class Login {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  private showAccountInactive(): void {
+    this.errorHeading.set('Account not active');
+    this.errorMessage.set(ACCOUNT_INACTIVE_MESSAGE);
   }
 
   protected togglePasswordVisibility(): void {

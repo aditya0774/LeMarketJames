@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
-import { Login } from './login';
+import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
 
 describe('Login', () => {
   let component: Login;
@@ -100,6 +100,8 @@ describe('Login', () => {
     await component.submit();
 
     expect((component as any).errorMessage()).toBe('Invalid email or password');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
   });
 
   it('should show the lockout duration from the server', async () => {
@@ -119,5 +121,43 @@ describe('Login', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
       .toContain('Account locked for 15 minutes.');
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
+  });
+
+  // LMKT-56: a closed or suspended account gets a fixed message, chosen by the code, not the text.
+  it('shows the fixed message when the account is no longer active', async () => {
+    authMock.login = async () => {
+      throw new HttpErrorResponse({
+        status: 403,
+        error: { success: false, code: 'ACCOUNT_INACTIVE', error: 'server text', message: 'server text' },
+      });
+    };
+
+    (component as any).form.setValue({ username: 'closed@example.com', password: 'Pass123!' });
+    await component.submit();
+    fixture.detectChanges();
+
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.querySelector('b')!.textContent).toBe('Account not active');
+    expect(alert.textContent).toContain(ACCOUNT_INACTIVE_MESSAGE);
+    expect(alert.textContent).not.toContain('server text');
+    expect(navigateCalls).toBe(0);
+  });
+
+  it('goes back to "Login failed" when a later attempt fails for another reason', async () => {
+    authMock.login = async () => {
+      throw new HttpErrorResponse({ status: 403, error: { code: 'ACCOUNT_INACTIVE', message: 'x' } });
+    };
+    (component as any).form.setValue({ username: 'alice@example.com', password: 'Pass123!' });
+    await component.submit();
+
+    authMock.login = async () => {
+      throw new HttpErrorResponse({ status: 400, error: { message: 'Invalid email or password' } });
+    };
+    await component.submit();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
+    expect((component as any).errorMessage()).toBe('Invalid email or password');
   });
 });
