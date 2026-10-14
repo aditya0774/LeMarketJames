@@ -17,11 +17,33 @@ import { ANALYST, CLIENT, signIn } from './support/staff';
 
 const REPORT = '/analyst/reports/activity-by-stock';
 
+function usDate(date: Date): string {
+  return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+}
+
+async function selectSeedDataRange(page: Page): Promise<void> {
+  const today = new Date();
+  const from = new Date(today);
+  from.setDate(today.getDate() - 400);
+
+  await page.locator('input[matInput]').first().fill(usDate(from));
+  await page.locator('input[matInput]').nth(1).fill(usDate(today));
+
+  const reload = page.waitForResponse(
+    response => response.url().includes('/api/v1/reports/trades-by-stock') && response.ok()
+  );
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await reload;
+}
+
 /** Signs in as the analyst through the staff login, then opens the report. */
-async function openReport(page: Page): Promise<void> {
+async function openReport(page: Page, includeSeedData = true): Promise<void> {
   await signIn(page, ANALYST);
   await expect(page).toHaveURL(/\/analyst$/);
   await page.goto(REPORT);
+  if (includeSeedData) {
+    await selectSeedDataRange(page);
+  }
 }
 
 test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
@@ -76,9 +98,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     expect(initialCount).toBeGreaterThan(0);
 
     // Change the date range to the last 400 days. The seed trades are dated relative to the run
-    // date (see 011_seed_test_data.sql), so a hardcoded day would hit an empty range and the
-    // table would not render. Dates are typed in the datepicker's en-US M/D/YYYY format.
-    const usDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    // date (see 011_seed_test_data.sql), so a hardcoded day would hit an empty range.
     const today = new Date();
     const from = new Date(today);
     from.setDate(today.getDate() - 400);
@@ -150,9 +170,11 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
   });
 
   test('AC1: Report loads within 15 seconds', async ({ page }) => {
+    await signIn(page, ANALYST);
+    await expect(page).toHaveURL(/\/analyst$/);
+    await page.goto(REPORT);
     const startTime = Date.now();
-
-    await openReport(page);
+    await selectSeedDataRange(page);
 
     // Measure time to load and render table
     const table = page.locator('table, .aggregate-table');
@@ -179,7 +201,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       (response) => response.url().includes('/api/v1/reports/trades-by-stock') && response.status() === 403
     );
 
-    await openReport(page);
+    await openReport(page, false);
     await reportCall;
 
     // Wait for error message to appear

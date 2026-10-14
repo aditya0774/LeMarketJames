@@ -90,7 +90,7 @@ public class PlatformSettings {
             /** Consecutive failed logins that lock the account. */
             private int maxAttempts = 3;
             /** How long a locked account stays locked. */
-            private Duration duration = Duration.ofSeconds(30);
+            private Duration duration = Duration.ofMinutes(15);
 
             public int getMaxAttempts() {
                 return maxAttempts;
