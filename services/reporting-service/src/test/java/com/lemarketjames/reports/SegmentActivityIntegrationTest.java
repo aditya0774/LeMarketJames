@@ -30,6 +30,24 @@ class SegmentActivityIntegrationTest {
     @Autowired SegmentActivityService service;
 
     @Test
+    void allTimeCountsAClientOnceAcrossDifferentMonths() throws Exception {
+        withFixture("""
+                CREATE TEMP VIEW reporting_trades AS
+                SELECT * FROM (VALUES
+                  ('RETAIL', 1, 10, 100.00, TIMESTAMP '2026-06-10 12:00:00'),
+                  ('RETAIL', 1, 10, 150.00, TIMESTAMP '2026-07-10 12:00:00'),
+                  ('RETAIL', 2, 20, 200.00, TIMESTAMP '2026-08-10 12:00:00')
+                ) AS fixture(segment, client_id, account_id, gross_amount, filled_at)
+                """, fixtureService -> {
+            var report = fixtureService.compare(LocalDate.of(2000, 1, 1), LocalDate.of(2000, 1, 31), null, null);
+            assertTrue(report.data().isEmpty());
+            assertEquals(2, report.allTimeData().get(0).activeClients());
+            assertEquals(3, report.allTimeData().get(0).tradeCount());
+            assertEquals(0, new java.math.BigDecimal("450").compareTo(report.allTimeData().get(0).totalTradedValue()));
+        });
+    }
+
+    @Test
     void readsTheRealReportingViewWithTheServicesReadOnlyConfiguration() {
         assertNotNull(service.report(LocalDate.of(2000, 1, 1), LocalDate.of(2100, 1, 1)));
     }

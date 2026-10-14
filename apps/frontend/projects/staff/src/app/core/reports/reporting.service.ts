@@ -39,6 +39,25 @@ export interface SegmentActivityReportResponse {
   data: SegmentActivityRow[];
 }
 
+export interface SegmentMetricChange { absolute: number; percent: number | null; }
+export interface SegmentComparisonRow {
+  segment: string;
+  current: SegmentActivityRow;
+  previous: SegmentActivityRow;
+  activeClients: SegmentMetricChange;
+  tradeCount: SegmentMetricChange;
+  totalTradedValue: SegmentMetricChange;
+}
+export interface SegmentComparisonResponse extends SegmentActivityReportResponse {
+  startDate: string;
+  endDate: string;
+  comparisonStartDate: string;
+  comparisonEndDate: string;
+  timeZone: string;
+  comparison: SegmentComparisonRow[];
+  allTimeData: SegmentActivityRow[];
+}
+
 /**
  * Service to fetch aggregate trading reports from the reporting-service.
  * Calls `/api/v1/reports/trades-by-stock` (ANALYST-only endpoint).
@@ -49,6 +68,16 @@ export interface SegmentActivityReportResponse {
 export class ReportingService {
 
   constructor(private readonly http: HttpClient) {}
+
+  getSegmentComparison(startDate?: string, endDate?: string,
+      comparisonStartDate?: string, comparisonEndDate?: string): Observable<SegmentComparisonResponse> {
+    const params: Record<string, string> = {};
+    if (startDate) params['startDate'] = startDate;
+    if (endDate) params['endDate'] = endDate;
+    if (comparisonStartDate) params['comparisonStartDate'] = comparisonStartDate;
+    if (comparisonEndDate) params['comparisonEndDate'] = comparisonEndDate;
+    return this.http.get<SegmentComparisonResponse>('/api/v1/reports/activity/comparison', { params });
+  }
 
   /**
    * Fetch aggregate trades by stock symbol for a given date range.

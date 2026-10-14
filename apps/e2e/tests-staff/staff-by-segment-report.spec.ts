@@ -3,7 +3,7 @@ import { connectDatabase } from '../tests/support/database';
 import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
 
 const REPORT = '/analyst/reports/activity-by-client-segment';
-const API = '/api/v1/reports/activity';
+const API = '/api/v1/reports/activity/comparison';
 const CONTENT = 'staff-activity-by-client-segment';
 const REPORT_LIMIT_MS = 10_000;
 
@@ -39,10 +39,8 @@ async function chooseRange(page: Page, start: string, end: string) {
     const current = new Date(await input.inputValue());
     if (current.getFullYear() === Number(year) && current.getMonth() + 1 === Number(month)
       && current.getDate() === Number(day)) continue;
-    const response = page.waitForResponse(r => new URL(r.url()).pathname === API);
     await input.fill(`${month}/${day}/${year}`);
     await input.press('Tab');
-    await response;
     await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
   }
 }
@@ -60,9 +58,23 @@ async function refresh(page: Page, start: string, end: string): Promise<SegmentR
   expect(new URL(response.url()).origin).toBe(new URL(page.url()).origin);
   const body = await response.json();
   // An allowlist catches new nested identifiers as well as known personal-data fields.
-  expect(Object.keys(body).sort()).toEqual(['data', 'success']);
+  expect(Object.keys(body).sort()).toEqual([
+    'allTimeData', 'comparison', 'comparisonEndDate', 'comparisonStartDate', 'data', 'endDate', 'startDate', 'success', 'timeZone',
+  ]);
+  for (const row of body.comparison) {
+    expect(Object.keys(row).sort()).toEqual(['activeClients', 'current', 'previous', 'segment', 'totalTradedValue', 'tradeCount']);
+    for (const period of [row.current, row.previous]) {
+      expect(Object.keys(period).sort()).toEqual(['activeClients', 'segment', 'totalTradedValue', 'tradeCount']);
+    }
+    for (const field of ['activeClients', 'tradeCount', 'totalTradedValue']) {
+      expect(Object.keys(row[field]).sort()).toEqual(['absolute', 'percent']);
+      expect(row[field].absolute).toBeCloseTo(row.current[field] - row.previous[field], 6);
+      if (row.previous[field] === 0) expect(row[field].percent).toBeNull();
+      else expect(row[field].percent).toBeCloseTo(row[field].absolute / row.previous[field] * 100, 2);
+    }
+  }
   expect(body.success).toBe(true);
-  for (const row of body.data) {
+  for (const row of [...body.data, ...body.allTimeData]) {
     expect(Object.keys(row).sort()).toEqual(['activeClients', 'segment', 'totalTradedValue', 'tradeCount']);
     expect(typeof row.segment).toBe('string');
     for (const field of ['activeClients', 'tradeCount', 'totalTradedValue']) {
@@ -73,7 +85,7 @@ async function refresh(page: Page, start: string, end: string): Promise<SegmentR
 }
 
 /** Independent oracle: fold raw historical fills in the test, not the API's grouped query. */
-async function expectedRows(page: Page, start: string, end: string): Promise<SegmentRow[]> {
+async function expectedRows(page: Page, start: string, end: string, allTime = false): Promise<SegmentRow[]> {
   const ping = await page.request.get('/api/v1/reports/ping');
   expect(ping.status()).toBe(200);
   const { timeZone } = await ping.json();
@@ -81,8 +93,8 @@ async function expectedRows(page: Page, start: string, end: string): Promise<Seg
   try {
     const { rows } = await db.query(
       `SELECT segment, client_id, gross_amount::text AS amount FROM reporting_trades
-       WHERE (filled_at AT TIME ZONE 'UTC' AT TIME ZONE $3)::date BETWEEN $1::date AND $2::date`,
-      [start, end, timeZone]);
+       WHERE $4::boolean OR (filled_at AT TIME ZONE 'UTC' AT TIME ZONE $3)::date BETWEEN $1::date AND $2::date`,
+      [start, end, timeZone, allTime]);
     const groups = new Map<string, { clients: Set<number>; trades: number; value: bigint }>();
     for (const row of rows) {
       const group = groups.get(row.segment) ?? { clients: new Set<number>(), trades: 0, value: 0n };
@@ -100,17 +112,36 @@ async function expectedRows(page: Page, start: string, end: string): Promise<Seg
   } finally { await db.end(); }
 }
 
-async function expectTable(page: Page, rows: SegmentRow[]) {
-  const table = page.locator(`${CONTENT} table`);
-  await expect(table.locator('tbody tr')).toHaveCount(rows.length);
+async function expectChart(page: Page, rows: SegmentRow[]) {
+  const chart = page.locator(`${CONTENT} .chart-body`);
+  await expect(chart.locator('.chart-row')).toHaveCount(rows.length);
   const number = new Intl.NumberFormat('en-US');
   const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
   for (const row of rows) {
     const label = row.segment.toLowerCase().split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
-    const rendered = table.locator('tbody tr').filter({ has: page.getByRole('cell', { name: label, exact: true }) });
-    await expect(rendered.locator('td')).toHaveText([
-      label, number.format(row.activeClients), number.format(row.tradeCount), currency.format(row.totalTradedValue),
-    ]);
+    const rendered = chart.locator('.chart-row').filter({ has: page.getByText(label, { exact: true }) });
+    await expect(rendered.locator('.column-value')).toHaveText(currency.format(row.totalTradedValue));
+    await expect(rendered.locator('.column-meta')).toContainText(`${number.format(row.activeClients)} unique trading clients`);
+    await expect(rendered.locator('.column-meta')).toContainText(`${number.format(row.tradeCount)} trades`);
+  }
+}
+
+/** Verify selected-period values in the paired charts that replaced the detailed table. */
+async function expectSelectedPeriodCharts(page: Page, rows: SegmentRow[], start: string, end: string) {
+  const charts = page.locator(`${CONTENT} staff-segment-comparison-charts`);
+  await expect(charts.locator('h3')).toHaveText(['Active clients', 'Filled trades', 'Traded value (USD)']);
+  const metrics = ['activeClients', 'tradeCount', 'totalTradedValue'] as const;
+  for (const [index, metric] of metrics.entries()) {
+    const chart = charts.locator('.metric-chart').nth(index);
+    const formatter = new Intl.NumberFormat('en-US', metric === 'totalTradedValue'
+      ? { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      : { maximumFractionDigits: 0 });
+    for (const row of rows) {
+      const label = row.segment.toLowerCase().split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
+      const pair = chart.locator('.segment-pair').filter({ has: page.getByText(label, { exact: true }) });
+      const selectedBar = pair.locator('.period-bar').filter({ hasText: `${start} to ${end}` });
+      await expect(selectedBar.locator('.period-value')).toHaveText(formatter.format(row[metric]));
+    }
   }
 }
 
@@ -124,14 +155,12 @@ test('LMKT-43 AC1/AC3: selected dates show real segment aggregates without clien
     await chooseRange(page, start, end);
     const actual = await refresh(page, start, end);
     expect(actual).toEqual(expected);
-    await expectTable(page, expected);
+    await expectSelectedPeriodCharts(page, actual, start, end);
+    await expectChart(page, await expectedRows(page, start, end, true));
     results.push(actual);
   }
   expect(results[0]).not.toEqual(results[1]);
   const content = page.locator(`${CONTENT} .report-content`);
-  await expect(content.locator('th')).toHaveText([
-    /Segment/, /Active Clients/, /Trade Count/, /Total Traded Value/,
-  ]);
   await expect(content.locator('a, button, input')).toHaveCount(0);
   await expect(content).not.toContainText(/@|client\s*id|account\s*id|order\s*id|email|phone|SSN/i);
 });
@@ -141,10 +170,11 @@ test('LMKT-43 AC2: a typical real report renders within ten seconds', async ({ p
   const start = daysAgo(35), end = daysAgo(2);
   await chooseRange(page, start, end);
   // Login, initial navigation and date editing are setup, outside the report-generation SLA.
+  const allTimeRows = await expectedRows(page, start, end, true);
   const started = performance.now();
   const rows = await refresh(page, start, end);
   expect(rows.length).toBeGreaterThan(0);
-  await expectTable(page, rows);
+  await expectChart(page, allTimeRows);
   expect(performance.now() - started).toBeLessThan(REPORT_LIMIT_MS);
 });
 
@@ -154,7 +184,7 @@ test('LMKT-43 AC1: an empty historical range shows the real empty state', async 
   await chooseRange(page, start, end);
   expect(await refresh(page, start, end)).toEqual([]);
   await expect(page.getByRole('heading', { name: 'No segment activity in this range' })).toBeVisible();
-  await expect(page.locator(`${CONTENT} table`)).toHaveCount(0);
+  await expectChart(page, await expectedRows(page, start, end, true));
 });
 
 test('LMKT-43 AC4: signed-out visitors cannot open the page or request data', async ({ page }) => {
@@ -179,8 +209,21 @@ for (const [role, user] of [['CLIENT', CLIENT], ['TRADING_OPS', TRADING_OPS]] as
     expect(login.status()).toBe(200);
     expect((await page.request.get('/api/auth/me')).status()).toBe(200);
     expect((await page.request.get(API)).status()).toBe(403);
-    await page.goto(REPORT);
-    await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
-    await expect(page.locator(CONTENT)).toHaveCount(0);
+    await test.step('Restore the browser session on a full report-page reload', async () => {
+      // The APIRequestContext /me check above does not prove Angular has restored its
+      // session after navigation. Wait for the browser's own bootstrap request first.
+      const [session] = await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/me'
+          && response.request().method() === 'GET'),
+        page.goto(REPORT, { waitUntil: 'domcontentloaded' }),
+      ]);
+      expect(session.status(), 'Browser session restoration must succeed before checking the role guard').toBe(200);
+      expect((await session.json()).roles).toContain(role);
+    });
+    await test.step('Reject the role and render the access-denied page', async () => {
+      await expect(page).toHaveURL(/\/access-denied$/);
+      await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+      await expect(page.locator(CONTENT)).toHaveCount(0);
+    });
   });
 }

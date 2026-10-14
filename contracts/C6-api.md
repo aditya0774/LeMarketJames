@@ -420,6 +420,32 @@ The report target is under ten seconds. The PostgreSQL integration test exercise
 100,000-trade synthetic baseline through query execution and response serialization. Production
 capacity and concurrency require measurement on the deployed dataset and hardware.
 
+### GET /api/v1/reports/activity/comparison
+
+Analyst-only segment trends, using the same view, date semantics and safeguards as activity.
+The original activity endpoint retains its aggregate-only response shape.
+
+- `startDate`, `endDate`: selected inclusive range; defaults are shared with
+  [SegmentActivityService](../services/reporting-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
+- `comparisonStartDate`, `comparisonEndDate`: supply both or neither. When omitted,
+  compare with the immediately preceding range of the same number of calendar days.
+  Custom ranges can overlap or differ in duration; totals are not normalized by duration.
+- Response: `success`, `data` (selected range's existing segment rows), `startDate`, `endDate`,
+  `comparisonStartDate`, `comparisonEndDate`, `timeZone`, `comparison`, and `allTimeData`.
+- `allTimeData` contains segment activity rows across the entire reporting view, independent
+  of both date ranges. Clients are counted distinctly across all history, not summed across
+  periods. These are clients with at least one filled trade, not all registered clients.
+  The lower summary cards and segment share chart use this all-time data.
+- Each comparison row contains `segment`, `current` and `previous` (each a segment activity row),
+  and `activeClients`, `tradeCount`, `totalTradedValue` changes with `absolute` and `percent`.
+  Absolute change is selected minus comparison; percentage is relative to comparison,
+  rounded to two decimals, or null when the comparison value is zero.
+- Rows are the alphabetically sorted union of segments active in either range. A missing
+  segment in one range has zero metrics. Both ranges empty returns empty arrays.
+- Amounts are USD gross traded values, not profit. No individual identifiers are returned.
+- Invalid/reversed ranges or incomplete comparison dates return 400; unauthenticated
+  callers receive 401 and other roles receive 403.
+
 ### GET /api/v1/reports/trades
 
 Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.

@@ -15,23 +15,45 @@
         <div class="date-fields">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Start Date</mat-label>
-            <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />
+            <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (dateChange)="onDateRangeChange()" />
             <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
             <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>End Date</mat-label>
-            <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (change)="onDateRangeChange()" />
+            <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (dateChange)="onDateRangeChange()" />
             <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
             <mat-datepicker #endPicker></mat-datepicker>
           </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Compare with</mat-label>
+            <mat-select formControlName="comparisonMode" (selectionChange)="onComparisonModeChange()">
+              <mat-option value="previous">Previous period</mat-option>
+              <mat-option value="custom">Custom dates</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (dateRangeForm.controls.comparisonMode.value === 'custom') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Comparison start</mat-label>
+            <input matInput [matDatepicker]="comparisonStartPicker" formControlName="comparisonStartDate" />
+            <mat-datepicker-toggle matSuffix [for]="comparisonStartPicker" />
+            <mat-datepicker #comparisonStartPicker />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Comparison end</mat-label>
+            <input matInput [matDatepicker]="comparisonEndPicker" formControlName="comparisonEndDate" />
+            <mat-datepicker-toggle matSuffix [for]="comparisonEndPicker" />
+            <mat-datepicker #comparisonEndPicker />
+          </mat-form-field>
+          }
         </div>
 
         <button class="btn btn-gold" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
           Refresh
         </button>
       </form>
+
     </mat-card-content>
   </mat-card>
 
@@ -51,25 +73,39 @@
   </div>
 
   <div *ngIf="!isLoading() && !error()" class="report-content">
-    <section *ngIf="reportData().length > 0" class="stats-grid" aria-label="Segment summary metrics">
+    @if (comparison(); as report) {
+      <section class="chart-card" aria-labelledby="comparison-heading">
+        <div class="chart-header">
+          <h2 id="comparison-heading">Client-segment trends</h2>
+          <p>Selected: {{ report.startDate }} to {{ report.endDate }}.
+            Comparison: {{ report.comparisonStartDate }} to {{ report.comparisonEndDate }}.</p>
+        </div>
+        @if (report.comparison?.length) {
+          <staff-segment-comparison-charts [rows]="report.comparison" [dates]="report" />
+        } @else {
+          <p>No segment activity in either period.</p>
+        }
+      </section>
+    }
+    <section class="stats-grid" aria-label="All-time segment summary metrics">
       <article class="stat-card">
-        <p class="stat-label">Total Traded Value</p>
+        <p class="stat-label">All-time traded value</p>
         <p class="stat-value">{{ totalTradedValue() | currency }}</p>
       </article>
       <article class="stat-card">
-        <p class="stat-label">Total Trades</p>
+        <p class="stat-label">All-time filled trades</p>
         <p class="stat-value">{{ totalTrades() | number: '1.0-0' }}</p>
       </article>
       <article class="stat-card">
-        <p class="stat-label">Active Clients</p>
+        <p class="stat-label">All-time unique trading clients</p>
         <p class="stat-value">{{ totalActiveClients() | number: '1.0-0' }}</p>
       </article>
     </section>
 
-    <section *ngIf="reportData().length > 0" class="chart-card" aria-label="Segment value chart">
+    <section *ngIf="allTimeData().length > 0" class="chart-card" aria-label="All-time segment value chart">
       <div class="chart-header">
-        <h2>Traded value by segment</h2>
-        <p>Share of total traded value. A full bar represents 100% across all segments.</p>
+        <h2>All-time traded value by segment</h2>
+        <p>All recorded trading history, regardless of the dates selected above. Each client is counted once.</p>
       </div>
       <div class="chart-body">
         <div class="chart-row" *ngFor="let row of chartRows()">
@@ -82,7 +118,7 @@
             <div class="bar-fill" [style.width.%]="barWidthPercent(row.totalTradedValue)"></div>
           </div>
           <div class="column-meta">
-            <span>{{ row.activeClients | number }} active clients &middot; {{ row.tradeCount | number }} trades</span>
+            <span>{{ row.activeClients | number }} unique trading clients &middot; {{ row.tradeCount | number }} trades</span>
             <span>{{ (totalTradedValue() > 0 ? row.totalTradedValue / totalTradedValue() : 0) | percent:'1.1-1' }} of total</span>
           </div>
         </div>
@@ -92,13 +128,6 @@
           <span>100%</span>
         </div>
       </div>
-    </section>
-    <section *ngIf="reportData().length > 0" class="table-card" aria-labelledby="segment-details-heading">
-      <div class="chart-header">
-        <h2 id="segment-details-heading">Segment breakdown</h2>
-        <p>Active clients, executed trades and traded value for each segment.</p>
-      </div>
-      <staff-by-client-segment-aggregate-table [reportData]="reportData()" />
     </section>
 
     <section *ngIf="reportData().length === 0" class="chart-card" aria-label="No data">

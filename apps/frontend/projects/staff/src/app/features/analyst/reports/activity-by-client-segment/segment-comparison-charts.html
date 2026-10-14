@@ -1,0 +1,35 @@
+<div class="trend-legend" aria-label="Chart legend">
+  @for (period of periods(); track period.key) {
+    <span><i [class.comparison-swatch]="period.key === 'previous'" [class.selected-swatch]="period.key === 'current'" aria-hidden="true"></i>{{ period.label }}</span>
+  }
+</div>
+<div class="trend-charts">
+  @for (chart of charts(); track chart.key) {
+    <section class="metric-chart" [attr.aria-label]="chart.label + ' by client segment'">
+      <h3>{{ chart.label }}</h3>
+      @for (row of rows(); track row.segment) {
+        <div class="segment-pair">
+          <div class="pair-heading">
+            <span>{{ row.segment.replaceAll('_', ' ') | titlecase }}</span>
+            <span class="trend-change" [attr.aria-label]="'Percentage change: ' + change(row[chart.key].percent)">
+              {{ change(row[chart.key].percent) }}
+            </span>
+          </div>
+          @for (period of periods(); track period.key) {
+            <div class="period-bar" tabindex="0"
+              [attr.aria-label]="(row.segment.replaceAll('_', ' ') | titlecase) + ', ' + period.label + ': ' + format(row[period.key][chart.key], chart.key)"
+              [matTooltip]="period.label + ': ' + format(row[period.key][chart.key], chart.key)">
+              <span class="period-label">{{ period.label }}</span>
+              <div class="trend-track" aria-hidden="true">
+                <div class="trend-bar" [class.selected]="period.key === 'current'"
+                  [style.width.%]="width(row[period.key][chart.key], chart.maximum)"></div>
+              </div>
+              <span class="period-value">{{ format(row[period.key][chart.key], chart.key) }}</span>
+            </div>
+          }
+        </div>
+      }
+      <div class="metric-scale" aria-hidden="true"><span>0</span><span>{{ format(chart.maximum, chart.key) }}</span></div>
+    </section>
+  }
+</div>

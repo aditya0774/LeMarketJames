@@ -76,3 +76,15 @@ Run the PostgreSQL checks against the disposable test database using `TEST_DATAB
 ```powershell
 mvn -B -pl services/reporting-service -am "-Dspring.profiles.active=postgres-test" "-Dtest=SegmentActivityIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
 ```
+
+### Client-segment trends
+
+The staff segment page uses `GET /api/v1/reports/activity/comparison` to compare
+selected dates with a preceding equal-length period or a custom range. It displays
+both periods and absolute/percentage changes for all three aggregate metrics,
+including segments active in only one period. The service performs two bounded
+aggregate reads, using ReportCalendar for both ranges, plus an all-time aggregate for
+the lower summary and share chart. All-time distinct clients are counted across the
+whole reporting view, independently of the selected dates; no client details leave it.
+See C6 for zero-baseline and date semantics. Controller tests cover comparisons,
+daylight-saving boundaries, custom dates, invalid ranges and role enforcement.

@@ -51,6 +51,81 @@ class SegmentActivityControllerTest {
     }
 
     @Test
+    void allTimeTotalsRemainAvailableWhenSelectedPeriodsAreEmpty() throws Exception {
+        when(repository.aggregate(any(), any())).thenReturn(List.of());
+        when(repository.aggregateAllTime()).thenReturn(List.of(
+                new SegmentActivityRow("RETAIL", 3, 100, new BigDecimal("12000"))));
+        mvc.perform(get(PATH + "/comparison").cookie(token(Role.ANALYST))
+                        .param("startDate", "2000-01-01").param("endDate", "2000-01-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.comparison").isEmpty())
+                .andExpect(jsonPath("$.allTimeData[0].activeClients").value(3))
+                .andExpect(jsonPath("$.allTimeData[0].tradeCount").value(100));
+        verify(repository).aggregateAllTime();
+    }
+
+    @Test
+    void comparisonIncludesDisappearingSegmentsAndExactChanges() throws Exception {
+        when(repository.aggregate(any(), any())).thenReturn(
+                List.of(new SegmentActivityRow("RETAIL", 3, 6, new BigDecimal("150"))),
+                List.of(new SegmentActivityRow("RETAIL", 2, 4, new BigDecimal("100")),
+                        new SegmentActivityRow("OLD", 1, 1, new BigDecimal("50"))));
+        mvc.perform(get(PATH + "/comparison").cookie(token(Role.ANALYST))
+                        .param("startDate", "2026-03-08").param("endDate", "2026-03-08"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comparisonStartDate").value("2026-03-07"))
+                .andExpect(jsonPath("$.comparisonEndDate").value("2026-03-07"))
+                .andExpect(jsonPath("$.timeZone").value("America/New_York"))
+                .andExpect(jsonPath("$.comparison[0].segment").value("OLD"))
+                .andExpect(jsonPath("$.comparison[0].current.tradeCount").value(0))
+                .andExpect(jsonPath("$.comparison[0].tradeCount.percent").value(-100))
+                .andExpect(jsonPath("$.comparison[1].activeClients.absolute").value(1))
+                .andExpect(jsonPath("$.comparison[1].activeClients.percent").value(50))
+                .andExpect(jsonPath("$.comparison[1].totalTradedValue.absolute").value(50));
+        verify(repository).aggregate(LocalDateTime.parse("2026-03-08T05:00:00"),
+                LocalDateTime.parse("2026-03-09T04:00:00"));
+        verify(repository).aggregate(LocalDateTime.parse("2026-03-07T05:00:00"),
+                LocalDateTime.parse("2026-03-08T05:00:00"));
+    }
+
+    @Test
+    void comparisonUsesCustomDatesAndNullPercentForNewSegments() throws Exception {
+        when(repository.aggregate(any(), any())).thenReturn(
+                List.of(new SegmentActivityRow("NEW", 1, 1, new BigDecimal("20"))), List.of());
+        mvc.perform(get(PATH + "/comparison").cookie(token(Role.ANALYST))
+                        .param("startDate", "2026-10-01").param("endDate", "2026-10-07")
+                        .param("comparisonStartDate", "2026-09-01").param("comparisonEndDate", "2026-09-30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comparisonStartDate").value("2026-09-01"))
+                .andExpect(jsonPath("$.comparison[0].previous.activeClients").value(0))
+                .andExpect(jsonPath("$.comparison[0].activeClients.percent").isEmpty());
+    }
+
+    @Test
+    void comparisonRejectsIncompleteOrReversedDatesBeforeQuerying() throws Exception {
+        mvc.perform(get(PATH + "/comparison").cookie(token(Role.ANALYST))
+                        .param("comparisonStartDate", "2026-09-01"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(PATH + "/comparison").cookie(token(Role.ANALYST))
+                        .param("comparisonStartDate", "2026-09-30").param("comparisonEndDate", "2026-09-01"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void comparisonRequiresAuthentication() throws Exception {
+        mvc.perform(get(PATH + "/comparison")).andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = "ANALYST")
+    void comparisonRejectsOtherRoles(Role role) throws Exception {
+        mvc.perform(get(PATH + "/comparison").cookie(token(role))).andExpect(status().isForbidden());
+        verifyNoInteractions(repository);
+    }
+
+    @Test
     void anonymousAndInvalidTokensAreUnauthorized() throws Exception {
         mvc.perform(get(PATH)).andExpect(status().isUnauthorized());
         mvc.perform(get(PATH).cookie(new Cookie(JwtAuthenticationFilter.COOKIE_NAME, "invalid")))

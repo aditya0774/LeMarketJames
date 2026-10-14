@@ -26,7 +26,7 @@
 .filter-card { margin-bottom: 24px; }
 .filter-card mat-card-content { padding: 20px; }
 .date-range-form, .date-fields { display: flex; gap: 16px; align-items: center; }
-.date-fields { flex: 1; }
+.date-fields { flex: 1; flex-wrap: wrap; }
 mat-form-field { flex: 1; min-width: 0; }
 .btn { width: auto; min-height: 48px; }
 .report-content { display: grid; gap: 22px; }
