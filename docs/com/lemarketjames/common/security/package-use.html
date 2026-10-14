@@ -60,10 +60,12 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="block">Shared JPA mappings for clients, addresses, and accounts (database/schema/001_core_schema.sql).</div>
 </div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.common.security">com.lemarketjames.common.security</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.common.error">com.lemarketjames.common.error</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.config">com.lemarketjames.config</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.security">com.lemarketjames.common.security</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.config">com.lemarketjames.config</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="package-uses">
 <ul class="block-list">
@@ -100,22 +102,41 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="com.lemarketjames.common.error">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.common.security</a> used by <a href="../error/package-summary.html">com.lemarketjames.common.error</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/AccountInactiveException.html#com.lemarketjames.common.error">AccountInactiveException</a></div>
+<div class="col-last even-row-color">
+<div class="block">An account that may no longer use the platform: a client that is not ACTIVE, a deactivated staff
+ user, or (on the request path) one that no longer exists (LMKT-57).</div>
+</div>
+</div>
+</section>
+</li>
+<li>
 <section class="detail" id="com.lemarketjames.common.security">
 <div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.common.security</a> used by <a href="package-summary.html">com.lemarketjames.common.security</a></span></div>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/JwtService.html#com.lemarketjames.common.security">JwtService</a></div>
+<div class="col-first even-row-color"><a href="class-use/AccountAccessCheck.html#com.lemarketjames.common.security">AccountAccessCheck</a></div>
 <div class="col-last even-row-color">
+<div class="block">Decides, on every authenticated request, whether the account behind a still-valid token may
+ keep using it (LMKT-57).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/JwtService.html#com.lemarketjames.common.security">JwtService</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Service class for JWT token generation and validation.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/Role.html#com.lemarketjames.common.security">Role</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/Role.html#com.lemarketjames.common.security">Role</a></div>
+<div class="col-last even-row-color">
 <div class="block">Who a logged-in user is (contract C7, see contracts/C7-roles.md for which role may use which
  views).</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/TokenClaims.html#com.lemarketjames.common.security">TokenClaims</a></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><a href="class-use/TokenClaims.html#com.lemarketjames.common.security">TokenClaims</a></div>
+<div class="col-last odd-row-color">
 <div class="block">What a valid JWT says about its holder.</div>
 </div>
 </div>
@@ -127,8 +148,13 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/JwtService.html#com.lemarketjames.config">JwtService</a></div>
+<div class="col-first even-row-color"><a href="class-use/AccountAccessCheck.html#com.lemarketjames.config">AccountAccessCheck</a></div>
 <div class="col-last even-row-color">
+<div class="block">Decides, on every authenticated request, whether the account behind a still-valid token may
+ keep using it (LMKT-57).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/JwtService.html#com.lemarketjames.config">JwtService</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Service class for JWT token generation and validation.</div>
 </div>
 </div>

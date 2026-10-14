@@ -270,7 +270,8 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>a LoginResult with the username, success message, JWT token and roles</dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if validation fails, the login is locked or barred, or credentials are invalid</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if validation fails, the login is locked, or credentials are invalid</dd>
+<dd><code><a href="../common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></code> - if the password is right but the login may no longer be used (LMKT-57)</dd>
 </dl>
 </section>
 </li>

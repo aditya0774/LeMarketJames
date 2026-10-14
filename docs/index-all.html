@@ -69,6 +69,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Accepted for execution; waiting for the execution engine.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/SecurityEventLog.html#accessRevoked(java.lang.String,java.lang.String,java.time.Instant)" class="member-name-link">accessRevoked(String, String, Instant)</a> - Static method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></dt>
+<dd>
+<div class="block">Records that an account was refused access.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/ValidationRule.html#ACCOUNT_ACCESS" class="member-name-link">ACCOUNT_ACCESS</a> - Enum constant in enum class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></dt>
 <dd>
 <div class="block">The account belongs to the caller.</div>
@@ -91,6 +95,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/service/AccountAccess.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository)" class="member-name-link">AccountAccess(AccountRepository, ClientRepository)</a> - Constructor for class com.lemarketjames.orders.service.<a href="com/lemarketjames/orders/service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/security/AccountAccessCheck.html" class="type-name-link" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a> - Interface in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
+<dd>
+<div class="block">Decides, on every authenticated request, whether the account behind a still-valid token may
+ keep using it (LMKT-57).</div>
+</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountEntity.html" class="type-name-link" title="class in com.lemarketjames.common.domain">AccountEntity</a> - Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
 <dd>
 <div class="block">Maps to the `accounts` table: the trading account opened alongside a client at registration.</div>
@@ -149,6 +158,13 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>accountId</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/AccountInactiveException.html" class="type-name-link" title="class in com.lemarketjames.common.security">AccountInactiveException</a> - Exception Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
+<dd>
+<div class="block">An account that may no longer use the platform: a client that is not ACTIVE, a deactivated staff
+ user, or (on the request path) one that no longer exists (LMKT-57).</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/AccountInactiveException.html#%3Cinit%3E()" class="member-name-link">AccountInactiveException()</a> - Constructor for exception class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.html#accountNotFound()" class="member-name-link">accountNotFound()</a> - Method in class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.html" title="class in com.lemarketjames.notifications">NotificationController</a></dt>
 <dd>
 <div class="block">The same answer holdings-service gives a login that has no account.</div>
@@ -513,6 +529,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#closePrice()" class="member-name-link">closePrice()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/PriceCandle.html#param-closePrice"><code>closePrice</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/AccountInactiveException.html#CODE" class="member-name-link">CODE</a> - Static variable in exception class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></dt>
+<dd>
+<div class="block">The error code every refusal carries (contract C6).</div>
 </dd>
 <dt><a href="com/lemarketjames/package-summary.html">com.lemarketjames</a> - package com.lemarketjames</dt>
 <dd>&nbsp;</dd>
@@ -1085,7 +1105,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountStatus.html#EXPIRED" class="member-name-link">EXPIRED</a> - Enum constant in enum class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></dt>
 <dd>
-<div class="block">Identity or KYC documents lapsed: may log in and view, but may not trade until renewed.</div>
+<div class="block">Identity or KYC documents lapsed: may not log in (LMKT-57) and may not trade until renewed.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/security/JwtService.html#extractClaims(java.lang.String)" class="member-name-link">extractClaims(String)</a> - Method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a></dt>
 <dd>
@@ -1180,6 +1200,14 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/domain/AccountRepository.html#findAccountIdByUsername(java.lang.String)" class="member-name-link">findAccountIdByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/ClientRepository.html#findAccountStatusByUsername(java.lang.String)" class="member-name-link">findAccountStatusByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a></dt>
+<dd>
+<div class="block">Only the status, for the per-request access check (LMKT-57); empty when the client no longer exists.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/domain/StaffUserRepository.html#findActiveByUsername(java.lang.String)" class="member-name-link">findActiveByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserRepository.html" title="interface in com.lemarketjames.common.domain">StaffUserRepository</a></dt>
+<dd>
+<div class="block">Only the active flag, for the per-request access check (LMKT-57); empty when the login no longer exists.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findAll()" class="member-name-link">findAll()</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketDataService.html#findAll()" class="member-name-link">findAll()</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></dt>
@@ -2202,6 +2230,10 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="com/lemarketjames/common/error/GlobalExceptionHandler.html#handleAccessDenied(org.springframework.security.access.AccessDeniedException)" class="member-name-link">handleAccessDenied(AccessDeniedException)</a> - Method in class com.lemarketjames.common.error.<a href="com/lemarketjames/common/error/GlobalExceptionHandler.html" title="class in com.lemarketjames.common.error">GlobalExceptionHandler</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/error/GlobalExceptionHandler.html#handleAccountInactive(com.lemarketjames.common.security.AccountInactiveException)" class="member-name-link">handleAccountInactive(AccountInactiveException)</a> - Method in class com.lemarketjames.common.error.<a href="com/lemarketjames/common/error/GlobalExceptionHandler.html" title="class in com.lemarketjames.common.error">GlobalExceptionHandler</a></dt>
+<dd>
+<div class="block">A sign-in refused because the account is no longer active (LMKT-57).</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsExceptionHandler.html#handleAccountNotFound(java.lang.IllegalArgumentException)" class="member-name-link">handleAccountNotFound(IllegalArgumentException)</a> - Method in class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/HoldingsExceptionHandler.html" title="class in com.lemarketjames.holdings">HoldingsExceptionHandler</a></dt>
 <dd>
 <div class="block">AC1: When authenticated user has no account registered.</div>
@@ -2759,13 +2791,19 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:J">J</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" class="type-name-link" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
+<dd>
+<div class="block">Looks the token's account up in the shared database (LMKT-57).</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html#%3Cinit%3E(com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.domain.StaffUserRepository)" class="member-name-link">JpaAccountAccessCheck(ClientRepository, StaffUserRepository)</a> - Constructor for class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/JwtAuthenticationFilter.html" class="type-name-link" title="class in com.lemarketjames.common.security">JwtAuthenticationFilter</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
 <div class="block">Spring Security filter that extracts JWT tokens from cookies and authenticates requests.</div>
 </dd>
-<dt><a href="com/lemarketjames/common/security/JwtAuthenticationFilter.html#%3Cinit%3E(com.lemarketjames.common.security.JwtService)" class="member-name-link">JwtAuthenticationFilter(JwtService)</a> - Constructor for class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JwtAuthenticationFilter.html" title="class in com.lemarketjames.common.security">JwtAuthenticationFilter</a></dt>
+<dt><a href="com/lemarketjames/common/security/JwtAuthenticationFilter.html#%3Cinit%3E(com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">JwtAuthenticationFilter(JwtService, AccountAccessCheck)</a> - Constructor for class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JwtAuthenticationFilter.html" title="class in com.lemarketjames.common.security">JwtAuthenticationFilter</a></dt>
 <dd>
-<div class="block">Constructs a JwtAuthenticationFilter with the given JwtService.</div>
+<div class="block">Constructs a JwtAuthenticationFilter.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/security/JwtService.html" class="type-name-link" title="class in com.lemarketjames.common.security">JwtService</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
@@ -3133,6 +3171,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/notifications/NotificationController.NotificationView.html#message()" class="member-name-link">message()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.NotificationView.html" title="class in com.lemarketjames.notifications">NotificationController.NotificationView</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/notifications/NotificationController.NotificationView.html#param-message"><code>message</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/AccountInactiveException.html#MESSAGE" class="member-name-link">MESSAGE</a> - Static variable in exception class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></dt>
+<dd>
+<div class="block">What the person is told; deliberately the same whatever the reason, so it reveals nothing more.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.FeedRequest.html#mode()" class="member-name-link">mode()</a> - Method in record class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.FeedRequest.html" title="class in com.lemarketjames.market">MarketControlController.FeedRequest</a></dt>
 <dd>
@@ -4017,6 +4059,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/surveillance/OrderAlertController.AlertView.html#param-reason"><code>reason</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/SecurityEventLog.html#REASON_DEACTIVATED" class="member-name-link">REASON_DEACTIVATED</a> - Static variable in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></dt>
+<dd>
+<div class="block">Reason given for a staff user whose login was deactivated.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/SecurityEventLog.html#REASON_NOT_FOUND" class="member-name-link">REASON_NOT_FOUND</a> - Static variable in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></dt>
+<dd>
+<div class="block">Reason given when the token's account no longer exists.</div>
+</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityService.html#record(com.lemarketjames.activity.OrderFilledMessage)" class="member-name-link">record(OrderFilledMessage)</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityService.html" title="class in com.lemarketjames.activity">MarketActivityService</a></dt>
 <dd>
 <div class="block">Stores one fill.</div>
@@ -4237,6 +4287,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Raises an alert for an order that was rejected because its settlement was refused
  (LMKT-71).</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/AccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;)</a> - Method in interface com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;)</a> - Method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/Role.html" class="type-name-link" title="enum class in com.lemarketjames.common.security">Role</a> - Enum Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
 <div class="block">Who a logged-in user is (contract C7, see contracts/C7-roles.md for which role may use which
@@ -4308,7 +4362,12 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/staffgateway/SecurityConfiguration.html#%3Cinit%3E()" class="member-name-link">SecurityConfiguration()</a> - Constructor for class com.lemarketjames.staffgateway.<a href="com/lemarketjames/staffgateway/SecurityConfiguration.html" title="class in com.lemarketjames.staffgateway">SecurityConfiguration</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/config/SecurityConfig.html#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService)" class="member-name-link">securityFilterChain(HttpSecurity, JwtService)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/SecurityConfig.html" title="class in com.lemarketjames.config">SecurityConfig</a></dt>
+<dt><a href="com/lemarketjames/common/security/SecurityEventLog.html" class="type-name-link" title="class in com.lemarketjames.common.security">SecurityEventLog</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
+<dd>
+<div class="block">Writes security events that cut off access (LMKT-57, AC3), so sign-in and every service's
+ request filter log them in one format.</div>
+</dd>
+<dt><a href="com/lemarketjames/config/SecurityConfig.html#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">securityFilterChain(HttpSecurity, JwtService, AccountAccessCheck)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/SecurityConfig.html" title="class in com.lemarketjames.config">SecurityConfig</a></dt>
 <dd>
 <div class="block">Configures the security filter chain for HTTP requests.</div>
 </dd>

@@ -101,7 +101,11 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">JwtAuthenticationFilter</span>
 <span class="extends-implements">extends org.springframework.web.filter.OncePerRequestFilter</span></div>
 <div class="block">Spring Security filter that extracts JWT tokens from cookies and authenticates requests.
- Runs once per request to set up the security context with the authenticated user.</div>
+ Runs once per request to set up the security context with the authenticated user.
+
+ <p>A valid signature is not enough on its own: the account behind the token is checked on every
+ request, so a session opened before the account was closed, suspended, expired, deleted or
+ deactivated ends on its next request with <code>401 ACCOUNT_INACTIVE</code> (LMKT-57).</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -136,9 +140,10 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.security.JwtService)" class="member-name-link">JwtAuthenticationFilter</a><wbr>(<a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">JwtAuthenticationFilter</a><wbr>(<a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Constructs a JwtAuthenticationFilter with the given JwtService.</div>
+<div class="block">Constructs a JwtAuthenticationFilter.</div>
 </div>
 </div>
 </section>
@@ -208,13 +213,15 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.security.JwtService)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)">
 <h3>JwtAuthenticationFilter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JwtAuthenticationFilter</span><wbr><span class="parameters">(<a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</span></div>
-<div class="block">Constructs a JwtAuthenticationFilter with the given JwtService.</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JwtAuthenticationFilter</span><wbr><span class="parameters">(<a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</span></div>
+<div class="block">Constructs a JwtAuthenticationFilter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>jwtService</code> - the JWT service for token validation</dd>
+<dd><code>accessCheck</code> - decides whether the token's account may still be used</dd>
 </dl>
 </section>
 </li>
@@ -238,7 +245,8 @@ loadScripts(document, 'script');</script>
                          throws <span class="exceptions">jakarta.servlet.ServletException,
 <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></span></div>
 <div class="block">Processes incoming requests to extract and validate JWT tokens from cookies.
- Sets up authentication in the security context if a valid token is found.</div>
+ Sets up authentication in the security context if a valid token is found and its account
+ may still be used; answers 401 itself if it may not.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code>doFilterInternal</code>&nbsp;in class&nbsp;<code>org.springframework.web.filter.OncePerRequestFilter</code></dd>

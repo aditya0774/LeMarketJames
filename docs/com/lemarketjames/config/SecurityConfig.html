@@ -129,8 +129,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Configures CORS (Cross-Origin Resource Sharing) settings for the application.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.security.web.SecurityFilterChain</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService)" class="member-name-link">securityFilterChain</a><wbr>(org.springframework.security.config.annotation.web.builders.HttpSecurity&nbsp;http,
- <a href="../common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">securityFilterChain</a><wbr>(org.springframework.security.config.annotation.web.builders.HttpSecurity&nbsp;http,
+ <a href="../common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="../common/security/AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Configures the security filter chain for HTTP requests.</div>
 </div>
@@ -166,11 +167,12 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService)">
+<section class="detail" id="securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)">
 <h3>securityFilterChain</h3>
 <div class="member-signature"><span class="annotations">@Bean
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.security.web.SecurityFilterChain</span>&nbsp;<span class="element-name">securityFilterChain</span><wbr><span class="parameters">(org.springframework.security.config.annotation.web.builders.HttpSecurity&nbsp;http,
- <a href="../common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</span>
+ <a href="../common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="../common/security/AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</span>
                                                                          throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
 <div class="block">Configures the security filter chain for HTTP requests.
  Sets up CORS, CSRF, session management, exception handling, and authorization rules.</div>
@@ -178,6 +180,7 @@ loadScripts(document, 'script');</script>
 <dt>Parameters:</dt>
 <dd><code>http</code> - the HttpSecurity to configure</dd>
 <dd><code>jwtService</code> - the JWT service for token validation</dd>
+<dd><code>accessCheck</code> - ends the session of an account that may no longer be used (LMKT-57)</dd>
 <dt>Returns:</dt>
 <dd>the configured SecurityFilterChain</dd>
 <dt>Throws:</dt>

@@ -131,7 +131,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><code><a href="#EXPIRED" class="member-name-link">EXPIRED</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">Identity or KYC documents lapsed: may log in and view, but may not trade until renewed.</div>
+<div class="block">Identity or KYC documents lapsed: may not log in (LMKT-57) and may not trade until renewed.</div>
 </div>
 <div class="col-first odd-row-color"><code><a href="#SUSPENDED" class="member-name-link">SUSPENDED</a></code></div>
 <div class="col-last odd-row-color">
@@ -217,7 +217,7 @@ the order they are declared.</div>
 <section class="detail" id="EXPIRED">
 <h3>EXPIRED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></span>&nbsp;<span class="element-name">EXPIRED</span></div>
-<div class="block">Identity or KYC documents lapsed: may log in and view, but may not trade until renewed.</div>
+<div class="block">Identity or KYC documents lapsed: may not log in (LMKT-57) and may not trade until renewed.</div>
 </section>
 </li>
 </ul>
@@ -263,7 +263,8 @@ not permitted.)</div>
 <section class="detail" id="canLogIn()">
 <h3>canLogIn</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">canLogIn</span>()</div>
-<div class="block">Whether a client in this status may log in at all.</div>
+<div class="block">Whether a client in this status may log in at all. Only ACTIVE may: every other status loses
+ access at sign-in and, for a session opened before the change, on its next request (LMKT-57).</div>
 </section>
 </li>
 <li>

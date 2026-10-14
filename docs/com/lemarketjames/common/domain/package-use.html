@@ -62,24 +62,26 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Shared JPA mappings for clients, addresses, and accounts (database/schema/001_core_schema.sql).</div>
 </div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.holdings.service">com.lemarketjames.holdings.service</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.security">com.lemarketjames.common.security</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.notifications">com.lemarketjames.notifications</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.holdings.service">com.lemarketjames.holdings.service</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.notifications">com.lemarketjames.notifications</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.sessions.service">com.lemarketjames.sessions.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.sessions.service">com.lemarketjames.sessions.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="package-uses">
 <ul class="block-list">
@@ -155,6 +157,23 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Maps to the `staff_users` table (database/schema/010): an internal user with exactly one staff
  <a href="../security/Role.html" title="enum class in com.lemarketjames.common.security"><code>Role</code></a>.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.common.security">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.common.domain</a> used by <a href="../security/package-summary.html">com.lemarketjames.common.security</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/ClientRepository.html#com.lemarketjames.common.security">ClientRepository</a></div>
+<div class="col-last even-row-color">
+<div class="block">findByEmail backs login; existsByUsername/existsByEmail back registration's duplicate checks.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/StaffUserRepository.html#com.lemarketjames.common.security">StaffUserRepository</a></div>
+<div class="col-last odd-row-color">
+<div class="block">findByEmail backs staff login, which uses the same email-based login as clients.</div>
 </div>
 </div>
 </section>

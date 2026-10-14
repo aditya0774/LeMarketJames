@@ -93,9 +93,10 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../JwtAuthenticationFilter.html#%3Cinit%3E(com.lemarketjames.common.security.JwtService)" class="member-name-link">JwtAuthenticationFilter</a><wbr>(<a href="../JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</code></div>
+<div class="col-second even-row-color"><code><a href="../JwtAuthenticationFilter.html#%3Cinit%3E(com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">JwtAuthenticationFilter</a><wbr>(<a href="../JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="../AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Constructs a JwtAuthenticationFilter with the given JwtService.</div>
+<div class="block">Constructs a JwtAuthenticationFilter.</div>
 </div>
 </div>
 </section>
@@ -109,8 +110,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>org.springframework.security.web.SecurityFilterChain</code></div>
-<div class="col-second even-row-color"><span class="type-name-label">SecurityConfig.</span><code><a href="../../../config/SecurityConfig.html#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService)" class="member-name-link">securityFilterChain</a><wbr>(org.springframework.security.config.annotation.web.builders.HttpSecurity&nbsp;http,
- <a href="../JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService)</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">SecurityConfig.</span><code><a href="../../../config/SecurityConfig.html#securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity,com.lemarketjames.common.security.JwtService,com.lemarketjames.common.security.AccountAccessCheck)" class="member-name-link">securityFilterChain</a><wbr>(org.springframework.security.config.annotation.web.builders.HttpSecurity&nbsp;http,
+ <a href="../JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a>&nbsp;jwtService,
+ <a href="../AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a>&nbsp;accessCheck)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Configures the security filter chain for HTTP requests.</div>
 </div>
