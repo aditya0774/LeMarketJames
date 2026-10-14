@@ -209,8 +209,21 @@ for (const [role, user] of [['CLIENT', CLIENT], ['TRADING_OPS', TRADING_OPS]] as
     expect(login.status()).toBe(200);
     expect((await page.request.get('/api/auth/me')).status()).toBe(200);
     expect((await page.request.get(API)).status()).toBe(403);
-    await page.goto(REPORT);
-    await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
-    await expect(page.locator(CONTENT)).toHaveCount(0);
+    await test.step('Restore the browser session on a full report-page reload', async () => {
+      // The APIRequestContext /me check above does not prove Angular has restored its
+      // session after navigation. Wait for the browser's own bootstrap request first.
+      const [session] = await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/me'
+          && response.request().method() === 'GET'),
+        page.goto(REPORT, { waitUntil: 'domcontentloaded' }),
+      ]);
+      expect(session.status(), 'Browser session restoration must succeed before checking the role guard').toBe(200);
+      expect((await session.json()).roles).toContain(role);
+    });
+    await test.step('Reject the role and render the access-denied page', async () => {
+      await expect(page).toHaveURL(/\/access-denied$/);
+      await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+      await expect(page.locator(CONTENT)).toHaveCount(0);
+    });
   });
 }
