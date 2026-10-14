@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `7429338a` on 2026-10-14 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `ff09122b` on 2026-10-14 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -22,8 +22,8 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 98.20 | 100.00 | 2 / 111 |
 | **Back end (all modules)** | 84.22 | 82.85 | 559 / 3542 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 89.63 | 81.22 | 185 / 1784 |
-| **Everything** | 86.03 | 81.86 | 744 / 5326 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 90.13 | 81.48 | 176 / 1784 |
+| **Everything** | 86.20 | 82.02 | 735 / 5326 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -52,15 +52,16 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | `src/app/core/orders/orders.service.ts` | 9 | 30.77 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 91.84 |
-| `src/app/core/orders/order.service.ts` | 7 | 86.54 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
-| `src/app/features/auth/login/login.html` | 5 | 86.11 |
 | `src/app/features/holdings/by-stock-report/by-stock-detail.component.ts` | 5 | 87.50 |
+| `src/app/features/holdings/by-stock-report/by-stock-report.component.html` | 5 | 85.71 |
+| `src/app/features/orders/order-form/order-form.ts` | 5 | 91.94 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-14 | `ff09122b` | 84.22 | 82.85 | 90.13 | 81.48 |
 | 2026-10-14 | `7429338a` | 84.22 | 82.85 | 89.63 | 81.22 |
 | 2026-10-14 | `33be27ee` | 84.06 | 81.75 | 89.61 | 81.12 |
 | 2026-10-14 | `2e96c816` | 84.02 | 81.75 | 89.94 | 81.30 |
