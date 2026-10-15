@@ -93,3 +93,14 @@ export async function settlementReceipts(db: Client, orderId: number): Promise<S
     [orderId]);
   return result.rows;
 }
+
+/**
+ * Changes a client's status as the firm would when closing or expiring the account (LMKT-58). The
+ * statuses are AccountStatus's; the column's CHECK constraint refuses any other.
+ */
+export async function setClientStatus(db: Client, username: string, status: string): Promise<void> {
+  const result = await db.query('UPDATE clients SET account_status=$2 WHERE username=$1', [username, status]);
+  if (result.rowCount !== 1) {
+    throw new Error(`No client ${username} to set to ${status}.`);
+  }
+}
