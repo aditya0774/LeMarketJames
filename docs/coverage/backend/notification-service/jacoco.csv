@@ -3,7 +3,7 @@ LeMarketJames Notification Service,com.lemarketjames,NotificationServiceApplicat
 LeMarketJames Notification Service,com.lemarketjames.notifications,OrderStatusListener,0,23,0,0,0,7,0,2,0,2
 LeMarketJames Notification Service,com.lemarketjames.notifications,AccountNotFoundException,0,5,0,0,0,2,0,1,0,1
 LeMarketJames Notification Service,com.lemarketjames.notifications,Notification,0,50,0,0,0,17,0,9,0,9
-LeMarketJames Notification Service,com.lemarketjames.notifications,OrderStatusChangedMessage,0,37,0,10,0,2,0,7,0,2
+LeMarketJames Notification Service,com.lemarketjames.notifications,OrderStatusChangedMessage,0,52,0,0,0,2,0,3,0,3
 LeMarketJames Notification Service,com.lemarketjames.notifications,NotificationController,0,32,0,0,0,8,0,3,0,3
 LeMarketJames Notification Service,com.lemarketjames.notifications,NotificationController.NotificationView,0,37,0,0,0,4,0,2,0,2
 LeMarketJames Notification Service,com.lemarketjames.notifications,NotificationService,0,101,0,4,0,18,0,8,0,6

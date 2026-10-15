@@ -2,6 +2,8 @@
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What this service reads from an {@code OrderFilled} record (contract C6). It is this service's
@@ -15,13 +17,12 @@ import java.time.Instant;
  * @param price        price per share
  * @param filledAt     when the fill happened (UTC)
  */
-<span class="fc" id="L18">public record OrderFilledMessage(Integer orderId, Integer instrumentId, String side, BigDecimal quantity,</span>
+<span class="fc" id="L20">public record OrderFilledMessage(Integer orderId, Integer instrumentId, String side, BigDecimal quantity,</span>
                                  BigDecimal price, Instant filledAt) {
 
     /** @return whether every field a recorded fill needs is present */
     public boolean isComplete() {
-<span class="fc bfc" id="L23" title="All 12 branches covered.">        return orderId != null &amp;&amp; instrumentId != null &amp;&amp; side != null &amp;&amp; quantity != null &amp;&amp; price != null</span>
-            &amp;&amp; filledAt != null;
+<span class="fc" id="L25">        return Stream.of(orderId, instrumentId, side, quantity, price, filledAt).allMatch(Objects::nonNull);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
