@@ -43,6 +43,12 @@ export class Auth {
     }
   }
 
+  // Forgets the session locally when the server has already ended it (an account cut off
+  // mid-use, LMKT-56); there is nothing left to log out of, so no request is sent.
+  clearSession(): void {
+    this.applySession(null);
+  }
+
   hasRole(role: Role): boolean {
     return this.roles().includes(role);
   }

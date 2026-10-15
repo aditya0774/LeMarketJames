@@ -77,8 +77,9 @@ test.describe('Seed data', () => {
   test('a closed client cannot log in', async ({ page }) => {
     await loginViaUi(page, seed('seed_closed'));
 
-    await expect(page.getByText('Login failed')).toBeVisible();
-    await expect(page.getByText('no longer active')).toBeVisible();
+    // LMKT-56: the fixed heading and message, not the generic "Login failed".
+    await expect(page.getByRole('alert')).toContainText('Account not active');
+    await expect(page.getByRole('alert')).toContainText('This account is no longer active. Please contact the firm.');
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -86,8 +87,9 @@ test.describe('Seed data', () => {
   test('an expired client cannot log in', async ({ page }) => {
     await loginViaUi(page, seed('seed_expired'));
 
-    await expect(page.getByText('Login failed')).toBeVisible();
-    await expect(page.getByText('no longer active')).toBeVisible();
+    // LMKT-56: the fixed heading and message, not the generic "Login failed".
+    await expect(page.getByRole('alert')).toContainText('Account not active');
+    await expect(page.getByRole('alert')).toContainText('This account is no longer active. Please contact the firm.');
     await expect(page).toHaveURL(/\/login$/);
   });
 });
