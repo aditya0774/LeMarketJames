@@ -17,21 +17,25 @@ describe('BalanceService order list', () => {
 
   afterEach(() => http.verify());
 
+  // Requests the orders with the given filters and returns the URL that was called.
+  async function requestedUrl(filters?: Parameters<BalanceService['getOrders']>[0]): Promise<string> {
+    const result = service.getOrders(filters);
+    const request = http.expectOne(() => true);
+    request.flush({ orders: [] });
+    expect(await result).toEqual({ orders: [] });
+    return request.request.url;
+  }
+
   it('requests every order when no filter is given', async () => {
-    const result = service.getOrders();
-    http.expectOne(ordersUrl).flush({ orders: [] });
-    await result;
+    expect(await requestedUrl()).toBe(ordersUrl);
   });
 
   it('sends each filter that is set as a query parameter', async () => {
-    const result = service.getOrders({ status: 'FILLED', limit: 10, offset: 20 });
-    http.expectOne(`${ordersUrl}?status=FILLED&limit=10&offset=20`).flush({ orders: [] });
-    await result;
+    expect(await requestedUrl({ status: 'FILLED', limit: 10, offset: 20 }))
+      .toBe(`${ordersUrl}?status=FILLED&limit=10&offset=20`);
   });
 
   it('leaves out filters that are not set', async () => {
-    const result = service.getOrders({ status: '', limit: 5 });
-    http.expectOne(`${ordersUrl}?limit=5`).flush({ orders: [] });
-    await result;
+    expect(await requestedUrl({ status: '', limit: 5 })).toBe(`${ordersUrl}?limit=5`);
   });
 });
