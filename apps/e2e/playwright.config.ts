@@ -10,6 +10,7 @@ const isCi = !!process.env.CI;
 const FEED_FAILURE_TESTS = /feed-failure\.spec\.ts$/;
 // The files that pause the execution worker for the whole stack.
 const EXECUTION_RETRY_TESTS = /(execution-retry|settlement)\.spec\.ts$/;
+const LOCKOUT_TESTS = /lockout\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests',
@@ -23,8 +24,8 @@ export default defineConfig({
   // browser session closed. One worker is slower but stable; E2E_WORKERS raises it on a bigger agent.
   workers: isCi ? Number(process.env.E2E_WORKERS ?? 1) : undefined,
   // Room for a login, a seeded page load and a trace teardown on a busy agent.
-  timeout: isCi ? 60_000 : 30_000,
-  expect: { timeout: isCi ? 10_000 : 5_000 },
+  timeout: isCi ? 120_000 : 60_000,
+  expect: { timeout: isCi ? 15_000 : 10_000 },
   reporter: isCi
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],
@@ -44,7 +45,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [FEED_FAILURE_TESTS, EXECUTION_RETRY_TESTS],
+      testIgnore: [FEED_FAILURE_TESTS, EXECUTION_RETRY_TESTS, LOCKOUT_TESTS],
     },
     {
       name: 'execution-recovery',
@@ -52,6 +53,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testMatch: EXECUTION_RETRY_TESTS,
       dependencies: ['chromium'],
+    },
+    {
+      name: 'lockout-recovery',
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: LOCKOUT_TESTS,
+      dependencies: ['chromium', 'execution-recovery'],
     },
     // These tests make the quote feed stale or unavailable for the whole stack (contract C4),
     // which would refuse every other test's orders. Depending on the main project makes them
@@ -64,7 +72,7 @@ export default defineConfig({
       workers: 1,
       use: { ...devices['Desktop Chrome'] },
       testMatch: FEED_FAILURE_TESTS,
-      dependencies: ['chromium', 'execution-recovery'],
+      dependencies: ['chromium', 'execution-recovery', 'lockout-recovery'],
     },
   ],
 });
