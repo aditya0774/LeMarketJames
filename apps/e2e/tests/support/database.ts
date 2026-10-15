@@ -1,4 +1,5 @@
 import { Client } from 'pg';
+import { TestUser } from './users';
 
 /**
  * Direct database access for what the API does not expose yet (the audit trail, C2) and for
@@ -92,4 +93,42 @@ export async function settlementReceipts(db: Client, orderId: number): Promise<S
     'SELECT order_type, quantity, price_per_unit, rejection_reason FROM settlement_receipts WHERE order_id=$1',
     [orderId]);
   return result.rows;
+}
+
+/**
+ * Changes a client's status as the firm would when closing or expiring the account (LMKT-58). The
+ * statuses are AccountStatus's; the column's CHECK constraint refuses any other.
+ */
+export async function setClientStatus(db: Client, username: string, status: string): Promise<void> {
+  const result = await db.query('UPDATE clients SET account_status=$2 WHERE username=$1', [username, status]);
+  if (result.rowCount !== 1) {
+    throw new Error(`No client ${username} to set to ${status}.`);
+  }
+}
+
+/**
+ * Adds a throwaway staff login, since staff cannot register (LMKT-58). It reuses the password hash
+ * of the existing login `sameHashAs`, so it signs in with that login's password.
+ */
+export async function createStaffUser(db: Client, staff: TestUser, role: string, sameHashAs: TestUser): Promise<void> {
+  const result = await db.query(
+    `INSERT INTO staff_users (username, email, password, full_name, role)
+     SELECT $1, $2, password, 'E2E Staff', $3 FROM staff_users WHERE email=$4`,
+    [staff.username, staff.email, role, sameHashAs.email]);
+  if (result.rowCount !== 1) {
+    throw new Error(`No staff login ${sameHashAs.email} to copy the password from.`);
+  }
+}
+
+/** Turns a staff login's active flag on or off, as the firm would when someone leaves (LMKT-58). */
+export async function setStaffActive(db: Client, username: string, active: boolean): Promise<void> {
+  const result = await db.query('UPDATE staff_users SET active=$2 WHERE username=$1', [username, active]);
+  if (result.rowCount !== 1) {
+    throw new Error(`No staff login ${username} to set active=${active}.`);
+  }
+}
+
+/** Removes a staff login made by createStaffUser, so reruns start clean. */
+export async function deleteStaffUser(db: Client, username: string): Promise<void> {
+  await db.query('DELETE FROM staff_users WHERE username=$1', [username]);
 }
