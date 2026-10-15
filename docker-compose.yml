@@ -102,6 +102,7 @@ services:
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+      LMJ_AUTH_LOCKOUT_DURATION: ${AUTH_LOCKOUT_DURATION:-15m}
 
   core-service:
     image: lemarketjames/core-service:${IMAGE_TAG:-dev}

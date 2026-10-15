@@ -1,12 +1,16 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { homeFor } from '../../../core/auth/staff-home';
+import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 
 /** Shown to a client who signs in here; their session is ended before it is shown. */
 export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
+
+/** Shown, with the heading "Account not active", for a staff login that has been deactivated (C6). */
+export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -22,6 +26,7 @@ export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
  */
 export class Login {
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly errorHeading = signal('Login failed');
   protected readonly submitting = signal(false);
   protected readonly form: ReturnType<FormBuilder['group']>;
   protected showPassword = false;
@@ -30,11 +35,16 @@ export class Login {
     private readonly fb: FormBuilder,
     private readonly auth: Auth,
     private readonly router: Router,
+    route: ActivatedRoute,
   ) {
     this.form = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+    // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
+    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+      this.showAccountInactive();
+    }
   }
 
   async submit(): Promise<void> {
@@ -44,6 +54,7 @@ export class Login {
     }
 
     this.errorMessage.set(null);
+    this.errorHeading.set('Login failed');
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.value.username, this.form.value.password);
@@ -57,6 +68,10 @@ export class Login {
       }
       await this.router.navigate([homeFor(this.auth.roles())]);
     } catch (error) {
+      if (isAccountInactive(error)) {
+        this.showAccountInactive();
+        return;
+      }
       const serverMessage =
         error instanceof HttpErrorResponse &&
         typeof error.error === 'object' &&
@@ -72,6 +87,11 @@ export class Login {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  private showAccountInactive(): void {
+    this.errorHeading.set('Account not active');
+    this.errorMessage.set(ACCOUNT_INACTIVE_MESSAGE);
   }
 
   protected togglePasswordVisibility(): void {

@@ -77,4 +77,15 @@ describe('Auth', () => {
     expect(auth.currentUser()).toBeNull();
     expect(auth.roles()).toEqual([]);
   });
+
+  // LMKT-56: the server already ended the session, so nothing is sent (verify() checks it).
+  it('clears the session without calling the server', () => {
+    auth.currentUser.set('ops');
+    auth.roles.set(['TRADING_OPS']);
+
+    auth.clearSession();
+
+    expect(auth.currentUser()).toBeNull();
+    expect(auth.roles()).toEqual([]);
+  });
 });

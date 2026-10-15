@@ -100,4 +100,17 @@ describe('Auth', () => {
     expect(auth.roles()).toEqual([]);
   });
 
+  // LMKT-56: the server already ended the session, so nothing is sent (verify() checks it).
+  it('clears the session without calling the server', async () => {
+    const loggedIn = auth.login({ username: 'alice', password: 'Pass123!' });
+    httpMock.expectOne(`${baseUrl}/login`).flush({ username: 'alice', roles: ['CLIENT'], accountId: 7 });
+    await loggedIn;
+
+    auth.clearSession();
+
+    expect(auth.currentUser()).toBeNull();
+    expect(auth.currentAccountId()).toBeNull();
+    expect(auth.roles()).toEqual([]);
+  });
+
 });
