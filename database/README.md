@@ -430,3 +430,21 @@ The second command requires the running trading stack and an open market. It pla
 through the API, keeping cash, holdings, settlement receipts and audit events consistent.
 See [C3](../contracts/C3-seed-data.md#segment-report-proof-of-concept) for the demo personas
 and rerun behavior. No existing history is deleted or backdated.
+
+## 021 - Historical segment report demo clients
+
+`021_historical_segment_demo_clients.sql` adds the fictional historical-report personas
+without resetting existing accounts. Apply it to the existing local database:
+
+```powershell
+psql -h localhost -U lemarket -d lemarket -v ON_ERROR_STOP=1 -f database/schema/021_historical_segment_demo_clients.sql
+.\scripts\windows\seed-historical-segment-report.ps1 -Apply
+```
+
+The PowerShell companion requires Maven, a JDK and the migrated local PostgreSQL database.
+It reads `DB_PASSWORD`, with the same local development fallback as setup-db.ps1;
+`DEMO_DATABASE_URL` (JDBC URL) and `DEMO_DATABASE_USER` can select another demo database.
+Omit `-Apply` to verify the history in a transaction that rolls back. The numbered SQL
+creates only clients; trade history requires this explicit companion command and is not
+added to CI automatically. See [C3](../contracts/C3-seed-data.md#historical-client-segment-demo-2026)
+for the historical fixture's scope, reporting dates and idempotency rules.

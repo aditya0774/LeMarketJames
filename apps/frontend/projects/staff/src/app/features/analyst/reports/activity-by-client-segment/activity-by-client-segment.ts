@@ -1,5 +1,6 @@
-import { ByClientSegmentAggregateTable } from './by-client-segment-aggregate-table';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { SegmentComparisonCharts } from './segment-comparison-charts';
+import { Component, OnInit, OnDestroy, computed, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,12 +8,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import {
   ReportingService,
   SegmentActivityRow,
+  SegmentComparisonResponse,
 } from '@staff/core/reports/reporting.service';
 
 /**
@@ -26,38 +29,46 @@ import {
   styleUrls: ['./activity-by-client-segment.scss'],
   standalone: true,
   imports: [
-    ByClientSegmentAggregateTable,
+    SegmentComparisonCharts,
     CommonModule,
     ReactiveFormsModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatInputModule,
+    MatSelectModule,
     MatFormFieldModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatCardModule,
   ],
 })
-export class ActivityByClientSegment implements OnInit {
+export class ActivityByClientSegment implements OnInit, OnDestroy {
+  protected readonly comparison = signal<SegmentComparisonResponse | null>(null);
+  private request?: Subscription;
+  ngOnDestroy(): void { this.request?.unsubscribe(); }
   protected readonly isLoading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly reportData = signal<readonly SegmentActivityRow[]>([]);
+  protected readonly allTimeData = signal<readonly SegmentActivityRow[]>([]);
   protected readonly chartRows = computed(() =>
-    [...this.reportData()].sort((a, b) => b.totalTradedValue - a.totalTradedValue)
+    [...this.allTimeData()].sort((a, b) => b.totalTradedValue - a.totalTradedValue)
   );
   protected readonly totalTradedValue = computed(() =>
-    this.reportData().reduce((sum, row) => sum + row.totalTradedValue, 0)
+    this.allTimeData().reduce((sum, row) => sum + row.totalTradedValue, 0)
   );
   protected readonly totalTrades = computed(() =>
-    this.reportData().reduce((sum, row) => sum + row.tradeCount, 0)
+    this.allTimeData().reduce((sum, row) => sum + row.tradeCount, 0)
   );
   protected readonly totalActiveClients = computed(() =>
-    this.reportData().reduce((sum, row) => sum + row.activeClients, 0)
+    this.allTimeData().reduce((sum, row) => sum + row.activeClients, 0)
   );
 
   dateRangeForm = new FormGroup({
     startDate: new FormControl<Date | null>(null),
     endDate: new FormControl<Date | null>(null),
+    comparisonMode: new FormControl<'previous' | 'custom'>('previous', { nonNullable: true }),
+    comparisonStartDate: new FormControl<Date | null>({ value: null, disabled: true }),
+    comparisonEndDate: new FormControl<Date | null>({ value: null, disabled: true }),
   });
 
   constructor(private readonly reportingService: ReportingService) {}
@@ -77,6 +88,17 @@ export class ActivityByClientSegment implements OnInit {
 
   protected onDateRangeChange(): void {
     this.loadReport();
+  }
+
+  protected onComparisonModeChange(): void {
+    const { comparisonMode, comparisonStartDate, comparisonEndDate } = this.dateRangeForm.controls;
+    // Hidden custom fields must not invalidate or override the automatic comparison.
+    for (const control of [comparisonStartDate, comparisonEndDate]) {
+      if (comparisonMode.value === 'custom') control.enable();
+      else control.disable();
+    }
+    this.error.set(null);
+    if (comparisonMode.value === 'previous') this.loadReport();
   }
 
   protected onRetry(): void {
@@ -102,7 +124,21 @@ export class ActivityByClientSegment implements OnInit {
   }
 
   private loadReport(): void {
+    this.request?.unsubscribe();
     this.error.set(null);
+    this.comparison.set(null);
+    const values = this.dateRangeForm.getRawValue();
+    const custom = values.comparisonMode === 'custom';
+    if (this.dateRangeForm.invalid || !values.startDate || !values.endDate ||
+        values.startDate > values.endDate ||
+        (custom && (!values.comparisonStartDate || !values.comparisonEndDate ||
+         values.comparisonStartDate > values.comparisonEndDate))) {
+      this.isLoading.set(false);
+      this.error.set(custom
+        ? 'Invalid date range. Enter both comparison dates with the start on or before the end.'
+        : 'Invalid date range. Check the selected start and end dates.');
+      return;
+    }
     this.isLoading.set(true);
 
     const startDate = this.dateRangeForm.get('startDate')?.value;
@@ -111,10 +147,14 @@ export class ActivityByClientSegment implements OnInit {
     const startDateStr = startDate ? this.formatDate(startDate) : undefined;
     const endDateStr = endDate ? this.formatDate(endDate) : undefined;
 
-    this.reportingService.getActivityByClientSegment(startDateStr, endDateStr).subscribe({
+    this.request = this.reportingService.getSegmentComparison(startDateStr, endDateStr,
+      custom && values.comparisonStartDate ? this.formatDate(values.comparisonStartDate) : undefined,
+      custom && values.comparisonEndDate ? this.formatDate(values.comparisonEndDate) : undefined).subscribe({
       next: (response) => {
         if (response.success) {
           this.reportData.set(response.data);
+          this.allTimeData.set(response.allTimeData ?? []);
+          this.comparison.set(response);
           this.error.set(null);
         } else {
           this.error.set('Unable to load report. Please try again.');
