@@ -204,8 +204,12 @@ export class Dashboard implements OnInit {
   }
 
   private startLiveOrdersWatch(): void {
-    if (this.liveOrdersRequest && !this.liveOrdersRequest.closed) return;
-    if (!this.auth.currentAccountId()) return;
+    if (this.liveOrdersRequest && !this.liveOrdersRequest.closed) {
+      return;
+    }
+    if (!this.auth.currentAccountId()) {
+      return;
+    }
 
     this.liveOrdersRequest = this.orderService
       .watchOrderStatusStream()
@@ -281,7 +285,9 @@ export class Dashboard implements OnInit {
 
   private loadHistory(): void {
     const accountId = this.auth.currentAccountId();
-    if (!accountId) return;
+    if (!accountId) {
+      return;
+    }
     const filter = this.historyDate ? {
       date: this.historyDate,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

@@ -32,8 +32,12 @@ export function matchesFilter(status: OrderStatus, filter: OrderFilter): boolean
 
 /** Maps a status onto the mockup's pill colours: green filled, red rejected, gold in flight. */
 export function statusPillClass(status: OrderStatus): string {
-  if (status === 'FILLED') return 'pill-filled';
-  if (status === 'REJECTED') return 'pill-rejected';
+  if (status === 'FILLED') {
+    return 'pill-filled';
+  }
+  if (status === 'REJECTED') {
+    return 'pill-rejected';
+  }
   return 'pill-pending';
 }
 

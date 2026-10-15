@@ -87,8 +87,12 @@ export class OrderFormComponent implements OnInit {
     const price = this.form.get('price')?.value;
     const type = this.form.get('type')?.value as OrderType;
 
-    if (!quantity || !price) return 0;
-    if (type === 'SELL') return 0; // SELL orders don't require cash balance
+    if (!quantity || !price) {
+      return 0;
+    }
+    if (type === 'SELL') {
+      return 0; // SELL orders don't require cash balance
+    }
 
     return quantity * price;
   }
@@ -119,10 +123,14 @@ export class OrderFormComponent implements OnInit {
    * Returns an error message if balance is insufficient.
    */
   protected getBalanceErrorMessage(): string | null {
-    if (!this.balance()) return null;
+    if (!this.balance()) {
+      return null;
+    }
 
     const type = this.form.get('type')?.value as OrderType;
-    if (type === 'SELL') return null;
+    if (type === 'SELL') {
+      return null;
+    }
 
     const requiredCash = this.getRequiredCash();
     const availableCash = this.balance()?.cash || 0;

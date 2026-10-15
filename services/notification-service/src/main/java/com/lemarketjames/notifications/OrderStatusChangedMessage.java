@@ -1,6 +1,8 @@
 package com.lemarketjames.notifications;
 
 import java.time.Instant;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What this service reads from an {@code OrderStatusChanged} record (contract C6). It is this
@@ -18,6 +20,6 @@ public record OrderStatusChangedMessage(Integer orderId, Integer accountId, Stri
 
     /** @return whether every field a notification needs is present */
     public boolean isComplete() {
-        return orderId != null && accountId != null && from != null && to != null && occurredAt != null;
+        return Stream.of(orderId, accountId, from, to, occurredAt).allMatch(Objects::nonNull);
     }
 }

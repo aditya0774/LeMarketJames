@@ -2,6 +2,8 @@ package com.lemarketjames.surveillance;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What this service reads from an {@code OrderSubmitted} record (contract C6). It is this
@@ -20,7 +22,6 @@ public record OrderSubmittedMessage(Integer orderId, Integer accountId, Integer 
 
     /** @return whether every field an alert needs is present; the price is optional */
     public boolean isComplete() {
-        return orderId != null && accountId != null && instrumentId != null && side != null
-            && quantity != null && submittedAt != null;
+        return Stream.of(orderId, accountId, instrumentId, side, quantity, submittedAt).allMatch(Objects::nonNull);
     }
 }

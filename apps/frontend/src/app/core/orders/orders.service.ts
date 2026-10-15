@@ -47,10 +47,18 @@ export class BalanceService {
   getOrders(filters?: { status?: string; limit?: number; offset?: number }): Promise<OrdersListResponse> {
     let url = `${this.baseUrl}/orders`;
     const params = new URLSearchParams();
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.limit) params.append('limit', filters.limit.toString());
-    if (filters?.offset) params.append('offset', filters.offset.toString());
-    if (params.toString()) url += `?${params.toString()}`;
+    if (filters?.status) {
+      params.append('status', filters.status);
+    }
+    if (filters?.limit) {
+      params.append('limit', filters.limit.toString());
+    }
+    if (filters?.offset) {
+      params.append('offset', filters.offset.toString());
+    }
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
     return firstValueFrom(this.http.get<OrdersListResponse>(url));
   }
 

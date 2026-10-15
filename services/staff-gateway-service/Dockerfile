@@ -8,6 +8,7 @@ COPY services services
 RUN mvn -q -B -pl services/staff-gateway-service -am package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
+LABEL maintainer="LeMarketJames team"
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 

@@ -1,7 +1,10 @@
 package com.lemarketjames.holdings.entity;
 
 import com.lemarketjames.holdings.dto.SettlementRequest;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
 /** One durable result per order, committed atomically with its cash and share changes. */
@@ -23,8 +26,14 @@ public class SettlementReceipt {
     }
     public String getRejectionReason() { return rejectionReason; }
     public boolean matches(SettlementRequest request) {
+        return sameTrade(request) && sameAmounts(request);
+    }
+    private boolean sameTrade(SettlementRequest request) {
         return accountId.equals(request.getAccountId()) && instrumentId.equals(request.getInstrumentId())
-            && orderType.equals(request.getOrderType().name()) && quantity.compareTo(request.getQuantity()) == 0
-            && pricePerUnit.compareTo(request.getPricePerUnit()) == 0;
+            && orderType.equals(request.getOrderType().name());
+    }
+    // compareTo, not equals: 10 and 10.0000 are the same amount once stored at scale 4.
+    private boolean sameAmounts(SettlementRequest request) {
+        return quantity.compareTo(request.getQuantity()) == 0 && pricePerUnit.compareTo(request.getPricePerUnit()) == 0;
     }
 }

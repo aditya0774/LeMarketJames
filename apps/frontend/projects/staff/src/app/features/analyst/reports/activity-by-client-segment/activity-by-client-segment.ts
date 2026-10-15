@@ -18,6 +18,11 @@ import {
   SegmentComparisonResponse,
 } from '@staff/core/reports/reporting.service';
 
+/** Whether both ends of a date range are set and the start is on or before the end. */
+function isOrderedRange(start: Date | null, end: Date | null): boolean {
+  return !!start && !!end && start <= end;
+}
+
 /**
  * Activity By Client Segment report (LMKT-43).
  *
@@ -94,11 +99,16 @@ export class ActivityByClientSegment implements OnInit, OnDestroy {
     const { comparisonMode, comparisonStartDate, comparisonEndDate } = this.dateRangeForm.controls;
     // Hidden custom fields must not invalidate or override the automatic comparison.
     for (const control of [comparisonStartDate, comparisonEndDate]) {
-      if (comparisonMode.value === 'custom') control.enable();
-      else control.disable();
+      if (comparisonMode.value === 'custom') {
+        control.enable();
+      } else {
+        control.disable();
+      }
     }
     this.error.set(null);
-    if (comparisonMode.value === 'previous') this.loadReport();
+    if (comparisonMode.value === 'previous') {
+      this.loadReport();
+    }
   }
 
   protected onRetry(): void {
@@ -129,10 +139,8 @@ export class ActivityByClientSegment implements OnInit, OnDestroy {
     this.comparison.set(null);
     const values = this.dateRangeForm.getRawValue();
     const custom = values.comparisonMode === 'custom';
-    if (this.dateRangeForm.invalid || !values.startDate || !values.endDate ||
-        values.startDate > values.endDate ||
-        (custom && (!values.comparisonStartDate || !values.comparisonEndDate ||
-         values.comparisonStartDate > values.comparisonEndDate))) {
+    const comparisonValid = !custom || isOrderedRange(values.comparisonStartDate, values.comparisonEndDate);
+    if (this.dateRangeForm.invalid || !isOrderedRange(values.startDate, values.endDate) || !comparisonValid) {
       this.isLoading.set(false);
       this.error.set(custom
         ? 'Invalid date range. Enter both comparison dates with the start on or before the end.'

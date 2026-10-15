@@ -19,8 +19,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.time.*;
-import java.util.*;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /** Opt-in fixture writer, outside all application source trees. No live quote or event publication. */
 @Configuration
@@ -35,6 +43,11 @@ public class HistoricalSegmentSeed {
     private static final int[] PRICES = {210, 420, 130, 190, 230, 65};
     private static final int[][] ACTIVE = {{15, 16, 17, 18}, {7, 8, 7, 8}, {3, 3, 4, 4}};
     private static final int[][] PAIRS = {{2, 2, 3, 3}, {6, 7, 6, 7}, {3, 3, 4, 4}};
+    // Per group: demo client numbers start after GROUP_OFFSET, and trade sizes grow by QUANTITY_STEP per member.
+    private static final int[] GROUP_OFFSET = {0, 18, 26};
+    private static final int[] BASE_QUANTITY = {3, 15, 120};
+    private static final int[] QUANTITY_STEP = {2, 2, 12};
+    private static final Set<LocalDate> HOLIDAYS = Set.of(LocalDate.of(2026, 6, 19), LocalDate.of(2026, 7, 3), LocalDate.of(2026, 9, 7));
 
     static class SeedClock extends Clock {
         Instant now = Instant.parse("2026-06-01T14:00:00Z");
@@ -88,40 +101,48 @@ public class HistoricalSegmentSeed {
     private void populate(JdbcTemplate jdbc, AuditRecorder audit, SeedClock clock) {
         int total = 0;
         for (int month = 0; month < 4; month++) {
-            LocalDate first = LocalDate.of(2026, month + 6, 1);
-            List<LocalDate> days = first.datesUntil(first.plusMonths(1))
-                    .filter(d -> d.getDayOfWeek().getValue() <= 5)
-                    .filter(d -> !Set.of(LocalDate.of(2026, 6, 19), LocalDate.of(2026, 7, 3), LocalDate.of(2026, 9, 7)).contains(d))
-                    .toList();
+            List<LocalDate> days = tradingDays(LocalDate.of(2026, month + 6, 1));
             for (int group = 0; group < 3; group++) {
-                int offset = group == 0 ? 0 : group == 1 ? 18 : 26;
                 for (int member = 1; member <= ACTIVE[group][month]; member++) {
-                    int person = offset + member;
-                    var account = jdbc.queryForMap("SELECT a.account_id, c.client_id FROM accounts a JOIN clients c USING(client_id) WHERE c.username = ?",
-                            "demo_history_" + String.format("%02d", person));
-                    int accountId = ((Number) account.get("account_id")).intValue();
-                    int clientId = ((Number) account.get("client_id")).intValue();
-                    int count = PAIRS[group][month] + member % 2;
-                    for (int pair = 0; pair < count; pair++) {
-                        int index = (person + pair + month) % SYMBOLS.length;
-                        int instrument = jdbc.queryForObject("SELECT instrument_id FROM instruments WHERE ticker = ? AND tradable", Integer.class, SYMBOLS[index]);
-                        int base = group == 0 ? 3 : group == 1 ? 15 : 120;
-                        BigDecimal quantity = BigDecimal.valueOf(base + member * (group == 2 ? 12 : 2) + pair % 3);
-                        BigDecimal buyPrice = BigDecimal.valueOf(PRICES[index])
-                                .multiply(BigDecimal.valueOf(1000 + month * 12 + (member % 5) * 3 + pair * 2, 3)).setScale(2, RoundingMode.HALF_UP);
-                        BigDecimal sellPrice = buyPrice.multiply(BigDecimal.valueOf(1000 + ((person + pair) % 7 - 3) * 4, 3))
-                                .setScale(2, RoundingMode.HALF_UP);
-                        // Each position closes before the next opens: no hidden short positions or invented opening holdings.
-                        LocalDate day = days.get(pair * days.size() / count);
-                        Instant time = day.atTime(14 + person % 3, (person * 7) % 60).toInstant(ZoneOffset.UTC);
-                        trade(jdbc, audit, clock, accountId, clientId, instrument, "BUY", quantity, buyPrice, time);
-                        trade(jdbc, audit, clock, accountId, clientId, instrument, "SELL", quantity, sellPrice, time.plusSeconds(1800));
-                        total += 2;
-                    }
+                    total += populateMember(jdbc, audit, clock, days, month, group, member);
                 }
             }
         }
         System.out.println("Created " + total + " synthetic filled orders across June-September 2026.");
+    }
+
+    /** Weekdays of the month starting on {@code first}, without its market holidays. */
+    private static List<LocalDate> tradingDays(LocalDate first) {
+        return first.datesUntil(first.plusMonths(1))
+                .filter(d -> d.getDayOfWeek().getValue() <= 5)
+                .filter(d -> !HOLIDAYS.contains(d))
+                .toList();
+    }
+
+    /** Writes one demo client's round trips for one month and returns the number of orders created. */
+    private int populateMember(JdbcTemplate jdbc, AuditRecorder audit, SeedClock clock, List<LocalDate> days,
+                               int month, int group, int member) {
+        int person = GROUP_OFFSET[group] + member;
+        var account = jdbc.queryForMap("SELECT a.account_id, c.client_id FROM accounts a JOIN clients c USING(client_id) WHERE c.username = ?",
+                "demo_history_" + String.format("%02d", person));
+        int accountId = ((Number) account.get("account_id")).intValue();
+        int clientId = ((Number) account.get("client_id")).intValue();
+        int count = PAIRS[group][month] + member % 2;
+        for (int pair = 0; pair < count; pair++) {
+            int index = (person + pair + month) % SYMBOLS.length;
+            int instrument = jdbc.queryForObject("SELECT instrument_id FROM instruments WHERE ticker = ? AND tradable", Integer.class, SYMBOLS[index]);
+            BigDecimal quantity = BigDecimal.valueOf(BASE_QUANTITY[group] + member * QUANTITY_STEP[group] + pair % 3);
+            BigDecimal buyPrice = BigDecimal.valueOf(PRICES[index])
+                    .multiply(BigDecimal.valueOf(1000 + month * 12 + (member % 5) * 3 + pair * 2, 3)).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal sellPrice = buyPrice.multiply(BigDecimal.valueOf(1000 + ((person + pair) % 7 - 3) * 4, 3))
+                    .setScale(2, RoundingMode.HALF_UP);
+            // Each position closes before the next opens: no hidden short positions or invented opening holdings.
+            LocalDate day = days.get(pair * days.size() / count);
+            Instant time = day.atTime(14 + person % 3, (person * 7) % 60).toInstant(ZoneOffset.UTC);
+            trade(jdbc, audit, clock, accountId, clientId, instrument, "BUY", quantity, buyPrice, time);
+            trade(jdbc, audit, clock, accountId, clientId, instrument, "SELL", quantity, sellPrice, time.plusSeconds(1800));
+        }
+        return 2 * count;
     }
 
     private void trade(JdbcTemplate jdbc, AuditRecorder audit, SeedClock clock, int account, int client,

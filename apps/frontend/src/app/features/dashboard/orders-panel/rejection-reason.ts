@@ -11,6 +11,8 @@ const REJECTION_REASON_COPY: Record<string, string> = {
 };
 
 export function rejectionReasonLabel(reason: string | null | undefined): string | null {
-  if (!reason) return null;
+  if (!reason) {
+    return null;
+  }
   return REJECTION_REASON_COPY[reason] ?? `Order rejected (${reason}).`;
 }

@@ -20,7 +20,7 @@
     -->
     <artifactId>market-client</artifactId>
     <name>LeMarketJames Market Client</name>
-    <description>MarketDataService contract, quote/instrument model, and a shared HTTP client implementation</description>
+    <description>MarketDataService contract, quote/instrument model, and a shared HTTP client</description>
 
     <dependencies>
         <dependency>

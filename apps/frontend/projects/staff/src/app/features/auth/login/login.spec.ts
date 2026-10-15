@@ -7,7 +7,15 @@ import { Auth } from '../../../core/auth/auth';
 import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
 
 describe('Staff login', () => {
-  for (const status of [0, 500, 502, 401]) {
+  const failureMessages: Record<number, string> = {
+    0: 'Staff login is unavailable.',
+    500: 'Staff login is unavailable.',
+    502: 'Staff login is unavailable.',
+    401: 'Invalid email or password.',
+    // A refusal that carries no message of its own falls back to the generic text.
+    400: 'Unable to log in. Please try again.',
+  };
+  for (const status of [0, 500, 502, 401, 400]) {
     it('explains login failure for HTTP ' + status, async () => {
       await TestBed.configureTestingModule({
         imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -25,9 +33,7 @@ describe('Staff login', () => {
       else request.flush('', { status, statusText: 'Login failed' });
       await submitted;
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.alert').textContent).toContain(
-        status === 401 ? 'Invalid email or password.' : 'Staff login is unavailable.',
-      );
+      expect(fixture.nativeElement.querySelector('.alert').textContent).toContain(failureMessages[status]);
       expect(fixture.nativeElement.querySelector('.alert b').textContent).toBe('Login failed');
       http.verify();
     });
