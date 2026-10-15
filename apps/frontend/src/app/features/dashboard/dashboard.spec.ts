@@ -45,7 +45,7 @@ describe('Dashboard', () => {
   let requestedHistoryRequests: Array<{ page: number; size: number; filter: unknown }>;
   let liveOrders: Subject<OrdersStreamSnapshot>;
 
-  async function setup() {
+  async function setup(accountId: number | null = 7) {
     requestedHistoryRequests = [];
     liveOrders = new Subject<OrdersStreamSnapshot>();
     await TestBed.configureTestingModule({
@@ -54,7 +54,7 @@ describe('Dashboard', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7), logout: async () => {} } },
+        { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(accountId), logout: async () => {} } },
         { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings }), error: signal(null) } },
         {
           provide: OrderService,
@@ -107,6 +107,16 @@ describe('Dashboard', () => {
 
     expect(requestedHistoryRequests.length).toBeGreaterThan(before); // SSE status events now refresh both orders and history.
     expect(text()).toContain('Filled');
+  });
+
+  it('requests no orders, history or live updates for a login without a trading account', async () => {
+    allOrdersResult = of([]);
+    historyPageResult = of([]);
+    await setup(null);
+
+    expect(text()).toContain('No trading account is linked to this login.');
+    expect(requestedHistoryRequests).toEqual([]);
+    expect(liveOrders.observed).toBe(false);
   });
 
   it('queues an orders refresh when a live event arrives during an in-flight orders request', async () => {

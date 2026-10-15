@@ -290,6 +290,21 @@ describe('OrdersPanel date filtering', () => {
     expect(info).not.toContain(' of ');
   });
 
+  it('ignores a period other than day, month or year', () => {
+    const changes: string[] = [];
+    fixture.componentInstance.dateChange.subscribe(value => changes.push(value));
+    fixture.componentInstance.setPeriod('week');
+    expect(changes).toEqual([]);
+  });
+
+  it('requests no page before the first in server pagination', () => {
+    const pageChanges: number[] = [];
+    fixture.componentRef.setInput('serverPagination', true);
+    fixture.componentInstance.pageChange.subscribe(page => pageChanges.push(page));
+    fixture.componentInstance.goToPage(0);
+    expect(pageChanges).toEqual([]);
+  });
+
   it('disables next in server pagination when hasNextPage is false', () => {
     fixture.componentRef.setInput('serverPagination', true);
     fixture.componentRef.setInput('currentPage', 2);
