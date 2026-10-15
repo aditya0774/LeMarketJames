@@ -9,6 +9,7 @@ COPY . .
 RUN npx ng build staff --configuration production
 
 FROM nginx:1.27-alpine
+LABEL maintainer="LeMarketJames team"
 
 COPY --from=build /app/dist/staff/browser /usr/share/nginx/html
 COPY projects/staff/nginx.conf /etc/nginx/conf.d/default.conf

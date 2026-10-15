@@ -72,21 +72,26 @@ export class Login {
         this.showAccountInactive();
         return;
       }
-      const serverMessage =
-        error instanceof HttpErrorResponse &&
-        typeof error.error === 'object' &&
-        typeof error.error?.message === 'string'
-          ? error.error.message
-          : null;
-      // A proxy or service outage must not be presented as rejected credentials.
-      this.errorMessage.set(error instanceof HttpErrorResponse && (error.status === 0 || error.status >= 500)
-        ? 'Staff login is unavailable. Please try again when the staff service is running.'
-        : error instanceof HttpErrorResponse && error.status === 401
-          ? 'Invalid email or password.'
-          : serverMessage ?? 'Unable to log in. Please try again.');
+      this.errorMessage.set(this.loginErrorMessage(error));
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  private loginErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      // A proxy or service outage must not be presented as rejected credentials.
+      if (error.status === 0 || error.status >= 500) {
+        return 'Staff login is unavailable. Please try again when the staff service is running.';
+      }
+      if (error.status === 401) {
+        return 'Invalid email or password.';
+      }
+      if (typeof error.error === 'object' && typeof error.error?.message === 'string') {
+        return error.error.message;
+      }
+    }
+    return 'Unable to log in. Please try again.';
   }
 
   private showAccountInactive(): void {

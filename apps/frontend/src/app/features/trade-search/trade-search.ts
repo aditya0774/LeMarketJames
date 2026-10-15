@@ -70,7 +70,9 @@ export class TradeSearch implements OnDestroy {
   }
 
   private validDate(value: string): boolean {
-    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) || value.startsWith('0000')) return false;
+    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) || value.startsWith('0000')) {
+      return false;
+    }
     const date = new Date(`${value}T00:00:00Z`);
     return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }

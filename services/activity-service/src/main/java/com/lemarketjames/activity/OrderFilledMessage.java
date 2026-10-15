@@ -2,6 +2,8 @@ package com.lemarketjames.activity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What this service reads from an {@code OrderFilled} record (contract C6). It is this service's
@@ -20,7 +22,6 @@ public record OrderFilledMessage(Integer orderId, Integer instrumentId, String s
 
     /** @return whether every field a recorded fill needs is present */
     public boolean isComplete() {
-        return orderId != null && instrumentId != null && side != null && quantity != null && price != null
-            && filledAt != null;
+        return Stream.of(orderId, instrumentId, side, quantity, price, filledAt).allMatch(Objects::nonNull);
     }
 }

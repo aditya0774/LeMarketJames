@@ -72,10 +72,18 @@ export class ReportingService {
   getSegmentComparison(startDate?: string, endDate?: string,
       comparisonStartDate?: string, comparisonEndDate?: string): Observable<SegmentComparisonResponse> {
     const params: Record<string, string> = {};
-    if (startDate) params['startDate'] = startDate;
-    if (endDate) params['endDate'] = endDate;
-    if (comparisonStartDate) params['comparisonStartDate'] = comparisonStartDate;
-    if (comparisonEndDate) params['comparisonEndDate'] = comparisonEndDate;
+    if (startDate) {
+      params['startDate'] = startDate;
+    }
+    if (endDate) {
+      params['endDate'] = endDate;
+    }
+    if (comparisonStartDate) {
+      params['comparisonStartDate'] = comparisonStartDate;
+    }
+    if (comparisonEndDate) {
+      params['comparisonEndDate'] = comparisonEndDate;
+    }
     return this.http.get<SegmentComparisonResponse>('/api/v1/reports/activity/comparison', { params });
   }
 
@@ -88,8 +96,12 @@ export class ReportingService {
    */
   getTradesByStock(startDate?: string, endDate?: string): Observable<TradesReportResponse> {
     let params: any = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
 
     return this.http.get<TradesReportResponse>('/api/v1/reports/trades-by-stock', { params });
   }
@@ -103,8 +115,12 @@ export class ReportingService {
    */
   getActivityByClientSegment(startDate?: string, endDate?: string): Observable<SegmentActivityReportResponse> {
     let params: any = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
 
     return this.http.get<SegmentActivityReportResponse>('/api/v1/reports/activity', { params });
   }

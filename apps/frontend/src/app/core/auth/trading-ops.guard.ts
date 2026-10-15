@@ -6,6 +6,8 @@ import { Auth } from './auth';
 export const tradingOpsGuard: CanActivateFn = () => {
   const auth = inject(Auth);
   const router = inject(Router);
-  if (!auth.currentUser()) return router.createUrlTree(['/login']);
+  if (!auth.currentUser()) {
+    return router.createUrlTree(['/login']);
+  }
   return auth.hasRole('TRADING_OPS') || router.createUrlTree(['/access-denied']);
 };

@@ -7,6 +7,7 @@ COPY . .
 RUN npx ng build --configuration production
 
 FROM nginx:1.27-alpine
+LABEL maintainer="LeMarketJames team"
 
 COPY --from=build /app/dist/lemarket-ui/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
