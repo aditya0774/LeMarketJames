@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,5 +124,23 @@ class ReportCalendarTest {
         assertThrows(IllegalArgumentException.class, () -> newYork.between(day, day.minusDays(1)));
         assertThrows(IllegalArgumentException.class, () -> newYork.between(null, day));
         assertThrows(IllegalArgumentException.class, () -> newYork.between(day, null));
+    }
+
+    /** Overnight run times (LMKT-45): a local time of day becomes the right instant in summer and winter. */
+    @ParameterizedTest
+    @CsvSource({
+            "2026-10-14, 02:00, 2026-10-14T06:00:00Z",  // EDT, UTC-4
+            "2026-12-01, 02:00, 2026-12-01T07:00:00Z",  // EST, UTC-5
+            "2026-11-01, 07:00, 2026-11-01T12:00:00Z",  // the day clocks go back: 07:00 is already EST
+            "2026-03-08, 02:30, 2026-03-08T07:30:00Z"   // 02:30 doesn't exist that day: just after the gap
+    })
+    void aTimeOfDayIsTheInstantItHappensInTheReportsZone(LocalDate day, LocalTime time, Instant expected) {
+        assertEquals(expected, newYork.at(day, time));
+    }
+
+    @Test
+    void anInstantFallsOnItsReportsZoneDay() {
+        // 01:00 UTC on the 15th is still the evening of the 14th in New York.
+        assertEquals(LocalDate.parse("2026-10-14"), newYork.reportDay(Instant.parse("2026-10-15T01:00:00Z")));
     }
 }
