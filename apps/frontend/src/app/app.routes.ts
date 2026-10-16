@@ -15,15 +15,15 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   // Keep existing bookmarks on the supported, authenticated trading flow.
   { path: 'orders', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'holdings', component: HoldingsListComponent, canActivate: [clientGuard] },
-  { path: 'holdings/:symbol', component: ByStockDetailComponent, canActivate: [clientGuard] },
-  // Signed-in pages share the sidebar layout from the LeUI mockup.
+  // Signed-in pages share the navigation rail layout.
   {
     path: '',
     component: AppShell,
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: Dashboard, canActivate: [clientGuard] },
+      { path: 'holdings', component: HoldingsListComponent, canActivate: [clientGuard] },
+      { path: 'holdings/:symbol', component: ByStockDetailComponent, canActivate: [clientGuard] },
       { path: 'access-denied', loadComponent: () => import('./features/trade-search/access-denied').then(m => m.AccessDenied) },
     ],
   },

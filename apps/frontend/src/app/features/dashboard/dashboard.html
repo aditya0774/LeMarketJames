@@ -3,10 +3,6 @@
     <h1>Dashboard</h1>
     <div class="sub">Welcome back, {{ auth.currentUser() }} — here's where things stand.</div>
   </div>
-  <div class="header-actions">
-    <a routerLink="/holdings" type="button" class="btn btn-outline">Holdings</a>
-    <button type="button" class="btn btn-outline" (click)="logout()">Log out</button>
-  </div>
 </header>
 
 @if (sessionExpired()) {
@@ -20,14 +16,16 @@
 
 <app-stat-strip [totals]="totals()" [openOrders]="openOrders()" [buyingPower]="balanceData()?.buyingPower ?? null" />
 
-<app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
+<div class="dash-grid">
+  <app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
 
-<app-portfolio-panel
-  [holdings]="holdings()"
-  [loading]="holdingsLoading()"
-  [error]="holdingsError()"
-  (selectSymbol)="openTrade($event)"
-/>
+  <app-portfolio-panel
+    [holdings]="holdings()"
+    [loading]="holdingsLoading()"
+    [error]="holdingsError()"
+    (selectSymbol)="openTrade($event)"
+  />
+</div>
 
 <app-orders-panel
   [orders]="historyOrders()"

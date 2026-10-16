@@ -30,11 +30,13 @@ export function matchesFilter(status: OrderStatus, filter: OrderFilter): boolean
   }
 }
 
-/** Maps a status onto the mockup's pill colours: green filled, red rejected, gold in flight. */
+/**
+ * One badge style per status (the glyph for each is in styles/base.css): green filled, red
+ * rejected, gold for the two "on its way" states, and quieter outlines for just-submitted
+ * and delayed (waiting for the market to open).
+ */
 export function statusPillClass(status: OrderStatus): string {
-  if (status === 'FILLED') return 'pill-filled';
-  if (status === 'REJECTED') return 'pill-rejected';
-  return 'pill-pending';
+  return `pill-${status.toLowerCase()}`;
 }
 
 /** "SUBMITTED" → "Submitted". */

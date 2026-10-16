@@ -14,14 +14,14 @@ import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
   template: `
     <div class="stat-strip">
       <div class="stat-card">
-        <div class="lbl">Buying power</div>
-        <div class="val tabular">{{ buyingPower() != null ? (buyingPower() | currency: 'USD') : '—' }}</div>
-        <div class="delta">{{ buyingPower() != null ? 'Available now' : 'Balance unavailable' }}</div>
-      </div>
-      <div class="stat-card">
         <div class="lbl">Portfolio value</div>
         <div class="val tabular">{{ totals().value | currency: 'USD' }}</div>
         <div class="delta">Market value of holdings</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Buying power</div>
+        <div class="val tabular">{{ buyingPower() != null ? (buyingPower() | currency: 'USD') : '—' }}</div>
+        <div class="delta">{{ buyingPower() != null ? 'Available now' : 'Balance unavailable' }}</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Total P/L</div>

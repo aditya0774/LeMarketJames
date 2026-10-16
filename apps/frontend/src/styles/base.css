@@ -1,0 +1,735 @@
+/* Rules shared by both apps: reset, focus, auth shell, buttons, fields, alerts, panels, tables,
+   badges, chips, pagination and the loading/empty utilities. App-specific shells live in each
+   app's own styles.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--font-base);
+  line-height: 1.45;
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+/* One visible focus treatment for every control; mouse clicks don't trigger it. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Auth shell ---------- */
+
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 70px;
+  position: relative;
+  background-color: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  color-scheme: dark;
+}
+
+.back-link {
+  position: absolute;
+  top: 26px;
+  left: 34px;
+  font-size: var(--font-xs);
+  color: var(--text-faint);
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.back-link:hover {
+  color: var(--gold);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+
+.auth-brand img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.auth-brand .wordmark {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: var(--font-xl);
+  letter-spacing: 0.3px;
+}
+
+.wordmark .le-accent {
+  color: var(--gold);
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 38px;
+}
+
+.auth-panel.wide {
+  max-width: 560px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.auth-card.wide {
+  max-width: 480px;
+}
+
+.auth-card h2 {
+  font-size: 28px;
+  margin: 0 0 6px;
+}
+
+.auth-card .sub {
+  font-size: var(--font-base);
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+
+.form-section-title {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--text);
+  margin: 26px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.form-section-title.first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.switch-line {
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-dim);
+  margin-top: 22px;
+}
+
+.switch-line a,
+.link-gold {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.switch-line a:hover,
+.link-gold:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px var(--space-md);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--font-base);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--on-accent);
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: var(--gold-soft);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--text-faint);
+  background: var(--hover-row);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover-row);
+}
+
+/* Square icon-only button; always give it an aria-label and a title (the tooltip). */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- Fields ---------- */
+
+.field {
+  margin-bottom: var(--space-md);
+}
+
+.field label {
+  display: block;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+/* The :not() guard keeps the terms checkbox from being stretched full width. */
+.field input:not([type='checkbox']):not([type='radio']),
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--font-base);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field input::placeholder {
+  color: var(--text-faint);
+}
+
+.field input:not([type='checkbox']):not([type='radio']):hover,
+.field select:hover {
+  border-color: var(--text-faint);
+}
+
+.field input:not([type='checkbox']):not([type='radio']):focus,
+.field select:focus {
+  border-color: var(--gold);
+  box-shadow: none;
+}
+
+.field input[aria-invalid='true'],
+.field input.invalid {
+  border-color: var(--down);
+}
+
+.field-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.field-row .field {
+  flex: 1;
+}
+
+.hint {
+  font-size: var(--font-2xs);
+  color: var(--text-faint);
+  margin-top: 5px;
+}
+
+.opt-tag {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.field-error {
+  font-size: var(--font-xs);
+  color: #ffc5c5;
+  margin-top: 5px;
+}
+
+/* ---------- Native control fixes ---------- */
+
+.auth-wrap option,
+.app-shell option {
+  background: var(--ink-2);
+  color: var(--text);
+}
+
+.auth-wrap input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.auth-wrap input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.auth-wrap input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.auth-wrap input[type='number']::-webkit-outer-spin-button,
+.auth-wrap input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---------- Alerts ---------- */
+
+.alert {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: var(--font-sm);
+  margin-bottom: 18px;
+  border: 1px solid;
+  border-left-width: 3px;
+}
+
+.alert b {
+  display: block;
+  font-size: var(--font-sm);
+  margin-bottom: 2px;
+}
+
+.alert.err {
+  background: rgba(255, 92, 92, 0.07);
+  border-color: rgba(255, 92, 92, 0.45);
+  color: #ffd2d2;
+}
+
+.alert.ok {
+  background: rgba(59, 217, 138, 0.07);
+  border-color: rgba(59, 217, 138, 0.45);
+  color: #c4f5dc;
+}
+
+.alert a {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ---------- Panels & tables ---------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-head h3 {
+  font-size: var(--font-lg);
+}
+
+.panel-head .sub-s {
+  font-size: var(--font-xs);
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.panel-scroll {
+  overflow-x: auto;
+}
+
+.panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel thead th {
+  text-align: left;
+  padding: 9px var(--space-lg);
+  color: var(--text-faint);
+  font-weight: 600;
+  font-size: var(--font-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+}
+
+.panel tbody td {
+  padding: 11px var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.panel tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.panel tbody tr:hover {
+  background: var(--hover-row);
+}
+
+.panel tbody td.up {
+  color: var(--up);
+}
+
+.panel tbody td.down {
+  color: var(--down);
+}
+
+.panel tbody td.empty-row {
+  padding: 26px var(--space-lg);
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-faint);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sym {
+  font-weight: 700;
+}
+
+.sym-sub {
+  display: block;
+  font-size: var(--font-2xs);
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+/* ---------- Badges ----------
+   Every badge pairs its colour with a leading glyph (set in the template), so state never
+   depends on colour alone. Statuses: submitted, accepted, pending, delayed, filled, rejected. */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-2xs);
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pill-buy,
+.pill-filled {
+  background: rgba(59, 217, 138, 0.1);
+  border-color: rgba(59, 217, 138, 0.35);
+  color: var(--up);
+}
+
+.pill-sell,
+.pill-rejected {
+  background: rgba(255, 92, 92, 0.1);
+  border-color: rgba(255, 92, 92, 0.35);
+  color: var(--down);
+}
+
+.pill-pending,
+.pill-accepted {
+  background: rgba(253, 185, 39, 0.1);
+  border-color: rgba(253, 185, 39, 0.35);
+  color: var(--gold);
+}
+
+.pill-submitted {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.pill-delayed {
+  background: rgba(183, 168, 209, 0.1);
+  border-color: rgba(183, 168, 209, 0.35);
+  color: var(--text-dim);
+  border-style: dashed;
+}
+
+/* Gain/loss figure: the arrow glyph comes from the template, the sign from the number. */
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta.up {
+  color: var(--up);
+}
+
+.delta.down {
+  color: var(--down);
+}
+
+/* ---------- Chips & pagination ---------- */
+
+.filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+.chip.active {
+  background: var(--gold);
+  color: var(--on-accent);
+  border-color: var(--gold);
+}
+
+.panel-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px var(--space-lg);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pg-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pg-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--font-sm);
+  cursor: pointer;
+}
+
+.pg-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pg-btn.active {
+  background: var(--gold);
+  color: var(--on-accent);
+  border-color: var(--gold);
+  font-weight: 700;
+}
+
+.pg-info {
+  font-size: var(--font-xs);
+  color: var(--text-faint);
+}
+
+/* ---------- Loading and empty states ---------- */
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ink-3) 25%, var(--purple-deep) 50%, var(--ink-3) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 36px var(--space-lg);
+  text-align: center;
+  color: var(--text-faint);
+  font-size: var(--font-sm);
+}
+
+.empty-state strong {
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: var(--font-lg);
+  font-weight: 700;
+}
+
+.empty-state .btn {
+  width: auto;
+  margin-top: 8px;
+}
+
+/* Badge glyphs live in CSS so the badge text stays the plain status word. The empty alt text
+   after the slash keeps screen readers from announcing the symbol twice. */
+.pill-filled::before {
+  content: '✓' / '';
+}
+
+.pill-rejected::before {
+  content: '✕' / '';
+}
+
+.pill-pending::before {
+  content: '◔' / '';
+}
+
+.pill-accepted::before {
+  content: '●' / '';
+}
+
+.pill-submitted::before {
+  content: '○' / '';
+}
+
+.pill-delayed::before {
+  content: '⏸' / '';
+}
+
+.pill-buy::before {
+  content: '▲' / '';
+}
+
+.pill-sell::before {
+  content: '▼' / '';
+}

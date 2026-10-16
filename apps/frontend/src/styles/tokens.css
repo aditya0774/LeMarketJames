@@ -1,0 +1,65 @@
+/* LeMarket design tokens, shared by the trading app and the staff app.
+   Colour names are unchanged (purple and gold identity); the semantic aliases below are what
+   new component CSS should use, so a palette change stays a one-file edit. */
+
+:root {
+  /* Palette */
+  --ink: #0f0a1a;
+  --ink-2: #170e28;
+  --ink-3: #20143a;
+  --purple-deep: #2b1145;
+  --purple: #4a1e73;
+  --purple-mid: #5c2a8c;
+  --purple-line: #432466;
+  --gold: #fdb927;
+  --gold-soft: #ffdd73;
+  --gold-dim: #8a6a1e;
+  --up: #3bd98a;
+  --down: #ff5c5c;
+  --text: #efe9f7;
+  --text-dim: #b7a8d1;
+  /* Lifted from #7c6d98 (about 3.9:1 on --ink-2) to clear WCAG AA (about 6:1) for small text. */
+  --text-faint: #9b8db8;
+
+  /* Semantic aliases */
+  --surface: var(--ink-2);
+  --surface-raised: var(--ink-3);
+  --border: var(--purple-line);
+  --border-subtle: rgba(67, 36, 102, 0.55);
+  --accent: var(--gold);
+  --on-accent: #241705;
+  --hover-row: rgba(255, 255, 255, 0.035);
+  --focus-ring: 0 0 0 2px var(--ink), 0 0 0 4px var(--gold);
+
+  /* Shape: flat surfaces, hairline borders. Shadow is reserved for things that float. */
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  /* Spacing */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* Type scale */
+  --font-3xs: 10px;
+  --font-2xs: 11px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-base: 14px;
+  --font-md: 17px;
+  --font-lg: 18px;
+  --font-xl: 22px;
+  --font-2xl: 26px;
+  --font-3xl: 30px;
+  --font-display: 38px;
+
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-head: 'Big Shoulders Display', 'Inter', sans-serif;
+}

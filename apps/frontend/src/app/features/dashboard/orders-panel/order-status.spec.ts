@@ -18,7 +18,10 @@ describe('order-status', () => {
   it('picks pill colours and labels', () => {
     expect(statusPillClass('FILLED')).toBe('pill-filled');
     expect(statusPillClass('REJECTED')).toBe('pill-rejected');
-    expect(statusPillClass('SUBMITTED')).toBe('pill-pending');
+    expect(statusPillClass('SUBMITTED')).toBe('pill-submitted');
+    expect(statusPillClass('ACCEPTED')).toBe('pill-accepted');
+    expect(statusPillClass('PENDING')).toBe('pill-pending');
+    expect(statusPillClass('DELAYED')).toBe('pill-delayed');
     expect(statusLabel('SUBMITTED')).toBe('Submitted');
   });
 });
