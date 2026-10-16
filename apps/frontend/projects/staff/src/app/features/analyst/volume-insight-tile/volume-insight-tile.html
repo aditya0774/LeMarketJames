@@ -24,7 +24,8 @@
       } @else if (card.error) {
         <p class="status error" role="alert">Could not load this figure. Check the dates, or use Refresh to retry.</p>
       } @else if (card.data; as d) {
-        <p class="volume"><span class="mono">{{ d.current.shareVolume | number }}</span> <span class="unit">shares</span></p>
+        <!-- The space sits inside the unit text: Angular drops whitespace between tags. -->
+        <p class="volume"><span class="mono">{{ d.current.shareVolume | number }}</span><span class="unit"> shares</span></p>
 
         <p class="change mono {{ direction(d.change.shareVolume) }}">
           <span aria-hidden="true">{{ icon(d.change.shareVolume) }}</span>

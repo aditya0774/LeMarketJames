@@ -1031,10 +1031,19 @@ input[type='number']::-webkit-inner-spin-button {
   outline-offset: 2px;
 }
 
+/* A real radio input, invisible and covering its label, so clicks and keyboard both reach it. */
+.seg > label {
+  position: relative;
+}
+
 .seg > label input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 /* The larger tray used for page tabs (dashboard sections, analyst reports). */

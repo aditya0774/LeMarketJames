@@ -38,7 +38,7 @@
 }
 
 .detail-title .name {
-  margin-left: 6px;
+  white-space: pre;
   font-weight: 400;
   color: var(--faint);
 }

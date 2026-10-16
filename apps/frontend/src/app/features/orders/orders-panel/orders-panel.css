@@ -80,7 +80,7 @@
 }
 
 .sym-name {
-  margin-left: 6px;
+  white-space: pre;
   font-size: var(--font-sm);
   color: var(--faint);
 }

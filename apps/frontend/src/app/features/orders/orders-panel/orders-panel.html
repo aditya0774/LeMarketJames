@@ -66,7 +66,7 @@
           @for (row of pageRows(); track row.order.orderId) {
             <tr [attr.data-order-id]="row.order.orderId">
               <td class="mono when">{{ row.submittedAt | date: 'MMM d, y, HH:mm:ss z' }}</td>
-              <td><span class="sym">{{ row.symbol }}</span> <span class="sym-name">{{ row.instrumentName }}</span></td>
+              <td><span class="sym">{{ row.symbol }}</span><span class="sym-name"> {{ row.instrumentName }}</span></td>
               <td>
                 <span class="pill" [class.pill-buy]="row.order.orderType === 'BUY'" [class.pill-sell]="row.order.orderType === 'SELL'">
                   {{ row.order.orderType }}

@@ -288,7 +288,7 @@ No matches returns `[]`; invalid input gets `400`, missing authentication `401`,
 The staff UI shows each matching name with its ID and asks the operator to select a client,
 then uses the existing client-ID search with an optional date range.
 
-The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
+The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Selecting a result's order number shows that order's audit timeline from [`GET /api/v1/orders/{orderId}/timeline`](#order-timeline-trading_ops-only). Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
 trading gateway. The staff gateway forwards login/logout, session checks, trade search and reports; owning services enforce roles.
 Trading Operations land on their dashboard after login and reach it from a navigation link in the
 signed-in layout. Other signed-in roles are redirected to `/access-denied` ([C7](C7-roles.md#the-staff-app)). The screen labels dates and execution

@@ -58,7 +58,7 @@
 }
 
 .volume .unit {
-  margin-left: 6px;
+  white-space: pre;
 }
 
 .unit,
