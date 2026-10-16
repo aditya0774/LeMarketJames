@@ -1,10 +1,14 @@
 <div class="staff-shell">
+  <!-- Brand and "Courtside View" badge, then the signed-in role and the account menu. The role
+       is plain text, not a link: each role has one workspace and never sees the other's. -->
+  <header class="staff-header">
+    <staff-brand link="/" />
+    <div class="staff-header-end">
+      <span class="staff-role">{{ roleLabel() }}</span>
+      <staff-account-menu [name]="auth.currentUser() ?? ''" [detail]="roleLabel()" (loggedOut)="logout()" />
+    </div>
+  </header>
   <main class="staff-main">
-    <div class="staff-header">
-      <button class="logout-btn" (click)="logout()">Log out</button>
-    </div>
-    <div class="staff-content">
-      <router-outlet />
-    </div>
+    <router-outlet />
   </main>
 </div>

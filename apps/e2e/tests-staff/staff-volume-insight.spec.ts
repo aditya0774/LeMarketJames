@@ -2,7 +2,7 @@ import { expect, Page, Response, test } from '@playwright/test';
 import { Client } from 'pg';
 import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
-import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
 
 /**
  * LMKT-46: the volume insight tile on the Analyst dashboard, end to end (S38-INT). Everything
@@ -392,7 +392,7 @@ test.describe('LMKT-46 volume insight', () => {
       await expect(page).toHaveURL(/\/trade-search$/);
       await page.goto('/analyst');
       await expect(page).toHaveURL(/\/access-denied$/);
-      await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: ACCESS_DENIED_HEADING })).toBeVisible();
       await expect(page.locator(TILE)).toHaveCount(0);
 
       // Asking for the figures directly, with the Trading Ops session, is refused by the service too.

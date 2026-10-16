@@ -1,87 +1,99 @@
-<mat-card class="volume-tile">
-  <mat-card-content>
-    <div class="tile-header">
+<div class="volume-tile">
+  <div class="tile-header">
+    <div>
       <h2>Trading volume vs previous period</h2>
-      <button mat-button type="button" class="refresh" (click)="refresh()">
-        <mat-icon>refresh</mat-icon> Refresh
-      </button>
+      <p class="report-note">Shares traded across all clients.</p>
     </div>
+    <button type="button" class="btn btn-outline refresh" (click)="refresh()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" /></svg>
+      Refresh
+    </button>
+  </div>
 
-    <ng-template #result let-card>
-      <section class="section" [attr.data-period]="card.key">
+  <ng-template #result let-card>
+    <section class="card section" [attr.data-period]="card.key">
+      <div class="section-head">
         <h3>{{ card.label }}</h3>
-
-        @if (card.loading) {
-          <p class="status loading">Loading…</p>
-        } @else if (card.error) {
-          <p class="status error" role="alert">Could not load this figure. Check the dates, or use Refresh to retry.</p>
-        } @else if (card.data; as d) {
-          <p class="range">{{ d.current.startDate }} – {{ d.current.endDate }}</p>
-          <p class="volume">{{ d.current.shareVolume | number }} <span class="unit">shares</span></p>
-
-          <p class="change {{ direction(d.change.shareVolume) }}">
-            <mat-icon aria-hidden="true">{{ icon(d.change.shareVolume) }}</mat-icon>
-            <span class="change-text">
-              {{ d.change.shareVolume > 0 ? '+' : '' }}{{ d.change.shareVolume | number }}
-              @if (d.change.shareVolumePercent !== null) {
-                ({{ d.change.shareVolumePercent > 0 ? '+' : '' }}{{ d.change.shareVolumePercent | number: '1.2-2' }}%)
-              } @else {
-                (n/a, no previous trades)
-              }
-            </span>
-          </p>
-
-          <p class="previous">
-            Compared with {{ d.previous.startDate }} – {{ d.previous.endDate }}:
-            {{ d.previous.shareVolume | number }} shares
-          </p>
-          <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
+        @if (card.data; as d) {
+          <span class="mono range">{{ d.current.startDate }} – {{ d.current.endDate }}</span>
         }
-      </section>
-    </ng-template>
+      </div>
 
-    <div class="sections">
-      @for (card of presets(); track card.key) {
-        <ng-container *ngTemplateOutlet="result; context: { $implicit: card }" />
+      @if (card.loading) {
+        <p class="status loading">Loading…</p>
+      } @else if (card.error) {
+        <p class="status error" role="alert">Could not load this figure. Check the dates, or use Refresh to retry.</p>
+      } @else if (card.data; as d) {
+        <p class="volume"><span class="mono">{{ d.current.shareVolume | number }}</span> <span class="unit">shares</span></p>
+
+        <p class="change mono {{ direction(d.change.shareVolume) }}">
+          <span aria-hidden="true">{{ icon(d.change.shareVolume) }}</span>
+          <span class="change-text">
+            {{ d.change.shareVolume > 0 ? '+' : '' }}{{ d.change.shareVolume | number }}
+            @if (d.change.shareVolumePercent !== null) {
+              ({{ d.change.shareVolumePercent > 0 ? '+' : '' }}{{ d.change.shareVolumePercent | number: '1.2-2' }}%)
+            } @else {
+              (n/a, no previous trades)
+            }
+          </span>
+        </p>
+
+        <!-- This period against the one before, as two bars scaled to the larger of the two. -->
+        <div class="bars" aria-hidden="true">
+          <div><span>This</span><i><b class="this" [style.width.%]="share(d.current.shareVolume, d.previous.shareVolume)"></b></i></div>
+          <div><span>Before</span><i><b class="before" [style.width.%]="share(d.previous.shareVolume, d.current.shareVolume)"></b></i></div>
+        </div>
+
+        <p class="previous">
+          Compared with {{ d.previous.startDate }} – {{ d.previous.endDate }}:
+          <span class="mono">{{ d.previous.shareVolume | number }}</span> shares
+        </p>
+        <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
       }
-    </div>
+    </section>
+  </ng-template>
 
-    <form class="custom" [formGroup]="pick" (ngSubmit)="compare()">
-      <h3>Compare your own date ranges</h3>
-      <div class="pickers">
-        <mat-form-field appearance="outline">
-          <mat-label>Range from</mat-label>
-          <input matInput [matDatepicker]="curFrom" formControlName="currentFrom" />
-          <mat-datepicker-toggle matIconSuffix [for]="curFrom" />
-          <mat-datepicker #curFrom />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Range to</mat-label>
-          <input matInput [matDatepicker]="curTo" formControlName="currentTo" />
-          <mat-datepicker-toggle matIconSuffix [for]="curTo" />
-          <mat-datepicker #curTo />
-        </mat-form-field>
-        <span class="versus">vs</span>
-        <mat-form-field appearance="outline">
-          <mat-label>Compared from</mat-label>
-          <input matInput [matDatepicker]="prevFrom" formControlName="previousFrom" />
-          <mat-datepicker-toggle matIconSuffix [for]="prevFrom" />
-          <mat-datepicker #prevFrom />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Compared to</mat-label>
-          <input matInput [matDatepicker]="prevTo" formControlName="previousTo" />
-          <mat-datepicker-toggle matIconSuffix [for]="prevTo" />
-          <mat-datepicker #prevTo />
-        </mat-form-field>
-        <button mat-flat-button type="submit" class="compare">Compare</button>
-      </div>
-    </form>
-
-    @if (custom(); as c) {
-      <div class="sections custom-result">
-        <ng-container *ngTemplateOutlet="result; context: { $implicit: c }" />
-      </div>
+  <div class="sections">
+    @for (card of presets(); track card.key) {
+      <ng-container *ngTemplateOutlet="result; context: { $implicit: card }" />
     }
-  </mat-card-content>
-</mat-card>
+  </div>
+
+  <form class="card custom" [formGroup]="pick" (ngSubmit)="compare()">
+    <h3>Compare your own date ranges</h3>
+    <div class="pickers report-dates">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Range from</mat-label>
+        <input matInput [matDatepicker]="curFrom" formControlName="currentFrom" />
+        <mat-datepicker-toggle matIconSuffix [for]="curFrom" />
+        <mat-datepicker #curFrom />
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Range to</mat-label>
+        <input matInput [matDatepicker]="curTo" formControlName="currentTo" />
+        <mat-datepicker-toggle matIconSuffix [for]="curTo" />
+        <mat-datepicker #curTo />
+      </mat-form-field>
+      <span class="versus">vs</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Compared from</mat-label>
+        <input matInput [matDatepicker]="prevFrom" formControlName="previousFrom" />
+        <mat-datepicker-toggle matIconSuffix [for]="prevFrom" />
+        <mat-datepicker #prevFrom />
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Compared to</mat-label>
+        <input matInput [matDatepicker]="prevTo" formControlName="previousTo" />
+        <mat-datepicker-toggle matIconSuffix [for]="prevTo" />
+        <mat-datepicker #prevTo />
+      </mat-form-field>
+      <button type="submit" class="btn btn-primary compare">Compare</button>
+    </div>
+  </form>
+
+  @if (custom(); as c) {
+    <div class="sections custom-result">
+      <ng-container *ngTemplateOutlet="result; context: { $implicit: c }" />
+    </div>
+  }
+</div>

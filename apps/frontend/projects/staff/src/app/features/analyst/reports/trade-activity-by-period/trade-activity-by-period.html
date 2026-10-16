@@ -1,74 +1,80 @@
 <section class="trade-activity">
-  <h1>Trade activity by period</h1>
-  <p class="subtitle">Filled trades and their value, one row per period.</p>
-
-  <div class="controls">
-    <mat-button-toggle-group
-      aria-label="Period type"
-      [value]="periodType()"
-      (change)="selectPeriodType($event.value)"
-    >
+  <div class="report-bar">
+    <fieldset class="seg">
+      <legend class="sr-only">Period type</legend>
       @for (type of periodTypes; track type.value) {
-        <mat-button-toggle [value]="type.value" [disabled]="loading()">{{ type.label }}</mat-button-toggle>
+        <button type="button" [attr.aria-pressed]="periodType() === type.value" [disabled]="loading()" (click)="selectPeriodType(type.value)">
+          {{ type.label }}
+        </button>
       }
-    </mat-button-toggle-group>
+    </fieldset>
 
-    <form [formGroup]="range" class="dates" (ngSubmit)="applyRange()">
-      <mat-form-field appearance="outline">
+    <form [formGroup]="range" class="report-dates" (ngSubmit)="applyRange()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>From</mat-label>
         <input matInput [matDatepicker]="fromPicker" formControlName="from" />
         <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
         <mat-datepicker #fromPicker />
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>To</mat-label>
         <input matInput [matDatepicker]="toPicker" formControlName="to" />
         <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
         <mat-datepicker #toPicker />
       </mat-form-field>
-      <button mat-flat-button type="submit" [disabled]="loading()">Apply</button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading()">Apply</button>
     </form>
   </div>
 
   @if (error(); as message) {
-    <p class="error" role="alert">{{ message }}</p>
+    <div class="alert err" role="alert"><div>{{ message }}</div></div>
   }
 
   @if (loading()) {
-    <p class="status" role="status">Loading report…</p>
+    <output class="card loading">Loading report…</output>
   } @else if (rows().length > 0) {
-    <table mat-table [dataSource]="rows()" class="report-table">
-      <ng-container matColumnDef="period">
-        <th mat-header-cell *matHeaderCellDef>Period</th>
-        <td mat-cell *matCellDef="let row">{{ label(row.period) }}</td>
-        <td mat-footer-cell *matFooterCellDef>Total</td>
-      </ng-container>
-      <ng-container matColumnDef="tradeCount">
-        <th mat-header-cell *matHeaderCellDef class="num">Trades</th>
-        <td mat-cell *matCellDef="let row" class="num">{{ row.tradeCount | number: '1.0-0' }}</td>
-        <td mat-footer-cell *matFooterCellDef class="num">{{ totalTrades() | number: '1.0-0' }}</td>
-      </ng-container>
-      <ng-container matColumnDef="buyCount">
-        <th mat-header-cell *matHeaderCellDef class="num">Buys</th>
-        <td mat-cell *matCellDef="let row" class="num">{{ row.buyCount | number: '1.0-0' }}</td>
-        <td mat-footer-cell *matFooterCellDef></td>
-      </ng-container>
-      <ng-container matColumnDef="sellCount">
-        <th mat-header-cell *matHeaderCellDef class="num">Sells</th>
-        <td mat-cell *matCellDef="let row" class="num">{{ row.sellCount | number: '1.0-0' }}</td>
-        <td mat-footer-cell *matFooterCellDef></td>
-      </ng-container>
-      <ng-container matColumnDef="totalValue">
-        <th mat-header-cell *matHeaderCellDef class="num">Total value</th>
-        <td mat-cell *matCellDef="let row" class="num">{{ row.totalValue | currency: 'USD' }}</td>
-        <td mat-footer-cell *matFooterCellDef class="num">{{ totalValue() | currency: 'USD' }}</td>
-      </ng-container>
+    <div class="card table-card">
+      <table mat-table [dataSource]="rows()" class="t report-table" aria-label="Filled trades by period">
+        <ng-container matColumnDef="period">
+          <th mat-header-cell *matHeaderCellDef>Period</th>
+          <td mat-cell *matCellDef="let row">{{ label(row.period) }}</td>
+          <td mat-footer-cell *matFooterCellDef>Total</td>
+        </ng-container>
+        <ng-container matColumnDef="tradeCount">
+          <th mat-header-cell *matHeaderCellDef class="r">Trades</th>
+          <td mat-cell *matCellDef="let row" class="r mono">{{ row.tradeCount | number: '1.0-0' }}</td>
+          <td mat-footer-cell *matFooterCellDef class="r mono">{{ totalTrades() | number: '1.0-0' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="buyCount">
+          <th mat-header-cell *matHeaderCellDef class="r">Buys</th>
+          <td mat-cell *matCellDef="let row" class="r mono">{{ row.buyCount | number: '1.0-0' }}</td>
+          <td mat-footer-cell *matFooterCellDef></td>
+        </ng-container>
+        <ng-container matColumnDef="sellCount">
+          <th mat-header-cell *matHeaderCellDef class="r">Sells</th>
+          <td mat-cell *matCellDef="let row" class="r mono">{{ row.sellCount | number: '1.0-0' }}</td>
+          <td mat-footer-cell *matFooterCellDef></td>
+        </ng-container>
+        <ng-container matColumnDef="totalValue">
+          <th mat-header-cell *matHeaderCellDef class="r">Total value</th>
+          <td mat-cell *matCellDef="let row" class="r mono">{{ row.totalValue | currency: 'USD' }}</td>
+          <td mat-footer-cell *matFooterCellDef class="r mono">{{ totalValue() | currency: 'USD' }}</td>
+        </ng-container>
+        <!-- Each period's value as a bar, scaled to the biggest period in the range. -->
+        <ng-container matColumnDef="bar">
+          <th mat-header-cell *matHeaderCellDef class="bar-col"><span class="sr-only">Value bar</span></th>
+          <td mat-cell *matCellDef="let row" class="bar-col">
+            <span class="bar" aria-hidden="true" [style.width.%]="barWidth(row.totalValue)"></span>
+          </td>
+          <td mat-footer-cell *matFooterCellDef></td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columns"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns"></tr>
-      <tr mat-footer-row *matFooterRowDef="columns"></tr>
-    </table>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <tr mat-footer-row *matFooterRowDef="columns"></tr>
+      </table>
+    </div>
   } @else if (loaded() && !error()) {
-    <p class="status">No trades in this date range.</p>
+    <div class="card empty-state">No trades in this date range.</div>
   }
 </section>

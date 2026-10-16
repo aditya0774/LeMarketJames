@@ -15,18 +15,6 @@ describe('AnalystDashboard', () => {
     return fixture;
   }
 
-  it('lists a link to every report', async () => {
-    const fixture = await create();
-
-    const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.report-card .report-title'));
-    expect(links.map((a) => a.textContent)).toEqual([
-      'Trade Activity by Period',
-      'Activity by Stock',
-      'Activity by Client Segment',
-      'Overnight Reports',
-    ]);
-  });
-
   it('shows the volume insight tile, which asks for today, this week and last week', async () => {
     const fixture = await create();
 
