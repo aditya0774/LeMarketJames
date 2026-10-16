@@ -3,8 +3,12 @@ LeMarketJames Reporting Service,com.lemarketjames.reports.entity,ReportingTrade,
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeInsightService,0,207,0,6,0,38,0,12,0,9
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeInsightController,0,19,0,0,0,5,0,3,0,3
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeInsightResponse.VolumeChange,0,15,0,0,0,1,0,1,0,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.insight,ActiveClientTrendService,0,71,0,2,0,12,0,3,0,2
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeInsightResponse,0,21,0,0,0,1,0,1,0,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.insight,ActiveClientTrendResponse.DayCount,0,9,0,0,0,1,0,1,0,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.insight,ActiveClientTrendController,0,10,0,0,0,4,0,2,0,2
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeInsightResponse.PeriodVolume,0,18,0,0,0,1,0,1,0,1
+LeMarketJames Reporting Service,com.lemarketjames.reports.insight,ActiveClientTrendResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Reporting Service,com.lemarketjames.reports.insight,VolumeComparisonResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Reporting Service,com.lemarketjames.reports.service,TradeReportService,12,245,5,19,3,49,5,14,0,5
 LeMarketJames Reporting Service,com.lemarketjames.reports.service,SegmentActivityService,0,257,0,20,0,41,0,17,0,7

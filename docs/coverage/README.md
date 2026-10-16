@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `064bfce5` on 2026-10-15 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `67f24be7` on 2026-10-16 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -18,12 +18,12 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 85.87 | 79.49 | 78 / 552 |
 | [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 82.70 | 70.00 | 77 / 445 |
 | [notification-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/notification-service/index.html) | 97.30 | 100.00 | 2 / 74 |
-| [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 83.65 | 92.42 | 52 / 318 |
+| [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 84.52 | 92.65 | 52 / 336 |
 | [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
 | [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 98.20 | 100.00 | 2 / 111 |
-| **Back end (all modules)** | 84.33 | 82.38 | 561 / 3581 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 90.88 | 82.95 | 168 / 1843 |
-| **Everything** | 86.56 | 82.73 | 729 / 5424 |
+| **Back end (all modules)** | 84.41 | 82.43 | 561 / 3599 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 90.96 | 82.89 | 168 / 1859 |
+| **Everything** | 86.64 | 82.71 | 729 / 5458 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -47,7 +47,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | File | Lines missed | Line % |
 |---|---:|---:|
 | `src/app/features/auth/register/register.ts` | 56 | 34.12 |
-| `src/app/features/dashboard/dashboard.ts` | 25 | 82.76 |
+| `src/app/features/dashboard/dashboard.ts` | 22 | 84.51 |
 | `src/app/features/auth/register/register.html` | 21 | 91.18 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
 | `src/app/features/trade/trade-dialog.ts` | 8 | 92.08 |
@@ -61,6 +61,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-16 | `67f24be7` | 84.41 | 82.43 | 90.96 | 82.89 |
 | 2026-10-15 | `064bfce5` | 84.33 | 82.38 | 90.88 | 82.95 |
 | 2026-10-15 | `facb2347` | 84.33 | 83.22 | 89.94 | 81.60 |
 | 2026-10-15 | `2fb9fca7` | 84.33 | 83.22 | 90.28 | 81.77 |
