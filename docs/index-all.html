@@ -203,6 +203,43 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>activeClients</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendController.html#activeClients()" class="member-name-link">activeClients()</a> - Method in class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendController.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendController</a></dt>
+<dd>
+<div class="block">Distinct trading clients per day over the last 30 days.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#activeClients()" class="member-name-link">activeClients()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>activeClients</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendController.html" class="type-name-link" title="class in com.lemarketjames.reports.insight">ActiveClientTrendController</a> - Class in <a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></dt>
+<dd>
+<div class="block">The active-client trend for analysts.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendController.html#%3Cinit%3E(com.lemarketjames.reports.insight.ActiveClientTrendService)" class="member-name-link">ActiveClientTrendController(ActiveClientTrendService)</a> - Constructor for class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendController.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendRepository.html" class="type-name-link" title="interface in com.lemarketjames.reports.insight">ActiveClientTrendRepository</a> - Interface in <a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></dt>
+<dd>
+<div class="block">Counts the clients who traded in one range, from the <code>reporting_trades</code> view.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" class="type-name-link" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a> - Record Class in <a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></dt>
+<dd>
+<div class="block">The active-client trend: one count per report-time-zone day, oldest first.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#%3Cinit%3E(java.time.LocalDate,java.time.LocalDate,java.util.List,java.time.Instant)" class="member-name-link">ActiveClientTrendResponse(LocalDate, LocalDate, List&lt;ActiveClientTrendResponse.DayCount&gt;, Instant)</a> - Constructor for record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>ActiveClientTrendResponse</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" class="type-name-link" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a> - Record Class in <a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></dt>
+<dd>
+<div class="block">Distinct clients who traded on <code>date</code>.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendService.html" class="type-name-link" title="class in com.lemarketjames.reports.insight">ActiveClientTrendService</a> - Class in <a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></dt>
+<dd>
+<div class="block">Builds the daily count of distinct trading clients over the last 30 days,
+ today included (counted so far).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendService.html#%3Cinit%3E(com.lemarketjames.reports.insight.ActiveClientTrendRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">ActiveClientTrendService(ActiveClientTrendRepository, ReportCalendar, Clock)</a> - Constructor for class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendService.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityController.MarketActivity.html#activity()" class="member-name-link">activity()</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityController.MarketActivity.html" title="class in com.lemarketjames.activity">MarketActivityController.MarketActivity</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/activity/MarketActivityController.MarketActivity.html#param-activity"><code>activity</code></a> record component.</div>
@@ -773,6 +810,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Configures CORS (Cross-Origin Resource Sharing) settings for the application.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendRepository.html#countActiveClientsBetween(java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">countActiveClientsBetween(LocalDateTime, LocalDateTime)</a> - Method in interface com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendRepository.html" title="interface in com.lemarketjames.reports.insight">ActiveClientTrendRepository</a></dt>
+<dd>
+<div class="block">Distinct clients with at least one filled trade in the half-open range <code>[startUtc, endUtc)</code>,
+ counted across all of a client's accounts.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/OrderController.html#createOrder(com.lemarketjames.orders.dto.CreateOrderRequest,jakarta.servlet.http.HttpServletResponse)" class="member-name-link">createOrder(CreateOrderRequest, HttpServletResponse)</a> - Method in class com.lemarketjames.orders.<a href="com/lemarketjames/orders/OrderController.html" title="class in com.lemarketjames.orders">OrderController</a></dt>
 <dd>
 <div class="block">Create a new order with cash validation
@@ -826,8 +868,20 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>data</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#date()" class="member-name-link">date()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>date</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportBucket.html#DAY" class="member-name-link">DAY</a> - Enum constant in enum class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportBucket.html" title="enum class in com.lemarketjames.reports.period">ReportBucket</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#%3Cinit%3E(java.time.LocalDate,long)" class="member-name-link">DayCount(LocalDate, long)</a> - Constructor for record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>DayCount</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#days()" class="member-name-link">days()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#param-days"><code>days</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.OrderStatus.html#DELAYED" class="member-name-link">DELAYED</a> - Enum constant in enum class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a></dt>
 <dd>
 <div class="block">Accepted while the market is closed; waits for the open before being sent for execution.</div>
@@ -888,6 +942,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html#endDate()" class="member-name-link">endDate()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>endDate</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#endDate()" class="member-name-link">endDate()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#param-endDate"><code>endDate</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html#endDate()" class="member-name-link">endDate()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></dt>
 <dd>
@@ -1052,6 +1110,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/dto/TradesReportResponse.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/TradesReportResponse.html" title="class in com.lemarketjames.reports.dto">TradesReportResponse</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1404,6 +1470,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/model/GbmModel.html" class="type-name-link" title="class in com.lemarketjames.market.model">GbmModel</a> - Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
 <dd>
 <div class="block">Geometric Brownian Motion (GBM) price math.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#generatedAt()" class="member-name-link">generatedAt()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#param-generatedAt"><code>generatedAt</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html#generatedAt()" class="member-name-link">generatedAt()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></dt>
 <dd>
@@ -2473,6 +2543,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/dto/TradesReportResponse.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/TradesReportResponse.html" title="class in com.lemarketjames.reports.dto">TradesReportResponse</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -5147,6 +5225,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>startDate</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#startDate()" class="member-name-link">startDate()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#param-startDate"><code>startDate</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html#startDate()" class="member-name-link">startDate()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>startDate</code> record component.</div>
@@ -5531,6 +5613,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -5755,6 +5845,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Moves the order to <code>next</code>, stamping the matching timestamp.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendService.html#trend()" class="member-name-link">trend()</a> - Method in class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendService.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/InstrumentActivity.html#turnover()" class="member-name-link">turnover()</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/InstrumentActivity.html" title="class in com.lemarketjames.activity">InstrumentActivity</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/activity/InstrumentActivity.html#param-turnover"><code>turnover</code></a> record component.</div>
