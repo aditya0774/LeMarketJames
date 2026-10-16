@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ANALYST_REPORTS } from './reports/analyst-reports';
 import { VolumeInsightTile } from './volume-insight-tile/volume-insight-tile';
+import { ActiveClientTrendTile } from './active-client-trend-tile/active-client-trend-tile';
 
 /** Report metadata for dashboard display */
 interface ReportMeta {
@@ -30,6 +31,7 @@ interface ReportMeta {
     MatButtonModule,
     MatIconModule,
     VolumeInsightTile,
+    ActiveClientTrendTile,
   ],
   templateUrl: './analyst-dashboard.html',
   styleUrls: ['./analyst-dashboard.scss'],
