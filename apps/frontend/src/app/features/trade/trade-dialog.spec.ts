@@ -13,7 +13,7 @@ import { TradeDialog } from './trade-dialog';
 const quote = {
   symbol: 'TSLA', name: 'Tesla Inc', price: 250, priceChange: 5, priceChangePercent: 2.04,
   highPrice: 252, lowPrice: 244, openPrice: 246, volume: 88_100_000, marketCap: 792_600_000_000,
-  peRatio: 0, dividendYield: 0, lastUpdate: '',
+  peRatio: 0, dividendYield: 0, lastUpdate: '2026-10-16T14:30:00.123Z',
 };
 
 describe('TradeDialog', () => {
@@ -83,6 +83,9 @@ describe('TradeDialog', () => {
     expect(el().querySelector('[role=dialog]')).toBeTruthy();
     expect(el().querySelector('h2')?.textContent).toContain('Trade TSLA');
     expect(el().querySelector('.price-now')?.textContent).toContain('$250.00');
+    expect(el().textContent).toContain('Indicative – your fill price may differ');
+    expect(el().textContent).toContain('Price as of');
+    expect(el().textContent).toContain('Oct 16, 2026');
     expect(el().querySelector('.mini-chart path')?.getAttribute('d')).toMatch(/^M.* L.* L/); // 246, 248, 250
     expect(el().querySelector('.breakdown-row.total')?.textContent).toContain('$500.00');
     expect(el().textContent).toContain('You currently hold 3 shares of TSLA');
@@ -232,5 +235,7 @@ describe('TradeDialog — quote feed unavailable', () => {
   it('shows the prices-unavailable banner when the quote feed errors', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[role=alert]')?.textContent).toContain('Prices are temporarily unavailable');
+    expect(el.querySelector('.price-now')?.textContent?.trim()).toBe('Price unavailable');
+    expect(el.querySelector('.price-now')?.textContent).not.toContain('$');
   });
 });
