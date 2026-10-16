@@ -566,6 +566,37 @@ The traded volume of two date ranges the caller chooses, compared. The staff til
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
+### GET /api/v1/reports/insights/active-clients
+
+Insight: how many distinct clients traded on each of the last 30 days (LMKT-48), for `ANALYST` only. Computed from `reporting_trades` on every request (nothing is cached).
+
+**Parameters:** none.
+
+**Response `200`:**
+
+```json
+{
+  "startDate": "2026-09-15",
+  "endDate": "2026-10-14",
+  "days": [
+    { "date": "2026-09-15", "activeClients": 12 },
+    { "date": "2026-09-16", "activeClients": 0 }
+  ],
+  "generatedAt": "2026-10-14T14:00:00Z"
+}
+```
+
+- The window is the 30 days ending today in the reports time zone, both ends included; `days` lists every one of them, oldest first, and a day without trades is `0`, not missing. Today counts the trades made so far.
+- `activeClients` is the number of distinct clients with at least one filled trade that day, counted across all of a client's accounts. Each day is a range from [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java).
+- Counts only: the response never contains a client, account or order identifier.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
 ## The consumers (notification-, surveillance- and activity-service)
 
 Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens in a consumer group of its own, with one listener per topic it reads, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)). notification- and activity-service read one topic each; surveillance-service reads two.

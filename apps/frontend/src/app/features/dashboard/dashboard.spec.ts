@@ -149,8 +149,9 @@ describe('Dashboard', () => {
     const cards = Array.from(fixture.nativeElement.querySelectorAll('.stat-card .val')).map(
       (el) => (el as HTMLElement).textContent?.trim(),
     );
+    // Portfolio value leads the strip, then buying power (unavailable here, so "—").
     // Value 1600, cost 1500 → +$100 (+6.67%); 2 of 3 orders are still open.
-    expect(cards).toEqual(['—', '$1,600.00', '+6.67%', '2']);
+    expect(cards).toEqual(['$1,600.00', '—', '+6.67%', '2']);
     expect(text()).toContain('Welcome back, lebron');
     expect(text()).toContain('TSLA');
     expect(text()).toContain('Showing 1–3 of 3 orders');

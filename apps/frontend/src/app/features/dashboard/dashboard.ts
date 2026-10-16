@@ -117,14 +117,6 @@ export class Dashboard implements OnInit {
     this.loadHistory();
   }
 
-  protected async logout(): Promise<void> {
-    try {
-      await this.auth.logout();
-    } finally {
-      await this.router.navigate(['/']);
-    }
-  }
-
   private watchMarket(): void {
     const symbols = this.catalog.all().map((i) => i.symbol);
     this.quotes

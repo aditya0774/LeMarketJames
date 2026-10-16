@@ -34,6 +34,8 @@ The last two are set on each connection when the pool opens it, so they hold for
 | [ReportCalendarTest](src/test/java/com/lemarketjames/reports/period/ReportCalendarTest.java) | Day, week, month and year ranges, day boundaries and daylight-saving changes | same |
 | [VolumeInsightControllerTest](src/test/java/com/lemarketjames/reports/insight/VolumeInsightControllerTest.java) | The volume insight's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`), response shape and `400`s | same |
 | [VolumeInsightServiceTest](src/test/java/com/lemarketjames/reports/insight/VolumeInsightServiceTest.java) | Which two periods are compared for each period type, the change and percent (including no previous trades), time-zone and daylight-saving boundaries | same |
+| [ActiveClientTrendControllerTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendControllerTest.java) | The active-client trend's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`), response shape and that no identifier is returned | same |
+| [ActiveClientTrendServiceTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendServiceTest.java) | The 30-day window ending today, zero-filled quiet days, local-day UTC ranges, daylight-saving and late-evening boundaries | same |
 | [ReadSideSafeguardsIntegrationTest](src/test/java/com/lemarketjames/ReadSideSafeguardsIntegrationTest.java) | The three safeguards, on a real PostgreSQL | Jenkins' integration stage; locally, the command in its Javadoc |
 | [reporting-access.spec.ts](../../apps/e2e/tests/reporting-access.spec.ts) | The same access rules on the running service, with the seed logins | `cd apps/e2e && npm test` |
 

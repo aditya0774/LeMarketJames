@@ -16,10 +16,11 @@
   overflow: hidden;
 }
 
+/* The text block sits in the lower half so it clears the head the logo is anchored above. */
 .landing-content {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   flex: 1;
   position: relative;
@@ -28,19 +29,26 @@
 }
 
 /* Logo Section */
+/* Pinned to the photo, not to the text flow. The background is sized to 130% of the container
+   height and anchored at 70% vertically, and the top of the head is about 42% down the image,
+   so it lands at roughly 34% of the container height (0.42 * 1.3 - 0.21). The head is also
+   horizontally centred in the image. The logo's bottom edge rests just above that point. */
 .logo-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 40px;
+  --logo-size: clamp(110px, 24vh, 220px);
+  position: absolute;
+  left: 50%;
+  top: 33%;
+  /* logo.png is wider than tall and has empty space under the artwork inside the square box,
+     so nudge the box down by that share (about 28% of its size) to close the visible gap. */
+  transform: translate(-50%, calc(-100% + var(--logo-size) * 0.28));
+  z-index: 1;
 }
 
 .logo-icon {
-  width: 220px;
-  height: 220px;
+  display: block;
+  width: var(--logo-size);
+  height: var(--logo-size);
   object-fit: contain;
-  margin-bottom: 20px;
-  transform: translateY(45px);
   filter: drop-shadow(0 6px 20px rgba(255, 193, 7, 0.35));
 }
 
