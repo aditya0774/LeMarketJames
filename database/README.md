@@ -448,3 +448,24 @@ Omit `-Apply` to verify the history in a transaction that rolls back. The number
 creates only clients; trade history requires this explicit companion command and is not
 added to CI automatically. See [C3](../contracts/C3-seed-data.md#historical-client-segment-demo-2026)
 for the historical fixture's scope, reporting dates and idempotency rules.
+
+## 022 — Overnight report runs
+
+`schema/022_report_runs.sql` adds `report_runs`: one row per overnight report per night, with its
+status, when it was ready and why it failed (LMKT-45,
+[C6](../contracts/C6-api.md#get-apiv1reportsovernight)). Apply it before starting
+reporting-service: it runs with `ddl-auto=validate` and will not start without the table.
+
+```powershell
+Get-Content database/schema/022_report_runs.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The migration is idempotent; new Docker databases apply it automatically. `lemarket_app` needs no
+grant: 016 gives it read and write on every table created later.
+
+It is the only table reporting-service writes. Its connections stay read-only by default, and only
+its run writer opens a read-write transaction for this table
+([README](../services/reporting-service/README.md#overnight-reports-lmkt-45)).
+`UNIQUE (report_name, run_date)` is what stops a report running twice in one night, however often
+the scheduler is triggered or the service restarted. The table has no foreign keys and no client
+data.
