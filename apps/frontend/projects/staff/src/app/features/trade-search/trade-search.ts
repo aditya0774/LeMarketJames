@@ -50,7 +50,9 @@ export class TradeSearch implements OnDestroy {
       this.loading.set(true);
       this.request = this.api.clients(term).subscribe({next: clients => {
         this.clients.set(clients); this.clientsSearched.set(true); this.loading.set(false);
-        if (clients.length === 1) this.selectClient(clients[0]);
+        if (clients.length === 1) {
+          this.selectClient(clients[0]);
+        }
       }, error: error => this.failed(error)});
     }
   }
@@ -78,7 +80,9 @@ export class TradeSearch implements OnDestroy {
       : 'Unable to search trades. Please try again.');
   }
   private validDate(value: string): boolean {
-    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) || value.startsWith('0000')) return false;
+    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) || value.startsWith('0000')) {
+      return false;
+    }
     const date = new Date(`${value}T00:00:00Z`);
     return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }

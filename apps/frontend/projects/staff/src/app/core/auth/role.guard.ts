@@ -15,7 +15,9 @@ export function requiresRole(...roles: Role[]): CanActivateFn {
   return () => {
     const auth = inject(Auth);
     const router = inject(Router);
-    if (!auth.currentUser()) return router.createUrlTree(['/login']);
+    if (!auth.currentUser()) {
+      return router.createUrlTree(['/login']);
+    }
     return roles.some((role) => auth.hasRole(role)) || router.createUrlTree([ACCESS_DENIED]);
   };
 }

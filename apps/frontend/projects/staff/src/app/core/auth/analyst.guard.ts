@@ -10,6 +10,8 @@ import { Auth } from '../../../../src/app/core/auth/auth';
 export const analystGuard: CanActivateFn = () => {
   const auth = inject(Auth);
   const router = inject(Router);
-  if (!auth.currentUser()) return router.createUrlTree(['/login']);
+  if (!auth.currentUser()) {
+    return router.createUrlTree(['/login']);
+  }
   return auth.hasRole('ANALYST') || router.createUrlTree(['/access-denied']);
 };

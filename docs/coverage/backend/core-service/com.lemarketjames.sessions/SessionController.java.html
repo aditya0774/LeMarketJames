@@ -8,7 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(&quot;/api/sessions&quot;)
@@ -22,9 +26,9 @@ import org.springframework.web.bind.annotation.*;
 public class SessionController {
   private final SessionService sessionService;
 
-<span class="fc" id="L25">  public SessionController(SessionService sessionService) {</span>
-<span class="fc" id="L26">    this.sessionService = sessionService;</span>
-<span class="fc" id="L27">  }</span>
+<span class="fc" id="L29">  public SessionController(SessionService sessionService) {</span>
+<span class="fc" id="L30">    this.sessionService = sessionService;</span>
+<span class="fc" id="L31">  }</span>
 
   /**
    * AC1: Validate session - check if JWT token is active and not expired.
@@ -41,12 +45,12 @@ public class SessionController {
       @RequestHeader(&quot;Authorization&quot;) String authHeader) {
     try {
       // Extract token from &quot;Bearer &lt;token&gt;&quot;
-<span class="fc" id="L44">      String token = authHeader.replace(&quot;Bearer &quot;, &quot;&quot;);</span>
-<span class="fc" id="L45">      SessionDto session = sessionService.validateSession(accountId, token);</span>
-<span class="fc" id="L46">      return ResponseEntity.ok(new SessionResponse(true, session, &quot;Session is active&quot;));</span>
-<span class="fc" id="L47">    } catch (SessionExpiredException e) {</span>
-<span class="fc" id="L48">      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</span>
-<span class="fc" id="L49">          .body(new SessionResponse(false, null, e.getMessage()));</span>
+<span class="fc" id="L48">      String token = authHeader.replace(&quot;Bearer &quot;, &quot;&quot;);</span>
+<span class="fc" id="L49">      SessionDto session = sessionService.validateSession(accountId, token);</span>
+<span class="fc" id="L50">      return ResponseEntity.ok(new SessionResponse(true, session, &quot;Session is active&quot;));</span>
+<span class="fc" id="L51">    } catch (SessionExpiredException e) {</span>
+<span class="fc" id="L52">      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</span>
+<span class="fc" id="L53">          .body(new SessionResponse(false, null, e.getMessage()));</span>
     }
   }
 }

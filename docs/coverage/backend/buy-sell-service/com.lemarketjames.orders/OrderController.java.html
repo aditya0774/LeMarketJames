@@ -14,7 +14,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
@@ -32,23 +39,23 @@ public class OrderController {
     public OrderController(OrderService orderService,
                            AccountAccess accountAccess,
                            OrderStatusStreamService orderStatusStreamService,
-<span class="fc" id="L35">                           com.lemarketjames.orders.execution.OrderExecutionService execution) {</span>
-<span class="fc" id="L36">        this.orderService = orderService;</span>
-<span class="fc" id="L37">        this.accountAccess = accountAccess;</span>
-<span class="fc" id="L38">        this.orderStatusStreamService = orderStatusStreamService;</span>
-<span class="fc" id="L39">        this.execution = execution;</span>
-<span class="fc" id="L40">    }</span>
+<span class="fc" id="L42">                           com.lemarketjames.orders.execution.OrderExecutionService execution) {</span>
+<span class="fc" id="L43">        this.orderService = orderService;</span>
+<span class="fc" id="L44">        this.accountAccess = accountAccess;</span>
+<span class="fc" id="L45">        this.orderStatusStreamService = orderStatusStreamService;</span>
+<span class="fc" id="L46">        this.execution = execution;</span>
+<span class="fc" id="L47">    }</span>
 
     /**
      * Opens a live order-status stream for the signed-in client's own account.
      */
     @GetMapping(value = &quot;/stream&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamOrderStatus() {
-<span class="fc" id="L47">        Integer accountId = accountAccess.callerAccountId();</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (accountId == null) {</span>
-<span class="fc" id="L49">            throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
+<span class="fc" id="L54">        Integer accountId = accountAccess.callerAccountId();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (accountId == null) {</span>
+<span class="fc" id="L56">            throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
         }
-<span class="fc" id="L51">        return orderStatusStreamService.subscribe(accountId);</span>
+<span class="fc" id="L58">        return orderStatusStreamService.subscribe(accountId);</span>
     }
     
     /**
@@ -60,15 +67,15 @@ public class OrderController {
     @PostMapping
     public ResponseEntity&lt;OrderResponse&gt; createOrder(@Valid @RequestBody CreateOrderRequest request,
                                                      HttpServletResponse httpResponse) {
-<span class="fc" id="L63">        OrderResponse response = orderService.createOrder(request, SubmissionRequestId.issue(httpResponse));</span>
+<span class="fc" id="L70">        OrderResponse response = orderService.createOrder(request, SubmissionRequestId.issue(httpResponse));</span>
         
         // If validation failed, return 400 Bad Request
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
-<span class="fc" id="L67">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (!response.isSuccess()) {</span>
+<span class="fc" id="L74">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
         }
         
         // Order created successfully
-<span class="fc" id="L71">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
+<span class="fc" id="L78">        return ResponseEntity.status(HttpStatus.CREATED).body(response);</span>
     }
     
     /**
@@ -77,8 +84,8 @@ public class OrderController {
      */
     @GetMapping(&quot;/{orderId}&quot;)
     public ResponseEntity&lt;OrderResponse&gt; getOrderById(@PathVariable Integer orderId) {
-<span class="fc" id="L80">        OrderResponse response = orderService.getOrderById(orderId);</span>
-<span class="fc" id="L81">        return ResponseEntity.ok(response);</span>
+<span class="fc" id="L87">        OrderResponse response = orderService.getOrderById(orderId);</span>
+<span class="fc" id="L88">        return ResponseEntity.ok(response);</span>
     }
     
     /**
@@ -91,9 +98,9 @@ public class OrderController {
             @RequestParam(required = false) String timeZone,
             @RequestParam(defaultValue = &quot;0&quot;) int page,
             @RequestParam(defaultValue = &quot;20&quot;) int size) {
-<span class="fc" id="L94">        validatePagination(page, size);</span>
-<span class="fc" id="L95">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountId(accountId, date, timeZone, page, size);</span>
-<span class="fc" id="L96">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L101">        validatePagination(page, size);</span>
+<span class="fc" id="L102">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountId(accountId, date, timeZone, page, size);</span>
+<span class="fc" id="L103">        return ResponseEntity.ok(orders);</span>
     }
     
     /**
@@ -108,22 +115,22 @@ public class OrderController {
             @RequestParam(required = false) String timeZone,
             @RequestParam(defaultValue = &quot;0&quot;) int page,
             @RequestParam(defaultValue = &quot;20&quot;) int size) {
-<span class="fc" id="L111">        validatePagination(page, size);</span>
-<span class="fc" id="L112">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone, page, size);</span>
-<span class="fc" id="L113">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L118">        validatePagination(page, size);</span>
+<span class="fc" id="L119">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByAccountAndStatus(accountId, status, date, timeZone, page, size);</span>
+<span class="fc" id="L120">        return ResponseEntity.ok(orders);</span>
     }
 
     private static void validatePagination(int page, int size) {
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (page &lt; 0) {</span>
-<span class="fc" id="L118">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;page must be &gt;= 0&quot;);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (page &lt; 0) {</span>
+<span class="fc" id="L125">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;page must be &gt;= 0&quot;);</span>
         }
-<span class="fc bfc" id="L120" title="All 4 branches covered.">        if (size &lt; 1 || size &gt; MAX_SIZE) {</span>
-<span class="fc" id="L121">            throw new ResponseStatusException(</span>
+<span class="fc bfc" id="L127" title="All 4 branches covered.">        if (size &lt; 1 || size &gt; MAX_SIZE) {</span>
+<span class="fc" id="L128">            throw new ResponseStatusException(</span>
                 HttpStatus.BAD_REQUEST,
                 &quot;size must be between 1 and &quot; + MAX_SIZE
             );
         }
-<span class="fc" id="L126">    }</span>
+<span class="fc" id="L133">    }</span>
     
     /**
      * Get all orders for an instrument
@@ -131,8 +138,8 @@ public class OrderController {
      */
     @GetMapping(&quot;/instrument/{instrumentId}&quot;)
     public ResponseEntity&lt;List&lt;OrderResponse&gt;&gt; getOrdersByInstrumentId(@PathVariable Integer instrumentId) {
-<span class="fc" id="L134">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByInstrumentId(instrumentId);</span>
-<span class="fc" id="L135">        return ResponseEntity.ok(orders);</span>
+<span class="fc" id="L141">        List&lt;OrderResponse&gt; orders = orderService.getOrdersByInstrumentId(instrumentId);</span>
+<span class="fc" id="L142">        return ResponseEntity.ok(orders);</span>
     }
     
     /**
@@ -143,13 +150,13 @@ public class OrderController {
     public ResponseEntity&lt;OrderResponse&gt; updateOrderStatus(
             @PathVariable Integer orderId,
             @PathVariable Order.OrderStatus status) {
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
-<span class="fc" id="L147">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
-<span class="fc" id="L148">            execution.execute(orderId, true);</span>
-<span class="fc" id="L149">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (status == Order.OrderStatus.FILLED) {</span>
+<span class="fc" id="L154">            orderService.getOrderById(orderId); // Preserve ownership/missing-id behavior before internal execution.</span>
+<span class="fc" id="L155">            execution.execute(orderId, true);</span>
+<span class="fc" id="L156">            return ResponseEntity.ok(orderService.getOrderById(orderId));</span>
         }
-<span class="nc" id="L151">        OrderResponse response = orderService.updateOrderStatus(orderId, status);</span>
-<span class="nc" id="L152">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L158">        OrderResponse response = orderService.updateOrderStatus(orderId, status);</span>
+<span class="nc" id="L159">        return ResponseEntity.ok(response);</span>
     }
     
     /**
@@ -160,8 +167,8 @@ public class OrderController {
     public ResponseEntity&lt;OrderResponse&gt; rejectOrder(
             @PathVariable Integer orderId,
             @RequestParam(defaultValue = &quot;REJECTED_BY_OPERATIONS&quot;) RejectionReason reason) {
-<span class="nc" id="L163">        OrderResponse response = orderService.rejectOrder(orderId, reason);</span>
-<span class="nc" id="L164">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L170">        OrderResponse response = orderService.rejectOrder(orderId, reason);</span>
+<span class="nc" id="L171">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -186,10 +193,10 @@ public class OrderController {
     public ResponseEntity&lt;List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt;&gt; getOrderTimeline(
             @PathVariable Integer orderId) {
         // Validates order exists and caller has access (TRADING_OPS or owner)
-<span class="fc" id="L189">        orderService.findOwnOrder(orderId);</span>
+<span class="fc" id="L196">        orderService.findOwnOrder(orderId);</span>
     
-<span class="fc" id="L191">        List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt; timeline = orderService.getOrderTimelineEvents(orderId);</span>
-<span class="fc" id="L192">        return ResponseEntity.ok(timeline);</span>
+<span class="fc" id="L198">        List&lt;com.lemarketjames.orders.dto.AuditEventDto&gt; timeline = orderService.getOrderTimelineEvents(orderId);</span>
+<span class="fc" id="L199">        return ResponseEntity.ok(timeline);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

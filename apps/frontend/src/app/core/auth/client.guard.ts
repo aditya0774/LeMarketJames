@@ -6,6 +6,8 @@ import { Auth } from './auth';
 export const clientGuard: CanActivateFn = () => {
   const auth = inject(Auth);
   const router = inject(Router);
-  if (!auth.currentUser()) return router.createUrlTree(['/login']);
+  if (!auth.currentUser()) {
+    return router.createUrlTree(['/login']);
+  }
   return auth.hasRole('CLIENT') || router.createUrlTree(['/access-denied']);
 };

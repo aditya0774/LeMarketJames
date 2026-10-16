@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportingTrade.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.entity</a> &gt; <span class="el_source">ReportingTrade.java</span></div><h1>ReportingTrade.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -13,7 +16,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = &quot;reporting_trades&quot;)
-<span class="fc" id="L16">public class ReportingTrade {</span>
+<span class="fc" id="L19">public class ReportingTrade {</span>
 
     /**
      * Order identifier (read-only from view; no primary key since this is a view).
@@ -91,51 +94,51 @@ import java.time.LocalDateTime;
     // Getters
 
     public Integer getOrderId() {
-<span class="nc" id="L94">        return orderId;</span>
+<span class="nc" id="L97">        return orderId;</span>
     }
 
     public Integer getAccountId() {
-<span class="nc" id="L98">        return accountId;</span>
+<span class="nc" id="L101">        return accountId;</span>
     }
 
     public Integer getClientId() {
-<span class="nc" id="L102">        return clientId;</span>
+<span class="nc" id="L105">        return clientId;</span>
     }
 
     public String getSegment() {
-<span class="nc" id="L106">        return segment;</span>
+<span class="nc" id="L109">        return segment;</span>
     }
 
     public String getSymbol() {
-<span class="nc" id="L110">        return symbol;</span>
+<span class="nc" id="L113">        return symbol;</span>
     }
 
     public String getInstrumentName() {
-<span class="nc" id="L114">        return instrumentName;</span>
+<span class="nc" id="L117">        return instrumentName;</span>
     }
 
     public String getSide() {
-<span class="fc" id="L118">        return side;</span>
+<span class="fc" id="L121">        return side;</span>
     }
 
     public BigDecimal getQuantity() {
-<span class="nc" id="L122">        return quantity;</span>
+<span class="nc" id="L125">        return quantity;</span>
     }
 
     public BigDecimal getPricePerUnit() {
-<span class="nc" id="L126">        return pricePerUnit;</span>
+<span class="nc" id="L129">        return pricePerUnit;</span>
     }
 
     public BigDecimal getGrossAmount() {
-<span class="fc" id="L130">        return grossAmount;</span>
+<span class="fc" id="L133">        return grossAmount;</span>
     }
 
     public LocalDateTime getSubmittedAt() {
-<span class="nc" id="L134">        return submittedAt;</span>
+<span class="nc" id="L137">        return submittedAt;</span>
     }
 
     public LocalDateTime getFilledAt() {
-<span class="fc" id="L138">        return filledAt;</span>
+<span class="fc" id="L141">        return filledAt;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

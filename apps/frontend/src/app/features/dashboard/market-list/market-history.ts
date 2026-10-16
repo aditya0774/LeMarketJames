@@ -18,7 +18,9 @@ export function appendQuotes(
     next[symbol] = [...points];
   }
   for (const [symbol, quote] of Object.entries(quotes)) {
-    if (!quote) continue;
+    if (!quote) {
+      continue;
+    }
     const previous = next[symbol];
     next[symbol] = previous?.length
       ? [...previous, quote.price].slice(-maxLength)

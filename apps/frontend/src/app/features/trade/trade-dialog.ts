@@ -85,9 +85,11 @@ export class TradeDialog implements OnDestroy {
     return q ? q.price - q.priceChange : null;
   });
 
-  protected readonly canSubmit = computed(
-    () => !!this.instrument()?.tradable && this.quantityValid() && !this.exceedsHoldings() && !this.submitting() && !this.quoteError(),
-  );
+  protected readonly canSubmit = computed(() => {
+    const orderValid = this.quantityValid() && !this.exceedsHoldings();
+    const dialogReady = !this.submitting() && !this.quoteError();
+    return !!this.instrument()?.tradable && orderValid && dialogReady;
+  });
 
   constructor() {
     const quotes = inject(Quotes);
@@ -229,7 +231,9 @@ export class TradeDialog implements OnDestroy {
         return 'Your session has expired. Please log in again.';
       }
       const body = err.error;
-      return body?.reason || body?.rejectionReason || body?.error || body?.message || 'Unable to place the order.';
+      // Services name the refusal differently; show the first one the response carries.
+      const reason = [body?.reason, body?.rejectionReason, body?.error, body?.message].find((text) => !!text);
+      return reason || 'Unable to place the order.';
     }
     return err instanceof Error ? err.message : 'Unable to place the order.';
   }

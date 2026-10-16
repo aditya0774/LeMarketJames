@@ -2,6 +2,8 @@
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What this service reads from an {@code OrderSubmitted} record (contract C6). It is this
@@ -15,13 +17,12 @@ import java.time.Instant;
  * @param price        price per share the order was placed at; null for a SELL
  * @param submittedAt  when the order was placed (UTC)
  */
-<span class="fc" id="L18">public record OrderSubmittedMessage(Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
+<span class="fc" id="L20">public record OrderSubmittedMessage(Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
                                     BigDecimal quantity, BigDecimal price, Instant submittedAt) {
 
     /** @return whether every field an alert needs is present; the price is optional */
     public boolean isComplete() {
-<span class="fc bfc" id="L23" title="All 12 branches covered.">        return orderId != null &amp;&amp; accountId != null &amp;&amp; instrumentId != null &amp;&amp; side != null</span>
-            &amp;&amp; quantity != null &amp;&amp; submittedAt != null;
+<span class="fc" id="L25">        return Stream.of(orderId, accountId, instrumentId, side, quantity, submittedAt).allMatch(Objects::nonNull);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
