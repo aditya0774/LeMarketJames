@@ -28,7 +28,6 @@ h3 {
   background-color: var(--ink);
   color: var(--text);
   font-family: var(--font-body);
-  color-scheme: dark;
   display: flex;
 }
 
@@ -49,7 +48,7 @@ h3 {
   padding: 0 10px 20px;
   font-size: var(--font-lg);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .brand-icon {
@@ -93,7 +92,7 @@ h3 {
 
 .staff-sidebar nav a.active {
   color: var(--gold);
-  background: rgba(253, 185, 39, 0.08);
+  background: var(--pri-soft);
   box-shadow: inset 2px 0 0 var(--gold);
 }
 

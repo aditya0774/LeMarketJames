@@ -1,4 +1,7 @@
-// Match the trading app's Material theme while keeping each application independent.
+// The staff reports still use Material's datepickers, tables and toggles. mat.theme gives them a
+// complete set of system colours (light-dark(), so they follow the page's color-scheme). The
+// overrides below then point the colours that show on screen at the LeMarket tokens, so Material
+// matches the rest of the app in both the dark and the light theme.
 @use '@angular/material' as mat;
 
 html {
@@ -6,18 +9,43 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        primary: mat.$violet-palette,
+        tertiary: mat.$yellow-palette,
       ),
-      typography: Roboto,
+      typography: (
+        plain-family: 'Geist',
+        brand-family: 'Geist',
+      ),
       density: 0,
     )
   );
+
+  // Declared after the include, so these win over the generated values.
+  --mat-sys-primary: var(--pri);
+  --mat-sys-on-primary: var(--on-pri);
+  --mat-sys-primary-container: var(--sel);
+  --mat-sys-on-primary-container: var(--seltext);
+  --mat-sys-secondary-container: var(--sel);
+  --mat-sys-on-secondary-container: var(--text);
+  --mat-sys-background: var(--bg);
+  --mat-sys-on-background: var(--text);
+  --mat-sys-surface: var(--card);
+  --mat-sys-on-surface: var(--text);
+  --mat-sys-surface-variant: var(--card2);
+  --mat-sys-on-surface-variant: var(--dim);
+  --mat-sys-surface-container-lowest: var(--bg2);
+  --mat-sys-surface-container-low: var(--card);
+  --mat-sys-surface-container: var(--card);
+  --mat-sys-surface-container-high: var(--card2);
+  --mat-sys-surface-container-highest: var(--card2);
+  --mat-sys-outline: var(--line3);
+  --mat-sys-outline-variant: var(--line);
+  --mat-sys-error: var(--errt);
+  --mat-sys-inverse-surface: var(--text);
+  --mat-sys-inverse-on-surface: var(--bg);
 }
 
 body {
-  font: var(--mat-sys-body-medium);
-  color-scheme: light;
   margin: 0;
   height: 100%;
 }

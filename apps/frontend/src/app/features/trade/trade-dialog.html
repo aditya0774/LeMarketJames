@@ -75,10 +75,10 @@
             <div class="alert err" role="alert"><div>{{ errorMessage() }}</div></div>
           }
 
-          <button type="submit" class="btn" [class.btn-buy]="side() === 'BUY'" [class.btn-sell]="side() === 'SELL'" [disabled]="!canSubmit()">
+          <button type="submit" class="btn btn-block" [class.btn-buy]="side() === 'BUY'" [class.btn-sell]="side() === 'SELL'" [disabled]="!canSubmit()">
             {{ submitting() ? 'Placing order…' : side() === 'BUY' ? 'Place buy order' : 'Place sell order' }}
           </button>
-          <button type="button" class="btn btn-ghost" style="margin-top: 8px" (click)="close()">
+          <button type="button" class="btn btn-ghost btn-block" style="margin-top: 8px" (click)="close()">
             {{ successMessage() ? 'Done' : 'Cancel' }}
           </button>
         </form>

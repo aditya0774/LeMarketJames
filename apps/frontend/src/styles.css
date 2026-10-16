@@ -12,7 +12,6 @@
   background-color: var(--ink);
   color: var(--text);
   font-family: var(--font-body);
-  color-scheme: dark;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
 }
@@ -74,7 +73,7 @@
 /* Gold marks only the page you're on. */
 .rail-link.active {
   color: var(--gold);
-  background: rgba(253, 185, 39, 0.08);
+  background: var(--pri-soft);
   box-shadow: inset 2px 0 0 var(--gold);
 }
 
@@ -102,7 +101,7 @@
 
 .brand .wordmark {
   font-family: var(--font-head);
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--font-md);
   letter-spacing: 0.3px;
 }
@@ -413,7 +412,7 @@
   justify-content: center;
   padding: 48px 16px;
   overflow-y: auto;
-  background: rgba(8, 5, 15, 0.78);
+  background: var(--scrim);
 }
 
 .modal {
@@ -510,13 +509,13 @@
 }
 
 .type-toggle .opt.buy-active {
-  background: var(--up);
-  color: #052915;
+  background: var(--pri);
+  color: var(--on-pri);
 }
 
 .type-toggle .opt.sell-active {
-  background: var(--down);
-  color: #310808;
+  background: var(--acc3);
+  color: var(--on-acc);
 }
 
 .qty-stepper {
@@ -564,18 +563,12 @@
 }
 
 .btn-buy {
-  background: var(--up);
-  color: #052915;
+  background: var(--pri);
+  color: var(--on-pri);
 }
 
-.btn-sell {
-  background: var(--down);
-  color: #310808;
-}
-
-.btn-buy:hover:not(:disabled),
-.btn-sell:hover:not(:disabled) {
-  filter: brightness(1.08);
+.btn-buy:hover:not(:disabled) {
+  background: var(--prih);
 }
 
 .holding-note {
