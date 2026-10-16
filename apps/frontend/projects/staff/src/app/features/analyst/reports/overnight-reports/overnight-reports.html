@@ -1,0 +1,89 @@
+<div class="overnight-reports-container">
+  <div class="report-header">
+    <p class="report-kicker">Analyst Report</p>
+    <h1>Overnight reports</h1>
+    <p class="description">Heavy reports run overnight so they are ready in the morning. A failed run shows here with its reason.</p>
+    <div class="header-actions">
+      @if (timeZone(); as zone) {
+        <span class="meta-pill">Times in {{ zone }}</span>
+      }
+      <button class="btn btn-gold refresh" type="button" (click)="refresh()" [disabled]="isLoading()">Refresh</button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="40" />
+      <p>Loading overnight reports...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state" role="alert">
+      <mat-card>
+        <mat-card-content>
+          <h2>Unable to Load Report</h2>
+          <p>{{ error() }}</p>
+          <button class="btn btn-gold retry" type="button" (click)="refresh()">Try Again</button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  } @else if (reports().length === 0) {
+    <section class="table-card empty-state">
+      <h2>No overnight reports have run yet.</h2>
+    </section>
+  } @else {
+    <section class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Report</th>
+            <th scope="col">Status</th>
+            <th scope="col">Ready</th>
+            <th scope="col">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (report of reports(); track report.id) {
+            <tr [attr.data-status]="report.status">
+              <td>
+                <span class="report-name">{{ report.name }}</span>
+                <span class="run-date">For {{ report.runDate }}</span>
+              </td>
+              <td><span class="status-badge {{ report.status.toLowerCase() }}">{{ statusLabel(report.status) }}</span></td>
+              <td class="ready-time">
+                @switch (report.status) {
+                  @case ('READY') {
+                    {{ report.readyAt ? time(report.readyAt) : '—' }}
+                  }
+                  @case ('LATE') {
+                    @if (report.readyAt) {
+                      {{ time(report.readyAt) }}
+                    } @else {
+                      Not ready yet
+                    }
+                  }
+                  @case ('FAILED') {
+                    —
+                  }
+                  @default {
+                    Expected by {{ time(report.readyBy) }}
+                  }
+                }
+              </td>
+              <td class="details">
+                @if (report.status === 'FAILED') {
+                  <span class="failure-reason">{{ report.failureReason || 'No reason recorded' }}</span>
+                } @else if (report.status === 'LATE') {
+                  <span class="late-note">Missed the ready-by time, {{ time(report.readyBy) }}</span>
+                } @else {
+                  <span class="scheduled">Scheduled for {{ time(report.scheduledFor) }}</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <a class="back" routerLink="/analyst">Back to reports</a>
+</div>
