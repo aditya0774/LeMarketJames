@@ -13,7 +13,7 @@
       }
     </mat-button-toggle-group>
 
-    <form [formGroup]="range" class="dates" (ngSubmit)="applyRange()">
+    <form method="post" [formGroup]="range" class="dates" (ngSubmit)="applyRange()">
       <mat-form-field appearance="outline">
         <mat-label>From</mat-label>
         <input matInput [matDatepicker]="fromPicker" formControlName="from" />
@@ -37,7 +37,7 @@
   @if (loading()) {
     <p class="status" role="status">Loading report…</p>
   } @else if (rows().length > 0) {
-    <table mat-table [dataSource]="rows()" class="report-table">
+    <table mat-table [dataSource]="rows()" class="report-table" aria-label="Trade activity by period">
       <ng-container matColumnDef="period">
         <th mat-header-cell *matHeaderCellDef>Period</th>
         <td mat-cell *matCellDef="let row">{{ label(row.period) }}</td>

@@ -5,7 +5,7 @@
   </div>
 
   <!-- Table -->
-  <table *ngIf="tradesData().length > 0" class="aggregate-table">
+  <table *ngIf="tradesData().length > 0" class="aggregate-table" aria-label="Trading activity by stock">
     <thead>
       <tr>
         <th (click)="toggleSort('symbol')" class="sortable">
