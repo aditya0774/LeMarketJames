@@ -5,110 +5,48 @@
 @import './styles/tokens.css';
 @import './styles/base.css';
 
-/* ================= APP SHELL (dashboard / holdings / trade) ================= */
+/* ================= APP SHELL (signed-in pages) =================
+   A full-width header (brand · section tabs · account menu) above a centred page column. */
 
 .app-shell {
   min-height: 100vh;
-  background-color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
 }
 
-/* Left rail: brand, primary navigation, and the sign-out control pinned to the bottom. */
-.app-rail {
+.app-head {
   position: sticky;
   top: 0;
-  align-self: start;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 22px 14px;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding: 12px var(--gutter);
+  border-bottom: 1px solid var(--lhdr);
+  background: var(--bg);
 }
 
-.app-rail .brand {
-  padding: 0 10px 24px;
-  margin: 0;
+.app-head-brand {
+  justify-self: start;
 }
 
-.rail-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.rail-link {
+.app-head-end {
+  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: var(--radius);
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font-body);
-  font-size: var(--font-base);
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  text-align: left;
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.rail-link svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.rail-link:hover {
-  color: var(--text);
-  background: var(--hover-row);
-}
-
-/* Gold marks only the page you're on. */
-.rail-link.active {
-  color: var(--gold);
-  background: var(--pri-soft);
-  box-shadow: inset 2px 0 0 var(--gold);
-}
-
-.rail-foot {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-}
-
-.app-body {
-  min-width: 0;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.brand img {
-  height: 28px;
-  width: auto;
-  display: block;
-}
-
-.brand .wordmark {
-  font-family: var(--font-head);
-  font-weight: 600;
-  font-size: var(--font-md);
-  letter-spacing: 0.3px;
+  gap: 12px;
 }
 
 .app-main {
-  padding: 28px 34px 60px;
-  max-width: 1240px;
+  flex: 1;
+  width: 100%;
+  max-width: 1320px;
   margin: 0 auto;
+  padding: 20px var(--gutter) 40px;
 }
 
 .app-header {
@@ -720,49 +658,15 @@
     padding: 26px 22px;
   }
 
-  /* The rail becomes a bottom tab bar so primary navigation stays one thumb away. */
-  .app-shell {
-    grid-template-columns: 1fr;
-    padding-bottom: 60px;
+  /* On a narrow screen the tabs get their own full-width row under the brand and menu. */
+  .app-head {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .app-rail {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    height: auto;
-    flex-direction: row;
-    padding: 6px 8px;
-    border-right: none;
-    border-top: 1px solid var(--border);
-  }
-
-  .app-rail .brand {
-    display: none;
-  }
-
-  .rail-nav {
-    flex-direction: row;
-    justify-content: space-around;
-  }
-
-  .rail-foot {
-    border-top: none;
-    padding-top: 0;
-  }
-
-  .rail-link {
-    flex-direction: column;
-    gap: 2px;
-    font-size: var(--font-2xs);
-    padding: 6px 12px;
-  }
-
-  .rail-link.active {
-    box-shadow: inset 0 2px 0 var(--gold);
+  .app-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    overflow-x: auto;
   }
 
   .app-main {

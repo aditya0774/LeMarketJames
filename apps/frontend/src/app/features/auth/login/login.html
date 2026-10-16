@@ -1,51 +1,49 @@
-<div class="auth-wrap">
-  <a class="back-link" routerLink="/">&larr; Back</a>
+<div class="auth-page">
+  <header class="auth-head">
+    <a class="back-link" routerLink="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+      Back
+    </a>
+    <app-brand />
+    <span class="auth-head-end"></span>
+  </header>
 
-  <div class="auth-brand">
-    <img src="/lemarket-logo.png" alt="LeMarket logo" />
-    <span class="wordmark"><span class="le-accent">Le</span>Market</span>
-  </div>
-
-  <div class="auth-panel">
-    <div class="auth-card">
-      <h2>Log in</h2>
-      <div class="sub">Enter your credentials to access your account.</div>
+  <main class="auth-main">
+    <!-- Registration stores the email as the username, so users log in with their email. -->
+    <form method="post" class="auth-card" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="auth-title">
+        <h1>Welcome back</h1>
+        <p>Log in with the email you signed up with.</p>
+      </div>
 
       @if (errorMessage()) {
-        <div class="alert err" role="alert">
-          <span aria-hidden="true">&#9888;</span>
+        <div class="alert" [class]="errorKind()" role="alert">
+          @switch (errorKind()) {
+            @case ('warn') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+            }
+            @case ('info') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 4v16" /></svg>
+            }
+            @default {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+            }
+          }
           <div><b>{{ errorHeading() }}</b>{{ errorMessage() }}</div>
         </div>
       }
 
-      <!-- Registration stores the email as the username, so users log in with their email. -->
-      <form method="post" [formGroup]="form" (ngSubmit)="submit()">
-        <div class="field">
-          <label for="username">Email address</label>
-          <input
-            id="username"
-            type="email"
-            formControlName="username"
-            placeholder="you@lemarket.com"
-            autocomplete="username"
-          />
-          @if (form.get('username')?.touched && form.get('username')?.hasError('required')) {
-            <div class="field-error">Email is required.</div>
-          }
-        </div>
+      <div class="field">
+        <label for="username">Email address</label>
+        <input id="username" type="email" formControlName="username" placeholder="you@example.com" autocomplete="username" />
+        @if (form.get('username')?.touched && form.get('username')?.hasError('required')) {
+          <div class="field-error">Email is required.</div>
+        }
+      </div>
 
-        <div class="field">
-          <div class="field-label-row">
-            <label for="password">Password</label>
-            <button
-              type="button"
-              class="pw-toggle"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            >
-              {{ showPassword ? 'Hide' : 'Show' }}
-            </button>
-          </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
           <input
             id="password"
             [type]="showPassword ? 'text' : 'password'"
@@ -53,20 +51,25 @@
             placeholder="Your password"
             autocomplete="current-password"
           />
-          @if (form.get('password')?.touched && form.get('password')?.hasError('required')) {
-            <div class="field-error">Password is required.</div>
-          }
-          <div class="hint" style="text-align: right">
-            <a class="link-gold">Forgot password?</a>
-          </div>
+          <button
+            type="button"
+            class="pw-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            {{ showPassword ? 'Hide' : 'Show' }}
+          </button>
         </div>
+        @if (form.get('password')?.touched && form.get('password')?.hasError('required')) {
+          <div class="field-error">Password is required.</div>
+        }
+      </div>
 
-        <button type="submit" class="btn btn-gold btn-block" style="margin-top: 6px" [disabled]="submitting()">
-          {{ submitting() ? 'Logging in…' : 'Log in' }}
-        </button>
-      </form>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" [disabled]="submitting()">
+        {{ submitting() ? 'Logging in…' : 'Log in' }}
+      </button>
 
-      <div class="switch-line">New to LeMarket? <a routerLink="/register">Create an account</a></div>
-    </div>
-  </div>
+      <p class="switch-line">New to lemarket? <a routerLink="/register">Create an account</a></p>
+    </form>
+  </main>
 </div>

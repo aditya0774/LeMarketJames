@@ -125,7 +125,80 @@ a:hover {
   }
 }
 
-/* ---------- Auth pages (log in, register) ---------- */
+/* ---------- Auth pages (log in, register) ----------
+   A full-height page: a header row of back link · brand · right-hand slot, then the form
+   centred in the space left. */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.auth-head {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding: 20px clamp(16px, 4vw, 56px);
+}
+
+.auth-head > :first-child {
+  justify-self: start;
+}
+
+.auth-head > .auth-head-end {
+  justify-self: end;
+  font-size: var(--font-base);
+  color: var(--dim);
+}
+
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px var(--space-md) 64px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-card .field {
+  margin-bottom: 0;
+}
+
+.auth-card .switch-line,
+.auth-card .alert {
+  margin: 0;
+}
+
+.auth-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-title h1 {
+  font-size: var(--font-3xl);
+}
+
+.auth-title p {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--font-md);
+}
+
+/* Older auth layout, still used by the staff login until it moves to the redesign. */
 
 .auth-wrap {
   min-height: 100vh;
@@ -207,17 +280,10 @@ a:hover {
   border-top: none;
 }
 
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
-}
-
 .auth-card.wide {
   max-width: 480px;
 }
 
-.auth-card h1,
 .auth-card h2 {
   font-size: var(--font-3xl);
   margin: 0 0 8px;
@@ -522,8 +588,33 @@ input[type='number']::-webkit-inner-spin-button {
   display: block;
 }
 
-.in-wrap > .in {
-  padding-left: 36px;
+/* Matches the .field input rule's weight, so the prefix room survives inside a .field too. */
+.in-wrap > .in,
+.field .in-wrap > input:not([type='checkbox']):not([type='radio']) {
+  padding-left: 32px;
+}
+
+/* Show/Hide control inside a password box, on the right (log in and register). */
+.pw-wrap {
+  position: relative;
+}
+
+.field .pw-wrap input:not([type='checkbox']) {
+  padding-right: 72px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--acc);
+  font: 500 var(--font-sm) var(--font-body);
+  cursor: pointer;
 }
 
 /* ---------- Alerts ----------
