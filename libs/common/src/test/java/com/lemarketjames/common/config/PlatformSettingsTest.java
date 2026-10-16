@@ -26,6 +26,7 @@ class PlatformSettingsTest {
         assertEquals(List.of(), settings.getOrders().getRestrictedLocations());
         assertEquals(Duration.ofDays(365), settings.getAudit().getOnlineRetention());
         assertEquals(LocalTime.of(2, 0), settings.getReports().getOvernightRunTime());
+        assertEquals(LocalTime.of(7, 0), settings.getReports().getReadyBy());
         assertEquals(new BigDecimal("100"), settings.getSurveillance().getLargeOrderQuantity());
     }
 
@@ -35,12 +36,16 @@ class PlatformSettingsTest {
                 "lmj.auth.lockout.max-attempts", "5",
                 "lmj.market.staleness-limit", "15s",
                 "lmj.orders.restricted-locations", "New York,Texas",
-                "lmj.surveillance.large-order-quantity", "250"));
+                "lmj.surveillance.large-order-quantity", "250",
+                "lmj.reports.overnight-run-time", "01:30",
+                "lmj.reports.ready-by", "06:00"));
 
         assertEquals(5, settings.getAuth().getLockout().getMaxAttempts());
         assertEquals(Duration.ofSeconds(15), settings.getMarket().getStalenessLimit());
         assertEquals(List.of("New York", "Texas"), settings.getOrders().getRestrictedLocations());
         assertEquals(new BigDecimal("250"), settings.getSurveillance().getLargeOrderQuantity());
+        assertEquals(LocalTime.of(1, 30), settings.getReports().getOvernightRunTime());
+        assertEquals(LocalTime.of(6, 0), settings.getReports().getReadyBy());
     }
 
     private static PlatformSettings bind(Map<String, String> properties) {
