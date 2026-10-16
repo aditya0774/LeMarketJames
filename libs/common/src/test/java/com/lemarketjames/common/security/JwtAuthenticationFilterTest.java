@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -115,7 +116,7 @@ class JwtAuthenticationFilterTest {
     // LMKT-57 AC2: a token issued before the account was closed is refused on the next request.
     @Test
     void rejectsAValidTokenWhoseAccountWasClosedAfterSignIn() throws Exception {
-        when(accessCheck.revokedReason("alice", Set.of(Role.CLIENT))).thenReturn(Optional.of("CLOSED"));
+        when(accessCheck.revokedReason(eq("alice"), eq(Set.of(Role.CLIENT)), any())).thenReturn(Optional.of("CLOSED"));
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
 
@@ -133,7 +134,7 @@ class JwtAuthenticationFilterTest {
     // A deleted account (no row left) is refused the same way.
     @Test
     void rejectsAValidTokenWhoseAccountNoLongerExists() throws Exception {
-        when(accessCheck.revokedReason("ghost", Set.of(Role.CLIENT)))
+        when(accessCheck.revokedReason(eq("ghost"), eq(Set.of(Role.CLIENT)), any()))
                 .thenReturn(Optional.of(SecurityEventLog.REASON_NOT_FOUND));
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
@@ -153,7 +154,7 @@ class JwtAuthenticationFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertEquals("alice", SecurityContextHolder.getContext().getAuthentication().getName());
-        verify(accessCheck).revokedReason("alice", Set.of(Role.CLIENT));
+        verify(accessCheck).revokedReason(eq("alice"), eq(Set.of(Role.CLIENT)), any());
         verify(filterChain).doFilter(request, response);
     }
 
@@ -163,7 +164,7 @@ class JwtAuthenticationFilterTest {
     @ValueSource(strings = {"/internal/holdings/settle", "/internal/execution/control/pause",
             "/actuator/health", "/api/auth/login", "/api/auth/register", "/api/auth/logout"})
     void uncheckedPathsAreUnaffectedEvenForARevokedAccount(String path) throws Exception {
-        when(accessCheck.revokedReason(anyString(), any())).thenReturn(Optional.of("CLOSED"));
+        when(accessCheck.revokedReason(anyString(), any(), any())).thenReturn(Optional.of("CLOSED"));
         MockHttpServletRequest request = requestTo(path, jwtService.generateToken("alice"));
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
@@ -188,7 +189,7 @@ class JwtAuthenticationFilterTest {
     // LMKT-57 AC3: one ACCESS_REVOKED event per rejected request, naming the account, the reason and the UTC time.
     @Test
     void aRejectedRequestIsLoggedAsAccessRevoked() throws Exception {
-        when(accessCheck.revokedReason("olivia_ops", Set.of(Role.TRADING_OPS)))
+        when(accessCheck.revokedReason(eq("olivia_ops"), eq(Set.of(Role.TRADING_OPS)), any()))
                 .thenReturn(Optional.of(SecurityEventLog.REASON_DEACTIVATED));
         String token = jwtService.generateToken("olivia_ops", Set.of(Role.TRADING_OPS));
 
