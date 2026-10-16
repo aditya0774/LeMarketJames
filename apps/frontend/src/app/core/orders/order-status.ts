@@ -1,4 +1,4 @@
-import { OrderResponse } from '../../../core/orders/order.service';
+import { OrderResponse } from './order.service';
 
 export type OrderStatus = OrderResponse['orderStatus'];
 

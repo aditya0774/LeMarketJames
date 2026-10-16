@@ -1,94 +1,71 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { InstrumentCatalog } from '../../core/market/instrument-catalog';
-import { OrderResponse, OrderService, OrdersConnectionState } from '../../core/orders/order.service';
+import { AccountOrders } from '../../core/orders/account-orders';
 import { BalanceService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { HoldingDto } from '../../shared/models/holdings.model';
 import { Quote } from '../../shared/models/quote.model';
 import { BalanceInfo } from '../../shared/models/order.model';
+import { SessionExpired } from '../../shared/components/session-expired/session-expired';
+import { appendQuotes } from '../market/market-list/market-history';
+import { MARKET_REFRESH_MS } from '../market/market-page';
 import { StatStrip } from './stat-strip/stat-strip';
-import { MarketList, MarketRow } from './market-list/market-list';
-import { appendQuotes } from './market-list/market-history';
-import { PortfolioPanel, portfolioTotals } from './portfolio-panel/portfolio-panel';
-import { OrdersPanel } from './orders-panel/orders-panel';
-import { isOpenStatus } from './orders-panel/order-status';
-import { TradeDialog } from '../trade/trade-dialog';
-
-/** The simulator ticks every second; 2s keeps the market graphs moving without flooding the API. */
-export const MARKET_REFRESH_MS = 2000;
+import { QuickTrade } from './quick-trade/quick-trade';
+import { HoldingsSplit } from './holdings-split/holdings-split';
+import { Movers } from './movers/movers';
+import { portfolioTotals } from './portfolio-totals';
 
 /**
- * Dashboard Component
+ * Dashboard (the Overview tab)
  *
- * Signed-in home. Container only: it loads the account's holdings and orders, polls live
- * quotes for every stock, and hands the data to presentational children. Clicking a stock
- * (market list or portfolio) opens the buy/sell popup.
+ * Signed-in home, from the redesign's Overview board: the four headline cards, quick trade, what
+ * the user owns and today's biggest movers. Container only: it loads holdings, the balance and the
+ * account's orders (for the open-order count, kept live by the order stream), polls every quote,
+ * and hands the data to presentational children.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, StatStrip, MarketList, PortfolioPanel, OrdersPanel, TradeDialog],
+  imports: [SessionExpired, StatStrip, QuickTrade, HoldingsSplit, Movers],
+  providers: [AccountOrders],
   templateUrl: './dashboard.html',
+  styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit {
-  private static readonly HISTORY_PAGE_SIZE = 5;
-
   protected readonly auth = inject(Auth);
   private readonly holdingsService = inject(HoldingsService);
-  private readonly orderService = inject(OrderService);
   private readonly balanceService = inject(BalanceService);
   private readonly catalog = inject(InstrumentCatalog);
   private readonly quotes = inject(Quotes);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly accountOrders = inject(AccountOrders);
 
   protected readonly holdings = signal<HoldingDto[]>([]);
   protected readonly holdingsLoading = signal(true);
   protected readonly holdingsError = signal<string | null>(null);
+  protected readonly balance = signal<BalanceInfo | null>(null);
 
-  protected readonly orders = signal<OrderResponse[]>([]);
-  protected readonly historyOrders = signal<OrderResponse[]>([]);
-  protected readonly historyPage = signal(1);
-  protected readonly historyHasNext = signal(false);
-  protected readonly historyTotal = signal<number | null>(null);
-  // The unfiltered total is the full order list's length, so it isn't known until that list arrives.
-  private allOrdersLoaded = false;
-  private historyDate = '';
-  private historyRequest?: Subscription;
-  private ordersRequest?: Subscription;
-  private pendingOrdersRefresh = false;
-  private liveOrdersRequest?: Subscription;
-  protected readonly ordersLoading = signal(true);
-  protected readonly ordersError = signal<string | null>(null);
-  protected readonly ordersConnection = signal<OrdersConnectionState>('connecting');
-
-  protected readonly balanceData = signal<BalanceInfo | null>(null);
-  protected readonly balanceLoading = signal(true);
-  protected readonly balanceError = signal<string | null>(null);
-
-  private readonly marketQuotes = signal<Record<string, Quote | null>>({});
+  protected readonly marketQuotes = signal<Record<string, Quote | null>>({});
   protected readonly marketHistory = signal<Record<string, number[]>>({});
-  protected readonly marketRows = computed<MarketRow[]>(() =>
-    this.catalog.all().map((instrument) => ({
-      instrument,
-      quote: this.marketQuotes()[instrument.symbol] ?? null,
-      history: this.marketHistory()[instrument.symbol] ?? [],
-    })),
+  protected readonly instruments = computed(() => this.catalog.all());
+
+  /** The stock loaded into quick trade: the largest holding, else the first stock listed. */
+  private readonly chosenSymbol = signal<string | null>(null);
+  protected readonly quickSymbol = computed(
+    () => this.chosenSymbol() ?? this.holdings()[0]?.symbol ?? this.instruments()[0]?.symbol ?? '',
   );
 
-  /** Symbol shown in the buy/sell popup; null when it's closed. */
-  protected readonly tradeSymbol = signal<string | null>(null);
-
-  /** Set when either request comes back 401, which means the JWT cookie has expired. */
-  protected readonly sessionExpired = signal(false);
+  private readonly ownSessionExpired = signal(false);
+  protected readonly sessionExpired = computed(() => this.ownSessionExpired() || this.accountOrders.sessionExpired());
 
   protected readonly totals = computed(() => portfolioTotals(this.holdings()));
-  protected readonly openOrders = computed(() => this.orders().filter((o) => isOpenStatus(o.orderStatus)).length);
+  /** Shares held per symbol for the trade ticket; null when holdings failed to load. */
+  protected readonly heldBySymbol = computed(() =>
+    this.holdingsError() ? null : Object.fromEntries(this.holdings().map((h) => [h.symbol, h.quantity])),
+  );
 
   ngOnInit(): void {
     // Quotes are polled per symbol, so the stock list has to arrive first.
@@ -97,24 +74,25 @@ export class Dashboard implements OnInit {
       (err) => this.flagExpiredSession(err),
     );
     this.loadHoldings();
-    this.loadOrders();
     this.loadBalance();
-    this.loadHistory();
-    this.startLiveOrdersWatch();
+    this.accountOrders.start();
+    // An order moving on can change what the user owns and how much cash is left.
+    this.accountOrders.statusChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refreshAccount());
   }
 
-  protected openTrade(symbol: string): void {
-    this.tradeSymbol.set(symbol);
+  protected chooseSymbol(symbol: string): void {
+    this.chosenSymbol.set(symbol);
   }
 
-  protected closeTrade(): void {
-    this.tradeSymbol.set(null);
-  }
-
-  /** A placed order changes holdings and the order list, so reload both behind the popup. */
+  /** A placed order changes holdings, cash and the order list, so reload all three. */
   protected onOrderPlaced(): void {
+    this.refreshAccount();
+    this.accountOrders.reload();
+  }
+
+  private refreshAccount(): void {
     this.loadHoldings();
-    this.loadHistory();
+    this.loadBalance();
   }
 
   private watchMarket(): void {
@@ -135,7 +113,7 @@ export class Dashboard implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (response) => {
-            this.holdings.set(response.holdings ?? []);
+            this.holdings.set([...(response.holdings ?? [])].sort((a, b) => b.currentValue - a.currentValue));
             this.holdingsError.set(null);
             this.holdingsLoading.set(false);
           },
@@ -153,163 +131,20 @@ export class Dashboard implements OnInit {
     }
   }
 
-  private loadOrders(): void {
-    if (this.ordersRequest && !this.ordersRequest.closed) {
-      this.pendingOrdersRefresh = true;
-      return;
-    }
-    const accountId = this.auth.currentAccountId();
-    if (!accountId) {
-      this.ordersError.set('No trading account is linked to this login.');
-      this.ordersLoading.set(false);
-      return;
-    }
-    this.ordersRequest = this.orderService
-      .getAllOrdersByAccountId(accountId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (orders) => {
-          const previous = new Map(this.orders().map(order => [order.orderId, order.orderStatus]));
-          this.orders.set(orders ?? []);
-          this.allOrdersLoaded = true;
-          if (!this.historyDate) {
-            this.historyTotal.set((orders ?? []).length);
-          }
-          if ((orders ?? []).some(order => previous.has(order.orderId)
-              && previous.get(order.orderId) !== order.orderStatus)) {
-            this.loadHoldings();
-            this.loadHistory();
-          }
-          if (this.pendingOrdersRefresh) {
-            this.pendingOrdersRefresh = false;
-            this.loadOrders();
-          }
-        },
-        error: (err) => {
-          this.flagExpiredSession(err);
-          if (this.pendingOrdersRefresh) {
-            this.pendingOrdersRefresh = false;
-            this.loadOrders();
-          }
-        },
-      });
-  }
-
-  private startLiveOrdersWatch(): void {
-    if (this.liveOrdersRequest && !this.liveOrdersRequest.closed) {
-      return;
-    }
-    if (!this.auth.currentAccountId()) {
-      return;
-    }
-
-    this.liveOrdersRequest = this.orderService
-      .watchOrderStatusStream()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: snapshot => {
-          this.ordersConnection.set(snapshot.connection);
-          if (snapshot.event) {
-            // A status change can affect open-order counts, holdings and filtered history.
-            this.loadOrders();
-            this.loadHoldings();
-            this.loadHistory();
-          }
-        },
-        error: (err) => {
-          this.flagExpiredSession(err);
-        },
-      });
-  }
-
-  protected onHistoryDateChange(date: string): void {
-    this.historyDate = date;
-    this.historyPage.set(1);
-    this.loadHistory();
-  }
-
-  protected onHistoryPageChange(page: number): void {
-    this.historyPage.set(page);
-    this.loadHistory();
-  }
-
-  private loadHistoryPage(accountId: number, filter?: { date: string; timeZone: string }): void {
-    this.historyRequest?.unsubscribe();
-    this.ordersLoading.set(true);
-    this.ordersError.set(null);
-    const pageIndex = this.historyPage() - 1;
-    const requestSize = Dashboard.HISTORY_PAGE_SIZE + 1;
-    this.historyRequest = this.orderService.getOrdersByAccountIdPage(
-      accountId,
-      { page: pageIndex, size: requestSize },
-      filter,
-    )
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: orders => {
-          const all = orders ?? [];
-          const hasNext = all.length > Dashboard.HISTORY_PAGE_SIZE;
-          const pageOrders = all.slice(0, Dashboard.HISTORY_PAGE_SIZE);
-          this.historyOrders.set(pageOrders);
-          this.historyHasNext.set(hasNext);
-          if (!this.historyDate) {
-            // A history page can beat the full list back; leave the total unknown rather than show 0,
-            // and let the full list set it when it arrives.
-            if (this.allOrdersLoaded) {
-              this.historyTotal.set(this.orders().length);
-            }
-          } else {
-            const lowerBound = pageIndex * Dashboard.HISTORY_PAGE_SIZE + pageOrders.length;
-            this.historyTotal.set(hasNext ? lowerBound + 1 : lowerBound);
-          }
-          this.ordersLoading.set(false);
-        },
-        error: err => {
-          this.historyOrders.set([]);
-          this.historyHasNext.set(false);
-          this.historyTotal.set(0);
-          this.ordersError.set('Unable to load orders. Please try again.');
-          this.ordersLoading.set(false);
-          this.flagExpiredSession(err);
-        },
-      });
-  }
-
-  private loadHistory(): void {
-    const accountId = this.auth.currentAccountId();
-    if (!accountId) {
-      return;
-    }
-    const filter = this.historyDate ? {
-      date: this.historyDate,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    } : undefined;
-    this.loadHistoryPage(accountId, filter);
-  }
-
   private loadBalance(): void {
     this.balanceService.getBalance().then(
-      (response) => {
-        if (response.success && response.balance) {
-          this.balanceData.set(response.balance);
-          this.balanceError.set(null);
-        } else {
-          this.balanceError.set(response.error ?? 'Unable to load balance.');
-        }
-        this.balanceLoading.set(false);
-      },
+      (response) => this.balance.set(response.success && response.balance ? response.balance : null),
       (err) => {
-        this.balanceError.set('Unable to load balance. Please try again.');
-        this.balanceLoading.set(false);
+        this.balance.set(null);
         this.flagExpiredSession(err);
-      }
+      },
     );
   }
 
   private flagExpiredSession(err: unknown): void {
     if (err instanceof HttpErrorResponse && err.status === 401) {
-      this.sessionExpired.set(true);
-      this.liveOrdersRequest?.unsubscribe();
+      this.ownSessionExpired.set(true);
+      this.accountOrders.flagExpiredSession(err);
     }
   }
 }

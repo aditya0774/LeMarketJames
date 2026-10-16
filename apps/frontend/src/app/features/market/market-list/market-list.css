@@ -1,0 +1,37 @@
+.market-filter {
+  flex: 0 1 280px;
+}
+
+.stock-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stock-cell .sym {
+  min-width: 52px;
+}
+
+.stock-name {
+  font-size: var(--font-sm);
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+tr.clickable {
+  cursor: pointer;
+}
+
+tr.clickable:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Looks like the design's Trade button; the row itself is the control, so this is decoration. */
+.trade-link {
+  pointer-events: none;
+}

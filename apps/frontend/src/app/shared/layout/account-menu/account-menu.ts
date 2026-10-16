@@ -30,8 +30,8 @@ import { Theme, ThemeName } from '../../../core/theme/theme';
             <b>{{ name() }}</b>
             <span>{{ detail() }}</span>
           </div>
-          <div class="menu-theme" role="group" aria-label="Color theme">
-            <span>Appearance</span>
+          <fieldset class="menu-theme">
+            <legend>Appearance</legend>
             <div class="seg">
               @for (option of themes; track option.value) {
                 <button type="button" [attr.aria-pressed]="theme.current() === option.value" (click)="theme.set(option.value)">
@@ -40,7 +40,7 @@ import { Theme, ThemeName } from '../../../core/theme/theme';
                 </button>
               }
             </div>
-          </div>
+          </fieldset>
           <button type="button" class="menu-item" (click)="loggedOut.emit()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3" />

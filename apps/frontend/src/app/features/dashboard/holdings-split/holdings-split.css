@@ -1,0 +1,99 @@
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  padding: 16px 18px;
+}
+
+.split-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.split-head h2 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.split .loading,
+.split .empty-state {
+  padding: 8px 0;
+}
+
+.split-body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.donut {
+  width: 128px;
+  height: 128px;
+  flex: none;
+}
+
+.donut circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+.donut-track {
+  stroke: var(--l4);
+}
+
+.donut-sub {
+  font: 3.6px var(--font-body);
+  fill: var(--faint);
+}
+
+.donut-val {
+  font: 4.2px var(--font-mono);
+  fill: var(--text);
+}
+
+.split-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.split-list button {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: 400 var(--font-sm) var(--font-body);
+  cursor: pointer;
+}
+
+.split-list button:hover {
+  background: var(--card2);
+}
+
+.split-list i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.pct {
+  margin-left: auto;
+}
+
+.gain {
+  width: 58px;
+  text-align: right;
+}

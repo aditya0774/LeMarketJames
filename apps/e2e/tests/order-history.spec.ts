@@ -1,5 +1,6 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { connectDatabase } from './support/database';
+import { openTab } from './support/nav';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 // UTC fixtures span years, leap day, and both US DST transitions. Quantity identifies
@@ -39,6 +40,9 @@ const test = base.extend<{ seededAccount: number }>({
       }
       await loginViaUi(page, user);
       await expect(page).toHaveURL(/dashboard/);
+      // Every fixture is filled or rejected, so the Overview counts no open orders.
+      await expect(page.locator('.stat-card .val').last()).toHaveText('0');
+      await openTab(page, 'Orders');
       await expect(page.locator('app-orders-panel .pg-info')).toContainText('of 15 orders');
       await use(accountId);
     } finally {
@@ -89,8 +93,6 @@ for (const scenario of [
     if (scenario.display) {
       await expect(rows.locator('td:nth-child(1)')).toContainText(scenario.quantities.map(() => scenario.display!));
     }
-    // Filtering history must not change the account-wide open-order count.
-    await expect(page.locator('.stat-card .val').last()).toHaveText('0');
   });
 }
 
@@ -154,23 +156,16 @@ test('AC4: order-history rows show required columns and status-specific values',
 
   await choose(page, 'day', '2026-11-01');
 
-  await expect(panel.locator('thead th')).toHaveText([
-    'Date/Time',
-    'Stock',
-    'Side',
-    'Qty',
-    'Status',
-    'Fill Price',
-    'Rejection Reason',
-  ]);
+  await expect(panel.locator('thead th')).toHaveText(['When', 'Stock', 'Type', 'Shares', 'Status', 'Filled at']);
 
   const filledRow = panel.locator('tbody tr[data-order-id]').first();
   await expect(filledRow.locator('td:nth-child(2) .sym')).toHaveText('AAPL');
   await expect(filledRow.locator('td:nth-child(3)')).toHaveText('BUY');
   await expect(filledRow.locator('td:nth-child(4)')).toHaveText('14');
+  // The Status cell holds the badge and a note under it: the amount for a fill, the reason for a rejection.
   await expect(filledRow.locator('td:nth-child(5)')).toContainText('Filled');
+  await expect(filledRow.locator('td:nth-child(5)')).toContainText('Done. You paid $1,400.00.');
   await expect(filledRow.locator('td:nth-child(6)')).toContainText('$100.00');
-  await expect(filledRow.locator('td:nth-child(7)')).toHaveText('—');
 
   await choose(page, 'year', '2023');
 
@@ -179,7 +174,7 @@ test('AC4: order-history rows show required columns and status-specific values',
   await expect(rejectedRow.locator('td:nth-child(3)')).toHaveText('BUY');
   await expect(rejectedRow.locator('td:nth-child(4)')).toHaveText('1');
   await expect(rejectedRow.locator('td:nth-child(5)')).toContainText('Rejected');
-  await expect(rejectedRow.locator('td:nth-child(6)')).toHaveText('—');
-  await expect(rejectedRow.locator('td:nth-child(7)'))
+  await expect(rejectedRow.locator('td:nth-child(5)'))
     .toContainText('Order rejected because you do not hold enough shares to sell that quantity.');
+  await expect(rejectedRow.locator('td:nth-child(6)')).toHaveText('—');
 });

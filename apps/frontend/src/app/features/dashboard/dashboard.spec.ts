@@ -1,52 +1,47 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, HttpErrorResponse } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
-import { describe, expect, it } from 'vitest';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderResponse, OrdersStreamSnapshot, OrderService } from '../../core/orders/order.service';
+import { BalanceService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
+import { loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 import { Dashboard } from './dashboard';
-import { TEST_INSTRUMENTS, loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 
 const holdings = [
-  { symbol: 'AAPL', quantity: 10, averageCost: 100, currentPrice: 120, totalCost: 1000, currentValue: 1200, gainLoss: 200, gainLossPercent: 20 },
   { symbol: 'TSLA', quantity: 2, averageCost: 250, currentPrice: 200, totalCost: 500, currentValue: 400, gainLoss: -100, gainLossPercent: -20 },
+  { symbol: 'AAPL', quantity: 10, averageCost: 100, currentPrice: 120, totalCost: 1000, currentValue: 1200, gainLoss: 200, gainLossPercent: 20 },
 ];
 
-function quote(symbol: string, price: number) {
+function quote(symbol: string, price: number, priceChangePercent: number) {
   return {
-    symbol, name: symbol, price, priceChange: -1, priceChangePercent: -0.4, openPrice: price + 1,
+    symbol, name: symbol, price, priceChange: priceChangePercent, priceChangePercent, openPrice: price,
     highPrice: price + 2, lowPrice: price - 2, volume: 1000, marketCap: 1e9, peRatio: 0, dividendYield: 0, lastUpdate: '',
   };
 }
 
-function order(orderId: number, orderStatus: OrderResponse['orderStatus'], instrumentId = 1): OrderResponse {
-  const day = String(((orderId - 1) % 28) + 1).padStart(2, '0');
+function order(orderId: number, orderStatus: OrderResponse['orderStatus']): OrderResponse {
   return {
-    success: true,
-    orderId, accountId: 7, instrumentId, orderType: 'BUY', quantity: 1, orderStatus,
-    submittedAt: `2026-09-${day}T10:00:00`, createdAt: '', updatedAt: '',
+    success: true, orderId, accountId: 7, instrumentId: 1, orderType: 'BUY', quantity: 1, orderStatus,
+    submittedAt: '2026-09-01T10:00:00', createdAt: '', updatedAt: '',
   };
 }
 
-function rowTextCells(row: Element): string[] {
-  return Array.from(row.querySelectorAll('td')).map(cell => (cell.textContent ?? '').trim());
-}
-
-describe('Dashboard', () => {
+describe('Dashboard (Overview)', () => {
   let fixture: ComponentFixture<Dashboard>;
   let allOrdersResult: Observable<unknown>;
-  let historyPageResult: Observable<unknown>;
-  let requestedHistoryRequests: Array<{ page: number; size: number; filter: unknown }>;
+  let holdingsResult: Observable<unknown>;
+  let balanceCalls: number;
+  let holdingsCalls: number;
   let liveOrders: Subject<OrdersStreamSnapshot>;
 
-  async function setup(accountId: number | null = 7) {
-    requestedHistoryRequests = [];
+  async function setup(balance: unknown = { success: true, balance: { buyingPower: 10000 } }) {
+    balanceCalls = 0;
+    holdingsCalls = 0;
     liveOrders = new Subject<OrdersStreamSnapshot>();
     await TestBed.configureTestingModule({
       imports: [Dashboard],
@@ -54,24 +49,34 @@ describe('Dashboard', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(accountId), logout: async () => {} } },
-        { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings }), error: signal(null) } },
+        { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7) } },
+        {
+          provide: HoldingsService,
+          useValue: {
+            getOwnHoldings: () => {
+              holdingsCalls++;
+              return holdingsResult;
+            },
+            error: signal(null),
+          },
+        },
+        {
+          provide: BalanceService,
+          useValue: {
+            getBalance: () => {
+              balanceCalls++;
+              return balance instanceof Error ? Promise.reject(balance) : Promise.resolve(balance);
+            },
+          },
+        },
         {
           provide: OrderService,
-          useValue: {
-            getAllOrdersByAccountId: () => allOrdersResult,
-            getOrdersByAccountIdPage: (_accountId: number, request: { page: number; size: number }, filter: unknown) => {
-              requestedHistoryRequests.push({ page: request.page, size: request.size, filter });
-              return historyPageResult;
-            },
-            watchOrderStatusStream: () => liveOrders.asObservable(),
-          },
+          useValue: { getAllOrdersByAccountId: () => allOrdersResult, watchOrderStatusStream: () => liveOrders.asObservable() },
         },
         {
           provide: Quotes,
           useValue: {
-            watchQuotes: () => of({ AAPL: quote('AAPL', 227.5), TSLA: quote('TSLA', 248.9) }),
-            watchQuote: (symbol: string) => of({ success: true, quote: quote(symbol, 248.9) }),
+            watchQuotes: () => of({ AAPL: quote('AAPL', 227.5, 0.8), TSLA: quote('TSLA', 248.9, -3.1), NVDA: quote('NVDA', 176, 1.2) }),
           },
         },
       ],
@@ -81,320 +86,89 @@ describe('Dashboard', () => {
     fixture = TestBed.createComponent(Dashboard);
     fixture.detectChanges();
     await fixture.whenStable();
-    // Quote polling starts once the (already loaded) stock list resolves, a microtask later.
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    await fixture.whenStable();
   }
 
-  const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+  const el = () => fixture.nativeElement as HTMLElement;
+  const text = () => el().textContent ?? '';
 
-  it('refreshes history after an open order fills via live updates', async () => {
-    allOrdersResult = of([order(1, 'SUBMITTED')]);
-    historyPageResult = of([order(1, 'SUBMITTED')]);
-    await setup();
-
-    allOrdersResult = of([order(1, 'FILLED')]);
-    historyPageResult = of([order(1, 'FILLED')]);
-    const before = requestedHistoryRequests.length;
-    liveOrders.next({
-      connection: 'live',
-      event: { orderId: 1, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '2026-09-01T10:00:00Z' },
-    });
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(requestedHistoryRequests.length).toBeGreaterThan(before); // SSE status events now refresh both orders and history.
-    expect(text()).toContain('Filled');
+  beforeEach(() => {
+    allOrdersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED'), order(3, 'PENDING')]);
+    holdingsResult = of({ success: true, holdings });
   });
 
-  it('requests no orders, history or live updates for a login without a trading account', async () => {
-    allOrdersResult = of([]);
-    historyPageResult = of([]);
-    await setup(null);
-
-    expect(text()).toContain('No trading account is linked to this login.');
-    expect(requestedHistoryRequests).toEqual([]);
-    expect(liveOrders.observed).toBe(false);
-  });
-
-  it('queues an orders refresh when a live event arrives during an in-flight orders request', async () => {
-    const first = new Subject<OrderResponse[]>();
-    allOrdersResult = first;
-    historyPageResult = of([order(1, 'SUBMITTED')]);
+  it('shows the four headline figures, open orders last', async () => {
     await setup();
 
-    // The queued follow-up request should read this newer state once the first request completes.
-    allOrdersResult = of([order(1, 'FILLED')]);
-    historyPageResult = of([order(1, 'FILLED')]);
-    liveOrders.next({
-      connection: 'live',
-      event: { orderId: 1, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '2026-09-01T10:00:00Z' },
-    });
-    first.next([order(1, 'SUBMITTED')]);
-    first.complete();
-
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(text()).toContain('Filled');
-  });
-
-  it('shows portfolio totals and open order count', async () => {
-    allOrdersResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
-    historyPageResult = of([order(1, 'FILLED'), order(2, 'SUBMITTED', 5), order(3, 'PENDING')]);
-    await setup();
-
-    const cards = Array.from(fixture.nativeElement.querySelectorAll('.stat-card .val')).map(
-      (el) => (el as HTMLElement).textContent?.trim(),
-    );
-    // Portfolio value leads the strip, then buying power (unavailable here, so "—").
+    const values = Array.from(el().querySelectorAll('.stat-card .val')).map((v) => v.textContent?.trim());
     // Value 1600, cost 1500 → +$100 (+6.67%); 2 of 3 orders are still open.
-    expect(cards).toEqual(['$1,600.00', '—', '+6.67%', '2']);
+    expect(values).toEqual(['$1,600.00', '+$100.00', '$10,000.00', '2']);
+    expect(text()).toContain('6.67%');
     expect(text()).toContain('Welcome back, lebron');
-    expect(text()).toContain('TSLA');
-    expect(text()).toContain('Showing 1–3 of 3 orders');
   });
 
-  // The first history page can come back before the full order list; the total must never read 0 meanwhile.
-  it('does not show a total of 0 while the full order list is still loading', async () => {
-    const allOrders = new Subject<OrderResponse[]>();
-    const seven = [1, 2, 3, 4, 5, 6, 7].map(id => order(id, 'FILLED'));
-    allOrdersResult = allOrders;
-    historyPageResult = of(seven.slice(0, 6));
-    await setup();
+  it('shows "—" for buying power when the balance is unavailable', async () => {
+    await setup({ success: false });
 
-    expect(text()).toContain('Showing 1–5 orders');
-    expect(text()).not.toContain('of 0 orders');
-
-    allOrders.next(seven);
-    allOrders.complete();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(text()).toContain('Showing 1–5 of 7 orders');
+    expect(el().querySelectorAll('.stat-card .val')[2].textContent?.trim()).toBe('—');
+    expect(text()).toContain('Balance unavailable');
   });
 
-  it('lists every stock with its live price and a trend graph', async () => {
-    allOrdersResult = of([]);
-    historyPageResult = of([]);
+  it('splits what the user owns, largest first', async () => {
     await setup();
 
-    const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
-    expect(Array.from(rows)).toHaveLength(TEST_INSTRUMENTS.length);
-    const tsla = Array.from(rows).find((r) => r.textContent?.includes('TSLA'))!;
-    expect(tsla.textContent).toContain('$248.90');
-    expect(tsla.textContent).toContain('▼');
-    // Seeded with [open, price], so the graph has a line straight away.
-    expect(tsla.querySelector('.row-chart path')?.getAttribute('d')).toContain('L');
+    const rows = Array.from(el().querySelectorAll('app-holdings-split li')).map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
+    expect(rows[0]).toContain('AAPL');
+    expect(rows[0]).toContain('75%');
+    expect(rows[1]).toContain('TSLA');
+    expect(el().querySelector('app-holdings-split svg')?.getAttribute('aria-label')).toBe('Portfolio split: AAPL 75%, TSLA 25%');
   });
 
-  it('opens the buy/sell popup when a stock is clicked, and closes it again', async () => {
-    allOrdersResult = of([]);
-    historyPageResult = of([]);
+  it('lists the biggest movers either way, largest first', async () => {
     await setup();
 
-    const rows = fixture.nativeElement.querySelectorAll('app-market-list tbody tr') as NodeListOf<HTMLElement>;
-    Array.from(rows).find((r) => r.textContent?.includes('TSLA'))!.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(fixture.nativeElement.querySelector('[role=dialog] h2')?.textContent).toContain('Trade TSLA');
-
-    (fixture.nativeElement.querySelector('.modal-close') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(fixture.nativeElement.querySelector('[role=dialog]')).toBeNull();
+    const symbols = Array.from(el().querySelectorAll('app-movers .sym')).map((s) => s.textContent?.trim());
+    expect(symbols).toEqual(['TSLA', 'NVDA', 'AAPL']);
   });
 
-  it('filters orders by status chip', async () => {
-    allOrdersResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
-    historyPageResult = of([order(1, 'FILLED'), order(2, 'REJECTED'), order(3, 'PENDING')]);
+  it('loads the largest holding into quick trade, and any stock the user selects', async () => {
     await setup();
+    const select = () => el().querySelector('app-quick-trade select') as HTMLSelectElement;
+    expect(select().value).toBe('AAPL');
 
-    const chips = fixture.nativeElement.querySelectorAll('.chip') as NodeListOf<HTMLButtonElement>;
-    chips[3].click(); // Rejected
+    (el().querySelector('app-movers button[aria-label="Load TSLA into quick trade"]') as HTMLButtonElement).click();
     fixture.detectChanges();
+
+    expect(select().value).toBe('TSLA');
+    expect(el().querySelector('app-quick-trade')?.textContent).toContain('$248.90');
+    expect(el().querySelector('app-quick-trade')?.textContent).toContain('You own 2 shares of TSLA.');
+  });
+
+  it('reloads holdings and balance when an order changes status', async () => {
+    await setup();
+    const before = { holdings: holdingsCalls, balance: balanceCalls };
+
+    liveOrders.next({ connection: 'live', event: { orderId: 2, accountId: 7, from: 'SUBMITTED', to: 'FILLED', occurredAt: '' } });
     await fixture.whenStable();
 
-    const rows = fixture.nativeElement.querySelectorAll('app-orders-panel tbody tr');
-    expect(Array.from(rows)).toHaveLength(1);
-    expect(rows[0].textContent).toContain('Rejected');
+    expect(holdingsCalls).toBeGreaterThan(before.holdings);
+    expect(balanceCalls).toBeGreaterThan(before.balance);
+  });
+
+  it('says so when there is nothing owned yet', async () => {
+    holdingsResult = of({ success: true, holdings: [] });
+    await setup();
+
+    expect(el().querySelector('app-holdings-split')?.textContent).toContain('No stocks yet');
   });
 
   it('shows the session-expired alert on 401', async () => {
-    allOrdersResult = of([]);
-    historyPageResult = throwError(() => new HttpErrorResponse({ status: 401 }));
+    holdingsResult = throwError(() => new HttpErrorResponse({ status: 401 }));
     await setup();
 
     expect(text()).toContain('Your session has expired');
-  });
-  it('requests the local period, cancels stale requests, and clears without parameters', async () => {
-    allOrdersResult = of([order(1, 'SUBMITTED')]);
-    historyPageResult = of([order(1, 'SUBMITTED')]);
-    await setup();
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
-    const previous = new Subject<unknown>();
-    historyPageResult = previous;
-    input.value = '2026-03-08';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    expect(requestedHistoryRequests.at(-1)?.filter).toEqual({ date: '2026-03-08', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-    expect(requestedHistoryRequests.at(-1)?.page).toBe(0);
-    expect(requestedHistoryRequests.at(-1)?.size).toBe(6);
-    expect(previous.observed).toBe(true);
-    const latest = new Subject<unknown>();
-    historyPageResult = latest;
-    input.value = '2026-03-09';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    expect(previous.observed).toBe(false);
-    latest.next([]);
-    fixture.detectChanges();
-    expect(text()).toContain('No orders in this period');
-    historyPageResult = of([order(1, 'SUBMITTED')]);
-    fixture.nativeElement.querySelector('.date-filters button').click();
-    fixture.detectChanges();
-    expect(requestedHistoryRequests.at(-1)?.filter).toBeUndefined();
-    expect(text()).not.toContain('No orders in this period');
-  });
-
-  it('allows clearing after a filtered request fails', async () => {
-    allOrdersResult = of([]);
-    historyPageResult = of([]);
-    await setup();
-    historyPageResult = throwError(() => new HttpErrorResponse({ status: 500 }));
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('app-orders-panel input');
-    input.value = '2026-03-08';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    expect(text()).toContain('Unable to load orders');
-    expect(text()).not.toContain('No orders in this period');
-    historyPageResult = of([]);
-    fixture.nativeElement.querySelector('.date-filters button').click();
-    fixture.detectChanges();
-    expect(text()).not.toContain('Unable to load orders');
-  });
-
-  it('requests the next backend page when pagination advances', async () => {
-    allOrdersResult = of(Array.from({ length: 12 }, (_, i) => order(i + 1, 'FILLED')));
-    historyPageResult = of(Array.from({ length: 6 }, (_, i) => order(12 - i, 'FILLED')));
-    await setup();
-
-    historyPageResult = of(Array.from({ length: 6 }, (_, i) => order(6 - i, 'FILLED')));
-    const nextPageButton = fixture.nativeElement.querySelector('app-orders-panel .pg-btn[aria-label="Next page"]') as HTMLButtonElement;
-    nextPageButton.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(requestedHistoryRequests.at(-1)?.page).toBe(1);
-    expect(requestedHistoryRequests.at(-1)?.size).toBe(6);
-  });
-
-  it('requests backend page 0 size 6 on first history load', async () => {
-    allOrdersResult = of(Array.from({ length: 4 }, (_, i) => order(i + 1, 'FILLED')));
-    historyPageResult = of(Array.from({ length: 4 }, (_, i) => order(4 - i, 'FILLED')));
-
-    await setup();
-
-    expect(requestedHistoryRequests[0]).toEqual({
-      page: 0,
-      size: 6,
-      filter: undefined,
-    });
-  });
-
-  it('maps paged API response fields into rendered order-history columns', async () => {
-    allOrdersResult = of([
-      {
-        success: true,
-        orderId: 1,
-        accountId: 7,
-        instrumentId: 1,
-        symbol: 'AAPL',
-        orderType: 'BUY',
-        quantity: 11,
-        pricePerUnit: 201.5,
-        orderStatus: 'FILLED',
-        rejectionReason: null,
-        submittedAt: '2026-03-08T10:00:00',
-        createdAt: '2026-03-08T10:00:00',
-        updatedAt: '2026-03-08T10:00:01',
-        filledAt: '2026-03-08T10:00:01',
-      },
-      {
-        success: true,
-        orderId: 2,
-        accountId: 7,
-        instrumentId: 2,
-        symbol: 'TSLA',
-        orderType: 'SELL',
-        quantity: 4,
-        pricePerUnit: null,
-        orderStatus: 'REJECTED',
-        rejectionReason: 'INSUFFICIENT_HOLDINGS',
-        submittedAt: '2026-03-08T11:00:00',
-        createdAt: '2026-03-08T11:00:00',
-        updatedAt: '2026-03-08T11:00:00',
-        filledAt: null,
-      },
-    ]);
-    historyPageResult = of([
-      {
-        success: true,
-        orderId: 2,
-        accountId: 7,
-        instrumentId: 2,
-        symbol: 'TSLA',
-        orderType: 'SELL',
-        quantity: 4,
-        pricePerUnit: null,
-        orderStatus: 'REJECTED',
-        rejectionReason: 'INSUFFICIENT_HOLDINGS',
-        submittedAt: '2026-03-08T11:00:00',
-        createdAt: '2026-03-08T11:00:00',
-        updatedAt: '2026-03-08T11:00:00',
-        filledAt: null,
-      },
-      {
-        success: true,
-        orderId: 1,
-        accountId: 7,
-        instrumentId: 1,
-        symbol: 'AAPL',
-        orderType: 'BUY',
-        quantity: 11,
-        pricePerUnit: 201.5,
-        orderStatus: 'FILLED',
-        rejectionReason: null,
-        submittedAt: '2026-03-08T10:00:00',
-        createdAt: '2026-03-08T10:00:00',
-        updatedAt: '2026-03-08T10:00:01',
-        filledAt: '2026-03-08T10:00:01',
-      },
-    ]);
-
-    await setup();
-
-    const rows = fixture.nativeElement.querySelectorAll('app-orders-panel tbody tr[data-order-id]');
-    expect(rows).toHaveLength(2);
-    const firstCells = rowTextCells(rows[0]);
-    const secondCells = rowTextCells(rows[1]);
-
-    expect(firstCells[1]).toContain('TSLA');
-    expect(firstCells[2]).toBe('SELL');
-    expect(firstCells[3]).toBe('4');
-    expect(firstCells[4]).toBe('Rejected');
-    expect(firstCells[5]).toBe('—');
-    expect(firstCells[6]).toContain('Order rejected because you do not hold enough shares to sell that quantity.');
-
-    expect(secondCells[1]).toContain('AAPL');
-    expect(secondCells[2]).toBe('BUY');
-    expect(secondCells[3]).toBe('11');
-    expect(secondCells[4]).toBe('Filled');
-    expect(secondCells[5]).toContain('$201.50');
-    expect(secondCells[6]).toBe('—');
+    expect(liveOrders.observed).toBe(false);
   });
 });

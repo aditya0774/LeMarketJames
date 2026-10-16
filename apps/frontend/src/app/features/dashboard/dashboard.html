@@ -1,50 +1,37 @@
-<header class="app-header">
-  <div>
-    <h1>Dashboard</h1>
-    <div class="sub">Welcome back, {{ auth.currentUser() }} — here's where things stand.</div>
-  </div>
-</header>
+<!-- The page heading is for screen readers and tests; the tab bar already says where you are. -->
+<h1 class="sr-only">Dashboard</h1>
+<p class="greeting">Welcome back, {{ auth.currentUser() }} — here's where your money stands today.</p>
 
 @if (sessionExpired()) {
-  <div class="alert err" role="alert">
-    <div>
-      <b>401 · Unauthorized</b>
-      Your session has expired — please <a routerLink="/login">log in again</a> to continue.
-    </div>
-  </div>
+  <app-session-expired />
 }
 
-<app-stat-strip [totals]="totals()" [openOrders]="openOrders()" [buyingPower]="balanceData()?.buyingPower ?? null" />
+<div class="overview">
+  <app-stat-strip
+    class="ov-stats"
+    [totals]="totals()"
+    [openOrders]="accountOrders.openCount()"
+    [buyingPower]="balance()?.buyingPower ?? null"
+  />
 
-<div class="dash-grid">
-  <app-market-list [rows]="marketRows()" (selectSymbol)="openTrade($event)" />
-
-  <app-portfolio-panel
+  <app-holdings-split
+    class="ov-split"
     [holdings]="holdings()"
     [loading]="holdingsLoading()"
     [error]="holdingsError()"
-    (selectSymbol)="openTrade($event)"
+    (selectSymbol)="chooseSymbol($event)"
   />
-</div>
 
-<app-orders-panel
-  [orders]="historyOrders()"
-  (dateChange)="onHistoryDateChange($event)"
-  (pageChange)="onHistoryPageChange($event)"
-  [loading]="ordersLoading()"
-  [error]="ordersError()"
-  [liveConnection]="ordersConnection()"
-  [serverPagination]="true"
-  [currentPage]="historyPage()"
-  [hasNextPage]="historyHasNext()"
-  [totalOrders]="historyTotal()"
-/>
-
-@if (tradeSymbol(); as symbol) {
-  <app-trade-dialog
-    [symbol]="symbol"
-    [initialHistory]="marketHistory()[symbol] ?? []"
-    (closed)="closeTrade()"
+  <app-quick-trade
+    class="ov-trade"
+    [instruments]="instruments()"
+    [quotes]="marketQuotes()"
+    [holdings]="heldBySymbol()"
+    [buyingPower]="balance()?.buyingPower ?? null"
+    [symbol]="quickSymbol()"
+    (symbolChange)="chooseSymbol($event)"
     (orderPlaced)="onOrderPlaced()"
   />
-}
+
+  <app-movers class="ov-movers" [quotes]="marketQuotes()" [history]="marketHistory()" (selectSymbol)="chooseSymbol($event)" />
+</div>

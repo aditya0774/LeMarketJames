@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, formatCurrency } from '@angular/common';
 import { OrdersConnectionState, OrderResponse } from '../../../core/orders/order.service';
 import { InstrumentCatalog } from '../../../core/market/instrument-catalog';
 import {
@@ -8,7 +8,7 @@ import {
   matchesFilter,
   statusLabel,
   statusPillClass,
-} from './order-status';
+} from '../../../core/orders/order-status';
 import { rejectionReasonLabel } from './rejection-reason';
 import { OrderHistoryRow, toOrderHistoryRow } from './order-history-row';
 
@@ -20,9 +20,29 @@ function isFourDigitYear(value: string): boolean {
   return /^\d{4}$/.test(value) && Number(value) >= 1;
 }
 
+/** How far along the four-step path (Submitted → Accepted → Pending → Filled) each status is. */
+const STEP_REACHED: Record<OrderHistoryRow['order']['orderStatus'], number> = {
+  SUBMITTED: 1,
+  ACCEPTED: 2,
+  PENDING: 3,
+  DELAYED: 3,
+  FILLED: 4,
+  REJECTED: 4,
+};
+
+/** A plain-English line under each open status (meanings from Order.OrderStatus, contract C1). */
+const OPEN_NOTES: Partial<Record<OrderHistoryRow['order']['orderStatus'], string>> = {
+  SUBMITTED: 'Received. Waiting to be accepted.',
+  ACCEPTED: 'Checks passed and queued to execute.',
+  PENDING: 'Sent to execute. Waiting for the fill.',
+  DELAYED: 'The market is closed. It runs when the market opens.',
+};
+
 /**
- * Orders table with status filter chips and client-side pagination. Presentational:
- * the Dashboard loads the orders and passes them in.
+ * Orders table from the redesign's Orders board: status chips, the live-updates badge, the date
+ * filter, a key to the statuses, and one row per order whose Status cell shows the badge, a
+ * four-step progress bar and a note (the reason, for a rejected order). Presentational: the
+ * Orders page loads the orders and passes them in; with server pagination it also owns paging.
  */
 @Component({
   selector: 'app-orders-panel',
@@ -169,10 +189,32 @@ export class OrdersPanel {
     return row.order.pricePerUnit ?? null;
   }
 
-  protected rejectionReasonFor(row: OrderHistoryRow): string | null {
-    if (row.order.orderStatus !== 'REJECTED') {
-      return null;
+  /** The note under the status: what happens next, the amount for a fill, or why it was refused. */
+  protected noteFor(row: OrderHistoryRow): string {
+    const { orderStatus, orderType, quantity } = row.order;
+    if (orderStatus === 'REJECTED') {
+      return this.rejectionReasonLabel(row.rejectionReason) ?? "Didn't go through.";
     }
-    return this.rejectionReasonLabel(row.rejectionReason);
+    if (orderStatus === 'FILLED') {
+      const price = this.fillPriceFor(row);
+      if (price == null) {
+        return 'Done.';
+      }
+      const amount = formatCurrency(price * quantity, 'en-US', '$', 'USD');
+      return orderType === 'BUY' ? `Done. You paid ${amount}.` : `Done. You received ${amount}.`;
+    }
+    return OPEN_NOTES[orderStatus] ?? '';
+  }
+
+  /** Class for progress bar segment `step` (1-4): lit in the status colour once reached. */
+  protected stepClass(row: OrderHistoryRow, step: number): string {
+    const status = row.order.orderStatus;
+    if (step > STEP_REACHED[status]) {
+      return '';
+    }
+    if (status === 'FILLED' || status === 'REJECTED' || status === 'DELAYED') {
+      return `on ${status.toLowerCase()}`;
+    }
+    return 'on';
   }
 }

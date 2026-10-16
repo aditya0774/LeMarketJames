@@ -34,7 +34,8 @@ test.describe('Authentication', () => {
 
     await loginViaUi(page, user);
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    // The page heading is visually hidden (the tab bar shows where you are), so check it exists.
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toHaveCount(1);
     await expect(page.getByText(`Welcome back, ${user.username}`)).toBeVisible();
 
     await logoutViaUi(page);

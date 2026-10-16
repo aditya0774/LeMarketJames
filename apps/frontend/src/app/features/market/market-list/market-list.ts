@@ -12,13 +12,15 @@ export interface MarketRow {
 }
 
 /**
- * Every stock with its live price, day change and a trend graph. Presentational: the
- * Dashboard polls quotes and passes rows in; clicking a row asks it to open the trade popup.
+ * The redesign's "All stocks" table: every stock with its live price, day change and a trend
+ * graph, and a search box. Presentational: the Market page polls quotes and passes rows in;
+ * clicking a row asks it to open the trade for that stock.
  */
 @Component({
   selector: 'app-market-list',
   imports: [CurrencyPipe, DecimalPipe, Sparkline],
   templateUrl: './market-list.html',
+  styleUrl: './market-list.css',
 })
 export class MarketList {
   private readonly catalog = inject(InstrumentCatalog);

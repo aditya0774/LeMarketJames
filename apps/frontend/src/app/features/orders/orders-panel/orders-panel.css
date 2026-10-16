@@ -1,0 +1,128 @@
+/* The Orders board's header row, status key and status cell. */
+
+.orders-head {
+  align-items: flex-end;
+}
+
+.orders-head-start {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.date-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.clear-btn {
+  height: 40px;
+  border-color: var(--line2);
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.orders-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--bg3);
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.orders-legend b {
+  color: var(--dim);
+  font-weight: 500;
+}
+
+.orders-legend i {
+  font-style: normal;
+}
+
+.lg-open {
+  color: var(--seltext);
+}
+
+.lg-up {
+  color: var(--up);
+}
+
+.lg-wait {
+  color: var(--pritext);
+}
+
+.lg-down {
+  color: var(--errt);
+}
+
+.lg-tz {
+  margin-left: auto;
+}
+
+.when {
+  font-size: var(--font-sm);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.sym-name {
+  margin-left: 6px;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.steps {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.steps i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line2);
+}
+
+.steps i.on {
+  background: var(--acc);
+}
+
+.steps i.filled {
+  background: var(--up);
+}
+
+.steps i.rejected {
+  background: var(--down);
+}
+
+.steps i.delayed {
+  background: var(--pri);
+}
+
+.status-note {
+  margin-top: 5px;
+  max-width: 340px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--faint);
+}

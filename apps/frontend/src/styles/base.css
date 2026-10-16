@@ -25,6 +25,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Fieldsets group related controls for screen readers; they should not draw a box. */
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
 h1,
 h2,
 h3 {
@@ -1181,9 +1189,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .menu-theme {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: block;
   padding: 8px 12px 12px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--line);
@@ -1191,7 +1197,15 @@ input[type='number']::-webkit-inner-spin-button {
   color: var(--dim);
 }
 
+.menu-theme legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
 .menu-theme .seg {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border-color: var(--line2);

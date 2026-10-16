@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openTab } from './support/nav';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 
 test.describe('Trading', () => {
@@ -9,6 +10,7 @@ test.describe('Trading', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
 
     // AAPL is one of the seeded tradable stocks (database/schema/009_full_lebron_market.sql).
+    await openTab(page, 'Market');
     await page.getByLabel('Filter stocks').fill('AAPL');
     await page.getByRole('row', { name: 'Trade AAPL', exact: true }).click();
 
@@ -22,7 +24,8 @@ test.describe('Trading', () => {
     await dialog.getByRole('button', { name: 'Done' }).click();
     await expect(dialog).toBeHidden();
 
-    // The new order shows up in the dashboard's order list.
+    // The new order shows up in the order list.
+    await openTab(page, 'Orders');
     const orders = page.locator('section.panel', { has: page.getByRole('heading', { name: 'Orders' }) });
     await expect(orders.getByRole('row').filter({ hasText: 'AAPL' }).first()).toContainText('BUY');
   });

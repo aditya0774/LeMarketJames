@@ -1,0 +1,40 @@
+/* The Overview board's grid: four cards across the top, then "What you own" and the movers on
+   the left with quick trade spanning both rows on the right. One column on narrow screens. */
+
+.greeting {
+  margin: 0 0 14px;
+  font-size: var(--font-base);
+  color: var(--dim);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ov-stats {
+  grid-column: 1 / -1;
+}
+
+.ov-split {
+  grid-column: span 8;
+}
+
+.ov-trade {
+  grid-column: span 4;
+  grid-row: span 2;
+}
+
+.ov-movers {
+  grid-column: span 8;
+}
+
+@media (max-width: 1000px) {
+  .ov-split,
+  .ov-trade,
+  .ov-movers {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}

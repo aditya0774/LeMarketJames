@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openTab } from './support/nav';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 import { resetFeed, setFeedMode } from './support/market-control';
 
@@ -21,6 +22,7 @@ test.describe('Trading feed recovery', () => {
 
     // AC1: Trigger feed unavailable, open trade dialog, verify banner appears
     await setFeedMode(request, 'UNAVAILABLE');
+    await openTab(page, 'Market');
     await page.getByLabel('Filter stocks').fill('AAPL');
     await page.getByRole('row', { name: 'Trade AAPL', exact: true }).click();
 
@@ -48,8 +50,9 @@ test.describe('Trading feed recovery', () => {
     await buyButton.click();
     await expect(dialog.getByRole('status')).toHaveText(/Buy order #\d+ for 1 AAPL is \w+\./);
     
-    // Cleanup: Close dialog and verify order is in dashboard
+    // Cleanup: Close dialog and verify order is in the order list
     await dialog.getByRole('button', { name: 'Done' }).click();
+    await openTab(page, 'Orders');
     const orders = page.locator('section.panel', { has: page.getByRole('heading', { name: 'Orders' }) });
     await expect(orders.getByRole('row').filter({ hasText: 'AAPL' }).first()).toContainText('BUY');
 

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openTab } from './support/nav';
 import { TestUser, loginViaUi } from './support/users';
 
 /**
@@ -18,17 +19,20 @@ test.describe('Seed data', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByText('Welcome back, seed_active')).toBeVisible();
 
+    // Holdings come from the seeded fills: the Overview's "What you own" lists them.
+    const owned = page.locator('section', { has: page.getByRole('heading', { name: 'What you own' }) });
+    await expect(owned.getByRole('button', { name: 'Load AAPL into quick trade' })).toBeVisible();
+
     // Orders across every status: e.g. the rejected CAVS order is in the list.
+    await openTab(page, 'Orders');
     const orders = page.locator('section.panel', { has: page.getByRole('heading', { name: 'Orders' }) });
     await expect(orders.getByText(/Showing 1–\d+ of \d+ orders/)).toBeVisible();
-    // Holdings come from the seeded fills.
-    const portfolio = page.locator('section.panel', { has: page.getByRole('heading', { name: 'Portfolio' }) });
-    await expect(portfolio.getByRole('row').filter({ hasText: 'AAPL' })).toBeVisible();
   });
 
   test('the main seed client filters multi-year history and clears it', async ({ page }) => {
     await loginViaUi(page, seed('seed_active'));
     await expect(page).toHaveURL(/\/dashboard$/);
+    await openTab(page, 'Orders');
     const orders = page.locator('app-orders-panel');
     const info = orders.locator('.pg-info');
     await expect(info).toContainText(/of \d+ orders/);
@@ -64,6 +68,7 @@ test.describe('Seed data', () => {
     await loginViaUi(page, seed('seed_active'));
     await expect(page).toHaveURL(/\/dashboard$/);
 
+    await openTab(page, 'Market');
     await page.getByLabel('Filter stocks').fill('CAVS');
     const row = page.getByRole('row', { name: 'Trade CAVS', exact: true });
     await expect(row).toContainText('Not tradable');

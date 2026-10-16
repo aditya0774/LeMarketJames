@@ -214,7 +214,7 @@ describe('OrdersPanel date filtering', () => {
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.live-badge') as HTMLElement;
     expect(badge.textContent?.trim()).toBe('Reconnecting');
-    expect(badge.classList.contains('live-badge-reconnecting')).toBe(true);
+    expect(badge.classList.contains('reconnecting')).toBe(true);
   });
 
   it('renders plain-language rejection text from a reason code', () => {
@@ -235,15 +235,32 @@ describe('OrdersPanel date filtering', () => {
     expect(cellTextForOrder(2002, 5)).toBe('—');
   });
 
-  it('renders rejection reason only for rejected rows', () => {
+  // The Status cell (column 5) carries the badge and, under it, the reason or what happens next.
+  it('shows the rejection reason under a rejected status and a next-step note otherwise', () => {
     fixture.componentRef.setInput('orders', [
       rejectedOrder('INSUFFICIENT_CASH'),
       pendingOrder(3002, '2026-03-08T12:01:00'),
     ]);
     fixture.detectChanges();
 
-    expect(cellTextForOrder(999, 6)).toContain('Order rejected because your available cash is too low for this buy order.');
-    expect(cellTextForOrder(3002, 6)).toBe('—');
+    expect(cellTextForOrder(999, 4)).toContain('Order rejected because your available cash is too low for this buy order.');
+    expect(cellTextForOrder(3002, 4)).not.toContain('Order rejected');
+    expect(fixture.nativeElement.querySelector('thead tr').children).toHaveLength(6);
+  });
+
+  it('says what a filled order cost', () => {
+    fixture.componentRef.setInput('orders', [order(2001, '2026-03-08T12:00:00')]);
+    fixture.detectChanges();
+
+    expect(cellTextForOrder(2001, 4)).toMatch(/Done\. You (paid|received) \$/);
+  });
+
+  it('lights the progress bar up to the status reached', () => {
+    fixture.componentRef.setInput('orders', [pendingOrder(3002, '2026-03-08T12:01:00')]);
+    fixture.detectChanges();
+
+    const lit = fixture.nativeElement.querySelectorAll('tr[data-order-id="3002"] .steps i.on');
+    expect(lit).toHaveLength(3);
   });
 
   it('renders backend symbol when provided in the API payload', () => {
