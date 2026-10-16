@@ -372,7 +372,7 @@ Rules for every report (the full list, for whoever builds one, is in the service
 
 - **Path.** Every report is under `/api/v1/reports/...`.
 - **Access.** `ANALYST` only ([C7](C7-roles.md)). A missing or expired cookie gets `401`; every other role gets `403`.
-- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price.
+- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs`.
 - **Aggregates only.** A response never contains `client_id` or anything else that identifies an individual client, and never a single trade.
 - **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
 
@@ -597,6 +597,60 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
+### GET /api/v1/reports/overnight
+
+The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in reporting-service's [README](../services/reporting-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
+
+Unlike the other reports, it reads the service's own `report_runs` table ([022](../database/schema/022_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+
+**Parameters:** none.
+
+**Response `200`:**
+
+```json
+{
+  "success": true,
+  "timeZone": "America/New_York",
+  "data": [
+    {
+      "id": "8f2c0a4e-1111-4b6e-9c55-000000000001",
+      "name": "Activity by stock",
+      "runDate": "2026-10-14",
+      "status": "READY",
+      "scheduledFor": "2026-10-15T06:00:00Z",
+      "readyBy": "2026-10-15T11:00:00Z",
+      "readyAt": "2026-10-15T06:04:12Z",
+      "failureReason": null
+    },
+    {
+      "id": "1d7e5b20-2222-4c1f-8a6b-000000000002",
+      "name": "Stub overnight report",
+      "runDate": "2026-10-14",
+      "status": "FAILED",
+      "scheduledFor": "2026-10-15T06:00:00Z",
+      "readyBy": "2026-10-15T11:00:00Z",
+      "readyAt": null,
+      "failureReason": "Source data missing for 2026-10-14"
+    }
+  ]
+}
+```
+
+- One entry per report per night, for the last 30 nights (`RECENT_NIGHTS` in [OvernightReportsService](../services/reporting-service/src/main/java/com/lemarketjames/reports/overnight/OvernightReportsService.java)). The most recent `runDate` comes first, then by `name`. No runs gives `data: []`.
+- `timeZone` is the IANA ID of the reports time zone (`lmj.reports.time-zone`); the staff app shows every time in it. `runDate` (`YYYY-MM-DD`) is the trading day the run covers, in that zone: the run on the night of the 15th covers the 14th.
+- `status` is one of [RunStatus](../services/reporting-service/src/main/java/com/lemarketjames/reports/overnight/RunStatus.java): `SCHEDULED`, `RUNNING`, `READY`, `LATE` or `FAILED`.
+- `scheduledFor`, `readyBy` and `readyAt` are ISO-8601 UTC instants with a `Z`. `readyBy` is when a successful run must be available by, the ready-by time of that night (07:00 by default, `lmj.reports.ready-by`), so the app hard-codes neither the time nor the zone.
+- A run is `READY` when it finished by `readyBy`. It is `LATE` once `readyBy` has passed without it being ready: at that time a waiting or running run becomes `LATE` and carries on, and a run that finishes after `readyBy` is `LATE` too. A `LATE` run that then fails becomes `FAILED`.
+- `readyAt` is when the run finished: set when `READY`, and when `LATE` once the late run has finished (a `LATE` run with no `readyAt` is still waiting or running). `failureReason` is set only when `FAILED`. Otherwise each is `null`, never left out.
+- A run is `FAILED` when its report failed, with the report's message as the reason. It is also `FAILED` when reporting-service was down for the night's whole window (the reason starts "Did not run"), or stopped while the run was going (the reason starts "Interrupted"); so a night is never just missing from the list. `failureReason` is a message an analyst can read, never a stack trace.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
 ## The consumers (notification-, surveillance- and activity-service)
 
 Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens in a consumer group of its own, with one listener per topic it reads, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)). notification- and activity-service read one topic each; surveillance-service reads two.
@@ -801,7 +855,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, and the [volume insight](#get-apiv1reportsinsightsvolume) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, the [volume insight](#get-apiv1reportsinsightsvolume) and the [overnight reports list](#get-apiv1reportsovernight) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
