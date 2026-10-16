@@ -66,6 +66,9 @@ describe('Staff routes', () => {
 
     TestBed.resetTestingModule();
     expect((await open('/analyst/reports/activity-by-stock', 'TRADING_OPS')).url).toBe('/access-denied');
+
+    TestBed.resetTestingModule();
+    expect((await open('/analyst/reports/overnight-reports', 'TRADING_OPS')).url).toBe('/access-denied');
   });
 
   it('refuses an Analyst on /trade-search', async () => {

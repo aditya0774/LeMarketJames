@@ -59,7 +59,7 @@ export class AnalystDashboard {
     },
     'overnight-reports': {
       title: 'Overnight Reports',
-      description: 'End-of-day and overnight trading summary reports.',
+      description: 'Heavy reports run overnight: their status, when each was ready, and why any failed.',
       icon: 'nights_stay',
       path: 'overnight-reports',
     },
