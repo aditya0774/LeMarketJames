@@ -9,6 +9,7 @@ import java.util.Optional;
 /** findByEmail backs staff login, which uses the same email-based login as clients. */
 public interface StaffUserRepository extends JpaRepository<StaffUserEntity, Integer> {
 
+    Optional<StaffUserEntity> findByUsername(String username);
     Optional<StaffUserEntity> findByEmail(String email);
 
     /** Only the active flag, for the per-request access check (LMKT-57); empty when the login no longer exists. */

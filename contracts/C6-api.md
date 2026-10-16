@@ -40,7 +40,7 @@ Each gateway's route list is its configuration file; this table says what they a
 |---|---|---|
 | `POST /api/auth/register` | `username, password, email, fullName, streetAddress, apartment?, city, state, zipCode, country, ssn, initialDeposit, investmentExperience ("beginner" / "experienced"), employmentStatus, dateOfBirth (yyyy-MM-dd), phoneNumber` | `201 { username, message }` |
 | `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, message }` and the `jwt` cookie |
-| `POST /api/auth/logout` | none | `200 { message }`; clears the cookie |
+| `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
 | `GET /api/auth/me` | none | `200 { username, roles, accountId? }` |
 
 - Clients and staff sign in with the same endpoint, each through their own gateway. The staff gateway serves login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.

@@ -233,6 +233,29 @@ public class AuthService {
         return new LoginResult(username, "Login successful", token, roles);
     }
 
+    /** Invalidates all tokens issued for the account at or before the logout time. */
+    @Transactional
+    public void logout(String token) {
+        jwtService.extractClaims(token).ifPresent(claims -> {
+            if (claims.roles().contains(Role.CLIENT)) {
+                clientRepository.findByUsername(claims.username()).ifPresent(client -> {
+                    client.setSessionInvalidatedAt(latestInvalidation(client.getSessionInvalidatedAt()));
+                    clientRepository.save(client);
+                });
+            } else {
+                staffUserRepository.findByUsername(claims.username()).ifPresent(staff -> {
+                    staff.setSessionInvalidatedAt(latestInvalidation(staff.getSessionInvalidatedAt()));
+                    staffUserRepository.save(staff);
+                });
+            }
+        });
+    }
+
+    private Instant latestInvalidation(Instant previousInvalidation) {
+        Instant now = clock.instant();
+        return previousInvalidation == null || previousInvalidation.isBefore(now) ? now : previousInvalidation;
+    }
+
     // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.
     // The lock is timed from now, after the (slow) password check, so it lasts the full duration.
     private Instant registerFailedAttempt(LoginAccount account) {
