@@ -67,14 +67,15 @@ class QuotesControllerTest {
     @Test
     void authenticatedRequestReturnsQuotePayload() throws Exception {
         Cookie jwtCookie = loginAs("quotesuser1");
-        when(marketData.findByTicker(eq("AAPL"))).thenReturn(Optional.of(sampleAaplQuote()));
+        Instant quoteTime = Instant.parse("2026-10-16T14:30:00.123Z");
+        when(marketData.findByTicker(eq("AAPL"))).thenReturn(Optional.of(sampleAaplQuote(quoteTime)));
 
         mockMvc.perform(get("/api/quotes/AAPL").cookie(jwtCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.quote.symbol").value("AAPL"))
                 .andExpect(jsonPath("$.quote.name").isString())
-                .andExpect(jsonPath("$.quote.price").isNumber())
+                .andExpect(jsonPath("$.quote.price").value(228.10))
                 .andExpect(jsonPath("$.quote.priceChange").isNumber())
                 .andExpect(jsonPath("$.quote.priceChangePercent").isNumber())
                 .andExpect(jsonPath("$.quote.highPrice").isNumber())
@@ -84,7 +85,7 @@ class QuotesControllerTest {
                 .andExpect(jsonPath("$.quote.marketCap").isNumber())
                 .andExpect(jsonPath("$.quote.peRatio").isNumber())
                 .andExpect(jsonPath("$.quote.dividendYield").isNumber())
-                .andExpect(jsonPath("$.quote.lastUpdate").isString());
+                .andExpect(jsonPath("$.quote.lastUpdate").value("2026-10-16T14:30:00.123Z"));
     }
 
     @Test
@@ -162,12 +163,16 @@ class QuotesControllerTest {
     }
 
     private static QuoteSnapshot sampleAaplQuote() {
+        return sampleAaplQuote(Instant.now());
+    }
+
+    private static QuoteSnapshot sampleAaplQuote(Instant quoteTime) {
         MarketInstrument aapl = new MarketInstrument(
                 1, "AAPL", "Apple Inc", "EQUITY", "USD", "US",
                 227.55, 0.08, 0.25, 0.65, 1.5,
                 15_200_000_000L, 55_000_000L, 6.75, 1.00);
         return new QuoteSnapshot(
                 aapl, 228.10, 228.00, 228.20, 226.50, 229.00, 225.80, 226.90,
-                12_345_678L, Instant.now(), LocalDate.now());
+                12_345_678L, quoteTime, LocalDate.now());
     }
 }

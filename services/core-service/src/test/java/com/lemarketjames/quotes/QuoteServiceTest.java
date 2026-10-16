@@ -56,6 +56,18 @@ class QuoteServiceTest {
     }
 
     @Test
+    void exposesCurrentPriceAndQuoteTimestamp() {
+        Instant quoteTime = Instant.parse("2026-10-16T14:30:00.123Z");
+        when(marketData.findByTicker("AAPL")).thenReturn(Optional.of(
+                quoteAt(instrument(1, "AAPL", "Apple Inc", 228.10), quoteTime)));
+
+        QuoteDto quote = quoteService.getQuote("AAPL");
+
+        assertEquals(new BigDecimal("228.10"), quote.getPrice());
+        assertEquals(quoteTime, quote.getLastUpdate());
+    }
+
+    @Test
     void normalizesSymbolToUpperCase() {
         QuoteDto quote = quoteService.getQuote("msft");
 
@@ -157,5 +169,11 @@ class QuoteServiceTest {
         return new QuoteSnapshot(instrument, instrument.initialPrice(), instrument.initialPrice() - 0.05,
                 instrument.initialPrice() + 0.05, instrument.initialPrice(), instrument.initialPrice(),
                 instrument.initialPrice(), instrument.initialPrice(), 1_000_000L, Instant.now(), LocalDate.now());
+    }
+
+    private static QuoteSnapshot quoteAt(MarketInstrument instrument, Instant quoteTime) {
+        return new QuoteSnapshot(instrument, instrument.initialPrice(), instrument.initialPrice() - 0.05,
+                instrument.initialPrice() + 0.05, instrument.initialPrice(), instrument.initialPrice(),
+                instrument.initialPrice(), instrument.initialPrice(), 1_000_000L, quoteTime, LocalDate.now());
     }
 }
