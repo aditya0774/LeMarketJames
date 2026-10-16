@@ -20,7 +20,12 @@ describe('Trading Operations access', () => {
       const fixture = TestBed.createComponent(AppShell);
       fixture.detectChanges();
       // The trading app is customer-only (LMKT-145): its layout links no role to trade search.
-      expect(fixture.nativeElement.querySelector('nav a')).toBeNull();
+      // It does have the client's own navigation rail, so assert on where the links go.
+      const hrefs = Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll('nav a')).map((a) =>
+        a.getAttribute('href'),
+      );
+      expect(hrefs).toEqual(['/dashboard', '/holdings']);
+      expect(hrefs.some((href) => /trade-search|trading-ops|staff/.test(href ?? ''))).toBe(false);
     });
   }
 });
