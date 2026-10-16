@@ -12,7 +12,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EMPTY, retry, switchMap, tap } from 'rxjs';
@@ -38,7 +38,7 @@ const HISTORY_LENGTH = 40;
  */
 @Component({
   selector: 'app-trade-dialog',
-  imports: [CurrencyPipe, DecimalPipe, Sparkline, CompactNumberPipe],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, Sparkline, CompactNumberPipe],
   templateUrl: './trade-dialog.html',
 })
 export class TradeDialog implements OnDestroy {
