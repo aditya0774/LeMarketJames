@@ -74,9 +74,9 @@ test.describe('Seed data', () => {
     await expect(row).toContainText('Not tradable');
 
     await row.click();
-    const dialog = page.getByRole('dialog', { name: 'Trade CAVS' });
-    await expect(dialog.getByText('CAVS is not currently tradable.')).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Place buy order' })).toBeDisabled();
+    await expect(page).toHaveURL(/\/trade\?symbol=CAVS$/);
+    await expect(page.getByText('CAVS is not currently tradable.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Buy 1 CAVS/ })).toBeDisabled();
   });
 
   test('a closed client cannot log in', async ({ page }) => {

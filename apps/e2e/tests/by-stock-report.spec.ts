@@ -41,9 +41,9 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     await expect(holdingsTable).toBeVisible();
 
     // Get the first stock symbol from the holdings table (e.g., AAPL)
-    const firstRow = holdingsTable.locator('tr').nth(1); // Skip header row
+    const firstRow = holdingsTable.locator('tbody tr').first();
     await expect(firstRow).toBeVisible();
-    const symbolCell = firstRow.locator('td').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     expect(symbol).toBeTruthy();
     const symbolText = symbol!.trim();
@@ -69,8 +69,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     // Verify table has columns for date, side, quantity, price
     const tableText = await tradesTable.textContent();
     expect(tableText).toContain('Date');
-    expect(tableText).toContain('Side');
-    expect(tableText).toContain('Quantity');
+    expect(tableText).toContain('Type');
+    expect(tableText).toContain('Shares');
     expect(tableText).toContain('Price');
 
     // Verify at least one trade row exists
@@ -94,8 +94,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     const holdingsTable = page.locator('.holdings-table');
     await expect(holdingsTable).toBeVisible();
 
-    const firstRow = holdingsTable.locator('tr').nth(1);
-    const symbolCell = firstRow.locator('td').first();
+    const firstRow = holdingsTable.locator('tbody tr').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     const symbolText = symbol!.trim();
 
@@ -134,13 +134,13 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     await expect(holdingsTable).toBeVisible();
 
     // Count holdings (stocks)
-    const rows = holdingsTable.locator('tbody tr, tr:not(:first-child)');
+    const rows = holdingsTable.locator('tbody tr');
     const holdingCount = await rows.count();
 
     // If multiple holdings, verify symbol selector in report
     if (holdingCount > 1) {
       const firstRow = rows.nth(0);
-      const firstSymbol = await firstRow.locator('td').first().textContent();
+      const firstSymbol = await firstRow.locator('.sym').textContent();
       
       await firstRow.click();
       await expect(page).toHaveURL(new RegExp(`/holdings/${firstSymbol!.trim()}$`));
@@ -168,8 +168,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     await expect(holdingsTable).toBeVisible();
 
     // Get first stock symbol
-    const firstRow = holdingsTable.locator('tr').nth(1);
-    const symbolCell = firstRow.locator('td').first();
+    const firstRow = holdingsTable.locator('tbody tr').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     const symbolText = symbol!.trim();
 
@@ -217,8 +217,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     const holdingsTable = page.locator('.holdings-table');
     await expect(holdingsTable).toBeVisible();
 
-    const firstRow = holdingsTable.locator('tr').nth(1);
-    const symbolCell = firstRow.locator('td').first();
+    const firstRow = holdingsTable.locator('tbody tr').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     
     await firstRow.click();
@@ -236,8 +236,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     // Verify standard columns are present
     const headerText = await tradesTable.textContent();
     expect(headerText).toContain('Date');
-    expect(headerText).toContain('Side');
-    expect(headerText).toContain('Quantity');
+    expect(headerText).toContain('Type');
+    expect(headerText).toContain('Shares');
     expect(headerText).toContain('Price');
   });
 
@@ -252,8 +252,8 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     const holdingsTable = page.locator('.holdings-table');
     await expect(holdingsTable).toBeVisible();
 
-    const firstRow = holdingsTable.locator('tr').nth(1);
-    const symbolCell = firstRow.locator('td').first();
+    const firstRow = holdingsTable.locator('tbody tr').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     const symbolText = symbol!.trim();
     
@@ -298,15 +298,15 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     const holdingsTable = page.locator('.holdings-table');
     await expect(holdingsTable).toBeVisible();
 
-    const firstRow = holdingsTable.locator('tr').nth(1);
-    const symbolCell = firstRow.locator('td').first();
+    const firstRow = holdingsTable.locator('tbody tr').first();
+    const symbolCell = firstRow.locator('.sym');
     const symbol = await symbolCell.textContent();
     
     // Click to navigate
     await firstRow.click();
 
     // AC1, AC2: Loading state should appear briefly
-    const loadingSpinner = page.locator('mat-spinner, [role="status"]');
+    const loadingSpinner = page.locator('output.loading');
     // Spinner might already be hidden by the time test checks, so don't fail if missing
     // Just verify eventual content appears
     
@@ -314,7 +314,7 @@ test.describe('By-Stock Report (LMKT-42)', () => {
     await expect(reportContainer).toBeVisible({ timeout: 5000 });
 
     // Content should eventually be visible (not loading forever)
-    const content = page.locator('h2, mat-card-header, table');
+    const content = page.locator('h2, table');
     await expect(content.first()).toBeVisible();
   });
 });

@@ -12,7 +12,7 @@ describe('HoldingsSplit', () => {
   };
 
   it('shows a loading line while holdings load', () => {
-    expect(render({ loading: true }).nativeElement.querySelector('[role=status]').textContent).toContain('Chalking up');
+    expect(render({ loading: true }).nativeElement.querySelector('output').textContent).toContain('Chalking up');
   });
 
   it('shows the error instead of an empty donut', () => {

@@ -21,6 +21,6 @@ describe('Movers', () => {
     const fixture = TestBed.createComponent(Movers);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[role=status]').textContent).toContain('Waiting for live prices');
+    expect(fixture.nativeElement.querySelector('output').textContent).toContain('Waiting for live prices');
   });
 });

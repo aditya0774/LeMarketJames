@@ -2,10 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
-import { HoldingsService } from '../../core/holdings/holdings.service';
 import { Quotes } from '../../core/quotes/quotes';
 import { TEST_INSTRUMENTS, loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 import { MarketPage } from './market-page';
@@ -28,12 +27,10 @@ describe('MarketPage', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7) } },
-        { provide: HoldingsService, useValue: { getOwnHoldings: () => of({ success: true, holdings: [] }) } },
         {
           provide: Quotes,
           useValue: {
             watchQuotes: () => of({ AAPL: quote('AAPL', 227.5), TSLA: quote('TSLA', 248.9) }),
-            watchQuote: (symbol: string) => of({ success: true, quote: quote(symbol, 248.9) }),
           },
         },
       ],
@@ -68,16 +65,11 @@ describe('MarketPage', () => {
     expect(rows().map((r) => r.getAttribute('aria-label'))).toEqual(['Trade TSLA']);
   });
 
-  it('opens the buy/sell popup when a stock is clicked, and closes it again', async () => {
+  it('opens the trade page for a stock when its row is selected', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
     rows().find((r) => r.textContent?.includes('TSLA'))!.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
 
-    expect(fixture.nativeElement.querySelector('[role=dialog] h2')?.textContent).toContain('Trade TSLA');
-
-    (fixture.nativeElement.querySelector('.modal-close') as HTMLButtonElement).click();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[role=dialog]')).toBeNull();
+    expect(navigate).toHaveBeenCalledWith(['/trade'], { queryParams: { symbol: 'TSLA' } });
   });
 });

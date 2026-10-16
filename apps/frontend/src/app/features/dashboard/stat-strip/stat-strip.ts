@@ -1,7 +1,7 @@
 import { Component, input } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { PortfolioTotals } from '../portfolio-totals';
+import { PortfolioTotals } from '../../../core/holdings/portfolio-totals';
 import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
 
 /**

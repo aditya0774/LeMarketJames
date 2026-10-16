@@ -1,0 +1,129 @@
+.by-stock-detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.back-button {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-body);
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.detail-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eyebrow {
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.detail-title h1 {
+  font-size: 28px;
+}
+
+.detail-title .name {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+.detail-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.switch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.switch select {
+  min-width: 200px;
+}
+
+/* Four figures in one bordered strip, split by hairlines. */
+.position {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.position div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  background: var(--card);
+}
+
+.position span {
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.position b {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.state-card {
+  padding: 20px;
+}
+
+.state-card h2 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.state-card p {
+  margin: 6px 0 12px;
+  color: var(--dim);
+}
+
+.by-stock-card {
+  overflow: hidden;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.card-head h2 {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.card-head span {
+  font-size: var(--font-sm);
+  color: var(--faint);
+}

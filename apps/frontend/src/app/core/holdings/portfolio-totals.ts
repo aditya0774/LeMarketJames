@@ -34,3 +34,13 @@ export function allocation(holdings: readonly HoldingDto[]): AllocationSlice[] {
     .sort((a, b) => b.currentValue - a.currentValue)
     .map((h) => ({ symbol: h.symbol, percent: (h.currentValue / total) * 100, gainLossPercent: h.gainLossPercent }));
 }
+
+/**
+ * Chart colours for the allocation, in order (largest holding first). A sixth or later holding
+ * reuses them from the start. Shared so the Overview donut and the Holdings bar agree.
+ */
+export const ALLOCATION_COLORS: readonly string[] = ['var(--d1)', 'var(--d2)', 'var(--d3)', 'var(--d4)', 'var(--d5)'];
+
+export function allocationColor(index: number): string {
+  return ALLOCATION_COLORS[index % ALLOCATION_COLORS.length];
+}

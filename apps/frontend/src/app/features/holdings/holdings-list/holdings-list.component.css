@@ -1,0 +1,133 @@
+/* The redesign's Holdings tab: the split bar, the grouped holdings table and the column key. */
+
+.holdings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.state-card {
+  padding: 18px;
+}
+
+.state-card .alert {
+  margin: 0 0 12px;
+}
+
+.error-message {
+  display: block;
+}
+
+.split-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.split-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.worth {
+  color: var(--text);
+}
+
+.split-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.split-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.split-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.split-legend b {
+  font-weight: 400;
+  color: var(--text);
+}
+
+.table-card {
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.holdings-table {
+  min-width: 900px;
+}
+
+/* The group labels sit in their own short header row. */
+.holdings-table .groups th,
+.holdings-table .groups td {
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: var(--font-2xs);
+  letter-spacing: 0.06em;
+  color: var(--faint2);
+}
+
+.sep {
+  border-left: 1px solid var(--l4);
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.positive {
+  color: var(--up);
+}
+
+.negative {
+  color: var(--down);
+}
+
+.trades-link {
+  font-size: var(--font-sm);
+  color: var(--pri);
+  white-space: nowrap;
+}
+
+.explain {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  font-size: var(--font-sm);
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.explain b {
+  font-weight: 600;
+  color: var(--text);
+}

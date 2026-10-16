@@ -44,7 +44,7 @@ export function biggestMovers(quotes: Readonly<Record<string, Quote | null>>, co
           }
         </ul>
       } @else {
-        <div class="loading" role="status"><span class="spinner"></span>Waiting for live prices…</div>
+        <output class="loading"><span class="spinner"></span>Waiting for live prices…</output>
       }
     </section>
   `,

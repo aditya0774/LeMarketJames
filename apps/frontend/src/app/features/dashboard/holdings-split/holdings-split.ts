@@ -2,11 +2,9 @@ import { Component, computed, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HoldingDto } from '../../../shared/models/holdings.model';
-import { allocation } from '../portfolio-totals';
+import { allocation, allocationColor } from '../../../core/holdings/portfolio-totals';
 import { CompactNumberPipe } from '../../../shared/pipes/compact-number.pipe';
 
-/** Chart series colours, in order; a sixth or later holding reuses them from the start. */
-const SERIES = ['var(--d1)', 'var(--d2)', 'var(--d3)', 'var(--d4)', 'var(--d5)'];
 /** The donut is drawn on a circle of circumference 100, so a percentage is a dash length. */
 const RADIUS = 15.915;
 /** A small gap between slices so neighbours stay distinct. */
@@ -27,7 +25,7 @@ const GAP = 0.6;
         <a class="btn-link" routerLink="/holdings">Details →</a>
       </div>
       @if (loading()) {
-        <div class="loading" role="status"><span class="spinner"></span>Chalking up…</div>
+        <output class="loading"><span class="spinner"></span>Chalking up…</output>
       } @else if (error()) {
         <div class="alert err" role="alert"><div><b>Couldn't load your holdings</b>{{ error() }}</div></div>
       } @else if (!slices().length) {
@@ -83,7 +81,7 @@ export class HoldingsSplit {
       const length = Math.max(0, slice.percent - GAP);
       const arc = {
         ...slice,
-        color: SERIES[i % SERIES.length],
+        color: allocationColor(i),
         dash: `${length.toFixed(2)} ${(100 - length).toFixed(2)}`,
         // The circle starts at 3 o'clock; an offset of 25 moves the first slice to 12.
         offset: (25 - start).toFixed(2),

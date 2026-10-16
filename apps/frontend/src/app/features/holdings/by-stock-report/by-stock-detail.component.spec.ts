@@ -1,15 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError, BehaviorSubject } from 'rxjs';
 import { ByStockDetailComponent } from './by-stock-detail.component';
 import { TradeService } from '../../../core/trades/trade.service';
 import { Auth } from '../../../core/auth/auth';
+import { HoldingsService } from '../../../core/holdings/holdings.service';
 import { TradeDto } from '../../../shared/models/trade.model';
 import { ByStockTradesTable } from './by-stock-trades-table';
 
@@ -58,16 +56,23 @@ describe('ByStockDetailComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [
-        ByStockDetailComponent,
-        CommonModule,
-        MatProgressSpinnerModule,
-        MatCardModule,
-        MatButtonModule,
-        MatIconModule,
-        ByStockTradesTable
-      ],
+      imports: [ByStockDetailComponent, ByStockTradesTable],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: HoldingsService,
+          useValue: {
+            getOwnHoldings: () =>
+              of({
+                success: true,
+                holdings: [
+                  { symbol: 'AAPL', quantity: 5, averageCost: 150, currentPrice: 160, totalCost: 750, currentValue: 800, gainLoss: 50, gainLossPercent: 6.67 },
+                  { symbol: 'MSFT', quantity: 1, averageCost: 400, currentPrice: 410, totalCost: 400, currentValue: 410, gainLoss: 10, gainLossPercent: 2.5 },
+                ],
+              }),
+          },
+        },
         { provide: TradeService, useValue: tradeServiceMock },
         { provide: Auth, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
@@ -169,6 +174,38 @@ describe('ByStockDetailComponent', () => {
       fixture.detectChanges();
       
       expect(component['hasNoTrades']()).toBe(true);
+    });
+  });
+  describe('Position and actions', () => {
+    it('summarises the position from the holdings list', () => {
+      fixture.detectChanges();
+      const summary: HTMLElement = fixture.nativeElement.querySelector('.position');
+
+      expect(summary.textContent).toContain('Shares you own');
+      expect(summary.textContent).toContain('$150.00');
+      expect(summary.textContent).toContain('$800.00');
+      expect(summary.textContent).toContain('+$50.00');
+    });
+
+    it('opens the trade page for this stock', () => {
+      fixture.detectChanges();
+      const trade = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Trade AAPL',
+      )!;
+      trade.click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/trade'], { queryParams: { symbol: 'AAPL' } });
+    });
+
+    it('switches between the stocks the user owns', () => {
+      fixture.detectChanges();
+      const select: HTMLSelectElement = fixture.nativeElement.querySelector('.switch select');
+      expect(Array.from(select.options).map((o) => o.value)).toEqual(['AAPL', 'MSFT']);
+
+      select.value = 'MSFT';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith(['/holdings', 'MSFT']);
     });
   });
 });

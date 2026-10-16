@@ -14,15 +14,14 @@ test.describe('Trading', () => {
     await page.getByLabel('Filter stocks').fill('AAPL');
     await page.getByRole('row', { name: 'Trade AAPL', exact: true }).click();
 
-    const dialog = page.getByRole('dialog', { name: 'Trade AAPL' });
-    await expect(dialog).toBeVisible();
+    // The row opens the trade page with AAPL chosen.
+    await expect(page).toHaveURL(/\/trade\?symbol=AAPL$/);
+    await expect(page.getByRole('heading', { name: 'Trade AAPL' })).toBeVisible();
     // The buy button stays disabled until the live quote has loaded; click() waits for it.
-    await dialog.getByRole('button', { name: 'Place buy order' }).click();
+    await page.getByRole('button', { name: /^Buy 1 AAPL/ }).click();
 
     // The order's status depends on the simulator (e.g. submitted or filled), so accept any.
-    await expect(dialog.getByRole('status')).toHaveText(/Buy order #\d+ for 1 AAPL is \w+\./, { timeout: 15000 });
-    await dialog.getByRole('button', { name: 'Done' }).click();
-    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('status')).toContainText(/Buy order #\d+ for 1 AAPL is \w+\./, { timeout: 15000 });
 
     // The new order shows up in the order list.
     await openTab(page, 'Orders');

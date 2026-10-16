@@ -147,8 +147,3 @@
   display: flex;
   gap: 10px;
 }
-
-/* Overrides the older trade dialog's global .type-toggle spacing. */
-.type-toggle {
-  margin: 0;
-}

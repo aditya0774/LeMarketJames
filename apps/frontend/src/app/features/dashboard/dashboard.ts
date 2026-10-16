@@ -17,7 +17,7 @@ import { StatStrip } from './stat-strip/stat-strip';
 import { QuickTrade } from './quick-trade/quick-trade';
 import { HoldingsSplit } from './holdings-split/holdings-split';
 import { Movers } from './movers/movers';
-import { portfolioTotals } from './portfolio-totals';
+import { portfolioTotals } from '../../core/holdings/portfolio-totals';
 
 /**
  * Dashboard (the Overview tab)
