@@ -95,7 +95,7 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">ReportingTradeRepository</span><span class="extends-implements">
 extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../entity/ReportingTrade.html" title="class in com.lemarketjames.reports.entity">ReportingTrade</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</span></div>
 <div class="block">Data access layer for querying settled trades from the reporting_trades view.
- Supports filtering by filled date range for period-based aggregation.</div>
+ Aggregates in SQL rather than returning trades, so reports never stream the whole view (LMKT-44).</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -110,11 +110,13 @@ extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../ent
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="../entity/ReportingTrade.html" title="class in com.lemarketjames.reports.entity">ReportingTrade</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#findByFilledAtBetween(java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">findByFilledAtBetween</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startTime,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endTime)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#aggregateByPeriod(java.lang.String,java.lang.String,java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">aggregateByPeriod</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;unit,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;zone,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Finds all trades filled within a half-open time range [startTime, endTime).</div>
+<div class="block">Counts and totals per period, grouped in the database (LMKT-44).</div>
 </div>
 </div>
 </div>
@@ -149,24 +151,33 @@ extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../ent
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="findByFilledAtBetween(java.time.LocalDateTime,java.time.LocalDateTime)">
-<h3>findByFilledAtBetween</h3>
-<div class="member-signature"><span class="annotations">@Query(value="SELECT * FROM reporting_trades WHERE filled_at &gt;= :startTime AND filled_at &lt; :endTime ORDER BY filled_at ASC",
-       nativeQuery=true)
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../entity/ReportingTrade.html" title="class in com.lemarketjames.reports.entity">ReportingTrade</a>&gt;</span>&nbsp;<span class="element-name">findByFilledAtBetween</span><wbr><span class="parameters">(@Param("startTime")
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startTime,
- @Param("endTime")
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endTime)</span></div>
-<div class="block">Finds all trades filled within a half-open time range [startTime, endTime).
+<section class="detail" id="aggregateByPeriod(java.lang.String,java.lang.String,java.time.LocalDateTime,java.time.LocalDateTime)">
+<h3>aggregateByPeriod</h3>
+<div class="member-signature"><span class="annotations">@Query(nativeQuery=true,
+       value="SELECT to_char(date_trunc(:unit, (filled_at AT TIME ZONE \'UTC\') AT TIME ZONE :zone), \'YYYY-MM-DD\')\n           AS \"periodStart\",\n       COUNT(*) AS \"tradeCount\",\n       COUNT(*) FILTER (WHERE side = \'BUY\') AS \"buyCount\",\n       COUNT(*) FILTER (WHERE side = \'SELL\') AS \"sellCount\",\n       COALESCE(SUM(gross_amount), 0) AS \"totalValue\"\nFROM reporting_trades\nWHERE filled_at &gt;= :startUtc AND filled_at &lt; :endUtc\nGROUP BY 1\nORDER BY 1\n")
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a>&gt;</span>&nbsp;<span class="element-name">aggregateByPeriod</span><wbr><span class="parameters">(@Param("unit")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;unit,
+ @Param("zone")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;zone,
+ @Param("startUtc")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
+ @Param("endUtc")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</span></div>
+<div class="block">Counts and totals per period, grouped in the database (LMKT-44). Only one row per period
+ leaves PostgreSQL, so a report over a year of trades holds its pooled connection briefly
+ instead of streaming every trade to this service, which slowed live order execution.
 
- Used by aggregation reports to group trades by period (day, week, month, year).
- The view already filters to FILLED status only, so all returned rows are settled trades.</div>
+ <p><code>filled_at</code> is stored in UTC without an offset; it is read as UTC, then as local time
+ in the reports time zone, before <code>date_trunc</code> finds the period's first day. Weeks start
+ on Monday, as <a href="../period/ReportBucket.html#WEEK"><code>ReportBucket.WEEK</code></a> does.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>startTime</code> - inclusive start of range (UTC)</dd>
-<dd><code>endTime</code> - exclusive end of range (UTC)</dd>
+<dd><code>unit</code> - the <code>date_trunc</code> unit: <code>day</code>, <code>week</code>, <code>month</code> or <code>year</code></dd>
+<dd><code>zone</code> - IANA ID of the reports time zone</dd>
+<dd><code>startUtc</code> - inclusive start of the range (UTC)</dd>
+<dd><code>endUtc</code> - exclusive end of the range (UTC)</dd>
 <dt>Returns:</dt>
-<dd>trades sorted by filled_at ascending</dd>
+<dd>one row per period that has trades, oldest first</dd>
 </dl>
 </section>
 </li>

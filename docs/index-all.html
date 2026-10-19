@@ -268,6 +268,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/repository/SegmentActivityRepository.html#aggregateAllTime()" class="member-name-link">aggregateAllTime()</a> - Method in class com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/SegmentActivityRepository.html" title="class in com.lemarketjames.reports.repository">SegmentActivityRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/ReportingTradeRepository.html#aggregateByPeriod(java.lang.String,java.lang.String,java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">aggregateByPeriod(String, String, LocalDateTime, LocalDateTime)</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/ReportingTradeRepository.html" title="interface in com.lemarketjames.reports.repository">ReportingTradeRepository</a></dt>
+<dd>
+<div class="block">Counts and totals per period, grouped in the database (LMKT-44).</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/repository/TradesReportRepository.html#aggregateTradesBySymbol(java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">aggregateTradesBySymbol(LocalDateTime, LocalDateTime)</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/TradesReportRepository.html" title="interface in com.lemarketjames.reports.repository">TradesReportRepository</a></dt>
 <dd>
 <div class="block">Aggregate all FILLED trades by symbol across all clients, filtered by date range.</div>
@@ -1489,10 +1493,6 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/StaffUserRepository.html#findByEmail(java.lang.String)" class="member-name-link">findByEmail(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserRepository.html" title="interface in com.lemarketjames.common.domain">StaffUserRepository</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/reports/repository/ReportingTradeRepository.html#findByFilledAtBetween(java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">findByFilledAtBetween(LocalDateTime, LocalDateTime)</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/ReportingTradeRepository.html" title="interface in com.lemarketjames.reports.repository">ReportingTradeRepository</a></dt>
-<dd>
-<div class="block">Finds all trades filled within a half-open time range [startTime, endTime).</div>
-</dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketDataService.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></dt>
@@ -1721,6 +1721,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getBidPrice()" class="member-name-link">getBidPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#getBuyCount()" class="member-name-link">getBuyCount()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html#getBuyCount()" class="member-name-link">getBuyCount()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/repository/TradesAggregateProjection.html#getBuyCount()" class="member-name-link">getBuyCount()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/TradesAggregateProjection.html" title="interface in com.lemarketjames.reports.repository">TradesAggregateProjection</a></dt>
 <dd>&nbsp;</dd>
@@ -2162,6 +2164,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#getPeriod()" class="member-name-link">getPeriod()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html#getPeriodStart()" class="member-name-link">getPeriodStart()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a></dt>
+<dd>
+<div class="block">The period's first day in the reports time zone, as <code>YYYY-MM-DD</code>.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/dto/TradeReportRequest.html#getPeriodType()" class="member-name-link">getPeriodType()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/TradeReportRequest.html" title="class in com.lemarketjames.reports.dto">TradeReportRequest</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientEntity.html#getPhone()" class="member-name-link">getPhone()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
@@ -2303,6 +2309,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#getSellCount()" class="member-name-link">getSellCount()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html#getSellCount()" class="member-name-link">getSellCount()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/repository/TradesAggregateProjection.html#getSellCount()" class="member-name-link">getSellCount()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/TradesAggregateProjection.html" title="interface in com.lemarketjames.reports.repository">TradesAggregateProjection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/InternalHoldingsValidationRequest.html#getSellQuantity()" class="member-name-link">getSellQuantity()</a> - Method in class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/InternalHoldingsValidationRequest.html" title="class in com.lemarketjames.holdings.dto">InternalHoldingsValidationRequest</a></dt>
@@ -2421,9 +2429,15 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#getTotalValue()" class="member-name-link">getTotalValue()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html#getTotalValue()" class="member-name-link">getTotalValue()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a></dt>
+<dd>
+<div class="block">Sum of the trades' gross amounts (quantity × price); zero rather than null.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#getTradeCount()" class="member-name-link">getTradeCount()</a> - Method in class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeTotals.html#getTradeCount()" class="member-name-link">getTradeCount()</a> - Method in interface com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeTotals.html" title="interface in com.lemarketjames.reports.insight">VolumeTotals</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html#getTradeCount()" class="member-name-link">getTradeCount()</a> - Method in interface com.lemarketjames.reports.repository.<a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/TradeController.html#getTradeHistory(java.lang.Integer)" class="member-name-link">getTradeHistory(Integer)</a> - Method in class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeController.html" title="class in com.lemarketjames.trades">TradeController</a></dt>
 <dd>&nbsp;</dd>
@@ -4147,6 +4161,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/PeriodAggregation.html#%3Cinit%3E(java.lang.String,int,int,int,java.math.BigDecimal)" class="member-name-link">PeriodAggregation(String, int, int, int, BigDecimal)</a> - Constructor for class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/PeriodAggregation.html" title="class in com.lemarketjames.reports.dto">PeriodAggregation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/repository/PeriodTotalsProjection.html" class="type-name-link" title="interface in com.lemarketjames.reports.repository">PeriodTotalsProjection</a> - Interface in <a href="com/lemarketjames/reports/repository/package-summary.html">com.lemarketjames.reports.repository</a></dt>
+<dd>
+<div class="block">One period's totals, as <a href="com/lemarketjames/reports/repository/ReportingTradeRepository.html#aggregateByPeriod(java.lang.String,java.lang.String,java.time.LocalDateTime,java.time.LocalDateTime)"><code>ReportingTradeRepository.aggregateByPeriod(java.lang.String, java.lang.String, java.time.LocalDateTime, java.time.LocalDateTime)</code></a> computes them in SQL.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.html#periodType()" class="member-name-link">periodType()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/VolumeInsightResponse.html#param-periodType"><code>periodType</code></a> record component.</div>
