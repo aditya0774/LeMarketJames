@@ -7,7 +7,9 @@ import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.model.DailyBar;
 import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.market.service.PriceHistoryService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,6 +50,9 @@ class QuotesControllerTest {
 
     @MockBean
     private MarketDataService marketData;
+
+    @MockBean
+    private PriceHistoryService priceHistory;
 
     @Autowired
     private MarketFeedStatus feedStatus;
@@ -154,6 +160,44 @@ class QuotesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.quotes[0].symbol").value("AAPL"));
+    }
+
+    @Test
+    void historyEndpointRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/quotes/AAPL/history").param("range", "1M"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void authenticatedRequestReturnsTheStocksHistory() throws Exception {
+        Cookie jwtCookie = loginAs("quotesuser7");
+        when(marketData.findByTicker(eq("AAPL"))).thenReturn(Optional.of(sampleAaplQuote()));
+        when(priceHistory.dailyBars(eq(1), any(LocalDate.class)))
+                .thenReturn(List.of(new DailyBar(LocalDate.of(2026, 9, 15), 1, 2, 0.5, 225.1, 10)));
+
+        mockMvc.perform(get("/api/quotes/aapl/history").param("range", "1m").cookie(jwtCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.symbol").value("AAPL"))
+                .andExpect(jsonPath("$.range").value("1M"))
+                .andExpect(jsonPath("$.points[0].time").value("2026-09-15T20:00:00Z"))
+                .andExpect(jsonPath("$.points[0].price").value(225.10));
+    }
+
+    @Test
+    void historyWithAnUnknownRangeIsABadRequest() throws Exception {
+        mockMvc.perform(get("/api/quotes/AAPL/history").param("range", "5Y").cookie(loginAs("quotesuser8")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Unknown range"));
+    }
+
+    @Test
+    void historyOfAnUnknownSymbolIs404() throws Exception {
+        when(marketData.findByTicker(eq("INVALID"))).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/quotes/INVALID/history").cookie(loginAs("quotesuser9")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Symbol not found"));
     }
 
     // auth-service issues the jwt cookie in production; here the shared JwtService mints an

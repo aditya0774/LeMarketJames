@@ -24,7 +24,8 @@
 
 .split-body {
   display: flex;
-  align-items: center;
+  /* A long list of holdings keeps the donut at the top, beside the largest ones. */
+  align-items: flex-start;
   gap: 18px;
 }
 

@@ -9,6 +9,7 @@ import { HoldingsService } from '../../core/holdings/holdings.service';
 import { BalanceService } from '../../core/orders/orders.service';
 import { OrderService } from '../../core/orders/order.service';
 import { Quotes } from '../../core/quotes/quotes';
+import { PriceHistory } from '../../core/history/price-history';
 import { loadTestInstruments } from '../../core/market/instrument-catalog.testing';
 import { TradePage } from './trade-page';
 
@@ -38,6 +39,8 @@ describe('TradePage', () => {
         { provide: ActivatedRoute, useValue: { queryParamMap: new Observable((s) => params.subscribe((p) => s.next(convertToParamMap(p)))) } },
         { provide: Auth, useValue: { currentUser: signal('lebron'), currentAccountId: signal(7) } },
         { provide: Quotes, useValue: { watchQuote: () => quoteResult() } },
+        // Today's chart: the open, then a later price; the live quote is added after them.
+        { provide: PriceHistory, useValue: { stock: () => of([{ time: 1, value: 246 }, { time: 2, value: 248 }]) } },
         {
           provide: HoldingsService,
           useValue: {
@@ -73,12 +76,13 @@ describe('TradePage', () => {
     quoteResult = () => of({ success: true, quote });
   });
 
-  it('shows the live quote, a seeded chart, the day range and the figures', async () => {
+  it('shows the live quote, its chart, the day range and the figures', async () => {
     await setup();
 
     expect(el().querySelector('h1')?.textContent).toContain('Trade TSLA');
     expect(el().querySelector('.price-now')?.textContent).toContain('$250.00');
-    expect(el().querySelector('.mini-chart path')?.getAttribute('d')).toMatch(/^M.* L/); // open 246 → 250
+    expect(el().querySelector('.pc-line')?.getAttribute('d')).toMatch(/^M.* L/);
+    expect(el().querySelector('app-stock-chart h2')?.textContent).toContain('TSLA price');
     expect(el().querySelector('.range-head')?.textContent).toContain('$244.00');
     expect(el().querySelector('.range-head')?.textContent).toContain('$252.00');
     expect(el().querySelector('.stats')?.textContent).toContain('88.1M');

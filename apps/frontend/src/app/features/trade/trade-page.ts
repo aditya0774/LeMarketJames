@@ -9,17 +9,15 @@ import { InstrumentCatalog } from '../../core/market/instrument-catalog';
 import { BalanceService } from '../../core/orders/orders.service';
 import { DEFAULT_QUOTE_REFRESH_MS, Quotes } from '../../core/quotes/quotes';
 import { Quote } from '../../shared/models/quote.model';
-import { Sparkline } from '../../shared/components/sparkline/sparkline';
 import { SessionExpired } from '../../shared/components/session-expired/session-expired';
 import { CompactNumberPipe } from '../../shared/pipes/compact-number.pipe';
 import { TradeForm } from './trade-form/trade-form';
-
-/** How many prices the chart keeps. */
-const HISTORY_LENGTH = 40;
+import { StockChart } from './stock-chart/stock-chart';
 
 /**
  * The redesign's one-screen Trade page (`/trade?symbol=AAPL`): pick a stock and place a market
- * order on the left, with its live price, today's range and the day's figures on the right.
+ * order on the left, with its live price, its price chart, today's range and the day's figures on
+ * the right.
  *
  * The stock lives in the URL, so a link from the market list, a holding or the header can open
  * the page on the right stock, and the browser's back button works. Holdings and the balance are
@@ -27,7 +25,7 @@ const HISTORY_LENGTH = 40;
  */
 @Component({
   selector: 'app-trade-page',
-  imports: [CurrencyPipe, DecimalPipe, Sparkline, SessionExpired, CompactNumberPipe, TradeForm],
+  imports: [CurrencyPipe, DecimalPipe, SessionExpired, CompactNumberPipe, TradeForm, StockChart],
   templateUrl: './trade-page.html',
   styleUrl: './trade-page.css',
 })
@@ -51,7 +49,6 @@ export class TradePage implements OnInit {
 
   protected readonly quote = signal<Quote | null>(null);
   protected readonly quoteError = signal(false);
-  protected readonly priceHistory = signal<number[]>([]);
 
   /** Shares held per symbol; null until holdings load (or if they fail to). */
   private readonly heldBySymbol = signal<Record<string, number> | null>(null);
@@ -77,7 +74,7 @@ export class TradePage implements OnInit {
 
   constructor() {
     const quotes = inject(Quotes);
-    // Follow the chosen stock: start a fresh chart and poll its quote, replacing the last stock's.
+    // Follow the chosen stock: poll its quote, replacing the last stock's.
     toObservable(this.quotedSymbol)
       .pipe(
         tap(() => this.resetQuote()),
@@ -95,10 +92,6 @@ export class TradePage implements OnInit {
       .subscribe((response) => {
         this.quote.set(response.quote);
         this.quoteError.set(false);
-        // The first quote seeds [open, price], so the chart shows today's direction straight away.
-        this.priceHistory.update((h) =>
-          (h.length ? [...h, response.quote.price] : [response.quote.openPrice, response.quote.price]).slice(-HISTORY_LENGTH),
-        );
       });
   }
 
@@ -136,7 +129,6 @@ export class TradePage implements OnInit {
   private resetQuote(): void {
     this.quote.set(null);
     this.quoteError.set(false);
-    this.priceHistory.set([]);
   }
 
   private onQuoteError(err: unknown): void {

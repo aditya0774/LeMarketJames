@@ -17,19 +17,20 @@ import { StatStrip } from './stat-strip/stat-strip';
 import { QuickTrade } from './quick-trade/quick-trade';
 import { HoldingsSplit } from './holdings-split/holdings-split';
 import { Movers } from './movers/movers';
+import { PortfolioChart } from './portfolio-chart/portfolio-chart';
 import { portfolioTotals } from '../../core/holdings/portfolio-totals';
 
 /**
  * Dashboard (the Overview tab)
  *
- * Signed-in home, from the redesign's Overview board: the four headline cards, quick trade, what
- * the user owns and today's biggest movers. Container only: it loads holdings, the balance and the
+ * Signed-in home, from the redesign's Overview board: the four headline cards, the portfolio value
+ * chart, quick trade, what the user owns and today's biggest movers. Container only: it loads holdings, the balance and the
  * account's orders (for the open-order count, kept live by the order stream), polls every quote,
  * and hands the data to presentational children.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [SessionExpired, StatStrip, QuickTrade, HoldingsSplit, Movers],
+  imports: [SessionExpired, StatStrip, QuickTrade, HoldingsSplit, Movers, PortfolioChart],
   providers: [AccountOrders],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -47,6 +48,8 @@ export class Dashboard implements OnInit {
   protected readonly holdingsLoading = signal(true);
   protected readonly holdingsError = signal<string | null>(null);
   protected readonly balance = signal<BalanceInfo | null>(null);
+  /** Counts account reloads, so the portfolio chart reloads with the holdings it is built from. */
+  protected readonly accountVersion = signal(0);
 
   protected readonly marketQuotes = signal<Record<string, Quote | null>>({});
   protected readonly marketHistory = signal<Record<string, number[]>>({});
@@ -93,6 +96,7 @@ export class Dashboard implements OnInit {
   private refreshAccount(): void {
     this.loadHoldings();
     this.loadBalance();
+    this.accountVersion.update((v) => v + 1);
   }
 
   private watchMarket(): void {

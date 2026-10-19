@@ -348,6 +348,7 @@ Holdings reads order history and buying-power data from buy-sell, never core.
 | `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }` for the caller |
 | `GET /api/v1/profile` | `{ username, fullName, email, phone, accountId, cashBalance, currency, tradingEnabled, openedDate }` for the caller |
 | `GET /api/v1/trades?accountId=…` | the account's filled orders: `[{ symbol, side, quantity, pricePerUnit, filledAt }]` |
+| `GET /api/v1/portfolio/history?range=1D` | `{ success: true, range, points: [{ time, value }] }`: what the caller's stocks were worth over the [chart range](#chart-ranges), oldest first; `400 { success: false, error: "Unknown range" }` for any other range |
 
 Holdings, balance and profile take no `accountId`; they are scoped to the caller's own account. A login without an account (staff) gets `404 { "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` from all three.
 
@@ -689,6 +690,8 @@ How much of each stock traded in the last 24 hours, for anyone who is signed in.
 - Aggregates only: the answer never names an order, an account or a client.
 - A missing or expired cookie gets `401`. Every role may read it.
 
+Portfolio history counts stocks only, like `invested`, so its last point is today's `invested`. There is no stored record of past holdings: the shares held at each point are rebuilt from the account's FILLED orders up to then (read from buy-sell-service like buying power), and valued at that point's price from market-service's history. Points before the first purchase are left out, so an account that has never owned a stock gets `points: []`. A failed orders or prices call also gives fewer points, never an error.
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -696,7 +699,13 @@ How much of each stock traded in the last 24 hours, for anyone who is signed in.
 | `GET /api/quotes/{symbol}` | `{ success: true, quote }`, `404 { success: false, error: "Symbol not found" }`, or `503 { success: false, error: "Price unavailable" }` while the feed is down ([C4](C4-quote-feed.md)) |
 | `GET /api/quotes` | `{ success: true, quotes: [quote…] }` sorted by symbol, or `503 { success: false, error: "Price unavailable" }` while the feed is down |
 
+| `GET /api/quotes/{symbol}/history?range=1D` | `{ success: true, symbol, range, points: [{ time, price }] }`: the stock's prices over the [chart range](#chart-ranges), oldest first and ending with the live price; `400 { success: false, error: "Unknown range" }`, and the same `404` and `503` as a single quote |
+
 `quote` = `{ symbol, name, price, priceChange, priceChangePercent, highPrice, lowPrice, openPrice, volume, marketCap, peRatio, dividendYield, lastUpdate }`.
+
+### Chart ranges
+
+The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by core- and holdings-service, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
 
 Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDataClient` call); the feed resumes automatically on the next successful call, with the outage's start and end logged ([C4](C4-quote-feed.md)).
 
@@ -709,6 +718,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
 | `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | core, buy-sell, holdings → market-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). |
+| `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | core, holdings → market-service | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
 | `POST /internal/holdings/settle` | buy-sell → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
 | `POST /internal/holdings/validate` | buy-sell → holdings-service | SELL holdings check at placement |
 | `/internal/market/control/**` | tests → market-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |

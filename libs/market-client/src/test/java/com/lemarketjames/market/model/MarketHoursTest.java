@@ -67,6 +67,14 @@ class MarketHoursTest {
     }
 
     @Test
+    void closingTimeIsTheSessionEndInTheExchangesZone() {
+        // 16:00 in New York on 15 October (EDT, UTC-4) is 20:00 UTC.
+        assertEquals(Instant.parse("2026-10-15T20:00:00Z"), MarketHours.US_EQUITY.closingTime(LocalDate.of(2026, 10, 15)));
+        // A market open all day closes at the next midnight.
+        assertEquals(Instant.parse("2026-10-16T00:00:00Z"), MarketHours.CRYPTO.closingTime(LocalDate.of(2026, 10, 15)));
+    }
+
+    @Test
     void tradingYearLengthMatchesSessionLength() {
         assertEquals(252 * 6.5 * 3600, MarketHours.US_EQUITY.tradingSecondsPerYear(), 1e-9);
         assertEquals(365 * 24 * 3600, MarketHours.CRYPTO.tradingSecondsPerYear(), 1e-9);

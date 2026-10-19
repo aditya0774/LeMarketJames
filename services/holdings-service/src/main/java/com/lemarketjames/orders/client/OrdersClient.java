@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,6 +25,11 @@ public class OrdersClient {
 
     private static final Logger log = LoggerFactory.getLogger(OrdersClient.class);
 
+    /** The largest page buy-sell-service serves (its {@code MAX_SIZE}). */
+    static final int PAGE_SIZE = 100;
+    /** A bound on the paging loop, far above any real account (100,000 orders). */
+    private static final int MAX_PAGES = 1000;
+
     private final RestClient restClient;
     private final HttpServletRequest currentRequest;
 
@@ -32,14 +38,30 @@ public class OrdersClient {
         this.currentRequest = currentRequest;
     }
 
+    /**
+     * Every order of the account. buy-sell-service pages this endpoint (20 orders by default), so
+     * the pages are read in turn until a short one: buying power, trade history and the portfolio
+     * chart all need the whole list, not the latest page.
+     */
     public List<OrderSummary> getOrdersForAccount(int accountId) {
         try {
-            OrderSummary[] orders = restClient.get()
-                    .uri("/api/v1/orders/account/{accountId}", accountId)
-                    .header(HttpHeaders.COOKIE, relayedJwtCookieHeader())
-                    .retrieve()
-                    .body(OrderSummary[].class);
-            return orders == null ? List.of() : List.of(orders);
+            String cookie = relayedJwtCookieHeader();
+            List<OrderSummary> all = new ArrayList<>();
+            for (int page = 0; page < MAX_PAGES; page++) {
+                OrderSummary[] orders = restClient.get()
+                        .uri("/api/v1/orders/account/{accountId}?page={page}&size={size}", accountId, page, PAGE_SIZE)
+                        .header(HttpHeaders.COOKIE, cookie)
+                        .retrieve()
+                        .body(OrderSummary[].class);
+                if (orders == null) {
+                    break;
+                }
+                all.addAll(Arrays.asList(orders));
+                if (orders.length < PAGE_SIZE) {
+                    break;
+                }
+            }
+            return List.copyOf(all);
         } catch (RestClientException e) {
             log.warn("buy-sell-service call failed for account {} orders: {}", accountId, e.getMessage());
             return List.of();

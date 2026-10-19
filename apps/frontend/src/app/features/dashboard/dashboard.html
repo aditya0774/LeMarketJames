@@ -14,13 +14,7 @@
     [buyingPower]="balance()?.buyingPower ?? null"
   />
 
-  <app-holdings-split
-    class="ov-split"
-    [holdings]="holdings()"
-    [loading]="holdingsLoading()"
-    [error]="holdingsError()"
-    (selectSymbol)="chooseSymbol($event)"
-  />
+  <app-portfolio-chart class="ov-chart" [refreshKey]="accountVersion()" />
 
   <app-quick-trade
     class="ov-trade"
@@ -31,6 +25,14 @@
     [symbol]="quickSymbol()"
     (symbolChange)="chooseSymbol($event)"
     (orderPlaced)="onOrderPlaced()"
+  />
+
+  <app-holdings-split
+    class="ov-split"
+    [holdings]="holdings()"
+    [loading]="holdingsLoading()"
+    [error]="holdingsError()"
+    (selectSymbol)="chooseSymbol($event)"
   />
 
   <app-movers class="ov-movers" [quotes]="marketQuotes()" [history]="marketHistory()" (selectSymbol)="chooseSymbol($event)" />

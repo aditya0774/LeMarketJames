@@ -63,7 +63,7 @@
         }
       </div>
 
-      <app-sparkline [values]="priceHistory()" [label]="stock.symbol + ' price today'" />
+      <app-stock-chart [symbol]="stock.symbol" [quote]="q" [pricesDown]="quoteError()" />
 
       <div class="range">
         <div class="range-head">
