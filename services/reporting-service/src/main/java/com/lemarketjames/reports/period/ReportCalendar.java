@@ -3,8 +3,10 @@ package com.lemarketjames.reports.period;
 import com.lemarketjames.common.config.PlatformSettings;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
@@ -63,6 +65,19 @@ public class ReportCalendar {
     /** The day in the reports time zone on which a stored UTC timestamp happened. */
     public LocalDate reportDay(LocalDateTime utcTimestamp) {
         return utcTimestamp.atOffset(ZoneOffset.UTC).atZoneSameInstant(zone()).toLocalDate();
+    }
+
+    /**
+     * The instant a report-time-zone day reaches a time of day, such as the night's overnight run
+     * time. A time skipped by a daylight-saving change resolves to the instant just after the gap.
+     */
+    public Instant at(LocalDate day, LocalTime time) {
+        return day.atTime(time).atZone(zone()).toInstant();
+    }
+
+    /** The day in the reports time zone that an instant falls on. */
+    public LocalDate reportDay(Instant instant) {
+        return instant.atZone(zone()).toLocalDate();
     }
 
     private ReportPeriod period(LocalDate firstDay, LocalDate dayAfterLast) {

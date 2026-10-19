@@ -3,7 +3,7 @@
     <p>No trading activity for the selected date range.</p>
   </div>
 
-  <table *ngIf="reportData().length > 0" class="aggregate-table">
+  <table *ngIf="reportData().length > 0" class="aggregate-table" aria-label="Trading activity by client segment">
     <thead>
       <tr>
         <th (click)="toggleSort('segment')" class="sortable">
