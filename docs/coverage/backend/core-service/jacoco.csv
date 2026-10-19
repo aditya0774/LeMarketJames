@@ -9,8 +9,8 @@ LeMarketJames Core Service,com.lemarketjames.quotes,QuoteService,0,122,1,9,0,35,
 LeMarketJames Core Service,com.lemarketjames.common,CoreExceptionHandler,13,3,0,0,4,1,1,1,1,1
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteHistoryResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteDto,0,81,0,0,0,28,0,14,0,14
-LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuotesListResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3
+LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuotesListResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,QuoteSuccessResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Core Service,com.lemarketjames.quotes.dto,ChartPointDto,0,9,0,0,0,1,0,1,0,1
 LeMarketJames Core Service,com.lemarketjames,Main,5,5,0,0,2,2,1,2,1,2
