@@ -1,5 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,7 +25,7 @@ import { StockChart } from './stock-chart/stock-chart';
  */
 @Component({
   selector: 'app-trade-page',
-  imports: [CurrencyPipe, DecimalPipe, SessionExpired, CompactNumberPipe, TradeForm, StockChart],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, SessionExpired, CompactNumberPipe, TradeForm, StockChart],
   templateUrl: './trade-page.html',
   styleUrl: './trade-page.css',
 })

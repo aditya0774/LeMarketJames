@@ -93,6 +93,12 @@
   font-size: var(--font-base);
 }
 
+.price-note {
+  margin: -6px 0 0;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
 .price-wait {
   font-size: var(--font-lg);
   color: var(--dim);

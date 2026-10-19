@@ -22,4 +22,12 @@ describe('AnalystDashboard', () => {
     const http = TestBed.inject(HttpTestingController);
     expect(http.match((r) => r.url === '/api/v1/reports/insights/volume/compare').length).toBe(3);
   });
+
+  it('shows the active-client trend tile, which asks for the trend once', async () => {
+    const fixture = await create();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('staff-active-client-trend-tile')).not.toBeNull();
+    const http = TestBed.inject(HttpTestingController);
+    expect(http.match((r) => r.url === '/api/v1/reports/insights/active-clients').length).toBe(1);
+  });
 });

@@ -62,14 +62,14 @@ describe('Quotes', () => {
 
     it('should fetch immediately and then on every refresh interval', () => {
       const prices: number[] = [];
-      const subscription = quotes.watchQuote('AAPL', 1000).subscribe((response) => {
+      const subscription = quotes.watchQuote('AAPL').subscribe((response) => {
         prices.push(response.quote.price);
       });
 
       vi.advanceTimersByTime(0);
       httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.55 } });
 
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(5000);
       httpMock.expectOne(`${baseUrl}/AAPL`).flush({ success: true, quote: { symbol: 'AAPL', price: 227.61 } });
 
       expect(prices).toEqual([227.55, 227.61]);
