@@ -89,7 +89,7 @@
               <div class="sym-big">{{ stock.symbol }}</div>
               <div class="sym-name">{{ stock.name }}</div>
             </div>
-            <span class="badge-crown">&#9812; Live price</span>
+            <span class="badge-crown">Indicative – your fill price may differ</span>
           </div>
 
           @let q = quote();
@@ -102,6 +102,9 @@
               {{ quoteError() ? 'Price unavailable' : 'Loading…' }}
             }
           </div>
+          @if (q) {
+            <div class="quote-time">Price as of {{ q.lastUpdate | date: 'medium' }}</div>
+          }
 
           <app-sparkline [values]="priceHistory()" [label]="stock.symbol + ' price today'" />
           <div class="chart-note">From today's open, updating live.</div>
