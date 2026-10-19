@@ -322,6 +322,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketInstrument.html#param-assetClass"><code>assetClass</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/period/ReportCalendar.html#at(java.time.LocalDate,java.time.LocalTime)" class="member-name-link">at(LocalDate, LocalTime)</a> - Method in class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a></dt>
+<dd>
+<div class="block">The instant a report-time-zone day reaches a time of day, such as the night's overnight run
+ time.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Audit.html#%3Cinit%3E()" class="member-name-link">Audit()</a> - Constructor for class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Audit.html" title="class in com.lemarketjames.common.config">PlatformSettings.Audit</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/AuditEventDto.html" class="type-name-link" title="class in com.lemarketjames.orders.dto">AuditEventDto</a> - Record Class in <a href="com/lemarketjames/orders/dto/package-summary.html">com.lemarketjames.orders.dto</a></dt>
@@ -503,6 +508,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/service/CashValidationService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository)" class="member-name-link">CashValidationService(AccountRepository)</a> - Constructor for class com.lemarketjames.orders.service.<a href="com/lemarketjames/orders/service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightRunner.html#catchUp()" class="member-name-link">catchUp()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightRunner.html" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a></dt>
+<dd>
+<div class="block">At startup: makes sure the most recent night is in the list even if the service was not
+ running at its run time, so the list never just leaves a night out.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html#change()" class="member-name-link">change()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeComparisonResponse.html" title="class in com.lemarketjames.reports.insight">VolumeComparisonResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/VolumeComparisonResponse.html#param-change"><code>change</code></a> record component.</div>
@@ -740,6 +750,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/insight/package-summary.html">com.lemarketjames.reports.insight</a> - package com.lemarketjames.reports.insight</dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a> - package com.lemarketjames.reports.overnight</dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/period/package-summary.html">com.lemarketjames.reports.period</a> - package com.lemarketjames.reports.period</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/repository/package-summary.html">com.lemarketjames.reports.repository</a> - package com.lemarketjames.reports.repository</dt>
@@ -790,6 +802,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>comparisonStartDate</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightScheduleConfig.html#configureTasks(org.springframework.scheduling.config.ScheduledTaskRegistrar)" class="member-name-link">configureTasks(ScheduledTaskRegistrar)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightScheduleConfig.html" title="class in com.lemarketjames.reports.overnight">OvernightScheduleConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/events/OrderEventConsumerSwitch.html#CONSUMER_PROPERTY" class="member-name-link">CONSUMER_PROPERTY</a> - Static variable in class com.lemarketjames.common.events.<a href="com/lemarketjames/common/events/OrderEventConsumerSwitch.html" title="class in com.lemarketjames.common.events">OrderEventConsumerSwitch</a></dt>
 <dd>
 <div class="block">The property; as an environment variable, <code>LMJ_EVENTS_CONSUMER</code>.</div>
@@ -907,6 +921,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>data</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#data()" class="member-name-link">data()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/overnight/OvernightReportsResponse.html#param-data"><code>data</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/DailyBar.html#date()" class="member-name-link">date()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-date"><code>date</code></a> record component.</div>
@@ -993,6 +1011,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html#endDate()" class="member-name-link">endDate()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.PeriodVolume.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.PeriodVolume</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>endDate</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightRunner.html#enforceDeadline()" class="member-name-link">enforceDeadline()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightRunner.html" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a></dt>
+<dd>
+<div class="block">At the ready-by time: marks LATE every run not finished yet, so the dashboard shows it is
+ missing while it still waits or runs (AC2).</div>
 </dd>
 <dt><a href="com/lemarketjames/activity/InstrumentActivity.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/InstrumentActivity.html" title="class in com.lemarketjames.activity">InstrumentActivity</a></dt>
 <dd>
@@ -1206,6 +1229,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportPeriod.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportPeriod.html" title="class in com.lemarketjames.reports.period">ReportPeriod</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1317,8 +1348,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.html#fail(java.lang.String)" class="member-name-link">fail(String)</a> - Method in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#fail(java.util.UUID,java.lang.String)" class="member-name-link">fail(UUID, String)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">An unfinished run to FAILED with a reason.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html#FAIL" class="member-name-link">FAIL</a> - Enum constant in enum class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html" title="enum class in com.lemarketjames.orders.submission">SubmissionTrail.Result</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#FAILED" class="member-name-link">FAILED</a> - Enum constant in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">The report threw; <code>failure_reason</code> says why.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#failFor(int)" class="member-name-link">failFor(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
 <dd>
 <div class="block">From now on every settlement for this account fails.</div>
@@ -1327,8 +1366,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-failing"><code>failing</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#failInterrupted(java.lang.String)" class="member-name-link">failInterrupted(String)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Fails every run left unfinished (waiting, running, or late and not finished).</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/service/SettlementFaults.html#failsFor(int)" class="member-name-link">failsFor(int)</a> - Method in class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementFaults.html" title="class in com.lemarketjames.holdings.service">SettlementFaults</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#failureReason()" class="member-name-link">failureReason()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#param-failureReason"><code>failureReason</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#failures()" class="member-name-link">failures()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-failures"><code>failures</code></a> record component.</div>
@@ -1470,6 +1517,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">One submission's events in the order they were written.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunRepository.html#findByRunDateGreaterThanEqualOrderByRunDateDescReportNameAsc(java.time.LocalDate)" class="member-name-link">findByRunDateGreaterThanEqualOrderByRunDateDescReportNameAsc(LocalDate)</a> - Method in interface com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunRepository.html" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a></dt>
+<dd>
+<div class="block">Runs covering <code>firstRunDate</code> or later, the most recent night first.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/instruments/InstrumentRepository.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in interface com.lemarketjames.common.instruments.<a href="com/lemarketjames/common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
@@ -1503,6 +1554,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/OrderExecutionTransactions.html#finish(int,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">finish(int, RejectionReason)</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/OrderExecutionTransactions.html" title="class in com.lemarketjames.orders.execution">OrderExecutionTransactions</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#finish(java.util.UUID,java.time.Instant)" class="member-name-link">finish(UUID, Instant)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Records that the report finished at <code>now</code>: READY if that is by the run's ready-by time,
+ LATE if after.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportPeriod.html#firstDay()" class="member-name-link">firstDay()</a> - Method in record class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportPeriod.html" title="class in com.lemarketjames.reports.period">ReportPeriod</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/period/ReportPeriod.html#param-firstDay"><code>firstDay</code></a> record component.</div>
@@ -1718,6 +1774,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#getCreatedAt()" class="member-name-link">getCreatedAt()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getCreatedAt()" class="member-name-link">getCreatedAt()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/entity/SessionEntity.html#getCreatedAt()" class="member-name-link">getCreatedAt()</a> - Method in class com.lemarketjames.sessions.entity.<a href="com/lemarketjames/sessions/entity/SessionEntity.html" title="class in com.lemarketjames.sessions.entity">SessionEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountEntity.html#getCurrency()" class="member-name-link">getCurrency()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountEntity.html" title="class in com.lemarketjames.common.domain">AccountEntity</a></dt>
@@ -1792,6 +1850,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/StaffUserEntity.html#getFailedLoginAttempts()" class="member-name-link">getFailedLoginAttempts()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserEntity.html" title="class in com.lemarketjames.common.domain">StaffUserEntity</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getFailureReason()" class="member-name-link">getFailureReason()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/error/ValidationException.html#getFieldErrors()" class="member-name-link">getFieldErrors()</a> - Method in exception class com.lemarketjames.common.error.<a href="com/lemarketjames/common/error/ValidationException.html" title="class in com.lemarketjames.common.error">ValidationException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/RecordedFill.html#getFilledAt()" class="member-name-link">getFilledAt()</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/RecordedFill.html" title="class in com.lemarketjames.activity">RecordedFill</a></dt>
@@ -1853,6 +1913,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/config/MarketSimulationProperties.html#getHolidays()" class="member-name-link">getHolidays()</a> - Method in class com.lemarketjames.market.config.<a href="com/lemarketjames/market/config/MarketSimulationProperties.html" title="class in com.lemarketjames.market.config">MarketSimulationProperties</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionSettings.html#getHolidays()" class="member-name-link">getHolidays()</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionSettings.html" title="class in com.lemarketjames.orders.execution">ExecutionSettings</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getId()" class="member-name-link">getId()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Session.html#getInactivityTimeout()" class="member-name-link">getInactivityTimeout()</a> - Method in class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Session.html" title="class in com.lemarketjames.common.config">PlatformSettings.Session</a></dt>
 <dd>&nbsp;</dd>
@@ -2193,6 +2255,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#getQuoteTime()" class="member-name-link">getQuoteTime()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getReadyAt()" class="member-name-link">getReadyAt()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/config/PlatformSettings.Reports.html#getReadyBy()" class="member-name-link">getReadyBy()</a> - Method in class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Reports.html" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getReadyBy()" class="member-name-link">getReadyBy()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/SettlementRejectedException.html#getReason()" class="member-name-link">getReason()</a> - Method in exception class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/SettlementRejectedException.html" title="class in com.lemarketjames.holdings.client">SettlementRejectedException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getReason()" class="member-name-link">getReason()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
@@ -2209,6 +2277,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/surveillance/OrderAlert.html#getRejectionReason()" class="member-name-link">getRejectionReason()</a> - Method in class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getReportName()" class="member-name-link">getReportName()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.html#getReports()" class="member-name-link">getReports()</a> - Method in class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/audit/AuditEventEntity.html#getRequestId()" class="member-name-link">getRequestId()</a> - Method in class com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/AuditEventEntity.html" title="class in com.lemarketjames.common.audit">AuditEventEntity</a></dt>
@@ -2221,6 +2291,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The roles written into the token; tells the controller whether this login has an account.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getRunDate()" class="member-name-link">getRunDate()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getScheduledFor()" class="member-name-link">getScheduledFor()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/config/MarketSimulationProperties.html#getSeed()" class="member-name-link">getSeed()</a> - Method in class com.lemarketjames.market.config.<a href="com/lemarketjames/market/config/MarketSimulationProperties.html" title="class in com.lemarketjames.market.config">MarketSimulationProperties</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientEntity.html#getSegment()" class="member-name-link">getSegment()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
@@ -2275,6 +2349,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Market.html#getStalenessLimit()" class="member-name-link">getStalenessLimit()</a> - Method in class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Market.html" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getStartedAt()" class="member-name-link">getStartedAt()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/auth/dto/RegisterRequest.html#getState()" class="member-name-link">getState()</a> - Method in class com.lemarketjames.auth.dto.<a href="com/lemarketjames/auth/dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a></dt>
 <dd>
 <div class="block">Gets the state.</div>
@@ -2282,6 +2358,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/common/domain/AddressEntity.html#getState()" class="member-name-link">getState()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AddressEntity.html" title="class in com.lemarketjames.common.domain">AddressEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/notifications/Notification.html#getStatus()" class="member-name-link">getStatus()</a> - Method in class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/Notification.html" title="class in com.lemarketjames.notifications">Notification</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#getStatus()" class="member-name-link">getStatus()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/auth/dto/RegisterRequest.html#getStreetAddress()" class="member-name-link">getStreetAddress()</a> - Method in class com.lemarketjames.auth.dto.<a href="com/lemarketjames/auth/dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a></dt>
 <dd>
@@ -2687,6 +2765,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportPeriod.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportPeriod.html" title="class in com.lemarketjames.reports.period">ReportPeriod</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -2849,6 +2935,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:I">I</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#id()" class="member-name-link">id()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>id</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#INDIA_EQUITY" class="member-name-link">INDIA_EQUITY</a> - Static variable in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">National Stock Exchange of India regular session.</div>
@@ -3161,6 +3251,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/service/MarketSimulator.StoredQuote.html#param-lastUpdated"><code>lastUpdated</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#LATE" class="member-name-link">LATE</a> - Enum constant in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">Missed the ready-by time.</div>
+</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityController.html#latest()" class="member-name-link">latest()</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityController.html" title="class in com.lemarketjames.activity">MarketActivityController</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/surveillance/SurveillanceService.html#latest()" class="member-name-link">latest()</a> - Method in class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/SurveillanceService.html" title="class in com.lemarketjames.surveillance">SurveillanceService</a></dt>
@@ -3174,6 +3268,8 @@ loadScripts(document, 'script');</script>
 <div class="block">The real current prices whatever the feed mode, for persistence: a STALE feed must never
  overwrite the stored prices with its backdated copies.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsController.html#list()" class="member-name-link">list()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsController.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsController</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/FeedMode.html#LIVE" class="member-name-link">LIVE</a> - Enum constant in enum class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/FeedMode.html" title="enum class in com.lemarketjames.market.service">FeedMode</a></dt>
 <dd>
 <div class="block">Normal: prices move and quotes are current.</div>
@@ -3451,6 +3547,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Previously persisted price state used to resume the market after a restart.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#markLate(java.time.Instant)" class="member-name-link">markLate(Instant)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Marks LATE every run still waiting or running whose ready-by time has passed, so the
+ dashboard shows it is missing before it finishes.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/entity/SettlementReceipt.html#matches(com.lemarketjames.holdings.dto.SettlementRequest)" class="member-name-link">matches(SettlementRequest)</a> - Method in class com.lemarketjames.holdings.entity.<a href="com/lemarketjames/holdings/entity/SettlementReceipt.html" title="class in com.lemarketjames.holdings.entity">SettlementReceipt</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/auth/AuthService.html#matchesPassword(java.lang.String,java.lang.String)" class="member-name-link">matchesPassword(String, String)</a> - Method in class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthService.html" title="class in com.lemarketjames.auth">AuthService</a></dt>
@@ -3488,6 +3589,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketInstrument.html#param-name"><code>name</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportJob.html#name()" class="member-name-link">name()</a> - Method in interface com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportJob.html" title="interface in com.lemarketjames.reports.overnight">OvernightReportJob</a></dt>
+<dd>
+<div class="block">The name analysts see in the overnight reports list.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#name()" class="member-name-link">name()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>name</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html#name()" class="member-name-link">name()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html" title="class in com.lemarketjames.reports.overnight">StubOvernightReportJob</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/model/GbmModel.html#nextPrice(double,double,double,double,double)" class="member-name-link">nextPrice(double, double, double, double, double)</a> - Static method in class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/GbmModel.html" title="class in com.lemarketjames.market.model">GbmModel</a></dt>
 <dd>
 <div class="block">Advances a price by one time step.</div>
@@ -3965,6 +4076,46 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>Outcome</code> record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportJob.html" class="type-name-link" title="interface in com.lemarketjames.reports.overnight">OvernightReportJob</a> - Interface in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">A report heavy enough to run overnight.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsController.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightReportsController</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">The overnight reports list for the Analyst dashboard.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsController.html#%3Cinit%3E(com.lemarketjames.reports.overnight.OvernightReportsService)" class="member-name-link">OvernightReportsController(OvernightReportsService)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsController.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a> - Record Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">The overnight reports list (contract C6, <code>GET /api/v1/reports/overnight</code>).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#%3Cinit%3E(boolean,java.lang.String,java.util.List)" class="member-name-link">OvernightReportsResponse(boolean, String, List&lt;OvernightReportsResponse.Run&gt;)</a> - Constructor for record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>OvernightReportsResponse</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a> - Record Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">One run.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsService.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightReportsService</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">Builds the overnight reports list the Analyst dashboard shows (LMKT-45).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsService.html#%3Cinit%3E(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">OvernightReportsService(ReportRunRepository, ReportCalendar, Clock)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsService.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsService</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightRunner.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">Runs each night's overnight reports and records how each run went (LMKT-45).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightRunner.html#%3Cinit%3E(java.util.List,com.lemarketjames.reports.overnight.ReportRunWriter,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.common.config.PlatformSettings,java.time.Clock)" class="member-name-link">OvernightRunner(List&lt;OvernightReportJob&gt;, ReportRunWriter, ReportCalendar, PlatformSettings, Clock)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightRunner.html" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightScheduleConfig.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">OvernightScheduleConfig</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">When the overnight reports run (LMKT-45).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightScheduleConfig.html#%3Cinit%3E(com.lemarketjames.reports.overnight.OvernightRunner,com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.reports.period.ReportCalendar)" class="member-name-link">OvernightScheduleConfig(OvernightRunner, PlatformSettings, ReportCalendar)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightScheduleConfig.html" title="class in com.lemarketjames.reports.overnight">OvernightScheduleConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.html#ownsAccount()" class="member-name-link">ownsAccount()</a> - Method in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -4482,6 +4633,18 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/events/OrderEventReader.html#read(java.lang.String,java.lang.String,java.lang.Class)" class="member-name-link">read(String, String, Class&lt;T&gt;)</a> - Method in class com.lemarketjames.common.events.<a href="com/lemarketjames/common/events/OrderEventReader.html" title="class in com.lemarketjames.common.events">OrderEventReader</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#READY" class="member-name-link">READY</a> - Enum constant in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">Finished by the ready-by time; <code>ready_at</code> says when.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#readyAt()" class="member-name-link">readyAt()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#param-readyAt"><code>readyAt</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#readyBy()" class="member-name-link">readyBy()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>readyBy</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionResult.html#reason()" class="member-name-link">reason()</a> - Method in record class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/orders/execution/ExecutionResult.html#param-reason"><code>reason</code></a> record component.</div>
@@ -4501,6 +4664,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/common/security/SecurityEventLog.html#REASON_NOT_FOUND" class="member-name-link">REASON_NOT_FOUND</a> - Static variable in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></dt>
 <dd>
 <div class="block">Reason given when the token's account no longer exists.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsService.html#recentRuns()" class="member-name-link">recentRuns()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsService.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsService</a></dt>
+<dd>
+<div class="block">Runs of the last 30 nights, the most recent first.</div>
 </dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityService.html#record(com.lemarketjames.activity.OrderFilledMessage)" class="member-name-link">record(OrderFilledMessage)</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityService.html" title="class in com.lemarketjames.activity">MarketActivityService</a></dt>
 <dd>
@@ -4531,6 +4698,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketFeedStatus.html#recordFailure()" class="member-name-link">recordFailure()</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketFeedStatus.html" title="class in com.lemarketjames.market.client">MarketFeedStatus</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#recordMissed(java.lang.String,java.time.LocalDate,java.time.Instant,java.time.Instant,java.lang.String)" class="member-name-link">recordMissed(String, LocalDate, Instant, Instant, String)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Records a night's report as FAILED without running it, because the service was down for the
+ whole of its window.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/audit/AuditRecorder.html#recordSubmission(com.lemarketjames.common.audit.SubmissionAuditEvent)" class="member-name-link">recordSubmission(SubmissionAuditEvent)</a> - Method in class com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/AuditRecorder.html" title="class in com.lemarketjames.common.audit">AuditRecorder</a></dt>
 <dd>
 <div class="block">Records one event of an order submission.</div>
@@ -4636,6 +4808,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/reports/period/ReportCalendar.html#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings)" class="member-name-link">ReportCalendar(PlatformSettings)</a> - Constructor for class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/period/ReportCalendar.html#reportDay(java.time.Instant)" class="member-name-link">reportDay(Instant)</a> - Method in class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a></dt>
+<dd>
+<div class="block">The day in the reports time zone that an instant falls on.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportCalendar.html#reportDay(java.time.LocalDateTime)" class="member-name-link">reportDay(LocalDateTime)</a> - Method in class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a></dt>
 <dd>
 <div class="block">The day in the reports time zone on which a stored UTC timestamp happened.</div>
@@ -4675,6 +4851,22 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The ping body; <code>timeZone</code> is an IANA zone ID.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">ReportRun</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">One overnight run of one report (<code>report_runs</code>, migration 023).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRun.html#%3Cinit%3E()" class="member-name-link">ReportRun()</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRun.html" title="class in com.lemarketjames.reports.overnight">ReportRun</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunRepository.html" class="type-name-link" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a> - Interface in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">Reads overnight runs for the Analyst dashboard's list.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">The only code in reporting-service that writes, and it writes only <code>report_runs</code>.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#%3Cinit%3E(org.springframework.jdbc.core.JdbcTemplate)" class="member-name-link">ReportRunWriter(JdbcTemplate)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Reports.html#%3Cinit%3E()" class="member-name-link">Reports()</a> - Constructor for class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Reports.html" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.html#requestedAccountId()" class="member-name-link">requestedAccountId()</a> - Method in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a></dt>
@@ -4763,8 +4955,34 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">One placement check ran.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportJob.html#run(java.time.LocalDate)" class="member-name-link">run(LocalDate)</a> - Method in interface com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportJob.html" title="interface in com.lemarketjames.reports.overnight">OvernightReportJob</a></dt>
+<dd>
+<div class="block">Produces the report for one trading day.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html#run(java.time.LocalDate)" class="member-name-link">run(LocalDate)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html" title="class in com.lemarketjames.reports.overnight">StubOvernightReportJob</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketInitializer.html#run(org.springframework.boot.ApplicationArguments)" class="member-name-link">run(ApplicationArguments)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketInitializer.html" title="class in com.lemarketjames.market.service">MarketInitializer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#%3Cinit%3E(java.util.UUID,java.lang.String,java.time.LocalDate,com.lemarketjames.reports.overnight.RunStatus,java.time.Instant,java.time.Instant,java.time.Instant,java.lang.String)" class="member-name-link">Run(UUID, String, LocalDate, RunStatus, Instant, Instant, Instant, String)</a> - Constructor for record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>Run</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#runDate()" class="member-name-link">runDate()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>runDate</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightRunner.html#runNight()" class="member-name-link">runNight()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightRunner.html" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a></dt>
+<dd>
+<div class="block">Schedules tonight's run of every overnight report, then runs them.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#RUNNING" class="member-name-link">RUNNING</a> - Enum constant in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">The report job is running.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html" class="type-name-link" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a> - Enum Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">Where one overnight run of one report is (contract C6, <code>GET /api/v1/reports/overnight</code>).</div>
+</dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
@@ -4780,6 +4998,18 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/service/MarketScheduler.html#saveSnapshot()" class="member-name-link">saveSnapshot()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketScheduler.html" title="class in com.lemarketjames.market.service">MarketScheduler</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#schedule(java.lang.String,java.time.LocalDate,java.time.Instant,java.time.Instant)" class="member-name-link">schedule(String, LocalDate, Instant, Instant)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Creates a SCHEDULED run unless the report already has one for that night.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#SCHEDULED" class="member-name-link">SCHEDULED</a> - Enum constant in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">Created for the night, not started yet.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#scheduledFor()" class="member-name-link">scheduledFor()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>scheduledFor</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchService.html#search(java.lang.Integer,java.lang.Integer,java.lang.String,java.lang.String)" class="member-name-link">search(Integer, Integer, String, String)</a> - Method in class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchService.html" title="class in com.lemarketjames.trades">TradeSearchService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchController.html#search(java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">search(String, String, String, String)</a> - Method in class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchController.html" title="class in com.lemarketjames.trades">TradeSearchController</a></dt>
@@ -5215,6 +5445,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#setQuoteTime(java.time.Instant)" class="member-name-link">setQuoteTime(Instant)</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/config/PlatformSettings.Reports.html#setReadyBy(java.time.LocalTime)" class="member-name-link">setReadyBy(LocalTime)</a> - Method in class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Reports.html" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#setReason(java.lang.String)" class="member-name-link">setReason(String)</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientEntity.html#setRegisteredDate(java.time.LocalDateTime)" class="member-name-link">setRegisteredDate(LocalDateTime)</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
@@ -5503,6 +5735,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/period/ReportPeriod.html#param-start"><code>start</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#start(java.util.UUID,java.time.Instant)" class="member-name-link">start(UUID, Instant)</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
+<dd>
+<div class="block">Records that the report started.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html#startDate()" class="member-name-link">startDate()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>startDate</code> record component.</div>
@@ -5529,6 +5765,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/notifications/NotificationController.NotificationView.html#param-status"><code>status</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#status()" class="member-name-link">status()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>status</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/events/OrderEventTopicNames.html#STATUS_CHANGED" class="member-name-link">STATUS_CHANGED</a> - Static variable in class com.lemarketjames.common.events.<a href="com/lemarketjames/common/events/OrderEventTopicNames.html" title="class in com.lemarketjames.common.events">OrderEventTopicNames</a></dt>
 <dd>
 <div class="block"><code>OrderStatusChanged</code>: an order moved from one status to another.</div>
@@ -5544,6 +5784,12 @@ loadScripts(document, 'script');</script>
 <div class="block">Opens a live order-status stream for the signed-in client's own account.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/messaging/OrderEventPublisher.html#STUB" class="member-name-link">STUB</a> - Static variable in interface com.lemarketjames.orders.messaging.<a href="com/lemarketjames/orders/messaging/OrderEventPublisher.html" title="interface in com.lemarketjames.orders.messaging">OrderEventPublisher</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">StubOvernightReportJob</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
+<dd>
+<div class="block">Stands in for the heavy reports until they are built (LMKT-45 is built against a stub job).</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html#%3Cinit%3E(org.springframework.jdbc.core.JdbcTemplate,com.lemarketjames.reports.period.ReportCalendar,java.lang.String)" class="member-name-link">StubOvernightReportJob(JdbcTemplate, ReportCalendar, String)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/StubOvernightReportJob.html" title="class in com.lemarketjames.reports.overnight">StubOvernightReportJob</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/audit/SubmissionAuditEvent.html" class="type-name-link" title="class in com.lemarketjames.common.audit">SubmissionAuditEvent</a> - Record Class in <a href="com/lemarketjames/common/audit/package-summary.html">com.lemarketjames.common.audit</a></dt>
 <dd>
@@ -5654,6 +5900,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>success</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>success</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/ReportPingController.PingResponse.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.reports.<a href="com/lemarketjames/reports/ReportPingController.PingResponse.html" title="class in com.lemarketjames.reports">ReportPingController.PingResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>success</code> record component.</div>
@@ -5736,6 +5986,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html#timeZone()" class="member-name-link">timeZone()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>timeZone</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#timeZone()" class="member-name-link">timeZone()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/reports/overnight/OvernightReportsResponse.html#param-timeZone"><code>timeZone</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/ReportPingController.PingResponse.html#timeZone()" class="member-name-link">timeZone()</a> - Method in record class com.lemarketjames.reports.<a href="com/lemarketjames/reports/ReportPingController.PingResponse.html" title="class in com.lemarketjames.reports">ReportPingController.PingResponse</a></dt>
 <dd>
@@ -5968,6 +6222,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.VolumeChange.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.VolumeChange.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse.VolumeChange</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.Run.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse.Run</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -6353,6 +6615,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportBucket.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportBucket.html" title="enum class in com.lemarketjames.reports.period">ReportBucket</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -6422,6 +6688,11 @@ the order they are declared.</div>
 the order they are declared.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/ValidationRule.html#values()" class="member-name-link">values()</a> - Static method in enum class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="com/lemarketjames/reports/overnight/RunStatus.html#values()" class="member-name-link">values()</a> - Static method in enum class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/RunStatus.html" title="enum class in com.lemarketjames.reports.overnight">RunStatus</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
