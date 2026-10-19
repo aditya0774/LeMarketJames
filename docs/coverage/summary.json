@@ -1,9 +1,9 @@
 {
-  "commit": "d7719c5a",
+  "commit": "5521aa94",
   "date": "2026-10-19",
   "backend": {
-    "line": 85.47,
-    "branch": 84.82
+    "line": 85.13,
+    "branch": 84.84
   },
   "frontend": {
     "line": 96.92,
