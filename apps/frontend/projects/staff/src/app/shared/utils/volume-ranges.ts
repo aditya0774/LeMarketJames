@@ -26,11 +26,30 @@ export function mondayOf(date: Date): Date {
 }
 
 /**
+ * The calendar day it is at `now` in a time zone, as a local Date at midnight: the day arithmetic
+ * here treats local Dates as plain calendar days. Without a zone, the browser's own day.
+ *
+ * Reports count days in the reports time zone (C5), so "today" must be that zone's day: late in the
+ * evening in New York, a browser on UTC is already on tomorrow, which has no trades yet.
+ */
+export function calendarDayIn(now: Date, timeZone?: string): Date {
+  if (!timeZone) {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' })
+    .formatToParts(now);
+  const part = (type: 'year' | 'month' | 'day') => Number(parts.find((p) => p.type === type)!.value);
+  return new Date(part('year'), part('month') - 1, part('day'));
+}
+
+/**
  * Today, this week so far and last week, each against the period just before it. The week so far is
  * compared with the same number of days of last week, so a Tuesday is not set against a full week.
+ *
+ * @param timeZone the reports time zone; "today" is its day. Omitted, the browser's day is used.
  */
-export function volumePresets(now: Date): VolumePreset[] {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+export function volumePresets(now: Date, timeZone?: string): VolumePreset[] {
+  const today = calendarDayIn(now, timeZone);
   const monday = mondayOf(today);
   const lastMonday = addDays(monday, -7);
   const iso = toIsoDay;

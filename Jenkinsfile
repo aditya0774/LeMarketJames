@@ -100,7 +100,18 @@ pipeline {
                     env.CI_RUN_BACKEND_PIPELINE = 'true'
                     env.CI_RUN_FULL_STACK = 'true'
 
-                    echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}"
+                    // LMKT-44: the report load test adds ~1.5 min, so a branch runs it only when it
+                    // touches what the test measures: the order and report services, their shared
+                    // code and schema, the stack, or the test itself. Main always runs it.
+                    def touchesLoadPath = changedFiles.any {
+                        it.startsWith('services/reporting-service/') || it.startsWith('services/buy-sell-service/') ||
+                            it.startsWith('services/holdings-service/') || it.startsWith('libs/') ||
+                            it.startsWith('database/schema/') || it.startsWith('apps/e2e/load/') ||
+                            it == 'apps/e2e/playwright.load.config.ts' || it == 'docker-compose.yml' || it == 'Jenkinsfile'
+                    }
+                    env.CI_RUN_LOAD_TEST = (onMain || touchesLoadPath).toString()
+
+                    echo "CI gating flags: frontend=${env.CI_RUN_FRONTEND_PIPELINE}, backend=${env.CI_RUN_BACKEND_PIPELINE}, fullStack=${env.CI_RUN_FULL_STACK}, loadTest=${env.CI_RUN_LOAD_TEST}"
                 }
             }
         }
@@ -317,6 +328,8 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/015_seed_submission_audit.sql
                     # The tests below log in as lemarket_app, which 016 creates and restricts.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
+                    # reporting-service validates its entities at startup, report_runs included.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/023_report_runs.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to buy-sell-service: its integration tests
@@ -324,7 +337,7 @@ pipeline {
                     # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
                     mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service,services/reporting-service -am \
                         -Dspring.profiles.active=postgres-test,kafka-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
 
                     # The Kafka test skips itself when the kafka-test profile is missing, and a
@@ -336,7 +349,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml'
+                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*OvernightRunsIntegrationTest.xml'
                 }
             }
         }
@@ -685,6 +698,40 @@ pipeline {
                 always {
                     junit allowEmptyResults: true, testResults: 'apps/e2e/results/staff-junit.xml'
                     archiveArtifacts artifacts: 'apps/e2e/playwright-report-staff/**, apps/e2e/test-results-staff/**', allowEmptyArchive: true
+                }
+            }
+        }
+
+        // LMKT-44: times order confirmations with and without analysts running reports, and fails if
+        // reports slow them down (apps/e2e/load/report-load.spec.ts). After the other E2E stages and
+        // on its own, since anything running alongside would distort the timings it compares.
+        stage('Run report load test') {
+            when {
+                expression { env.CI_RUN_FULL_STACK == 'true' && env.CI_RUN_LOAD_TEST == 'true' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    # Same image and options as the Playwright stages above; see the notes there.
+                    # The E2E stages above already installed apps/e2e's packages in this workspace,
+                    # so only install when they didn't run.
+                    docker run --rm --network host --ipc=host \
+                        --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
+                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -e E2E_ALLOW_DATABASE_SEED=true \
+                        -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
+                        -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -v "$PWD/apps/e2e:/e2e" -w /e2e \
+                        mcr.microsoft.com/playwright:v1.63.0-noble \
+                        sh -c '{ [ -d node_modules/@playwright/test ] || npm ci --no-audit --no-fund; } && npx playwright test -c playwright.load.config.ts'
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'apps/e2e/results/load-junit.xml'
+                    // The HTML report holds load-summary.json: both phases' timings, the evidence for LMKT-44.
+                    archiveArtifacts artifacts: 'apps/e2e/playwright-report-load/**, apps/e2e/test-results-load/**', allowEmptyArchive: true
                 }
             }
         }

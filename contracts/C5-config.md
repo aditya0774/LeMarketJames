@@ -22,7 +22,8 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 | Location restriction list: `PlatformSettings.Orders` | Not yet. For order placement, with the `LOCATION_RESTRICTED` code. |
 | Audit online retention window: `PlatformSettings.Audit` | Not yet. For the audit archival and audit view stories. An event older than the window counts as archived; its row is not changed ([C2](C2-audit.md)). |
 | Reports time zone: `PlatformSettings.Reports` (`lmj.reports.time-zone`) | reporting-service, through [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the zone a report's days, weeks, months and years are in. Orders are stored in UTC; `ReportCalendar` converts ([C6](C6-api.md#reports-reporting-service)). It is also the zone the overnight report time is in. |
-| Overnight report time: `PlatformSettings.Reports` | Not yet. For the scheduled-reports story. |
+| Overnight report time: `PlatformSettings.Reports` (`lmj.reports.overnight-run-time`) | reporting-service's overnight scheduler: when each night's overnight reports start, in the reports time zone. Keep it outside trading hours ([C6](C6-api.md#get-apiv1reportsovernight)). |
+| Overnight ready-by time: `PlatformSettings.Reports` (`lmj.reports.ready-by`) | reporting-service's overnight scheduler: when a successful run must be ready by, the same night. A run not finished by then is marked late, so the Analyst dashboard shows it; one that finishes after it stays late. Must be after the overnight report time; the service refuses to start otherwise. |
 | Large-order quantity: `PlatformSettings.Surveillance` (`lmj.surveillance.large-order-quantity`) | surveillance-service: an order placed for at least this many shares raises an alert for Trading Ops ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). The alerts endpoint returns the value in use. |
 
 ## Changing a value
@@ -68,6 +69,9 @@ limits, not business settings, so they are not in `PlatformSettings`. They are d
 their defaults and environment overrides, in its
 [application.properties](../services/reporting-service/src/main/resources/application.properties)
 and explained in its [README](../services/reporting-service/README.md#read-side-safeguards).
+The report load test ([report-load.spec.ts](../apps/e2e/load/report-load.spec.ts), LMKT-44)
+checks that they are enough to keep order confirmations on target. Its thresholds are test
+settings, defined with their `LOAD_*` overrides at the top of that file.
 
 ## Order execution
 
