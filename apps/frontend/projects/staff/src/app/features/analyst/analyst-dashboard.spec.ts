@@ -20,6 +20,8 @@ describe('AnalystDashboard', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelector('staff-volume-insight-tile')).not.toBeNull();
     const http = TestBed.inject(HttpTestingController);
+    // It loads its cards once it knows the reports time zone.
+    http.expectOne('/api/v1/reports/ping').flush({ success: true, service: 'reporting-service', timeZone: 'America/New_York' });
     expect(http.match((r) => r.url === '/api/v1/reports/insights/volume/compare').length).toBe(3);
   });
 
