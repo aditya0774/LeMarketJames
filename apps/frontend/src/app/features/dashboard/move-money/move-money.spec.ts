@@ -95,8 +95,8 @@ describe('MoveMoney', () => {
     await open('WITHDRAW', 800);
 
     const quick = Array.from(el().querySelectorAll<HTMLButtonElement>('.mm-quick button'));
-    expect(quick.map((b) => b.textContent?.trim())).toEqual(['$500', '$1,000', 'All']);
-    quick[2].click();
+    expect(quick.map((b) => b.textContent?.trim())).toEqual(['$500', '$1,000', '$5,000', 'All']);
+    quick[3].click();
     fixture.detectChanges();
     expect((el().querySelector('#cash-amount') as HTMLInputElement).value).toBe('800.00');
     expect(go().disabled).toBe(false);
