@@ -1,6 +1,7 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
 import { resetFeed } from './support/market-control';
+import { connectDatabase, createStaffUser, deleteStaffUser } from './support/database';
 import { newUser, registerViaApi, TestUser } from './support/users';
 
 /**
@@ -135,33 +136,42 @@ test.describe('Staff gateway', () => {
 
   test('a customer session and a staff session exist at the same time', async ({ request }) => {
     const client = newUser('twosess');
-    await registerViaApi(request, client);
+    const operations = newUser('twosessops');
+    const database = await connectDatabase();
+    await createStaffUser(database, operations, 'TRADING_OPS', OPERATIONS);
 
-    // One cookie jar for both apps, as in a browser with a tab on each.
-    await loginViaApi(request, client);
-    await staffSignIn(request, OPERATIONS);
-    expect(await cookieNames(request)).toEqual(['jwt', 'staff_jwt']);
+    try {
+      await registerViaApi(request, client);
 
-    const whoAmI = async (origin: string) => {
-      const response = await request.get(`${origin}/api/auth/me`);
-      return response.status() === 200 ? (await response.json()).roles : response.status();
-    };
-    expect(await whoAmI('')).toEqual(['CLIENT']);
-    expect(await whoAmI(STAFF)).toEqual(['TRADING_OPS']);
+      // One cookie jar for both apps, as in a browser with a tab on each.
+      await loginViaApi(request, client);
+      await staffSignIn(request, operations);
+      expect(await cookieNames(request)).toEqual(['jwt', 'staff_jwt']);
 
-    // Each session still does its own work while the other is open.
-    expect((await request.get('/api/v1/instruments')).status()).toBe(200);
-    expect((await request.get(`${STAFF}${SEARCH}`, { params: { orderId: '1' } })).status()).toBe(200);
+      const whoAmI = async (origin: string) => {
+        const response = await request.get(`${origin}/api/auth/me`);
+        return response.status() === 200 ? (await response.json()).roles : response.status();
+      };
+      expect(await whoAmI('')).toEqual(['CLIENT']);
+      expect(await whoAmI(STAFF)).toEqual(['TRADING_OPS']);
 
-    // Signing out of the staff app leaves the customer signed in...
-    expect((await request.post(`${STAFF}/api/auth/logout`)).status()).toBe(200);
-    expect(await whoAmI(STAFF)).toBe(401);
-    expect(await whoAmI('')).toEqual(['CLIENT']);
+      // Each session still does its own work while the other is open.
+      expect((await request.get('/api/v1/instruments')).status()).toBe(200);
+      expect((await request.get(`${STAFF}${SEARCH}`, { params: { orderId: '1' } })).status()).toBe(200);
 
-    // ...and signing out of the trading app leaves staff signed in.
-    await staffSignIn(request, OPERATIONS);
-    expect((await request.post('/api/auth/logout')).status()).toBe(200);
-    expect(await whoAmI('')).toBe(401);
-    expect(await whoAmI(STAFF)).toEqual(['TRADING_OPS']);
+      // Signing out of the staff app leaves the customer signed in...
+      expect((await request.post(`${STAFF}/api/auth/logout`)).status()).toBe(200);
+      expect(await whoAmI(STAFF)).toBe(401);
+      expect(await whoAmI('')).toEqual(['CLIENT']);
+
+      // ...and signing out of the trading app leaves staff signed in.
+      await staffSignIn(request, operations);
+      expect((await request.post('/api/auth/logout')).status()).toBe(200);
+      expect(await whoAmI('')).toBe(401);
+      expect(await whoAmI(STAFF)).toEqual(['TRADING_OPS']);
+    } finally {
+      await deleteStaffUser(database, operations.username);
+      await database.end();
+    }
   });
 });
