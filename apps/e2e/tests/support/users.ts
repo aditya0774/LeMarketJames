@@ -54,3 +54,9 @@ export async function loginViaUi(page: Page, user: TestUser, password = user.pas
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
 }
+
+/** Logs out the way a user does: "Log out" sits in the account menu behind the avatar button. */
+export async function logoutViaUi(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+}

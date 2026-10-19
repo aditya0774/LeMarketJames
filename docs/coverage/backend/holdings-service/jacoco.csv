@@ -12,12 +12,17 @@ LeMarketJames Holdings Service,com.lemarketjames.holdings.dto,ValidateHoldingReq
 LeMarketJames Holdings Service,com.lemarketjames.holdings.dto,InternalHoldingsValidationRequest,0,31,0,0,0,13,0,9,0,9
 LeMarketJames Holdings Service,com.lemarketjames.holdings.dto,HoldingDto,35,51,0,0,17,18,9,9,9,9
 LeMarketJames Holdings Service,com.lemarketjames.holdings.dto,HoldingsResponse,27,18,0,0,12,7,5,4,5,4
+LeMarketJames Holdings Service,com.lemarketjames.portfolio,PortfolioHistoryService,0,280,0,22,0,44,0,22,0,11
+LeMarketJames Holdings Service,com.lemarketjames.portfolio,PortfolioHistoryService.StockSeries,0,44,0,2,0,7,0,3,0,2
 LeMarketJames Holdings Service,com.lemarketjames.portfolio,PortfolioController,0,18,0,0,0,5,0,2,0,2
 LeMarketJames Holdings Service,com.lemarketjames.portfolio,PortfolioService,36,204,1,7,5,42,4,11,3,8
+LeMarketJames Holdings Service,com.lemarketjames.portfolio,PortfolioHistoryController,0,42,0,2,0,9,0,3,0,2
 LeMarketJames Holdings Service,com.lemarketjames,HoldingsServiceApplication,5,3,0,0,2,1,1,1,1,1
 LeMarketJames Holdings Service,com.lemarketjames.trades.dto,TradeDto,9,24,0,0,3,9,3,3,3,3
+LeMarketJames Holdings Service,com.lemarketjames.portfolio.dto,PortfolioHistoryResponse,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.portfolio.dto,PortfolioBalance,0,57,0,0,0,20,0,10,0,10
 LeMarketJames Holdings Service,com.lemarketjames.portfolio.dto,PortfolioResponse,0,15,0,0,0,6,0,3,0,3
+LeMarketJames Holdings Service,com.lemarketjames.portfolio.dto,PortfolioPoint,0,9,0,0,0,1,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.trades,TradeController,10,6,0,0,2,3,1,1,1,1
 LeMarketJames Holdings Service,com.lemarketjames.trades,TradeService,0,79,0,2,0,19,0,7,0,6
 LeMarketJames Holdings Service,com.lemarketjames.profile,ProfileService,12,63,0,0,0,19,2,3,2,3
@@ -31,5 +36,5 @@ LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,Insufficient
 LeMarketJames Holdings Service,com.lemarketjames.holdings.exception,UnauthorizedException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Holdings Service,com.lemarketjames.config,SecurityConfig,0,110,0,0,0,21,0,8,0,8
 LeMarketJames Holdings Service,com.lemarketjames.profile.dto,ProfileDto,9,48,0,0,3,17,3,7,3,7
-LeMarketJames Holdings Service,com.lemarketjames.orders.client,OrdersClient,10,83,2,4,2,21,1,7,0,5
+LeMarketJames Holdings Service,com.lemarketjames.orders.client,OrdersClient,0,125,1,9,0,31,1,9,0,5
 LeMarketJames Holdings Service,com.lemarketjames.orders.client,OrderSummary,1,43,1,1,1,5,1,4,0,4

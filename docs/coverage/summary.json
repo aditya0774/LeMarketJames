@@ -1,12 +1,12 @@
 {
-  "commit": "91eea978",
-  "date": "2026-10-16",
+  "commit": "4346f967",
+  "date": "2026-10-19",
   "backend": {
-    "line": 84.41,
-    "branch": 82.43
+    "line": 85.77,
+    "branch": 85.28
   },
   "frontend": {
-    "line": 90.96,
-    "branch": 82.89
+    "line": 96.92,
+    "branch": 91.47
   }
 }

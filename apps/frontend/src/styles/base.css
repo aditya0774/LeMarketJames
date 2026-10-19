@@ -1,6 +1,7 @@
-/* Rules shared by both apps: reset, focus, auth shell, buttons, fields, alerts, panels, tables,
-   badges, chips, pagination and the loading/empty utilities. App-specific shells live in each
-   app's own styles.css. */
+/* Rules shared by both apps: reset, typography, focus, buttons, fields, alerts, cards, tables,
+   badges, chips, segmented controls, pagination, the account menu and the loading/empty
+   utilities. They follow the "LeMarket Redesign" design and use only the tokens in tokens.css, so
+   both themes come for free. App-specific layout lives in each app's own styles.css. */
 
 *,
 *::before,
@@ -16,22 +17,44 @@ body {
 }
 
 body {
-  background-color: var(--ink);
+  background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   font-size: var(--font-base);
   line-height: 1.45;
-  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Fieldsets group related controls for screen readers; they should not draw a box. */
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--font-head);
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: 0;
+}
+
+a {
+  color: var(--pri);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--prih);
+}
+
+/* Numbers line up in columns; every price, count and date uses this. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .tabular {
@@ -46,10 +69,59 @@ h3 {
   color: var(--down);
 }
 
+.muted {
+  color: var(--dim);
+}
+
+.faint {
+  color: var(--faint);
+}
+
+/* Hidden on screen, still read by screen readers (table headers for icon-only columns, etc.). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* One visible focus treatment for every control; mouse clicks don't trigger it. */
 :focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line6) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--line6);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--bar2);
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -61,101 +133,153 @@ h3 {
   }
 }
 
-/* ---------- Auth shell ---------- */
+/* ---------- Auth pages (log in, register) ----------
+   A full-height page: a header row of back link · brand · right-hand slot, then the form
+   centred in the space left. */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.auth-head {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding: 20px clamp(16px, 4vw, 56px);
+}
+
+.auth-head > :first-child {
+  justify-self: start;
+}
+
+.auth-head > .auth-head-end {
+  justify-self: end;
+  font-size: var(--font-base);
+  color: var(--dim);
+}
+
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px var(--space-md) 64px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-card .field {
+  margin-bottom: 0;
+}
+
+.auth-card .switch-line,
+.auth-card .alert {
+  margin: 0;
+}
+
+.auth-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-title h1 {
+  font-size: var(--font-3xl);
+}
+
+.auth-title p {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--font-md);
+}
+
+/* Older auth layout, still used by the staff login until it moves to the redesign. */
 
 .auth-wrap {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 64px 24px 70px;
+  padding: 64px var(--space-md) 70px;
   position: relative;
-  background-color: var(--ink);
+  background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-body);
-  color-scheme: dark;
 }
 
 .back-link {
-  position: absolute;
-  top: 26px;
-  left: 34px;
-  font-size: var(--font-xs);
-  color: var(--text-faint);
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  font-size: var(--font-base);
+  font-weight: 500;
+  color: var(--dim);
   cursor: pointer;
-  z-index: 5;
 }
 
 .back-link:hover {
-  color: var(--gold);
+  color: var(--text);
+}
+
+.back-link svg {
+  width: 16px;
+  height: 16px;
 }
 
 .auth-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 36px;
+  margin-bottom: 32px;
 }
 
 .auth-brand img {
-  height: 34px;
+  height: 30px;
   width: auto;
   display: block;
 }
 
 .auth-brand .wordmark {
-  font-family: var(--font-head);
-  font-weight: 800;
-  font-size: var(--font-xl);
-  letter-spacing: 0.3px;
+  font-weight: 600;
+  font-size: var(--font-lg);
 }
 
 .wordmark .le-accent {
-  color: var(--gold);
+  color: var(--pri);
 }
 
 .auth-panel {
   width: 100%;
   max-width: 460px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 36px 38px;
+  padding: 28px;
 }
 
 .auth-panel.wide {
   max-width: 560px;
 }
 
-.auth-card {
-  width: 100%;
-  max-width: 380px;
-  margin: 0 auto;
-}
-
-.auth-card.wide {
-  max-width: 480px;
-}
-
-.auth-card h2 {
-  font-size: 28px;
-  margin: 0 0 6px;
-}
-
-.auth-card .sub {
-  font-size: var(--font-base);
-  color: var(--text-dim);
-  margin-bottom: 28px;
-}
-
 .form-section-title {
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--text);
-  margin: 26px 0 14px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  margin: 24px 0 14px;
   padding-top: 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 
 .form-section-title.first {
@@ -164,24 +288,31 @@ h3 {
   border-top: none;
 }
 
+.auth-card.wide {
+  max-width: 480px;
+}
+
+.auth-card h2 {
+  font-size: var(--font-3xl);
+  margin: 0 0 8px;
+}
+
+.auth-card .sub {
+  font-size: var(--font-md);
+  color: var(--dim);
+  margin-bottom: 24px;
+}
+
 .switch-line {
   text-align: center;
-  font-size: var(--font-sm);
-  color: var(--text-dim);
-  margin-top: 22px;
+  font-size: var(--font-base);
+  color: var(--dim);
+  margin-top: 20px;
 }
 
-.switch-line a,
 .link-gold {
-  color: var(--gold);
-  text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-}
-
-.switch-line a:hover,
-.link-gold:hover {
-  text-decoration: underline;
 }
 
 /* ---------- Buttons ---------- */
@@ -191,136 +322,235 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 11px var(--space-md);
+  height: 44px;
+  padding: 0 18px;
   border-radius: var(--radius);
   border: 1px solid transparent;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--font-base);
+  background: transparent;
+  color: var(--text);
+  font: 600 var(--font-base) / 1 var(--font-body);
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
-.btn:active {
-  transform: translateY(1px);
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
-.btn:disabled {
-  opacity: 0.5;
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  height: 36px;
+  padding: 0 14px;
+  font-size: var(--font-sm);
+}
+
+.btn-lg {
+  height: 48px;
+  padding: 0 22px;
+  font-size: var(--font-md);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.4;
   cursor: not-allowed;
-  transform: none;
 }
 
+/* Primary action: gold in the dark theme, blue in the light one. */
+.btn-primary,
 .btn-gold {
-  background: var(--gold);
-  color: var(--on-accent);
+  background: var(--pri);
+  color: var(--on-pri);
 }
 
+.btn-primary:hover:not(:disabled),
 .btn-gold:hover:not(:disabled) {
-  background: var(--gold-soft);
+  background: var(--prih);
+  color: var(--on-pri);
+}
+
+/* Selling is the accent colour, so buy and sell never look the same. */
+.btn-sell {
+  background: var(--acc3);
+  color: var(--on-acc);
+}
+
+.btn-sell:hover:not(:disabled) {
+  filter: brightness(1.08);
+  color: var(--on-acc);
+}
+
+/* Low-emphasis primary, e.g. "Trade" in a table row. */
+.btn-soft {
+  background: var(--pri-soft);
+  color: var(--pritext);
+}
+
+.btn-soft:hover:not(:disabled) {
+  color: var(--pritext);
+  background: color-mix(in srgb, var(--pri) 20%, transparent);
 }
 
 .btn-outline {
-  background: transparent;
-  border-color: var(--border);
+  border-color: var(--line3);
   color: var(--text);
 }
 
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--text-faint);
-  background: var(--hover-row);
+  color: var(--text);
+  background: var(--card2);
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--text-dim);
+  color: var(--dim);
 }
 
 .btn-ghost:hover:not(:disabled) {
   color: var(--text);
-  background: var(--hover-row);
+  background: var(--card2);
 }
 
-/* Square icon-only button; always give it an aria-label and a title (the tooltip). */
+/* A button that reads as a link ("Details →", "View →"). */
+.btn-link {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pri);
+  font: 500 var(--font-sm) var(--font-body);
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  color: var(--prih);
+}
+
+/* Square icon-only button; always give it an aria-label. */
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
+  border: 0;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--dim);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .icon-btn:hover {
   color: var(--text);
-  border-color: var(--text-faint);
+  background: var(--card2);
 }
 
 .icon-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* ---------- Fields ---------- */
 
 .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
   margin-bottom: var(--space-md);
 }
 
-.field label {
-  display: block;
-  font-size: var(--font-xs);
-  font-weight: 600;
-  color: var(--text-dim);
-  margin-bottom: 6px;
+.field label,
+.field .label {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text2);
 }
 
-/* The :not() guard keeps the terms checkbox from being stretched full width. */
+/* The standalone input/select look, also applied to inputs inside .field. The :not() guards keep
+   checkboxes and radios at their natural size. */
+.in,
 .field input:not([type='checkbox']):not([type='radio']),
 .field select {
   width: 100%;
-  padding: 10px 12px;
+  height: 46px;
+  padding: 0 14px;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--ink);
+  border: 1px solid var(--line2);
+  background: var(--bg2);
   color: var(--text);
-  font-family: var(--font-body);
-  font-size: var(--font-base);
+  font: 400 var(--font-md) var(--font-body);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.in-sm {
+  height: 40px;
+  padding: 0 12px;
+  font-size: var(--font-base);
+}
+
+.in::placeholder,
 .field input::placeholder {
-  color: var(--text-faint);
+  color: var(--faint2);
 }
 
-.field input:not([type='checkbox']):not([type='radio']):hover,
-.field select:hover {
-  border-color: var(--text-faint);
-}
-
+.in:focus,
 .field input:not([type='checkbox']):not([type='radio']):focus,
 .field select:focus {
-  border-color: var(--gold);
-  box-shadow: none;
+  border-color: var(--focusb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focusb) 22%, transparent);
+}
+
+.in:disabled {
+  opacity: 0.45;
+}
+
+/* Native selects get the design's chevron instead of the platform arrow. */
+select.in,
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 44px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%),
+    linear-gradient(135deg, var(--dim) 50%, transparent 50%);
+  background-position: calc(100% - 22px) 52%, calc(100% - 17px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select option {
+  background: var(--card);
+  color: var(--text);
 }
 
 .field input[aria-invalid='true'],
-.field input.invalid {
+.field input.invalid,
+.in[aria-invalid='true'] {
   border-color: var(--down);
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .field-row {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-md);
 }
 
 .field-row .field {
@@ -328,92 +558,148 @@ h3 {
 }
 
 .hint {
-  font-size: var(--font-2xs);
-  color: var(--text-faint);
-  margin-top: 5px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--faint);
 }
 
 .opt-tag {
-  color: var(--text-faint);
+  font-size: var(--font-2xs);
   font-weight: 500;
+  color: var(--faint);
+  margin-left: 6px;
+  letter-spacing: 0.02em;
 }
 
 .field-error {
-  font-size: var(--font-xs);
-  color: #ffc5c5;
-  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--errt);
 }
 
-/* ---------- Native control fixes ---------- */
-
-.auth-wrap option,
-.app-shell option {
-  background: var(--ink-2);
-  color: var(--text);
+/* A "$" or search icon sitting inside an input. */
+.in-wrap {
+  position: relative;
 }
 
-.auth-wrap input[type='date']::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.4);
+.in-wrap > .in-prefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  pointer-events: none;
+}
+
+.in-wrap > .in-prefix svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Matches the .field input rule's weight, so the prefix room survives inside a .field too. */
+.in-wrap > .in,
+.field .in-wrap > input:not([type='checkbox']):not([type='radio']) {
+  padding-left: 32px;
+}
+
+/* Show/Hide control inside a password box, on the right (log in and register). */
+.pw-wrap {
+  position: relative;
+}
+
+.field .pw-wrap input:not([type='checkbox']) {
+  padding-right: 72px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--acc);
+  font: 500 var(--font-sm) var(--font-body);
   cursor: pointer;
-  opacity: 0.7;
 }
 
-.auth-wrap input[type='date']::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-.auth-wrap input[type='number'] {
-  -moz-appearance: textfield;
-}
-
-.auth-wrap input[type='number']::-webkit-outer-spin-button,
-.auth-wrap input[type='number']::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* ---------- Alerts ---------- */
+/* ---------- Alerts ----------
+   err: something failed. warn: needs attention but nothing is lost. info: a pointer elsewhere.
+   ok: it worked. The bold first line is the headline; the rest explains what to do next. */
 
 .alert {
   display: flex;
-  gap: var(--space-sm);
+  gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
   border-radius: var(--radius);
-  font-size: var(--font-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
   margin-bottom: 18px;
-  border: 1px solid;
-  border-left-width: 3px;
+}
+
+.alert > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
 }
 
 .alert b {
   display: block;
-  font-size: var(--font-sm);
+  font-weight: 600;
   margin-bottom: 2px;
 }
 
 .alert.err {
-  background: rgba(255, 92, 92, 0.07);
-  border-color: rgba(255, 92, 92, 0.45);
-  color: #ffd2d2;
+  background: var(--down-soft);
+  color: var(--errt2);
+}
+
+.alert.err b {
+  color: var(--errt);
+}
+
+.alert.warn {
+  background: color-mix(in srgb, var(--pri) 10%, transparent);
+  color: var(--warntext);
+}
+
+.alert.warn b {
+  color: var(--pritext);
+}
+
+.alert.info {
+  background: var(--accb-soft);
+  color: var(--text3);
+}
+
+.alert.info b {
+  color: var(--seltext);
 }
 
 .alert.ok {
-  background: rgba(59, 217, 138, 0.07);
-  border-color: rgba(59, 217, 138, 0.45);
-  color: #c4f5dc;
+  background: var(--up-soft);
+  color: var(--okt);
 }
 
 .alert a {
-  color: var(--gold);
   font-weight: 600;
 }
 
-/* ---------- Panels & tables ---------- */
+/* ---------- Cards, panels & tables ---------- */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
 
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 20px;
@@ -423,60 +709,71 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px var(--space-lg);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 18px;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
+.panel-head h2,
 .panel-head h3 {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
 }
 
 .panel-head .sub-s {
-  font-size: var(--font-xs);
-  color: var(--text-faint);
+  font-size: 12.5px;
+  color: var(--faint);
   margin-top: 2px;
 }
 
 .panel-scroll {
-  overflow-x: auto;
+  overflow: auto;
+  border-top: 1px solid var(--line);
 }
 
-.panel table {
+.panel table,
+.t {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-sm);
+  font-size: var(--font-base);
   font-variant-numeric: tabular-nums;
 }
 
-.panel thead th {
+.panel thead th,
+.t th {
   text-align: left;
-  padding: 9px var(--space-lg);
-  color: var(--text-faint);
-  font-weight: 600;
-  font-size: var(--font-2xs);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  padding: 10px 18px;
+  color: var(--faint);
+  font-weight: 500;
+  font-size: var(--font-xs);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
   position: sticky;
   top: 0;
 }
 
-.panel tbody td {
-  padding: 11px var(--space-lg);
-  border-bottom: 1px solid var(--border-subtle);
+.panel tbody td,
+.t td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--lsoft);
   color: var(--text);
   vertical-align: middle;
 }
 
-.panel tbody tr:last-child td {
+.panel tbody tr:last-child td,
+.t tbody tr:last-child td {
   border-bottom: none;
 }
 
-.panel tbody tr:hover {
-  background: var(--hover-row);
+.t tfoot td {
+  border-top: 1px solid var(--line2);
+  border-bottom: 0;
+  font-weight: 500;
+}
+
+.panel tbody tr:hover,
+.t tbody tr.hover:hover {
+  background: var(--card2);
 }
 
 .panel tbody td.up {
@@ -487,77 +784,154 @@ h3 {
   color: var(--down);
 }
 
-.panel tbody td.empty-row {
-  padding: 26px var(--space-lg);
+.panel tbody td.empty-row,
+.t td.empty-row {
+  padding: 32px 18px;
   text-align: center;
-  font-size: var(--font-sm);
-  color: var(--text-faint);
+  color: var(--faint);
 }
 
-.num {
+.num,
+.t .r {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .sym {
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 .sym-sub {
   display: block;
-  font-size: var(--font-2xs);
-  color: var(--text-faint);
+  font-size: 12.5px;
+  color: var(--faint);
   font-weight: 400;
 }
 
 /* ---------- Badges ----------
-   Every badge pairs its colour with a leading glyph (set in the template), so state never
-   depends on colour alone. Statuses: submitted, accepted, pending, delayed, filled, rejected. */
+   Every status badge pairs its colour with a leading glyph, so state never depends on colour
+   alone. Order statuses: submitted, accepted, pending (purple, on their way), delayed (gold,
+   slower than usual), filled (green), rejected (red). Buy/sell are square-cornered tags. */
 
 .pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--font-2xs);
-  font-weight: 600;
-  padding: 3px 9px;
+  height: 24px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid transparent;
+  font-size: var(--font-xs);
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.pill-buy,
-.pill-filled {
-  background: rgba(59, 217, 138, 0.1);
-  border-color: rgba(59, 217, 138, 0.35);
-  color: var(--up);
-}
-
-.pill-sell,
-.pill-rejected {
-  background: rgba(255, 92, 92, 0.1);
-  border-color: rgba(255, 92, 92, 0.35);
-  color: var(--down);
-}
-
-.pill-pending,
-.pill-accepted {
-  background: rgba(253, 185, 39, 0.1);
-  border-color: rgba(253, 185, 39, 0.35);
-  color: var(--gold);
-}
-
-.pill-submitted {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text-dim);
+.pill-submitted,
+.pill-accepted,
+.pill-pending {
+  background: var(--accb-soft);
+  color: var(--seltext);
 }
 
 .pill-delayed {
-  background: rgba(183, 168, 209, 0.1);
-  border-color: rgba(183, 168, 209, 0.35);
-  color: var(--text-dim);
-  border-style: dashed;
+  background: var(--pri-soft);
+  color: var(--pritext);
+}
+
+.pill-filled {
+  background: var(--up-soft);
+  color: var(--upt);
+}
+
+.pill-rejected {
+  background: var(--down-soft);
+  color: var(--errt);
+}
+
+.pill-buy,
+.pill-sell {
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.pill-buy {
+  background: var(--pri-soft);
+  color: var(--pritext);
+}
+
+.pill-sell {
+  background: var(--acc-soft);
+  color: var(--acc2t);
+}
+
+/* A grey tag for facts like "Not tradable". */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--l4);
+  color: var(--dim);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Round count or label badge, e.g. "Courtside View". */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accb) 16%, transparent);
+  color: var(--acc2t);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Connection badge with a status dot: live (green), reconnecting (gold), connecting (grey). */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--l4);
+  color: var(--dim);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.live-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--faint2);
+}
+
+.live-badge.live {
+  background: color-mix(in srgb, var(--up) 10%, transparent);
+  color: var(--up);
+}
+
+.live-badge.live::before {
+  background: var(--up);
+}
+
+.live-badge.reconnecting {
+  background: color-mix(in srgb, var(--pri) 10%, transparent);
+  color: var(--pritext);
+}
+
+.live-badge.reconnecting::before {
+  background: var(--pri);
 }
 
 /* Gain/loss figure: the arrow glyph comes from the template, the sign from the number. */
@@ -565,7 +939,6 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -577,7 +950,7 @@ h3 {
   color: var(--down);
 }
 
-/* ---------- Chips & pagination ---------- */
+/* ---------- Chips, segmented controls & tabs ---------- */
 
 .filters {
   display: flex;
@@ -586,36 +959,149 @@ h3 {
 }
 
 .chip {
-  font-family: var(--font-body);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
   background: transparent;
-  color: var(--text-dim);
+  color: var(--dim);
+  font: 500 var(--font-sm) var(--font-body);
   cursor: pointer;
 }
 
 .chip:hover {
   color: var(--text);
-  border-color: var(--text-faint);
 }
 
-.chip.active {
-  background: var(--gold);
-  color: var(--on-accent);
-  border-color: var(--gold);
+.chip.active,
+.chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accb) 16%, transparent);
+  border-color: var(--acc3);
+  color: var(--seltext);
 }
+
+/* A row of mutually exclusive options in one rounded tray (Day/Week/Month, Market/Limit, …).
+   The chosen option is marked with aria-pressed, aria-selected, aria-checked, .active or, for
+   real radio inputs, :checked on the input inside the label. */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+}
+
+.seg > button,
+.seg > a,
+.seg > label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dim);
+  font: 500 var(--font-sm) var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg > button:hover,
+.seg > a:hover,
+.seg > label:hover {
+  color: var(--text);
+}
+
+.seg > [aria-pressed='true'],
+.seg > [aria-selected='true'],
+.seg > [aria-checked='true'],
+.seg > [aria-current='page'],
+.seg > .active,
+.seg > label:has(input:checked) {
+  background: var(--sel);
+  color: var(--text);
+}
+
+.seg > label:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A real radio input, invisible and covering its label, so clicks and keyboard both reach it. */
+.seg > label {
+  position: relative;
+}
+
+.seg > label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The larger tray used for page tabs (dashboard sections, analyst reports). */
+.seg.tabs {
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.seg.tabs > a,
+.seg.tabs > button {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font-size: var(--font-base);
+}
+
+/* Full-width two-option switch (Buy/Sell, Deposit/Withdraw). */
+.seg.split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.seg.split > button {
+  height: 40px;
+  border-radius: 9px;
+  font-size: var(--font-base);
+  font-weight: 600;
+}
+
+.seg.split > .buy-active,
+.seg.split > [aria-checked='true'].buy {
+  background: var(--pri);
+  color: var(--on-pri);
+}
+
+.seg.split > .sell-active,
+.seg.split > [aria-checked='true'].sell {
+  background: var(--acc3);
+  color: var(--on-acc);
+}
+
+/* ---------- Pagination ---------- */
 
 .panel-foot {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px var(--space-lg);
-  border-top: 1px solid var(--border);
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
   flex-wrap: wrap;
   gap: 10px;
+  font-size: var(--font-sm);
+  color: var(--dim);
 }
 
 .pg-row {
@@ -625,36 +1111,158 @@ h3 {
 }
 
 .pg-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line3);
   background: transparent;
-  color: var(--text-dim);
-  font-size: var(--font-sm);
+  color: var(--text);
+  font-size: 16px;
   cursor: pointer;
 }
 
-.pg-btn:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--text-faint);
-}
-
 .pg-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .pg-btn.active {
-  background: var(--gold);
-  color: var(--on-accent);
-  border-color: var(--gold);
-  font-weight: 700;
+  background: var(--sel);
+  border-color: var(--acc3);
+  font-size: var(--font-sm);
+  font-weight: 600;
 }
 
 .pg-info {
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+/* ---------- Account menu ----------
+   The avatar button in the header opens a small panel with who is signed in, the theme switch
+   and sign-out. */
+
+.menu-wrap {
+  position: relative;
+}
+
+.avatar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--accline);
+  background: var(--sel);
+  color: var(--seltext);
+  font: 600 var(--font-base) var(--font-body);
+  cursor: pointer;
+}
+
+.avatar-btn[aria-expanded='true'] {
+  border-color: var(--acc);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 40;
+  width: 240px;
+  padding: 6px;
+  background: var(--card2);
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  box-shadow: var(--shadow-overlay);
+}
+
+.menu-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.menu-who b {
+  font-size: var(--font-base);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-who span {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.menu-theme {
+  display: block;
+  padding: 8px 12px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
   font-size: var(--font-xs);
-  color: var(--text-faint);
+  color: var(--dim);
+}
+
+.menu-theme legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.menu-theme .seg {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-color: var(--line2);
+}
+
+.menu-theme .seg > button {
+  height: 34px;
+}
+
+/* The two team-colour dots in front of each theme name. */
+.theme-dots {
+  display: inline-flex;
+}
+
+.theme-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.theme-dots i + i {
+  margin-left: -3px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: 500 var(--font-base) var(--font-body);
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: var(--l4);
+  color: var(--text);
+}
+
+.menu-item svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ---------- Loading and empty states ---------- */
@@ -663,7 +1271,7 @@ h3 {
   display: block;
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--ink-3) 25%, var(--purple-deep) 50%, var(--ink-3) 75%);
+  background: linear-gradient(90deg, var(--l4) 25%, var(--lsoft) 50%, var(--l4) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s linear infinite;
 }
@@ -677,27 +1285,51 @@ h3 {
   }
 }
 
+/* "Chalking up…" line: a small spinner followed by the message. */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 18px;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 2.5px solid var(--line2);
+  border-top-color: var(--pri);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
-  padding: 36px var(--space-lg);
-  text-align: center;
-  color: var(--text-faint);
-  font-size: var(--font-sm);
+  padding: 24px 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dim);
 }
 
 .empty-state strong {
   color: var(--text);
-  font-family: var(--font-head);
-  font-size: var(--font-lg);
-  font-weight: 700;
+  font-size: var(--font-md);
+  font-weight: 600;
 }
 
 .empty-state .btn {
-  width: auto;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 /* Badge glyphs live in CSS so the badge text stays the plain status word. The empty alt text
@@ -724,12 +1356,4 @@ h3 {
 
 .pill-delayed::before {
   content: '⏸' / '';
-}
-
-.pill-buy::before {
-  content: '▲' / '';
-}
-
-.pill-sell::before {
-  content: '▼' / '';
 }

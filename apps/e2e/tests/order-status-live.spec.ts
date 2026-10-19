@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openTab } from './support/nav';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
 import { resetFeed } from './support/market-control';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
@@ -64,6 +65,8 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
 
   const streamRequest = await streamRequestPromise;
   expect(streamRequest.headers()['accept']).toContain('text/event-stream');
+  // The order rows live on the Orders tab, which keeps its own stream open.
+  await openTab(page, 'Orders');
 
   const accountId = await loginViaApi(request, user);
   const instrumentId = await instrumentIdOf(request, 'AAPL');

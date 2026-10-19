@@ -288,7 +288,7 @@ No matches returns `[]`; invalid input gets `400`, missing authentication `401`,
 The staff UI shows each matching name with its ID and asks the operator to select a client,
 then uses the existing client-ID search with an optional date range.
 
-The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
+The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Selecting a result's order number shows that order's audit timeline from [`GET /api/v1/orders/{orderId}/timeline`](#order-timeline-trading_ops-only). Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
 trading gateway. The staff gateway forwards login/logout, session checks, trade search and reports; owning services enforce roles.
 Trading Operations land on their dashboard after login and reach it from a navigation link in the
 signed-in layout. Other signed-in roles are redirected to `/access-denied` ([C7](C7-roles.md#the-staff-app)). The screen labels dates and execution
@@ -348,6 +348,7 @@ Holdings reads order history and buying-power data from buy-sell, never core.
 | `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }` for the caller |
 | `GET /api/v1/profile` | `{ username, fullName, email, phone, accountId, cashBalance, currency, tradingEnabled, openedDate }` for the caller |
 | `GET /api/v1/trades?accountId=…` | the account's filled orders: `[{ symbol, side, quantity, pricePerUnit, filledAt }]` |
+| `GET /api/v1/portfolio/history?range=1D` | `{ success: true, range, points: [{ time, value }] }`: what the caller's stocks were worth over the [chart range](#chart-ranges), oldest first; `400 { success: false, error: "Unknown range" }` for any other range |
 
 Holdings, balance and profile take no `accountId`; they are scoped to the caller's own account. A login without an account (staff) gets `404 { "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` from all three.
 
@@ -689,6 +690,8 @@ How much of each stock traded in the last 24 hours, for anyone who is signed in.
 - Aggregates only: the answer never names an order, an account or a client.
 - A missing or expired cookie gets `401`. Every role may read it.
 
+Portfolio history counts stocks only, like `invested`, so its last point is today's `invested`. There is no stored record of past holdings: the shares held at each point are rebuilt from the account's FILLED orders up to then (read from buy-sell-service like buying power), and valued at that point's price from market-service's history. Points before the first purchase are left out, so an account that has never owned a stock gets `points: []`. A failed orders or prices call also gives fewer points, never an error.
+
 ## Quotes (core-service, reading market-service)
 
 | Method & path | Returns |
@@ -696,7 +699,13 @@ How much of each stock traded in the last 24 hours, for anyone who is signed in.
 | `GET /api/quotes/{symbol}` | `{ success: true, quote }`, `404 { success: false, error: "Symbol not found" }`, or `503 { success: false, error: "Price unavailable" }` while the feed is down ([C4](C4-quote-feed.md)) |
 | `GET /api/quotes` | `{ success: true, quotes: [quote…] }` sorted by symbol, or `503 { success: false, error: "Price unavailable" }` while the feed is down |
 
+| `GET /api/quotes/{symbol}/history?range=1D` | `{ success: true, symbol, range, points: [{ time, price }] }`: the stock's prices over the [chart range](#chart-ranges), oldest first and ending with the live price; `400 { success: false, error: "Unknown range" }`, and the same `404` and `503` as a single quote |
+
 `quote` = `{ symbol, name, price, priceChange, priceChangePercent, highPrice, lowPrice, openPrice, volume, marketCap, peRatio, dividendYield, lastUpdate }`.
+
+### Chart ranges
+
+The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by core- and holdings-service, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
 
 Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDataClient` call); the feed resumes automatically on the next successful call, with the outage's start and end logged ([C4](C4-quote-feed.md)).
 
@@ -709,6 +718,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
 | `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | core, buy-sell, holdings → market-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). |
+| `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | core, holdings → market-service | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
 | `POST /internal/holdings/settle` | buy-sell → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
 | `POST /internal/holdings/validate` | buy-sell → holdings-service | SELL holdings check at placement |
 | `/internal/market/control/**` | tests → market-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
@@ -805,7 +815,19 @@ These are contracts for upcoming stories. Build them as written, or update this 
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
-- **Watchlist:** `GET /api/v1/watchlist`, `POST /api/v1/watchlist { symbol }` (`409 ALREADY_WATCHED`), `DELETE /api/v1/watchlist/{symbol}`. It needs a new `watchlist (account_id, instrument_id, added_at)` table in the next free migration number, in its own `watchlist` feature package.
+- **Watchlist (S41, LMKT-130/131/132):** core-service, in its own `watchlist` feature package (the trading gateway's catch-all already routes `/api/v1/watchlist` there). It needs a new `watchlist (account_id, instrument_id, added_at)` table, unique on `(account_id, instrument_id)`, in the next free migration number. Scoped to the caller's account from the JWT, like holdings; staff (no account) get the holdings-style `404 ACCOUNT_NOT_FOUND`.
+  - `GET /api/v1/watchlist` → `{ success: true, watchlist: [{ symbol, addedAt }] }`, newest first; an empty list is `200` with `watchlist: []`.
+  - `POST /api/v1/watchlist { symbol }` → `201 { success: true, item: { symbol, addedAt } }`; `409 { success: false, code: "ALREADY_WATCHED", error }`; `404 { success: false, error: "Symbol not found" }` for a symbol not in `GET /api/v1/instruments`.
+  - `DELETE /api/v1/watchlist/{symbol}` → `204`, also when the stock was not on the list, so a repeated remove is harmless.
+  - Prices are not part of the watchlist: the trading app shows each watched stock's live quote from `GET /api/quotes`, which it already polls.
+  - Until the back end exists `GET /api/v1/watchlist` answers `404`, which the trading app reports as the watchlist not being available yet, without stars on the stock list.
+- **Deposit and withdraw cash (S42, LMKT-149; stories LMKT-150/151/152):** holdings-service, which already owns `accounts.cash_balance` (the trading gateway routes `/api/v1/portfolio/**` there). Scoped to the caller's account from the JWT; staff get `404 ACCOUNT_NOT_FOUND`.
+  - `POST /api/v1/portfolio/deposits { amount, requestId }` and `POST /api/v1/portfolio/withdrawals { amount, requestId }` → `200 { success: true, balance }`, where `balance` has exactly the shape of `GET /api/balance`, so the caller shows the new buying power without another call.
+  - `amount` is USD, above zero with at most 2 decimals, and at most the per-movement limit, a business setting added to [C5](C5-config.md) by the back-end story; otherwise `400 { success: false, code: "INVALID_AMOUNT", error }`, with `error` a sentence the app shows as is.
+  - A withdrawal may take out at most `buyingPower`, so cash promised to open BUY orders stays put; otherwise `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`.
+  - `requestId` is a UUID the app makes for each attempt and keeps for its retries: a second request with the same `requestId` returns the first one's result without moving the money again.
+  - Each movement changes the cash and records an audit event (new `AuditEventType`s `CASH_DEPOSITED` and `CASH_WITHDRAWN`, with the amount, the balance after and the `requestId`; [C2](C2-audit.md)) in one transaction.
+  - Until the back end exists these paths answer `404`, which the trading app reports as deposits and withdrawals not being available yet.
 
 ## Changing a contract
 

@@ -16,8 +16,14 @@ describe('StaffShell', () => {
     await fixture.whenStable();
 
     const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('.staff-role')?.textContent?.trim()).toBe('Trading Operations');
+    // Log out sits in the account menu behind the avatar.
+    page.querySelector<HTMLButtonElement>('.avatar-btn')!.click();
+    fixture.detectChanges();
     expect(page.querySelector('.logout-btn')).toBeTruthy();
     expect(page.querySelector('router-outlet')).toBeTruthy();
+    // The role is a label, never a link to another role's workspace.
+    expect(page.querySelectorAll('header a:not(.brand)')).toHaveLength(0);
   });
 
   it('signs out through the gateway and returns to the staff login', async () => {
@@ -38,6 +44,8 @@ describe('StaffShell', () => {
       };
     });
 
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.avatar-btn')!.click();
+    fixture.detectChanges();
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.logout-btn')!.click();
     TestBed.inject(HttpTestingController).expectOne('/api/auth/logout').flush({ message: 'Logged out' });
 

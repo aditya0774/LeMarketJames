@@ -1,0 +1,52 @@
+<div class="scrim">
+  <div #panel class="mm" role="dialog" aria-modal="true" aria-labelledby="mm-title">
+    <div class="mm-head">
+      <h2 id="mm-title">Move money</h2>
+      <button type="button" class="mm-close" aria-label="Close" (click)="closed.emit()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+
+    @if (done(); as d) {
+      <output class="mm-done">
+        <span class="mm-tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10" /></svg></span>
+        <strong>{{ d.kind === 'DEPOSIT' ? 'Deposit of ' : 'Withdrawal of ' }}{{ d.amount | currency: 'USD' }}{{ d.kind === 'DEPOSIT' ? ' added' : ' complete' }}</strong>
+        <span>Your buying power is now {{ d.buyingPower | currency: 'USD' }}.{{ d.kind === 'DEPOSIT' ? ' You can start investing right away.' : '' }}</span>
+      </output>
+      <button type="button" class="btn btn-primary btn-block" (click)="closed.emit()">Done</button>
+    } @else {
+      <fieldset class="seg split mm-kind">
+        <legend class="sr-only">Deposit or withdraw</legend>
+        <button type="button" class="opt" [class.buy-active]="kind() === 'DEPOSIT'" [attr.aria-pressed]="kind() === 'DEPOSIT'" (click)="choose('DEPOSIT')">Deposit</button>
+        <button type="button" class="opt" [class.sell-active]="kind() === 'WITHDRAW'" [attr.aria-pressed]="kind() === 'WITHDRAW'" (click)="choose('WITHDRAW')">Withdraw</button>
+      </fieldset>
+
+      <div class="mm-amount">
+        <label for="cash-amount">Amount</label>
+        <div class="mm-input">
+          <span class="mono" aria-hidden="true">$</span>
+          <input #amountBox id="cash-amount" class="in mono" inputmode="decimal" placeholder="0.00" autocomplete="off"
+                 [value]="amountText()" (input)="setAmount($any($event.target).value)" (keydown.enter)="submit()" />
+        </div>
+        <div class="mm-quick">
+          @for (q of quickAmounts(); track q.label) {
+            <button type="button" class="mono" (click)="pick(q.value)">{{ q.label }}</button>
+          }
+        </div>
+      </div>
+
+      <dl class="mm-power">
+        <div><dt>Buying power now</dt><dd class="mono">{{ buyingPower() !== null ? (buyingPower() | currency: 'USD') : '—' }}</dd></div>
+        <div class="after"><dt>Buying power after</dt><dd class="mono">{{ after() !== null ? (after() | currency: 'USD') : '—' }}</dd></div>
+      </dl>
+
+      <p class="mm-err" role="alert">{{ check().error ?? serverError() ?? '' }}</p>
+
+      <button type="button" class="btn btn-block mm-go" [class.btn-primary]="kind() === 'DEPOSIT'" [class.btn-sell]="kind() === 'WITHDRAW'"
+              [disabled]="!check().amount || pending()" (click)="submit()">
+        {{ pending() ? 'Moving money…' : cta() }}
+      </button>
+      <span class="mm-note">{{ kind() === 'DEPOSIT' ? 'Added to your buying power right away.' : 'Removed from your buying power right away.' }}</span>
+    }
+  </div>
+</div>

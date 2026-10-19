@@ -1,24 +1,197 @@
-:host { display: block; color: var(--text); max-width: 1400px; margin: 0 auto; padding: 32px 24px; min-height: 100vh; }
-h1 { font-size: 32px; margin: 8px 0; }
-p { color: var(--text-dim); }
-.eyebrow { color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
-.search-panel, .results { background: var(--ink-2); border: 1px solid var(--purple-line); border-radius: var(--radius-lg); padding: 24px; margin-top: 24px; }
-fieldset { border: 0; padding: 0; margin: 0 0 24px; }
-legend { margin-bottom: 12px; font-weight: 600; }
-fieldset label { display: inline-flex; gap: 8px; align-items: center; margin-right: 24px; }
-input[type=radio] { accent-color: var(--gold); }
-.fields { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
-.fields label { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 170px; }
-.fields input, .fields select { box-sizing: border-box; width: 100%; background: var(--ink); color: var(--text); border: 1px solid var(--purple-line); border-radius: 8px; padding: 12px; font: inherit; color-scheme: dark; }
-button { background: var(--gold); color: var(--ink); padding: 13px 24px; border: 0; border-radius: 8px; font-weight: 700; cursor: pointer; }
-button:disabled { opacity: .6; cursor: wait; }
-:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
-[role=alert] { color: var(--down); }
-.table-scroll { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-variant-numeric: tabular-nums; }
-caption { text-align: left; color: var(--text-dim); padding-bottom: 16px; }
-th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--purple-line); }
-th { color: var(--text-dim); font-size: 12px; }
-@media (max-width: 600px) { .search-panel, .results { padding: 16px; } button { width: 100%; } }
+/* The redesign's Trade search board: the form on the left, results and the timeline on the right. */
 
-details { margin-top: 24px; } summary { cursor: pointer; color: var(--text-dim); margin-bottom: 16px; }
+.ts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.ts-side {
+  flex: 1 1 300px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ts-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ts-title p {
+  margin: 0;
+  font-size: var(--font-base);
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.ts-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+}
+
+.ts-form .field {
+  margin: 0;
+}
+
+.ts-form legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.ts-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.ts-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Two dates side by side in a narrow panel: less padding so mm/dd/yyyy fits. */
+.ts-dates .field input:not([type='checkbox']) {
+  padding: 0 8px;
+  font-size: var(--font-sm);
+}
+
+.ts-form .hint {
+  margin: -8px 0 0;
+}
+
+.ts-clients {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+}
+
+.ts-clients p {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.ts-selected,
+.ts-status {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.ts-side .alert {
+  margin: 0;
+}
+
+.ts-main {
+  flex: 999 1 600px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ts-results {
+  padding-top: 14px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.ts-results table {
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.ts-results caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 18px 10px;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.ts-results tr.selected {
+  background: color-mix(in srgb, var(--accb) 10%, transparent);
+}
+
+.order-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line3);
+  text-underline-offset: 3px;
+}
+
+.order-btn[aria-pressed='true'] {
+  color: var(--seltext);
+  text-decoration-color: var(--acc);
+}
+
+.side {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--acc2t);
+}
+
+.side.buy {
+  color: var(--pritext);
+}
+
+.when {
+  color: var(--dim);
+}
+
+.ts-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.ts-timeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ts-timeline-head h2 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.ts-timeline-head h2 .mono {
+  color: var(--pri);
+}
+
+.ts-timeline-head span:not(.mono) {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.ts-timeline .loading {
+  padding: 8px 0;
+}
+
+.ts-timeline .hint {
+  margin: 0;
+}

@@ -4,7 +4,8 @@
   "compilerOptions": {
     /* Staff app uses @staff/* for its own code. The trading app's Auth service is imported via relative path. */
     "paths": {
-      "@staff/*": ["./src/app/*"]
+      "@staff/*": ["./src/app/*"],
+      "@lemarket/shared-ui": ["../shared-ui/src/public-api.ts"]
     }
   },
   "files": []

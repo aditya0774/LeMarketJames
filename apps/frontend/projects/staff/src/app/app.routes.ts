@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { StaffShell } from './shared/layout/staff-shell/staff-shell';
 import { AnalystDashboard } from './features/analyst/analyst-dashboard';
+import { AnalystLayout } from './features/analyst/analyst-layout';
 import { ANALYST_REPORTS } from './features/analyst/reports/analyst-reports';
 import { Auth } from './core/auth/auth';
 import { authGuard } from './core/auth/auth.guard';
@@ -34,6 +35,8 @@ export const routes: Routes = [
       {
         path: 'analyst',
         canActivate: [requiresRole('ANALYST')],
+        // The layout carries the heading and the tab bar shared by the Volume page and every report.
+        component: AnalystLayout,
         children: [
           { path: '', title: 'Analyst', component: AnalystDashboard },
           ...ANALYST_REPORTS.map(({ path, title, loadComponent }) => ({

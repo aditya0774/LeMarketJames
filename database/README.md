@@ -17,6 +17,7 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `holdings` | holdings-service (settlement) | holdings-service |
 | `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
 | `market_quotes`, `price_candles` | market-service | market-service |
+| `price_history` | seed data ([022](#022--daily-price-history)), then market-service (today's bar) | market-service, for core-service's stock chart and holdings-service's portfolio chart ([C6](../contracts/C6-api.md#chart-ranges)) |
 | `instrument_market_params` | migrations only | market-service |
 | `reporting_trades` (view) | — | reporting-service, as the only data source of its reports ([C6](../contracts/C6-api.md#reports-reporting-service)); insights later |
 | `notifications` | notification-service, from `OrderStatusChanged` events on Kafka ([018](#018--tables-of-the-kafka-consumers)) | notification-service |
@@ -448,3 +449,24 @@ Omit `-Apply` to verify the history in a transaction that rolls back. The number
 creates only clients; trade history requires this explicit companion command and is not
 added to CI automatically. See [C3](../contracts/C3-seed-data.md#historical-client-segment-demo-2026)
 for the historical fixture's scope, reporting dates and idempotency rules.
+
+## 022 — Daily price history
+
+`022_price_history.sql` adds `price_history`: one OHLC bar per stock per exchange-local trading day,
+keyed by `(instrument_id, trading_date)`. It backs the 1W–6M ranges of the stock and portfolio
+charts ([C6](../contracts/C6-api.md#chart-ranges)); 1D still reads `price_candles`.
+
+| Part | What it does |
+|---|---|
+| Table | New. `lemarket_app` gets read and write rights through the default privileges of [016](#016--audit-lockdown). |
+| Seed | Six months of weekdays before the day it runs, for every stock with market parameters. Each line is a random walk with the stock's own drift and volatility, its random numbers hashed from (stock, date) so the same day always seeds the same history. It is bent to pass through the price of every FILLED order in the window and to end at the stock's stored quote (else its initial price), so trades sit on the chart and it joins the live price. Today is left to market-service. Skipped once the table has rows. |
+| Upkeep | market-service writes each stock's bar for the current trading day every time it saves prices, so the history grows by a day per trading day. |
+
+Apply it to an existing local database:
+
+```powershell
+psql -h localhost -U lemarket -d lemarket -v ON_ERROR_STOP=1 -f database/schema/022_price_history.sql
+```
+
+A database whose stored quotes have drifted far from its seeded fills (a long-running local one)
+gets a steep line between the last fill and today; a fresh database does not.

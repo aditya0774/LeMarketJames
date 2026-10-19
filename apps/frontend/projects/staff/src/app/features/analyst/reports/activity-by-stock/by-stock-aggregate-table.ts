@@ -1,6 +1,5 @@
 import { Component, input, signal, computed } from '@angular/core';
-import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { TradesByStockRow } from '@staff/core/reports/reporting.service';
 
 type SortableColumn = 'symbol' | 'totalQuantity' | 'totalGrossAmount' | 'buyCount' | 'sellCount';
@@ -11,20 +10,15 @@ type SortableColumn = 'symbol' | 'totalQuantity' | 'totalGrossAmount' | 'buyCoun
  * Displays aggregate trading activity by stock symbol with client-side sorting.
  * Receives trades data as @Input; no service calls.
  *
- * Sortable columns: Symbol, Total Quantity, Total Gross Amount, Buy Count, Sell Count
+ * Sortable columns: Stock, Shares traded, Gross amount, Buys, Sells (the "By stock" tab of the
+ * redesign's Analyst board), plus a bar for each stock's share of the gross amount.
  * Default sort: Highest total gross amount first (descending)
  */
 @Component({
   selector: 'staff-by-stock-aggregate-table',
   templateUrl: './by-stock-aggregate-table.html',
-  styleUrls: ['./by-stock-aggregate-table.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    CurrencyPipe,
-    DecimalPipe,
-    MatIconModule
-  ]
+  styleUrl: './by-stock-aggregate-table.css',
+  imports: [CurrencyPipe, DecimalPipe]
 })
 export class ByStockAggregateTable {
   readonly tradesData = input<readonly TradesByStockRow[]>([]);
@@ -79,6 +73,21 @@ export class ByStockAggregateTable {
         this.sortAscending.set(true);
       }
     }
+  }
+
+  private readonly maxGross = computed(() => Math.max(0, ...this.tradesData().map((r) => r.totalGrossAmount)));
+
+  /** A stock's gross amount as a share of the biggest one, for its bar (0–100). */
+  barWidth(gross: number): number {
+    return this.maxGross() ? (gross / this.maxGross()) * 100 : 0;
+  }
+
+  /** The header's aria-sort value; with no choice made the table is by gross amount, highest first. */
+  ariaSort(column: SortableColumn): 'ascending' | 'descending' | 'none' {
+    if ((this.sortColumn() ?? 'totalGrossAmount') !== column) {
+      return 'none';
+    }
+    return this.sortAscending() ? 'ascending' : 'descending';
   }
 
   /**

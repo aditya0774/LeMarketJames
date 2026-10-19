@@ -2,12 +2,14 @@ package com.lemarketjames.market.service;
 
 import com.lemarketjames.market.entity.MarketQuoteEntity;
 import com.lemarketjames.market.entity.PriceCandleEntity;
+import com.lemarketjames.market.entity.PriceHistoryEntity;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.PriceCandle;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.repository.InstrumentMarketParamsRepository;
 import com.lemarketjames.market.repository.MarketQuoteRepository;
 import com.lemarketjames.market.repository.PriceCandleRepository;
+import com.lemarketjames.market.repository.PriceHistoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +30,9 @@ import java.util.stream.Collectors;
  *
  * <p>Live prices change every second, which is too often to write on every tick, so the latest
  * prices are written periodically ({@code sim.snapshot-interval-ms}) along with any completed
- * 1-minute candles. All timestamps are stored as UTC.
+ * 1-minute candles and each instrument's bar for the current trading day ({@code price_history}),
+ * which is how the daily price history grows past its seeded six months. All timestamps are stored
+ * as UTC; trading dates are exchange-local.
  */
 @Service
 public class MarketPersistenceService {
@@ -39,13 +43,16 @@ public class MarketPersistenceService {
     private final InstrumentMarketParamsRepository paramsRepository;
     private final MarketQuoteRepository quoteRepository;
     private final PriceCandleRepository candleRepository;
+    private final PriceHistoryRepository historyRepository;
 
     public MarketPersistenceService(InstrumentMarketParamsRepository paramsRepository,
                                     MarketQuoteRepository quoteRepository,
-                                    PriceCandleRepository candleRepository) {
+                                    PriceCandleRepository candleRepository,
+                                    PriceHistoryRepository historyRepository) {
         this.paramsRepository = paramsRepository;
         this.quoteRepository = quoteRepository;
         this.candleRepository = candleRepository;
+        this.historyRepository = historyRepository;
     }
 
     /** @return every instrument that has simulation parameters */
@@ -74,8 +81,9 @@ public class MarketPersistenceService {
     }
 
     /**
-     * Upserts the latest price of every instrument into {@code market_quotes} (one row each) and
-     * appends completed candles to {@code price_candles}, in a single transaction.
+     * Upserts the latest price of every instrument into {@code market_quotes} (one row each) and its
+     * bar for the current trading day into {@code price_history}, and appends completed candles to
+     * {@code price_candles}, in a single transaction.
      */
     @Transactional
     public void save(Collection<QuoteSnapshot> snapshots, List<PriceCandle> candles) {
@@ -90,6 +98,13 @@ public class MarketPersistenceService {
         quoteRepository.saveAll(quotes);
 
         candleRepository.saveAll(candles.stream().map(MarketPersistenceService::toEntity).toList());
+
+        // Today's bar so far: saving it on every snapshot means the day's final values are what
+        // remains once the market closes. A snapshot without a trading date has nothing to file under.
+        historyRepository.saveAll(snapshots.stream()
+                .filter(snapshot -> snapshot.tradingDate() != null)
+                .map(MarketPersistenceService::toDailyBar)
+                .toList());
     }
 
     /**
@@ -128,6 +143,12 @@ public class MarketPersistenceService {
         entity.setVolume(snapshot.volume());
         entity.setLastUpdated(utc(snapshot.lastUpdated()));
         return entity;
+    }
+
+    private static PriceHistoryEntity toDailyBar(QuoteSnapshot snapshot) {
+        return new PriceHistoryEntity(snapshot.instrument().instrumentId(), snapshot.tradingDate(),
+                price(snapshot.openPrice()), price(snapshot.highPrice()), price(snapshot.lowPrice()),
+                price(snapshot.lastPrice()), snapshot.volume());
     }
 
     private static PriceCandleEntity toEntity(PriceCandle candle) {

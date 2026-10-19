@@ -1,0 +1,179 @@
+/* The redesign's Trade board: one card, the order ticket on the left and the price on the right. */
+
+.trade-card {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 1040px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.trade-side {
+  flex: 1 1 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+  border-right: 1px solid var(--line);
+}
+
+.trade-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trade-intro h1 {
+  font-size: var(--font-xl);
+}
+
+.trade-intro p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.pick select {
+  font-weight: 500;
+}
+
+.trade-side .alert {
+  margin: 0;
+}
+
+.price-side {
+  flex: 1 1 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  background: var(--bg3);
+}
+
+.price-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.price-sym {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.price-name {
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+.price-now {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.price-now .mono:first-child {
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.price-chg {
+  font-size: var(--font-base);
+}
+
+.price-note {
+  margin: -6px 0 0;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.price-wait {
+  font-size: var(--font-lg);
+  color: var(--dim);
+}
+
+.range {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.range-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.range-track {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line2);
+}
+
+.range-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--acc3);
+}
+
+.range-mark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 12px;
+  background: var(--pri);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lhdr);
+}
+
+.stats div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.stats span {
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.stats b {
+  font-weight: 500;
+}
+
+.stats small {
+  font-size: 11.5px;
+  color: var(--faint3);
+}
+
+@media (max-width: 860px) {
+  .trade-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}

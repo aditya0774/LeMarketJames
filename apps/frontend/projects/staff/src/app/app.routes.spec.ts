@@ -26,7 +26,7 @@ describe('Staff routes', () => {
     const { url, page } = await open('/');
 
     expect(url).toBe('/login');
-    expect(page.querySelector('h2')?.textContent).toContain('Staff Login');
+    expect(page.querySelector('h2')?.textContent).toContain('Staff log in');
   });
 
   for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
@@ -51,7 +51,7 @@ describe('Staff routes', () => {
   it('opens the Analyst pages for an Analyst', async () => {
     const dashboard = await open('/analyst', 'ANALYST');
     expect(dashboard.url).toBe('/analyst');
-    expect(dashboard.page.textContent).toContain('Analyst Dashboard');
+    expect(dashboard.page.textContent).toContain('Trading volume');
 
     TestBed.resetTestingModule();
     expect((await open('/analyst/reports/activity-by-stock', 'ANALYST')).url)
@@ -62,7 +62,7 @@ describe('Staff routes', () => {
     const refused = await open('/analyst', 'TRADING_OPS');
     expect(refused.url).toBe('/access-denied');
     expect(refused.page.textContent).toContain('Access denied');
-    expect(refused.page.textContent).not.toContain('Analyst Dashboard');
+    expect(refused.page.textContent).not.toContain('Trading volume');
 
     TestBed.resetTestingModule();
     expect((await open('/analyst/reports/activity-by-stock', 'TRADING_OPS')).url).toBe('/access-denied');

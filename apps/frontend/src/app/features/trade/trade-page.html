@@ -1,0 +1,93 @@
+@if (sessionExpired()) {
+  <app-session-expired />
+}
+
+<div class="trade-card">
+  <section class="trade-side" aria-labelledby="trade-title">
+    <div class="trade-intro">
+      <h1 id="trade-title">Trade {{ instrument()?.symbol }}</h1>
+      <p>Pick a stock, choose buy or sell, set shares. That's it.</p>
+    </div>
+
+    <label class="pick">
+      Stock
+      <select class="in" (change)="chooseSymbol($any($event.target).value)">
+        @for (i of instruments(); track i.symbol) {
+          <option [value]="i.symbol" [selected]="i.symbol === symbol()">
+            {{ i.symbol }} · {{ i.name }}{{ ownedLabel(i.symbol) }}{{ i.tradable ? '' : ' (not tradable)' }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (catalogLoaded() && !instrument()) {
+      <div class="alert err" role="alert">
+        <div><b>Stock not found</b>We couldn't find “{{ symbol() }}”. Pick a stock from the list.</div>
+      </div>
+    } @else {
+      @if (quoteError()) {
+        <div class="alert err" role="alert">
+          <div><b>Prices are temporarily unavailable</b>Ordering is paused until live prices are back.</div>
+        </div>
+      }
+      <app-trade-form
+        [instrument]="instrument()"
+        [quote]="quote()"
+        [quoteError]="quoteError()"
+        [held]="held()"
+        [buyingPower]="buyingPower()"
+        (orderPlaced)="onOrderPlaced()"
+      />
+    }
+  </section>
+
+  <section class="price-side" aria-live="polite" aria-label="Price details">
+    @if (instrument(); as stock) {
+      @let q = quote();
+      <div class="price-top">
+        <div>
+          <div class="mono price-sym">{{ stock.symbol }}</div>
+          <div class="price-name">{{ stock.name }}</div>
+        </div>
+        <span class="live-badge" [class.live]="!!q && !quoteError()">Live price</span>
+      </div>
+
+      <div class="price-now">
+        @if (q) {
+          <span class="mono">{{ q.price | currency: 'USD' }}</span>
+          <span class="mono price-chg" [class.up]="q.priceChange >= 0" [class.down]="q.priceChange < 0">
+            {{ q.priceChange >= 0 ? '▲' : '▼' }} {{ (q.priceChangePercent < 0 ? -q.priceChangePercent : q.priceChangePercent) | number: '1.2-2' }}% today
+          </span>
+        } @else {
+          <span class="price-wait">{{ quoteError() ? 'Price unavailable' : 'Loading…' }}</span>
+        }
+      </div>
+      @if (q) {
+        <!-- LMKT-96: the price shown is indicative; a market order fills at the price when it executes. -->
+        <p class="price-note">Indicative – your fill price may differ · Price as of {{ q.lastUpdate | date: 'medium' }}</p>
+      }
+
+      <app-stock-chart [symbol]="stock.symbol" [quote]="q" [pricesDown]="quoteError()" />
+
+      <div class="range">
+        <div class="range-head">
+          <span>Today's range</span>
+          <span class="mono">{{ q ? (q.lowPrice | currency: 'USD') : '—' }} – {{ q ? (q.highPrice | currency: 'USD') : '—' }}</span>
+        </div>
+        <div class="range-track" aria-hidden="true">
+          <span class="range-fill" [style.width.%]="rangePosition()"></span>
+          <span class="range-mark" [style.left.%]="rangePosition()"></span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div><span>Open</span><b class="mono">{{ q ? (q.openPrice | currency: 'USD') : '—' }}</b><small>First price today</small></div>
+        <div><span>Prev. close</span><b class="mono">{{ previousClose() !== null ? (previousClose() | currency: 'USD') : '—' }}</b><small>Last price yesterday</small></div>
+        <div><span>Day high</span><b class="mono">{{ q ? (q.highPrice | currency: 'USD') : '—' }}</b><small>Highest today</small></div>
+        <div><span>Day low</span><b class="mono">{{ q ? (q.lowPrice | currency: 'USD') : '—' }}</b><small>Lowest today</small></div>
+        <div><span>Volume</span><b class="mono">{{ q?.volume | compactNumber }}</b><small>Shares traded today</small></div>
+        <div><span>Market cap</span><b class="mono">{{ q ? '$' + (q.marketCap | compactNumber) : '—' }}</b><small>Whole company's value</small></div>
+      </div>
+    }
+  </section>
+</div>

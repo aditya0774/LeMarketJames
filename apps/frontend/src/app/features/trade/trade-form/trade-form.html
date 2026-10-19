@@ -1,0 +1,95 @@
+<form method="post" class="trade-form" (submit)="$event.preventDefault(); submit()">
+  <!-- Buy/Sell is a two-option switch: gold for buy, the accent colour for sell. The label always
+       names the side, so colour only reinforces it. -->
+  <fieldset class="seg split type-toggle">
+    <legend class="sr-only">Buy or sell</legend>
+    <button type="button" class="opt" [class.buy-active]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">Buy</button>
+    <button type="button" class="opt" [class.sell-active]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">Sell</button>
+  </fieldset>
+
+  <div class="tf-row">
+    <div class="field">
+      <label for="trade-qty">Shares</label>
+      <div class="qty-stepper">
+        <button type="button" aria-label="Decrease quantity" (click)="step(-1)">&minus;</button>
+        <input id="trade-qty" class="mono" type="number" min="1" step="1" inputmode="numeric"
+               [value]="quantity()" (input)="setQuantity($any($event.target).value)" />
+        <button type="button" aria-label="Increase quantity" (click)="step(1)">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="trade-type">Order type</label>
+      <!-- Only market orders exist in the backend so far. -->
+      <select id="trade-type">
+        <option selected>Market</option>
+        <option disabled>Limit (coming soon)</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="tf-note">
+    @if (held() === null) {
+      Your current {{ symbol() }} position couldn't be loaded.
+    } @else if (held()) {
+      You own {{ held() | number: '1.0-4' }} share{{ held() === 1 ? '' : 's' }} of {{ symbol() }}.
+    } @else {
+      You don't own any {{ symbol() }} yet.
+    }
+  </p>
+
+  @if (!quantityValid()) {
+    <div class="field-error">Enter a whole number of shares (at least 1).</div>
+  }
+  @if (exceedsHoldings()) {
+    <div class="field-error">You can't sell more shares than you hold.</div>
+  }
+  @if (instrument() && !instrument()!.tradable) {
+    <div class="field-error">{{ symbol() }} is not currently tradable.</div>
+  }
+
+  <div class="tf-sum">
+    <div class="tf-line">
+      <span>{{ quantityValid() ? quantity() : 0 }} share{{ quantity() === 1 ? '' : 's' }} × {{ price() !== null ? (price() | currency: 'USD') : '—' }} (est.)</span>
+      <span>Fees <span class="mono">$0.00</span></span>
+    </div>
+    <div class="tf-total">
+      <span>{{ side() === 'BUY' ? 'Estimated cost' : "Estimated you'll get" }}</span>
+      <span class="mono">{{ price() !== null && quantityValid() ? (estimatedTotal() | currency: 'USD') : '—' }}</span>
+    </div>
+    @if (powerAfter() !== null) {
+      <div class="tf-line faint"><span>Buying power after</span><span class="mono">{{ powerAfter() | currency: 'USD' }}</span></div>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert err" role="alert"><div>{{ errorMessage() }}</div></div>
+  }
+
+  @if (successMessage()) {
+    <div class="alert ok tf-sent" role="status">
+      <div>
+        <b>Order sent</b>
+        {{ successMessage() }}
+        <ol class="tf-steps" aria-label="Order progress">
+          @for (s of sentSteps; track s.status; let i = $index) {
+            <li [class.on]="i < sentStep()">{{ s.label }}</li>
+          }
+        </ol>
+        <div class="tf-actions">
+          <a class="btn btn-primary btn-sm" routerLink="/orders">Witness it fill</a>
+          <button type="button" class="btn btn-outline btn-sm" (click)="newTrade()">New trade</button>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <button type="submit" class="btn btn-lg btn-block" [class.btn-primary]="side() === 'BUY'" [class.btn-sell]="side() === 'SELL'"
+            [disabled]="!canSubmit()">
+      @if (submitting()) {
+        Placing order…
+      } @else {
+        {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ quantityValid() ? quantity() : 0 }} {{ symbol() }}@if (price() !== null && quantityValid()) { · {{ estimatedTotal() | currency: 'USD' }}}
+      }
+    </button>
+    <p class="tf-foot">Market orders fill at the best price available, so the final amount may differ slightly.</p>
+  }
+</form>

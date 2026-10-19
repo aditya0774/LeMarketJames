@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChartRange.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.model</a> &gt; <span class="el_source">ChartRange.java</span></div><h1>ChartRange.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.model;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Arrays;
+import java.util.Optional;
+
+/**
+ * The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ * chart (holdings-service) so both accept the same {@code range} values. One day is drawn from
+ * today's 1-minute candles; every longer span from daily bars.
+ */
+<span class="fc" id="L13">public enum ChartRange {</span>
+
+<span class="fc" id="L15">    ONE_DAY(&quot;1D&quot;, Period.ZERO),</span>
+<span class="fc" id="L16">    ONE_WEEK(&quot;1W&quot;, Period.ofWeeks(1)),</span>
+<span class="fc" id="L17">    ONE_MONTH(&quot;1M&quot;, Period.ofMonths(1)),</span>
+<span class="fc" id="L18">    THREE_MONTHS(&quot;3M&quot;, Period.ofMonths(3)),</span>
+<span class="fc" id="L19">    SIX_MONTHS(&quot;6M&quot;, Period.ofMonths(6));</span>
+
+    private final String code;
+    private final Period span;
+
+<span class="fc" id="L24">    ChartRange(String code, Period span) {</span>
+<span class="fc" id="L25">        this.code = code;</span>
+<span class="fc" id="L26">        this.span = span;</span>
+<span class="fc" id="L27">    }</span>
+
+    /** @return the value used in the {@code range} query parameter, e.g. &quot;1M&quot; */
+    public String code() {
+<span class="fc" id="L31">        return code;</span>
+    }
+
+    /** @return whether this range is drawn from today's minute prices rather than daily bars */
+    public boolean intraday() {
+<span class="fc" id="L36">        return span.isZero();</span>
+    }
+
+    /** @return the first trading day this range covers, counted back from {@code today} */
+    public LocalDate startDate(LocalDate today) {
+<span class="fc" id="L41">        return today.minus(span);</span>
+    }
+
+    /** @return the range with this code, ignoring case; empty for an unknown code */
+    public static Optional&lt;ChartRange&gt; fromCode(String code) {
+<span class="fc" id="L46">        return Arrays.stream(values()).filter(range -&gt; range.code.equalsIgnoreCase(code)).findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

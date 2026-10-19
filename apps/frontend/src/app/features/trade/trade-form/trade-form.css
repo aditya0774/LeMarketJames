@@ -1,0 +1,149 @@
+.trade-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.trade-form .field,
+.trade-form .alert {
+  margin: 0;
+}
+
+.tf-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tf-row label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.field .tf-row select,
+.tf-row select {
+  font-size: var(--font-base);
+}
+
+/* Shares stepper: − [n] + inside one box. */
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  background: var(--bg2);
+}
+
+.qty-stepper:focus-within {
+  border-color: var(--focusb);
+}
+
+.qty-stepper button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.field .qty-stepper input:not([type='checkbox']) {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  text-align: center;
+  font-size: 16px;
+  padding: 0;
+}
+
+.tf-note,
+.tf-foot {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.tf-foot {
+  margin-top: -6px;
+  font-size: var(--font-xs);
+  color: var(--faint);
+  text-align: center;
+}
+
+.tf-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.tf-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.tf-line.faint {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.tf-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tf-total .mono {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--pri);
+}
+
+.tf-sent b {
+  color: var(--okt);
+}
+
+.tf-steps {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.tf-steps li::before {
+  content: '';
+  display: block;
+  height: 3px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--line2);
+}
+
+.tf-steps li.on {
+  color: var(--text);
+}
+
+.tf-steps li.on::before {
+  background: var(--up);
+}
+
+.tf-actions {
+  display: flex;
+  gap: 10px;
+}

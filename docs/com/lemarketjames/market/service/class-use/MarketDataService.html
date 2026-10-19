@@ -142,6 +142,17 @@ loadScripts(document, 'script');</script>
 <div class="block">In-memory stock market driven by Geometric Brownian Motion.</div>
 </div>
 </div>
+<div class="caption"><span>Constructors in <a href="../package-summary.html">com.lemarketjames.market.service</a> with parameters of type <a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../PriceHistoryReader.html#%3Cinit%3E(com.lemarketjames.market.repository.PriceHistoryRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.service.MarketDataService)" class="member-name-link">PriceHistoryReader</a><wbr>(<a href="../../repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a>&nbsp;historyRepository,
+ <a href="../../repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a>&nbsp;candleRepository,
+ <a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
 </section>
 </li>
 <li>
@@ -195,11 +206,17 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../../../portfolio/PortfolioService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.client.OrdersClient)" class="member-name-link">PortfolioService</a><wbr>(<a href="../../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
+<div class="col-second even-row-color"><code><a href="../../../portfolio/PortfolioHistoryService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.orders.client.OrdersClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.service.PriceHistoryService)" class="member-name-link">PortfolioHistoryService</a><wbr>(<a href="../../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
+ <a href="../../../orders/client/OrdersClient.html" title="class in com.lemarketjames.orders.client">OrdersClient</a>&nbsp;ordersClient,
+ <a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData,
+ <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a>&nbsp;priceHistory)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../../../portfolio/PortfolioService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.client.OrdersClient)" class="member-name-link">PortfolioService</a><wbr>(<a href="../../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../../../holdings/repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
  <a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData,
  <a href="../../../orders/client/OrdersClient.html" title="class in com.lemarketjames.orders.client">OrdersClient</a>&nbsp;ordersClient)</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -212,9 +229,14 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../../../quotes/QuoteService.html#%3Cinit%3E(com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">QuoteService</a><wbr>(<a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData,
+<div class="col-second even-row-color"><code><a href="../../../quotes/QuoteHistoryService.html#%3Cinit%3E(com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.service.PriceHistoryService,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">QuoteHistoryService</a><wbr>(<a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData,
+ <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a>&nbsp;priceHistory,
  <a href="../../client/MarketFeedStatus.html" title="class in com.lemarketjames.market.client">MarketFeedStatus</a>&nbsp;feedStatus)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../../../quotes/QuoteService.html#%3Cinit%3E(com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">QuoteService</a><wbr>(<a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketData,
+ <a href="../../client/MarketFeedStatus.html" title="class in com.lemarketjames.market.client">MarketFeedStatus</a>&nbsp;feedStatus)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>

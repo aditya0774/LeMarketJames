@@ -1,12 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CommonModule } from '@angular/common';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
-import { MatCardModule } from '@angular/material/card';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { HoldingsListComponent } from './holdings-list.component';
 import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
@@ -69,20 +66,15 @@ describe('HoldingsListComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [
-        HoldingsListComponent,
-        CommonModule,
-        MatProgressSpinnerModule,
-        MatButtonModule,
-        MatTableModule,
-        MatCardModule
-      ],
+      imports: [HoldingsListComponent],
       providers: [
-        // The empty state's "Place an Order" button uses routerLink, which needs a router.
-        provideRouter([]),
         { provide: HoldingsService, useValue: holdingsServiceMock },
         { provide: Auth, useValue: authServiceMock },
-        provideRouter([])
+        // The empty state's "Make your first trade" link uses routerLink, which needs a router.
+        provideRouter([]),
+        // The stock list (for company names) is fetched over HTTP.
+        provideHttpClient(),
+        provideHttpClientTesting()
       ]
     }).compileComponents();
 
@@ -290,9 +282,9 @@ describe('HoldingsListComponent', () => {
 
     /**
      * AC2: Test empty state includes link to place order
-     * Verify "Place an Order" button is shown in empty state
+     * Verify the "Make your first trade" link is shown in empty state
      */
-    it('should display Place an Order button in empty state', () => {
+    it('should display the Make your first trade link in empty state', () => {
       const emptyResponse: HoldingsResponse = {
         success: true,
         holdings: []
@@ -306,13 +298,13 @@ describe('HoldingsListComponent', () => {
 
       const button = fixture.nativeElement.querySelector('.empty-state .order-button');
       expect(button).toBeTruthy();
-      expect(button.textContent.trim()).toBe('Place an Order');
+      expect(button.textContent.trim()).toBe('Make your first trade');
     });
 
     /**
-     * AC2: Verify button links to dashboard (order screen)
+     * AC2: Verify the link opens the trade page
      */
-    it('should link to dashboard when Place an Order is clicked', () => {
+    it('should link to the trade page from the empty state', () => {
       const emptyResponse: HoldingsResponse = {
         success: true,
         holdings: []
@@ -325,7 +317,7 @@ describe('HoldingsListComponent', () => {
       fixture.detectChanges();
 
       const button = fixture.nativeElement.querySelector('.empty-state .order-button');
-      expect(button.getAttribute('routerLink')).toBe('/dashboard');
+      expect(button.getAttribute('href')).toBe('/trade');
     });
   });
 

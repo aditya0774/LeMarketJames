@@ -27,28 +27,32 @@ test.describe('Holdings View (LMKT-29)', () => {
     await page.click('a:has-text("Holdings")');
     await expect(page).toHaveURL(/\/holdings$/);
 
-    // Verify page title
-    await expect(page.getByRole('heading', { name: 'My Holdings' })).toBeVisible();
+    // The page heading is visually hidden (the Holdings tab shows where you are), so check it exists.
+    await expect(page.getByRole('heading', { name: 'My holdings' })).toHaveCount(1);
 
     // Verify holdings table exists and contains seed data (e.g., AAPL from seeded fills)
     const table = page.locator('.holdings-table');
     await expect(table).toBeVisible();
 
     // AC1: Each holding shows quantity, averageCost, currentPrice, totalCost, currentValue, gainLoss, gainLossPercent
-    const aapl = table.locator('tr').filter({ hasText: 'AAPL' });
+    const aapl = table.locator('tbody tr').filter({ hasText: 'AAPL' });
     await expect(aapl).toBeVisible();
 
     // Verify table columns are present
     const headers = table.locator('th');
+    // Grouped as WHAT YOU PAID, WORTH NOW and GAIN / LOSS, each with its own columns.
     await expect(headers).toContainText([
-      'Symbol',
-      'Quantity',
-      'Avg Cost',
-      'Current Price',
-      'Total Cost',
-      'Current Value',
-      'Gain/Loss',
-      'Gain/Loss %',
+      'WHAT YOU PAID',
+      'WORTH NOW',
+      'GAIN / LOSS',
+      'Stock',
+      'Shares',
+      'Avg. per share',
+      'Total',
+      'Price per share',
+      'Total',
+      'Dollars',
+      'Percent',
     ]);
 
     // Verify data cells contain numbers (not empty)
@@ -74,16 +78,16 @@ test.describe('Holdings View (LMKT-29)', () => {
     await expect(page).toHaveURL(/\/holdings$/);
 
     // AC2: See friendly empty state
-    await expect(page.getByRole('heading', { name: 'No Holdings Yet' })).toBeVisible();
-    await expect(page.getByText(/You haven't purchased any stocks yet/)).toBeVisible();
+    await expect(page.getByText('No stocks yet')).toBeVisible();
+    await expect(page.getByText(/Once you buy your first stock, it shows up here/)).toBeVisible();
 
     // AC2: Link to place an order
-    const orderButton = page.getByRole('button', { name: 'Place an Order' });
-    await expect(orderButton).toBeVisible();
+    const orderLink = page.getByRole('link', { name: 'Make your first trade' });
+    await expect(orderLink).toBeVisible();
 
-    // Click the button and verify it navigates to dashboard (where orders can be placed)
-    await orderButton.click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Following it opens the trade page
+    await orderLink.click();
+    await expect(page).toHaveURL(/\/trade$/);
   });
 
   test('AC3: Holdings persist after page reload', async ({ page, request }) => {
@@ -103,7 +107,7 @@ test.describe('Holdings View (LMKT-29)', () => {
       await page.click('a:has-text("Holdings")');
       await expect(page).toHaveURL(/\/holdings$/);
 
-      // Capture initial holdings (mat-table uses rowgroups, not tbody)
+      // Capture initial holdings
       const initialRows = page.locator('.holdings-table tr');
       await initialRows.first().waitFor({ state: 'visible' });
       const initialHoldings = await initialRows.count();

@@ -112,7 +112,7 @@ describe('ByStockTradesTable', () => {
       fixture.detectChanges();
       const summary = compiled.query(By.css('.summary-text'));
       expect(summary).toBeTruthy();
-      expect(summary.nativeElement.textContent).toContain('3 trade(s)');
+      expect(summary.nativeElement.textContent).toContain('Showing 3 trades');
     });
   });
 
@@ -139,11 +139,11 @@ describe('ByStockTradesTable', () => {
       const dateHeader = compiled.query(By.css('th'));
 
       // Click to sort ascending
-      dateHeader.nativeElement.click();
+      dateHeader.query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
       
       // Click again to sort descending
-      dateHeader.nativeElement.click();
+      dateHeader.query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
 
       // Verify sort indicator shows descending
@@ -160,7 +160,7 @@ describe('ByStockTradesTable', () => {
       const headers = compiled.queryAll(By.css('th'));
       const quantityHeader = headers[2]; // Quantity column
 
-      quantityHeader.nativeElement.click();
+      quantityHeader.query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
 
       const rows = compiled.queryAll(By.css('tbody tr:not(.empty-row)'));
@@ -181,7 +181,7 @@ describe('ByStockTradesTable', () => {
       const headers = compiled.queryAll(By.css('th'));
       const priceHeader = headers[3]; // Price column
 
-      priceHeader.nativeElement.click();
+      priceHeader.query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
 
       const rows = compiled.queryAll(By.css('tbody tr:not(.empty-row)'));
@@ -199,7 +199,7 @@ describe('ByStockTradesTable', () => {
       const headers = compiled.queryAll(By.css('th'));
       const dateHeader = headers[0];
 
-      dateHeader.nativeElement.click();
+      dateHeader.query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
 
       const sortIndicator = dateHeader.query(By.css('.sort-indicator'));
@@ -215,11 +215,11 @@ describe('ByStockTradesTable', () => {
       const headers = compiled.queryAll(By.css('th'));
       
       // Click date header first
-      headers[0].nativeElement.click();
+      headers[0].query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
       
       // Then click quantity header
-      headers[2].nativeElement.click();
+      headers[2].query(By.css('button')).nativeElement.click();
       fixture.detectChanges();
 
       // Quantity header should show sort indicator

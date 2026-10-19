@@ -87,6 +87,10 @@ describe('Login', () => {
     expect(logoutCalls).toBe(1);
     expect(navigateCalls).toBe(0);
     expect((component as any).errorMessage()).toBe('Please use the staff app for operations.');
+    fixture.detectChanges();
+    const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+    expect(alert.querySelector('b')!.textContent).toBe('Staff account');
+    expect(alert.classList).toContain('info');
   });
 
   it('should show error message for invalid credentials', async () => {
@@ -122,7 +126,24 @@ describe('Login', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
       .toContain('Account locked for 15 minutes.');
-    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
+    // A lockout is a warning, not a failure: the account is fine, it just has to wait.
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Account locked');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').classList).toContain('warn');
+  });
+
+  it('treats the during-lockout refusal as a lockout too', async () => {
+    authMock.login = async () => {
+      throw new HttpErrorResponse({
+        status: 400,
+        error: { message: 'Account temporarily locked. Try again in 14 minutes.' },
+      });
+    };
+
+    (component as any).form.setValue({ username: 'alice@example.com', password: 'Pass123!' });
+    await component.submit();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Account locked');
   });
 
   // LMKT-56: a closed or suspended account gets a fixed message, chosen by the code, not the text.

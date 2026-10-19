@@ -1,2 +1,40 @@
-/* Global theme styles (staff-shell, .staff-sidebar, .staff-brand, etc.) are now
-   defined in the root styles.css. Component-level styles go here if needed. */
+.staff-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.staff-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 12px var(--gutter);
+  border-bottom: 1px solid var(--lhdr);
+  background: var(--bg);
+}
+
+.staff-header-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.staff-role {
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.staff-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 22px var(--gutter) 40px;
+}

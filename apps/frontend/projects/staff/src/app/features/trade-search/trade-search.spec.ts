@@ -65,4 +65,130 @@ describe('Staff order and client search', () => {
       expect(component.error()).not.toBe(''); expect(component.loading()).toBe(false);
     });
   }
+  describe('on screen', () => {
+    const render = () => {
+      const fixture = TestBed.createComponent(TradeSearch);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const refresh = () => { fixture.componentRef.changeDetectorRef.markForCheck(); fixture.detectChanges(); };
+      return {el, refresh};
+    };
+    const status = (el: HTMLElement) => el.querySelector('.ts-status')?.textContent?.trim();
+
+    it('asks for criteria, then reports searching and how many trades it found', () => {
+      const {el, refresh} = render();
+      expect(status(el)).toBe('Enter search criteria to find a trade.');
+      expect(el.querySelector('label[for="ts-term"]')?.textContent).toBe('Order ID or client name');
+
+      component.term = '42'; component.search(); refresh();
+      expect(status(el)).toBe('Searching trades…');
+      expect(el.querySelector('button[type="submit"]')?.textContent).toBe('Searching…');
+
+      order().flush([trade]); refresh();
+      expect(status(el)).toBe('1 trade(s) found. Select an order to see its full timeline.');
+      expect(el.querySelector('.ts-selected')?.textContent).toBe('Order ID 42');
+    });
+
+    it('says when nothing matched, and shows an error in place of the hint', () => {
+      const {el, refresh} = render();
+      component.mode = 'client'; component.term = '42'; component.search(); client().flush([]); refresh();
+      expect(status(el)).toBe('No trades found for these search criteria.');
+      expect(el.querySelector('label[for="ts-term"]')?.textContent).toBe('Client ID or client name');
+
+      component.term = ''; component.search(); refresh();
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain('Enter an order ID, client ID or client name.');
+      expect(status(el)).toBe('');
+    });
+
+    it('lists matching clients to choose from, or says there are none', () => {
+      const {el, refresh} = render();
+      component.term = 'Alex'; component.search();
+      http.expectOne(r => r.params.has('name')).flush([{clientId: 7, fullName: 'Alex A'}, {clientId: 8, fullName: 'Alex B'}]); refresh();
+
+      const choices = Array.from(el.querySelectorAll<HTMLButtonElement>('.ts-clients button'));
+      expect(el.querySelector('.ts-clients p')?.textContent).toBe('Choose a matching client:');
+      expect(choices.map((b) => b.textContent?.trim())).toEqual(['Alex A (ID: 7)', 'Alex B (ID: 8)']);
+      choices[1].click();
+      client().flush([]);
+
+      component.term = 'Nobody'; component.search();
+      http.expectOne(r => r.params.has('name')).flush([]); refresh();
+      expect(el.querySelector('.ts-clients p')?.textContent).toBe('No matching clients found.');
+    });
+
+    it('says when only the first 50 matching clients are shown', () => {
+      const {el, refresh} = render();
+      component.term = 'Al'; component.search();
+      http.expectOne(r => r.params.has('name'))
+        .flush(Array.from({length: 50}, (_, i) => ({clientId: i + 1, fullName: `Al ${i + 1}`}))); refresh();
+
+      expect(el.querySelector('.ts-clients .hint')?.textContent).toContain('Showing the first 50 matches.');
+    });
+  });
+
+  describe('order timeline', () => {
+    const events = [
+      {eventType: 'SUBMITTED', occurredAt: '2026-01-10T11:59:58Z', details: {side: 'BUY', quantity: 2}},
+      {eventType: 'FILLED', occurredAt: '2026-01-10T12:00:00Z', details: {executionPrice: 123.4567}},
+    ];
+    const render = () => {
+      const fixture = TestBed.createComponent(TradeSearch);
+      fixture.componentInstance.term = '42';
+      fixture.componentInstance.search();
+      http.expectOne(r => r.params.has('orderId')).flush([trade]);
+      fixture.detectChanges();
+      return fixture;
+    };
+    const timeline = () => http.expectOne('/api/v1/orders/42/timeline');
+
+    it('loads the audit trail of the order picked in the results', () => {
+      const fixture = render();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.ts-timeline')?.textContent).toContain('Select an order number');
+
+      (el.querySelector('.order-btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el.querySelector('.ts-timeline output')).not.toBeNull();
+
+      timeline().flush(events);
+      fixture.detectChanges();
+      expect(el.querySelector('.order-btn')?.getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('.ts-timeline h2')?.textContent).toContain('#42');
+      expect(Array.from(el.querySelectorAll('.event-type')).map(e => e.textContent)).toEqual(['SUBMITTED', 'FILLED']);
+      expect(el.querySelector('.event-time')?.textContent).toBe('2026-01-10 11:59:58 UTC');
+    });
+
+    it('says so when the order has no audit events', () => {
+      const fixture = render();
+      fixture.componentInstance.showTimeline(42);
+      timeline().flush([]);
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('No audit events are recorded for this order.');
+    });
+
+    for (const [status, message] of [[403, 'Access denied'], [401, 'session has expired'], [500, 'Unable to load']] as const) {
+      it('explains a timeline failure with HTTP ' + status, () => {
+        const fixture = render();
+        fixture.componentInstance.showTimeline(42);
+        timeline().flush({}, {status, statusText: 'Failed'});
+        fixture.detectChanges();
+
+        expect(fixture.componentInstance.timelineError()).toContain(message);
+        expect((fixture.nativeElement as HTMLElement).querySelector('.ts-timeline [role=alert]')).not.toBeNull();
+      });
+    }
+
+    it('drops the timeline when a new search starts', () => {
+      const fixture = render();
+      fixture.componentInstance.showTimeline(42);
+      const pending = timeline();
+      fixture.componentInstance.clearResults();
+
+      expect(pending.cancelled).toBe(true);
+      expect(fixture.componentInstance.selectedOrder()).toBeNull();
+    });
+  });
+
 });

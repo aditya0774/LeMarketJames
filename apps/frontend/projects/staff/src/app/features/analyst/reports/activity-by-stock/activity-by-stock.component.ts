@@ -5,9 +5,6 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
 
 import { ReportingService, TradesByStockRow } from '@staff/core/reports/reporting.service';
 import { ByStockAggregateTable } from './by-stock-aggregate-table';
@@ -23,7 +20,7 @@ import { ByStockAggregateTable } from './by-stock-aggregate-table';
 @Component({
   selector: 'staff-activity-by-stock',
   templateUrl: './activity-by-stock.component.html',
-  styleUrls: ['./activity-by-stock.component.scss'],
+  styleUrl: './activity-by-stock.component.css',
   standalone: true,
   imports: [
     CommonModule,
@@ -32,9 +29,6 @@ import { ByStockAggregateTable } from './by-stock-aggregate-table';
     MatNativeDateModule,
     MatInputModule,
     MatFormFieldModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatCardModule,
     ByStockAggregateTable,
   ]
 })

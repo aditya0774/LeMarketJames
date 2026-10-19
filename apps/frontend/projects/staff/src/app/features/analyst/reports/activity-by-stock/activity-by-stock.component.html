@@ -1,57 +1,34 @@
 <div class="activity-by-stock-container">
-  <div class="report-header">
-    <h1>Trading Activity by Stock</h1>
-    <p class="description">Aggregate trading activity across all clients, grouped by stock symbol.</p>
+  <div class="report-bar">
+    <p class="report-note">All clients combined · select a column to sort</p>
+    <form method="post" [formGroup]="dateRangeForm" class="report-dates">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Start date</mat-label>
+        <input matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />
+        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>End date</mat-label>
+        <input matInput [matDatepicker]="endPicker" formControlName="endDate" (change)="onDateRangeChange()" />
+        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+      <button type="button" class="btn btn-primary" (click)="onDateRangeChange()" [disabled]="isLoading()">Refresh</button>
+    </form>
   </div>
 
-  <!-- Date Range Filters -->
-  <mat-card class="filter-card">
-    <mat-card-content>
-      <form [formGroup]="dateRangeForm" class="date-range-form">
-        <div class="date-fields">
-          <mat-form-field appearance="outline">
-            <mat-label>Start Date</mat-label>
-            <input matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />
-            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-            <mat-datepicker #startPicker></mat-datepicker>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>End Date</mat-label>
-            <input matInput [matDatepicker]="endPicker" formControlName="endDate" (change)="onDateRangeChange()" />
-            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-            <mat-datepicker #endPicker></mat-datepicker>
-          </mat-form-field>
-        </div>
-
-        <button mat-raised-button color="primary" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
-          Refresh
-        </button>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Loading State -->
-  <div *ngIf="isLoading()" class="loading-state">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Loading report...</p>
-  </div>
-
-  <!-- Error State -->
-  <div *ngIf="error() && !isLoading()" class="error-state">
-    <mat-card>
-      <mat-card-content>
-        <h2>Unable to Load Report</h2>
-        <p>{{ error() }}</p>
-        <button mat-raised-button color="primary" (click)="onRetry()">
-          Try Again
-        </button>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Table -->
-  <div *ngIf="!isLoading() && !error()" class="table-container">
-    <staff-by-stock-aggregate-table [tradesData]="tradesData()"></staff-by-stock-aggregate-table>
-  </div>
+  @if (isLoading()) {
+    <output class="card loading"><span class="spinner"></span>Loading report…</output>
+  } @else if (error()) {
+    <div class="card error-state">
+      <h2>Unable to Load Report</h2>
+      <p>{{ error() }}</p>
+      <button type="button" class="btn btn-outline" (click)="onRetry()">Try Again</button>
+    </div>
+  } @else {
+    <div class="card table-container">
+      <staff-by-stock-aggregate-table [tradesData]="tradesData()" />
+    </div>
+  }
 </div>

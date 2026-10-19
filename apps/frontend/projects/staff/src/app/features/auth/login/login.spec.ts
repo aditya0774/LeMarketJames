@@ -89,6 +89,7 @@ describe('Staff login', () => {
     expect(TestBed.inject(Auth).roles()).toEqual([]);
     expect(navigated).toBe(false);
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('This login is for staff only');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').classList).toContain('info');
     http.verify();
   });
 
@@ -112,7 +113,9 @@ describe('Staff login', () => {
 
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent)
       .toContain('Account locked for 15 minutes.');
-    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Login failed');
+    // A lockout is a warning, not a failure: the account is fine, it just has to wait.
+    expect(fixture.nativeElement.querySelector('[role="alert"] b').textContent).toBe('Account locked');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').classList).toContain('warn');
     http.verify();
   });
 

@@ -1,0 +1,153 @@
+/* The "Volume" tab of the redesign's Analyst board: three preset cards and a custom comparison. */
+
+.volume-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tile-header h2 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+.section p {
+  margin: 0;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.section-head h3 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.range {
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.volume .mono {
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.volume .unit {
+  white-space: pre;
+}
+
+.unit,
+.previous,
+.refreshed,
+.status {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+/* The arrow and signed number carry the meaning; colour only reinforces it. */
+.change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-base);
+}
+
+.change.up {
+  color: var(--up);
+}
+
+.change.down {
+  color: var(--down);
+}
+
+.change.flat {
+  color: var(--dim);
+}
+
+.status.error {
+  color: var(--errt);
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.bars div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-xs);
+  color: var(--dim);
+}
+
+.bars span {
+  width: 64px;
+}
+
+.bars i {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--l4);
+}
+
+.bars b {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.bars .this {
+  background: var(--pri);
+}
+
+.bars .before {
+  background: var(--bar2);
+}
+
+.custom {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.custom h3 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.versus {
+  padding: 0 6px;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}

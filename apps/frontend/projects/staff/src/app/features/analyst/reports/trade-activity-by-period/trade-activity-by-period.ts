@@ -2,13 +2,11 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
 
 import { TradeReportService } from '../../../../shared/services/trade-report.service';
 import { PeriodAggregation } from '../../../../shared/models/trade-report.model';
@@ -33,7 +31,9 @@ const DEFAULT_LOOKBACK_DAYS: Record<PeriodType, number> = {
 };
 
 /**
- * Analyst report: trade counts and values per period (C6, GET /api/v1/reports/trades).
+ * Analyst report: trade counts and values per period (C6, GET /api/v1/reports/trades), laid out
+ * like the "By period" tab of the redesign's Analyst board: a period-type switch, the date range,
+ * then one row per period with a bar for its value.
  * The analyst picks a period type and a date range; the table shows one row per period.
  * Fetching is delegated to TradeReportService; this component only owns the selection state.
  */
@@ -43,8 +43,6 @@ const DEFAULT_LOOKBACK_DAYS: Record<PeriodType, number> = {
     ReactiveFormsModule,
     DecimalPipe,
     CurrencyPipe,
-    MatButtonModule,
-    MatButtonToggleModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatFormFieldModule,
@@ -58,7 +56,7 @@ export class TradeActivityByPeriod {
   private readonly reports = inject(TradeReportService);
 
   readonly periodTypes = PERIOD_TYPES;
-  readonly columns = ['period', 'tradeCount', 'buyCount', 'sellCount', 'totalValue'];
+  readonly columns = ['period', 'tradeCount', 'buyCount', 'sellCount', 'totalValue', 'bar'];
 
   readonly periodType = signal<PeriodType>('MONTH');
   readonly rows = signal<PeriodAggregation[]>([]);
@@ -69,6 +67,7 @@ export class TradeActivityByPeriod {
 
   readonly totalTrades = computed(() => this.rows().reduce((sum, r) => sum + r.tradeCount, 0));
   readonly totalValue = computed(() => this.rows().reduce((sum, r) => sum + r.totalValue, 0));
+  private readonly maxValue = computed(() => Math.max(0, ...this.rows().map((r) => r.totalValue)));
 
   readonly range = new FormGroup({
     from: new FormControl<Date | null>(null),
@@ -98,6 +97,11 @@ export class TradeActivityByPeriod {
       return;
     }
     this.load();
+  }
+
+  /** A period's value as a share of the biggest period, for its bar (0–100). */
+  barWidth(value: number): number {
+    return this.maxValue() ? (value / this.maxValue()) * 100 : 0;
   }
 
   label(period: string): string {

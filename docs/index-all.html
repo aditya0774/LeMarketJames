@@ -515,6 +515,19 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>Change</code> record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html" class="type-name-link" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a> - Record Class in <a href="com/lemarketjames/quotes/dto/package-summary.html">com.lemarketjames.quotes.dto</a></dt>
+<dd>
+<div class="block">One point on a price chart.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#%3Cinit%3E(java.time.Instant,java.math.BigDecimal)" class="member-name-link">ChartPointDto(Instant, BigDecimal)</a> - Constructor for record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>ChartPointDto</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html" class="type-name-link" title="enum class in com.lemarketjames.market.model">ChartRange</a> - Enum Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
+<dd>
+<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ chart (holdings-service) so both accept the same <code>range</code> values.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html#%3Cinit%3E(com.lemarketjames.orders.submission.ValidationRule,com.lemarketjames.orders.submission.SubmissionTrail.Result,java.lang.String)" class="member-name-link">Check(ValidationRule, SubmissionTrail.Result, String)</a> - Constructor for record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail.Check</a></dt>
 <dd>
 <div class="block">Creates an instance of a <code>Check</code> record class.</div>
@@ -573,6 +586,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">UTC clock used for all market timestamps.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#close()" class="member-name-link">close()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-close"><code>close</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#close()" class="member-name-link">close()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketHours.html#param-close"><code>close</code></a> record component.</div>
@@ -585,6 +602,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/PriceCandle.html#param-closePrice"><code>closePrice</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/MarketHours.html#closingTime(java.time.LocalDate)" class="member-name-link">closingTime(LocalDate)</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#code()" class="member-name-link">code()</a> - Method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/AccountInactiveException.html#CODE" class="member-name-link">CODE</a> - Static variable in exception class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></dt>
 <dd>
 <div class="block">The error code every refusal carries (contract C6).</div>
@@ -856,6 +877,24 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:D">D</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/market/model/DailyBar.html" class="type-name-link" title="class in com.lemarketjames.market.model">DailyBar</a> - Record Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
+<dd>
+<div class="block">One trading day of an instrument's price (<code>price_history</code>, migration 022).</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#%3Cinit%3E(java.time.LocalDate,double,double,double,double,long)" class="member-name-link">DailyBar(LocalDate, double, double, double, double, long)</a> - Constructor for record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>DailyBar</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/PriceHistoryController.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
+<dd>
+<div class="block">One bar per trading day from <code>from</code>, ending with today's so far.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryService.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentActivityResponse.html#data()" class="member-name-link">data()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentActivityResponse.html" title="class in com.lemarketjames.reports.dto">SegmentActivityResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>data</code> record component.</div>
@@ -867,6 +906,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/reports/dto/TradesReportResponse.html#data()" class="member-name-link">data()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/TradesReportResponse.html" title="class in com.lemarketjames.reports.dto">TradesReportResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>data</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#date()" class="member-name-link">date()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-date"><code>date</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html#date()" class="member-name-link">date()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/ActiveClientTrendResponse.DayCount.html" title="class in com.lemarketjames.reports.insight">ActiveClientTrendResponse.DayCount</a></dt>
 <dd>
@@ -993,6 +1036,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.ControlState.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.ControlState.html" title="class in com.lemarketjames.market">MarketControlController.ControlState</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1005,6 +1050,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1014,6 +1063,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1082,6 +1135,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/ValidationOutcome.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -1387,6 +1456,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Find all orders for a specific instrument</div>
 </dd>
+<dt><a href="com/lemarketjames/market/repository/PriceCandleRepository.html#findByInstrumentIdAndIntervalStartGreaterThanEqualOrderByIntervalStart(java.lang.Integer,java.time.LocalDateTime)" class="member-name-link">findByInstrumentIdAndIntervalStartGreaterThanEqualOrderByIntervalStart(Integer, LocalDateTime)</a> - Method in interface com.lemarketjames.market.repository.<a href="com/lemarketjames/market/repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a></dt>
+<dd>
+<div class="block">One instrument's 1-minute candles starting at or after <code>from</code> (UTC), oldest first.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/repository/PriceHistoryRepository.html#findByInstrumentIdAndTradingDateGreaterThanEqualOrderByTradingDate(java.lang.Integer,java.time.LocalDate)" class="member-name-link">findByInstrumentIdAndTradingDateGreaterThanEqualOrderByTradingDate(Integer, LocalDate)</a> - Method in interface com.lemarketjames.market.repository.<a href="com/lemarketjames/market/repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a></dt>
+<dd>
+<div class="block">One instrument's daily bars from <code>from</code> onwards, oldest first.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/audit/AuditEventRepository.html#findByOrderIdOrderByOccurredAtAsc(java.lang.Integer)" class="member-name-link">findByOrderIdOrderByOccurredAtAsc(Integer)</a> - Method in interface com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/AuditEventRepository.html" title="interface in com.lemarketjames.common.audit">AuditEventRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/audit/AuditEventRepository.html#findByRequestIdOrderByAuditIdAsc(java.lang.String)" class="member-name-link">findByRequestIdOrderByAuditIdAsc(String)</a> - Method in interface com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/AuditEventRepository.html" title="interface in com.lemarketjames.common.audit">AuditEventRepository</a></dt>
@@ -1448,6 +1525,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/orders/events/OrderStatusChanged.html#param-from"><code>from</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#fromCode(java.lang.String)" class="member-name-link">fromCode(String)</a> - Static method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/ClientSearchResult.html#fullName()" class="member-name-link">fullName()</a> - Method in record class com.lemarketjames.trades.<a href="com/lemarketjames/trades/ClientSearchResult.html" title="class in com.lemarketjames.trades">ClientSearchResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>fullName</code> record component.</div>
@@ -1621,7 +1700,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/entity/ReportingTrade.html#getClientId()" class="member-name-link">getClientId()</a> - Method in class com.lemarketjames.reports.entity.<a href="com/lemarketjames/reports/entity/ReportingTrade.html" title="class in com.lemarketjames.reports.entity">ReportingTrade</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getClosePrice()" class="member-name-link">getClosePrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#getClosePrice()" class="member-name-link">getClosePrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getCode()" class="member-name-link">getCode()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
 <dd>&nbsp;</dd>
@@ -1749,10 +1828,16 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getHighPrice()" class="member-name-link">getHighPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getHighPrice()" class="member-name-link">getHighPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#getHighPrice()" class="member-name-link">getHighPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/dto/QuoteDto.html#getHighPrice()" class="member-name-link">getHighPrice()</a> - Method in class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryController.html#getHistory(java.lang.String)" class="member-name-link">getHistory(String)</a> - Method in class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioHistoryController.html" title="class in com.lemarketjames.portfolio">PortfolioHistoryController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/quotes/QuotesController.html#getHistory(java.lang.String,java.lang.String)" class="member-name-link">getHistory(String, String)</a> - Method in class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuotesController.html" title="class in com.lemarketjames.quotes">QuotesController</a></dt>
+<dd>
+<div class="block">A stock's price over 1D, 1W, 1M, 3M or 6M, for the trade page's chart.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/entity/HoldingsEntity.html#getHoldingId()" class="member-name-link">getHoldingId()</a> - Method in class com.lemarketjames.holdings.entity.<a href="com/lemarketjames/holdings/entity/HoldingsEntity.html" title="class in com.lemarketjames.holdings.entity">HoldingsEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/HoldingsResponse.html#getHoldings()" class="member-name-link">getHoldings()</a> - Method in class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/HoldingsResponse.html" title="class in com.lemarketjames.holdings.dto">HoldingsResponse</a></dt>
@@ -1794,6 +1879,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getInstrumentId()" class="member-name-link">getInstrumentId()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getInstrumentId()" class="member-name-link">getInstrumentId()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html#getInstrumentId()" class="member-name-link">getInstrumentId()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/CreateOrderRequest.html#getInstrumentId()" class="member-name-link">getInstrumentId()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a></dt>
 <dd>&nbsp;</dd>
@@ -1849,7 +1936,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getLowPrice()" class="member-name-link">getLowPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getLowPrice()" class="member-name-link">getLowPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#getLowPrice()" class="member-name-link">getLowPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/dto/QuoteDto.html#getLowPrice()" class="member-name-link">getLowPrice()</a> - Method in class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></dt>
 <dd>&nbsp;</dd>
@@ -1893,7 +1980,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getOpenPrice()" class="member-name-link">getOpenPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getOpenPrice()" class="member-name-link">getOpenPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#getOpenPrice()" class="member-name-link">getOpenPrice()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/dto/QuoteDto.html#getOpenPrice()" class="member-name-link">getOpenPrice()</a> - Method in class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></dt>
 <dd>&nbsp;</dd>
@@ -1960,7 +2047,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Get all orders for an instrument</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/client/OrdersClient.html#getOrdersForAccount(int)" class="member-name-link">getOrdersForAccount(int)</a> - Method in class com.lemarketjames.orders.client.<a href="com/lemarketjames/orders/client/OrdersClient.html" title="class in com.lemarketjames.orders.client">OrdersClient</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Every order of the account.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getOrderStatus()" class="member-name-link">getOrderStatus()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#getOrderStatus()" class="member-name-link">getOrderStatus()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
@@ -2270,6 +2359,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Aggregate all FILLED trades by stock symbol across all clients, filtered by date range.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html#getTradingDate()" class="member-name-link">getTradingDate()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getUpdatedAt()" class="member-name-link">getUpdatedAt()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#getUpdatedAt()" class="member-name-link">getUpdatedAt()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
@@ -2300,7 +2391,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html#getVolume()" class="member-name-link">getVolume()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.html#getVolume()" class="member-name-link">getVolume()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></dt>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#getVolume()" class="member-name-link">getVolume()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/dto/QuoteDto.html#getVolume()" class="member-name-link">getVolume()</a> - Method in class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></dt>
 <dd>&nbsp;</dd>
@@ -2426,6 +2517,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.ControlState.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.ControlState.html" title="class in com.lemarketjames.market">MarketControlController.ControlState</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -2438,6 +2531,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -2447,6 +2544,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -2515,6 +2616,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/ValidationOutcome.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -2606,6 +2723,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionRequestId.html#HEADER" class="member-name-link">HEADER</a> - Static variable in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionRequestId.html" title="class in com.lemarketjames.orders.submission">SubmissionRequestId</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#high()" class="member-name-link">high()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-high"><code>high</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientSegment.html#HIGH_NET_WORTH" class="member-name-link">HIGH_NET_WORTH</a> - Enum constant in enum class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientSegment.html" title="enum class in com.lemarketjames.common.domain">ClientSegment</a></dt>
 <dd>
 <div class="block">Large balances.</div>
@@ -2622,6 +2743,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/service/MarketSimulator.StoredQuote.html#param-highPrice"><code>highPrice</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryService.html#history(java.lang.String,com.lemarketjames.market.model.ChartRange)" class="member-name-link">history(String, ChartRange)</a> - Method in class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioHistoryService.html" title="class in com.lemarketjames.portfolio">PortfolioHistoryService</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/quotes/QuoteHistoryService.html#history(java.lang.String,com.lemarketjames.market.model.ChartRange)" class="member-name-link">history(String, ChartRange)</a> - Method in class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/HoldingDto.html" class="type-name-link" title="class in com.lemarketjames.holdings.dto">HoldingDto</a> - Class in <a href="com/lemarketjames/holdings/dto/package-summary.html">com.lemarketjames.holdings.dto</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/HoldingDto.html#%3Cinit%3E()" class="member-name-link">HoldingDto()</a> - Constructor for class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/HoldingDto.html" title="class in com.lemarketjames.holdings.dto">HoldingDto</a></dt>
@@ -2859,6 +2984,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/PriceCandle.html#param-intervalStart"><code>intervalStart</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#intraday()" class="member-name-link">intraday()</a> - Method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/PriceHistoryController.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
+<dd>
+<div class="block">Today's minute-by-minute prices, ending with the live one.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryService.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/exception/InvalidStatusTransitionException.html" class="type-name-link" title="class in com.lemarketjames.orders.exception">InvalidStatusTransitionException</a> - Exception Class in <a href="com/lemarketjames/orders/exception/package-summary.html">com.lemarketjames.orders.exception</a></dt>
 <dd>
 <div class="block">An attempt to move an order to a status its lifecycle doesn't allow from where it is (contract C1).</div>
@@ -2985,6 +3122,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html#%3Cinit%3E()" class="member-name-link">Key()</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html#%3Cinit%3E()" class="member-name-link">Key()</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html#%3Cinit%3E(java.lang.Integer,java.time.LocalDate)" class="member-name-link">Key(Integer, LocalDate)</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html#%3Cinit%3E(java.lang.Integer,java.time.LocalDateTime)" class="member-name-link">Key(Integer, LocalDateTime)</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -3090,6 +3231,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/auth/AuthController.html#logout()" class="member-name-link">logout()</a> - Method in class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthController.html" title="class in com.lemarketjames.auth">AuthController</a></dt>
 <dd>
 <div class="block">Logs out the current user by clearing the JWT authentication cookie.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#low()" class="member-name-link">low()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-low"><code>low</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#lowPrice()" class="member-name-link">lowPrice()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
 <dd>
@@ -3256,7 +3401,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Moves market data between the database and the in-memory simulator.</div>
 </dd>
-<dt><a href="com/lemarketjames/market/service/MarketPersistenceService.html#%3Cinit%3E(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository)" class="member-name-link">MarketPersistenceService(InstrumentMarketParamsRepository, MarketQuoteRepository, PriceCandleRepository)</a> - Constructor for class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketPersistenceService.html" title="class in com.lemarketjames.market.service">MarketPersistenceService</a></dt>
+<dt><a href="com/lemarketjames/market/service/MarketPersistenceService.html#%3Cinit%3E(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.repository.PriceHistoryRepository)" class="member-name-link">MarketPersistenceService(InstrumentMarketParamsRepository, MarketQuoteRepository, PriceCandleRepository, PriceHistoryRepository)</a> - Constructor for class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketPersistenceService.html" title="class in com.lemarketjames.market.service">MarketPersistenceService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/MarketQuoteEntity.html" class="type-name-link" title="class in com.lemarketjames.market.entity">MarketQuoteEntity</a> - Class in <a href="com/lemarketjames/market/entity/package-summary.html">com.lemarketjames.market.entity</a></dt>
 <dd>
@@ -3442,7 +3587,22 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/surveillance/OrderStatusChangedMessage.html#param-occurredAt"><code>occurredAt</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html" class="type-name-link" title="class in com.lemarketjames.market.entity">OhlcBar</a> - Class in <a href="com/lemarketjames/market/entity/package-summary.html">com.lemarketjames.market.entity</a></dt>
+<dd>
+<div class="block">The open, high, low, close and volume columns that every stored price bar has, whatever span it
+ covers: a minute in <code>price_candles</code>, a trading day in <code>price_history</code>.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#%3Cinit%3E()" class="member-name-link">OhlcBar()</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/OhlcBar.html#%3Cinit%3E(java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.lang.Long)" class="member-name-link">OhlcBar(BigDecimal, BigDecimal, BigDecimal, BigDecimal, Long)</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#onCreate()" class="member-name-link">onCreate()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#ONE_DAY" class="member-name-link">ONE_DAY</a> - Enum constant in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#ONE_MONTH" class="member-name-link">ONE_MONTH</a> - Enum constant in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#ONE_WEEK" class="member-name-link">ONE_WEEK</a> - Enum constant in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/messaging/OrderEventForwarder.html#onFilled(com.lemarketjames.orders.events.OrderFilled)" class="member-name-link">onFilled(OrderFilled)</a> - Method in class com.lemarketjames.orders.messaging.<a href="com/lemarketjames/orders/messaging/OrderEventForwarder.html" title="class in com.lemarketjames.orders.messaging">OrderEventForwarder</a></dt>
 <dd>&nbsp;</dd>
@@ -3464,6 +3624,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#onUpdate()" class="member-name-link">onUpdate()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#open()" class="member-name-link">open()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-open"><code>open</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#open()" class="member-name-link">open()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketHours.html#param-open"><code>open</code></a> record component.</div>
@@ -3899,6 +4063,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Order surveillance: which new orders Trading Operations are alerted to.</div>
 </dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#points()" class="member-name-link">points()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#param-points"><code>points</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#points()" class="member-name-link">points()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#param-points"><code>points</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/execution/OrderExecutionScheduler.html#poll()" class="member-name-link">poll()</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/OrderExecutionScheduler.html" title="class in com.lemarketjames.orders.execution">OrderExecutionScheduler</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/portfolio/dto/PortfolioBalance.html" class="type-name-link" title="class in com.lemarketjames.portfolio.dto">PortfolioBalance</a> - Class in <a href="com/lemarketjames/portfolio/dto/package-summary.html">com.lemarketjames.portfolio.dto</a></dt>
@@ -3913,6 +4085,34 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/portfolio/PortfolioController.html#%3Cinit%3E(com.lemarketjames.portfolio.PortfolioService)" class="member-name-link">PortfolioController(PortfolioService)</a> - Constructor for class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioController.html" title="class in com.lemarketjames.portfolio">PortfolioController</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryController.html" class="type-name-link" title="class in com.lemarketjames.portfolio">PortfolioHistoryController</a> - Class in <a href="com/lemarketjames/portfolio/package-summary.html">com.lemarketjames.portfolio</a></dt>
+<dd>
+<div class="block">The overview chart's data: what the caller's stocks were worth over 1D, 1W, 1M, 3M or 6M.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryController.html#%3Cinit%3E(com.lemarketjames.portfolio.PortfolioHistoryService)" class="member-name-link">PortfolioHistoryController(PortfolioHistoryService)</a> - Constructor for class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioHistoryController.html" title="class in com.lemarketjames.portfolio">PortfolioHistoryController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" class="type-name-link" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a> - Record Class in <a href="com/lemarketjames/portfolio/dto/package-summary.html">com.lemarketjames.portfolio.dto</a></dt>
+<dd>
+<div class="block">GET /api/v1/portfolio/history response: {"success": true, "range": "1M", "points": [...]}.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#%3Cinit%3E(boolean,java.lang.String,java.util.List)" class="member-name-link">PortfolioHistoryResponse(boolean, String, List&lt;PortfolioPoint&gt;)</a> - Constructor for record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>PortfolioHistoryResponse</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryService.html" class="type-name-link" title="class in com.lemarketjames.portfolio">PortfolioHistoryService</a> - Class in <a href="com/lemarketjames/portfolio/package-summary.html">com.lemarketjames.portfolio</a></dt>
+<dd>
+<div class="block">What the caller's stocks were worth over a <a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model"><code>ChartRange</code></a>, for the overview's portfolio chart.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/PortfolioHistoryService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.orders.client.OrdersClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.service.PriceHistoryService)" class="member-name-link">PortfolioHistoryService(AccountRepository, OrdersClient, MarketDataService, PriceHistoryService)</a> - Constructor for class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioHistoryService.html" title="class in com.lemarketjames.portfolio">PortfolioHistoryService</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" class="type-name-link" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a> - Record Class in <a href="com/lemarketjames/portfolio/dto/package-summary.html">com.lemarketjames.portfolio.dto</a></dt>
+<dd>
+<div class="block">The value of an account's stocks at one moment.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#%3Cinit%3E(java.time.Instant,java.math.BigDecimal)" class="member-name-link">PortfolioPoint(Instant, BigDecimal)</a> - Constructor for record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>PortfolioPoint</code> record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/portfolio/dto/PortfolioResponse.html" class="type-name-link" title="class in com.lemarketjames.portfolio.dto">PortfolioResponse</a> - Class in <a href="com/lemarketjames/portfolio/dto/package-summary.html">com.lemarketjames.portfolio.dto</a></dt>
 <dd>
 <div class="block">GET /api/v1/portfolio response envelope: {"success": true, "balance": {...}}.</div>
@@ -3960,6 +4160,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>price</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#price()" class="member-name-link">price()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/PricePoint.html#param-price"><code>price</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/events/OrderFilled.html#price()" class="member-name-link">price()</a> - Method in record class com.lemarketjames.orders.events.<a href="com/lemarketjames/orders/events/OrderFilled.html" title="class in com.lemarketjames.orders.events">OrderFilled</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/orders/events/OrderFilled.html#param-price"><code>price</code></a> record component.</div>
@@ -3977,6 +4181,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/orders/submission/ValidationOutcome.html#price()" class="member-name-link">price()</a> - Method in record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>price</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#price()" class="member-name-link">price()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/ChartPointDto.html#param-price"><code>price</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/surveillance/OrderAlertController.AlertView.html#price()" class="member-name-link">price()</a> - Method in record class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/OrderAlertController.AlertView.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertView</a></dt>
 <dd>
@@ -4025,6 +4233,46 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The price the order was valued at, once the market has been asked.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html" class="type-name-link" title="class in com.lemarketjames.market.client">PriceHistoryClient</a> - Class in <a href="com/lemarketjames/market/client/package-summary.html">com.lemarketjames.market.client</a></dt>
+<dd>
+<div class="block"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at market-service's <code>/api/market/history/**</code>
+ and <code>/api/market/intraday/**</code>.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#%3Cinit%3E(java.lang.String,long,long)" class="member-name-link">PriceHistoryClient(String, long, long)</a> - Constructor for class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/PriceHistoryController.html" class="type-name-link" title="class in com.lemarketjames.market">PriceHistoryController</a> - Class in <a href="com/lemarketjames/market/package-summary.html">com.lemarketjames.market</a></dt>
+<dd>
+<div class="block">Past prices for charts, for server-to-server callers (core-service for a stock's chart,
+ holdings-service for the portfolio's).</div>
+</dd>
+<dt><a href="com/lemarketjames/market/PriceHistoryController.html#%3Cinit%3E(com.lemarketjames.market.service.PriceHistoryService,com.lemarketjames.market.service.MarketFeedControl)" class="member-name-link">PriceHistoryController(PriceHistoryService, MarketFeedControl)</a> - Constructor for class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" class="type-name-link" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a> - Class in <a href="com/lemarketjames/market/entity/package-summary.html">com.lemarketjames.market.entity</a></dt>
+<dd>
+<div class="block">One trading day's OHLC bar (<code>price_history</code>, migration 022), keyed by instrument and
+ exchange-local trading date.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html#%3Cinit%3E()" class="member-name-link">PriceHistoryEntity()</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html#%3Cinit%3E(java.lang.Integer,java.time.LocalDate,java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.lang.Long)" class="member-name-link">PriceHistoryEntity(Integer, LocalDate, BigDecimal, BigDecimal, BigDecimal, BigDecimal, Long)</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" class="type-name-link" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a> - Class in <a href="com/lemarketjames/market/entity/package-summary.html">com.lemarketjames.market.entity</a></dt>
+<dd>
+<div class="block">Composite primary key: (instrument_id, trading_date).</div>
+</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html" class="type-name-link" title="class in com.lemarketjames.market.service">PriceHistoryReader</a> - Class in <a href="com/lemarketjames/market/service/package-summary.html">com.lemarketjames.market.service</a></dt>
+<dd>
+<div class="block">market-service's own <a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
+ today's minutes from <code>price_candles</code>, and both end with the live quote.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html#%3Cinit%3E(com.lemarketjames.market.repository.PriceHistoryRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.service.MarketDataService)" class="member-name-link">PriceHistoryReader(PriceHistoryRepository, PriceCandleRepository, MarketDataService)</a> - Constructor for class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/repository/PriceHistoryRepository.html" class="type-name-link" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a> - Interface in <a href="com/lemarketjames/market/repository/package-summary.html">com.lemarketjames.market.repository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/service/PriceHistoryService.html" class="type-name-link" title="interface in com.lemarketjames.market.service">PriceHistoryService</a> - Interface in <a href="com/lemarketjames/market/service/package-summary.html">com.lemarketjames.market.service</a></dt>
+<dd>
+<div class="block">Read-only access to past prices, for charts.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/client/SettlementRequest.html#pricePerUnit()" class="member-name-link">pricePerUnit()</a> - Method in record class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/SettlementRequest.html" title="class in com.lemarketjames.holdings.client">SettlementRequest</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>pricePerUnit</code> record component.</div>
@@ -4036,6 +4284,15 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/trades/TradeSearchResult.html#pricePerUnit()" class="member-name-link">pricePerUnit()</a> - Method in record class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchResult.html" title="class in com.lemarketjames.trades">TradeSearchResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>pricePerUnit</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html" class="type-name-link" title="class in com.lemarketjames.market.model">PricePoint</a> - Record Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
+<dd>
+<div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
+ or the latest live price.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#%3Cinit%3E(java.time.Instant,double)" class="member-name-link">PricePoint(Instant, double)</a> - Constructor for record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>PricePoint</code> record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.PriceRequest.html#%3Cinit%3E(double,java.lang.Boolean)" class="member-name-link">PriceRequest(double, Boolean)</a> - Constructor for record class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.PriceRequest.html" title="class in com.lemarketjames.market">MarketControlController.PriceRequest</a></dt>
 <dd>
@@ -4138,11 +4395,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Decides whether a quote is too old to price an order with (contract C4/C5).</div>
 </dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" class="type-name-link" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a> - Record Class in <a href="com/lemarketjames/quotes/dto/package-summary.html">com.lemarketjames.quotes.dto</a></dt>
+<dd>
+<div class="block">Successful contract-aligned response for GET /api/quotes/{symbol}/history.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#%3Cinit%3E(boolean,java.lang.String,java.lang.String,java.util.List)" class="member-name-link">QuoteHistoryResponse(boolean, String, String, List&lt;ChartPointDto&gt;)</a> - Constructor for record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>QuoteHistoryResponse</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/QuoteHistoryService.html" class="type-name-link" title="class in com.lemarketjames.quotes">QuoteHistoryService</a> - Class in <a href="com/lemarketjames/quotes/package-summary.html">com.lemarketjames.quotes</a></dt>
+<dd>
+<div class="block">A stock's price over a <a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model"><code>ChartRange</code></a>, for the trade page's chart.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/QuoteHistoryService.html#%3Cinit%3E(com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.service.PriceHistoryService,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">QuoteHistoryService(MarketDataService, PriceHistoryService, MarketFeedStatus)</a> - Constructor for class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/QuotesController.html" class="type-name-link" title="class in com.lemarketjames.quotes">QuotesController</a> - Class in <a href="com/lemarketjames/quotes/package-summary.html">com.lemarketjames.quotes</a></dt>
 <dd>
 <div class="block">Contract-aligned endpoint for stock quote retrieval.</div>
 </dd>
-<dt><a href="com/lemarketjames/quotes/QuotesController.html#%3Cinit%3E(com.lemarketjames.quotes.QuoteService)" class="member-name-link">QuotesController(QuoteService)</a> - Constructor for class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuotesController.html" title="class in com.lemarketjames.quotes">QuotesController</a></dt>
+<dt><a href="com/lemarketjames/quotes/QuotesController.html#%3Cinit%3E(com.lemarketjames.quotes.QuoteService,com.lemarketjames.quotes.QuoteHistoryService)" class="member-name-link">QuotesController(QuoteService, QuoteHistoryService)</a> - Constructor for class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuotesController.html" title="class in com.lemarketjames.quotes">QuotesController</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/QuoteService.html" class="type-name-link" title="class in com.lemarketjames.quotes">QuoteService</a> - Class in <a href="com/lemarketjames/quotes/package-summary.html">com.lemarketjames.quotes</a></dt>
 <dd>
@@ -4201,6 +4472,14 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#range()" class="member-name-link">range()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#param-range"><code>range</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#range()" class="member-name-link">range()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#param-range"><code>range</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/events/OrderEventReader.html#read(java.lang.String,java.lang.String,java.lang.Class)" class="member-name-link">read(String, String, Class&lt;T&gt;)</a> - Method in class com.lemarketjames.common.events.<a href="com/lemarketjames/common/events/OrderEventReader.html" title="class in com.lemarketjames.common.events">OrderEventReader</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionResult.html#reason()" class="member-name-link">reason()</a> - Method in record class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></dt>
@@ -4495,8 +4774,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/service/MarketPersistenceService.html#save(java.util.Collection,java.util.List)" class="member-name-link">save(Collection&lt;QuoteSnapshot&gt;, List&lt;PriceCandle&gt;)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketPersistenceService.html" title="class in com.lemarketjames.market.service">MarketPersistenceService</a></dt>
 <dd>
-<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and
- appends completed candles to <code>price_candles</code>, in a single transaction.</div>
+<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and its
+ bar for the current trading day into <code>price_history</code>, and appends completed candles to
+ <code>price_candles</code>, in a single transaction.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/service/MarketScheduler.html#saveSnapshot()" class="member-name-link">saveSnapshot()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketScheduler.html" title="class in com.lemarketjames.market.service">MarketScheduler</a></dt>
 <dd>&nbsp;</dd>
@@ -5176,6 +5456,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/activity/MarketActivityController.MarketActivity.html#param-since"><code>since</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#SIX_MONTHS" class="member-name-link">SIX_MONTHS</a> - Enum constant in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/QuoteUsed.html#source()" class="member-name-link">source()</a> - Method in record class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/orders/execution/QuoteUsed.html#param-source"><code>source</code></a> record component.</div>
@@ -5233,6 +5515,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>startDate</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#startDate(java.time.LocalDate)" class="member-name-link">startDate(LocalDate)</a> - Method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/MarketControlController.html#state()" class="member-name-link">state()</a> - Method in class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketControlController.html" title="class in com.lemarketjames.market">MarketControlController</a></dt>
 <dd>
 <div class="block">The current feed mode and pinned tickers.</div>
@@ -5350,6 +5634,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>success</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#param-success"><code>success</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#param-success"><code>success</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentActivityResponse.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentActivityResponse.html" title="class in com.lemarketjames.reports.dto">SegmentActivityResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>success</code> record component.</div>
@@ -5396,6 +5688,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/instruments/InstrumentDto.html#param-symbol"><code>symbol</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#symbol()" class="member-name-link">symbol()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#param-symbol"><code>symbol</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/reports/dto/TradesByStockReportRow.html#symbol()" class="member-name-link">symbol()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/TradesByStockReportRow.html" title="class in com.lemarketjames.reports.dto">TradesByStockReportRow</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>symbol</code> record component.</div>
@@ -5409,6 +5705,8 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:T">T</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#THREE_MONTHS" class="member-name-link">THREE_MONTHS</a> - Enum constant in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketScheduler.html#tick()" class="member-name-link">tick()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketScheduler.html" title="class in com.lemarketjames.market.service">MarketScheduler</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketSimulator.html#tick()" class="member-name-link">tick()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketSimulator.html" title="class in com.lemarketjames.market.service">MarketSimulator</a></dt>
@@ -5422,6 +5720,18 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/model/MarketInstrument.html#ticker()" class="member-name-link">ticker()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketInstrument.html" title="class in com.lemarketjames.market.model">MarketInstrument</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketInstrument.html#param-ticker"><code>ticker</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#time()" class="member-name-link">time()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/PricePoint.html#param-time"><code>time</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#time()" class="member-name-link">time()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/portfolio/dto/PortfolioPoint.html#param-time"><code>time</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#time()" class="member-name-link">time()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/quotes/dto/ChartPointDto.html#param-time"><code>time</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html#timeZone()" class="member-name-link">timeZone()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse</a></dt>
 <dd>
@@ -5503,6 +5813,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/model/MarketHours.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/MarketHours.html" title="class in com.lemarketjames.market.model">MarketHours</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -5512,6 +5826,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/PricePoint.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -5582,6 +5900,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/ValidationOutcome.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioHistoryResponse.html" title="class in com.lemarketjames.portfolio.dto">PortfolioHistoryResponse</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/ChartPointDto.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/ChartPointDto.html" title="class in com.lemarketjames.quotes.dto">ChartPointDto</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.quotes.dto.<a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -5963,6 +6297,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The checks an order goes through before it is saved, in the order they run.</div>
 </dd>
+<dt><a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html#value()" class="member-name-link">value()</a> - Method in record class com.lemarketjames.portfolio.dto.<a href="com/lemarketjames/portfolio/dto/PortfolioPoint.html" title="class in com.lemarketjames.portfolio.dto">PortfolioPoint</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/portfolio/dto/PortfolioPoint.html#param-value"><code>value</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/audit/AuditEventType.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -5984,6 +6322,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/dto/SettlementRequest.OrderType.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/SettlementRequest.OrderType.html" title="enum class in com.lemarketjames.holdings.dto">SettlementRequest.OrderType</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
@@ -6049,6 +6391,11 @@ the order they are declared.</div>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/model/ChartRange.html#values()" class="member-name-link">values()</a> - Static method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
 <dt><a href="com/lemarketjames/market/service/FeedMode.html#values()" class="member-name-link">values()</a> - Static method in enum class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/FeedMode.html" title="enum class in com.lemarketjames.market.service">FeedMode</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
@@ -6098,6 +6445,10 @@ the order they are declared.</div>
 <dt><a href="com/lemarketjames/activity/InstrumentActivity.html#volume()" class="member-name-link">volume()</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/InstrumentActivity.html" title="class in com.lemarketjames.activity">InstrumentActivity</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/activity/InstrumentActivity.html#param-volume"><code>volume</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/model/DailyBar.html#volume()" class="member-name-link">volume()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-volume"><code>volume</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/PriceCandle.html#volume()" class="member-name-link">volume()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a></dt>
 <dd>

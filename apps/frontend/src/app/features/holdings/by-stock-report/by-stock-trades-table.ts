@@ -1,6 +1,5 @@
 import { Component, input, signal, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import { TradeDto } from '../../../shared/models/trade.model';
 
 type SortableColumn = 'filledAt' | 'side' | 'quantity' | 'pricePerUnit';
@@ -11,19 +10,19 @@ type SortableColumn = 'filledAt' | 'side' | 'quantity' | 'pricePerUnit';
  * Displays individual trades for a selected stock with client-side sorting.
  * Receives trades as @Input; no service calls.
  * 
- * Sortable columns: Date, Side, Quantity, Price, Cost (computed)
+ * Sortable columns: Date, Type (side), Shares, Price per share; Total is computed. Laid out like
+ * the "Completed trades" table on the redesign's Holding board.
  */
 @Component({
   selector: 'app-by-stock-trades-table',
   templateUrl: './by-stock-trades-table.html',
-  styleUrls: ['./by-stock-trades-table.scss'],
+  styleUrl: './by-stock-trades-table.css',
   standalone: true,
   imports: [
     CommonModule,
     CurrencyPipe,
     DatePipe,
-    DecimalPipe,
-    MatIconModule
+    DecimalPipe
   ]
 })
 export class ByStockTradesTable {
@@ -92,6 +91,14 @@ export class ByStockTradesTable {
       return '';
     }
     return this.sortAscending() ? '↑' : '↓';
+  }
+
+  /** The header's aria-sort value, so screen readers announce the current order. */
+  ariaSort(column: SortableColumn): 'ascending' | 'descending' | 'none' {
+    if (this.sortColumn() !== column) {
+      return 'none';
+    }
+    return this.sortAscending() ? 'ascending' : 'descending';
   }
 
   /**

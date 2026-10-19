@@ -4,7 +4,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "@app/*": ["./src/app/*"]
+      "@app/*": ["./src/app/*"],
+      "@lemarket/shared-ui": ["./projects/shared-ui/src/public-api.ts"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
