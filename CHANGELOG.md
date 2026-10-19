@@ -30,6 +30,16 @@
   - **Kafka groups unchanged.** The three consumer groups keep their names.
   - **Ping.** `GET /api/v1/reports/ping` now answers `"service": "staff-ops-service"`.
   - **No migrations.** No schema change; no migration needed.
+- LMKT-44: Add the report load test (`apps/e2e/load/report-load.spec.ts`, `npm run test:load`)
+  and a Jenkins **Run report load test** stage. Over a year of inserted trades, it times client
+  orders from placement to FILLED, first alone and then while analysts run reports nonstop
+  through the staff gateway. It fails if p95 under load exceeds the baseline's allowance or an
+  absolute cap. The timings of both phases are attached to the report as `load-summary.json`.
+  Its first runs failed (p95 1.5 s → 3.4 s), so `GET /api/v1/reports/trades` now groups in
+  SQL instead of loading every trade into the service. That also fixes its periods to use
+  the reports time zone; evening trades used to land on the next day. And reporting-service's
+  pool defaults to 1 connection (`REPORTING_DB_POOL_SIZE`), since each busy report connection
+  takes a CPU core from order execution. The test now passes.
 - LMKT-72, LMKT-74: Buy and sell settlement tested end to end. `apps/e2e/tests/settlement.spec.ts`
   follows real fills from the executor through settlement on a running stack: a buy the client
   can no longer afford, or a sell of shares that are gone, by fill time is `REJECTED` with

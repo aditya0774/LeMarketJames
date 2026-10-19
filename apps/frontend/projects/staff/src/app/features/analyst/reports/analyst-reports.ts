@@ -45,7 +45,7 @@ export const ANALYST_REPORTS: readonly AnalystReport[] = [
     path: 'overnight-reports',
     title: 'Overnight reports',
     tab: 'Overnight',
-    subtitle: 'End-of-day and overnight summaries.',
+    subtitle: 'Heavy reports run overnight: their status, when each was ready, and why any failed.',
     loadComponent: () => import('./overnight-reports/overnight-reports').then((m) => m.OvernightReports),
   },
 ];

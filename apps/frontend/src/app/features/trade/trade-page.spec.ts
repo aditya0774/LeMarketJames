@@ -16,7 +16,7 @@ import { TradePage } from './trade-page';
 const quote = {
   symbol: 'TSLA', name: 'TesLe', price: 250, priceChange: 5, priceChangePercent: 2.04,
   highPrice: 252, lowPrice: 244, openPrice: 246, volume: 88_100_000, marketCap: 792_600_000_000,
-  peRatio: 0, dividendYield: 0, lastUpdate: '',
+  peRatio: 0, dividendYield: 0, lastUpdate: '2026-10-16T14:30:00.123Z',
 };
 
 describe('TradePage', () => {
@@ -112,6 +112,9 @@ describe('TradePage', () => {
 
     expect(el().querySelector('h1')?.textContent).toContain('Trade TSLA');
     expect(el().querySelector('.price-now')?.textContent).toContain('$250.00');
+    // LMKT-96: the price is labelled indicative and stamped with the quote's time.
+    expect(el().querySelector('.price-note')?.textContent).toContain('Indicative – your fill price may differ');
+    expect(el().querySelector('.price-note')?.textContent).toContain('Price as of Oct 16, 2026');
     expect(el().querySelector('.pc-line')?.getAttribute('d')).toMatch(/^M.* L/);
     expect(el().querySelector('app-stock-chart h2')?.textContent).toContain('TSLA price');
     expect(el().querySelector('.range-head')?.textContent).toContain('$244.00');
@@ -159,6 +162,10 @@ describe('TradePage', () => {
 
     expect(el().querySelector('[role=alert]')?.textContent).toContain('Prices are temporarily unavailable');
     expect((el().querySelector('button[type=submit]') as HTMLButtonElement).disabled).toBe(true);
+    // LMKT-96: no price, and no indicative note, while there is no quote.
+    expect(el().querySelector('.price-now')?.textContent?.trim()).toBe('Price unavailable');
+    expect(el().querySelector('.price-now')?.textContent).not.toContain('$');
+    expect(el().querySelector('.price-note')).toBeNull();
   });
 
   it('reloads holdings and buying power after an order', async () => {

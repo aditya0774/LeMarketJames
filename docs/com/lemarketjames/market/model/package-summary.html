@@ -115,11 +115,20 @@ loadScripts(document, 'script');</script>
 </li>
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab4" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab4', 2)" class="table-tab">Record Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab4" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab4', 2)" class="table-tab">Record Classes</button></div>
 <div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ chart (holdings-service) so both accept the same <code>range</code> values.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="block">One trading day of an instrument's price (<code>price_history</code>, migration 022).</div>
+</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="GbmModel.html" title="class in com.lemarketjames.market.model">GbmModel</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Geometric Brownian Motion (GBM) price math.</div>
@@ -138,12 +147,17 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">A completed 1-minute OHLC (open/high/low/close) bar, ready to be stored in <code>price_candles</code>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="QuoteFreshness.html" title="class in com.lemarketjames.market.model">QuoteFreshness</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
+ or the latest live price.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="QuoteFreshness.html" title="class in com.lemarketjames.market.model">QuoteFreshness</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Decides whether a quote is too old to price an order with (contract C4/C5).</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">Immutable point-in-time view of an instrument's price.</div>
 </div>
 </div>

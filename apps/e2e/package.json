@@ -9,7 +9,9 @@
     "report": "playwright show-report",
     "test:staff": "playwright test -c playwright.staff.config.ts",
     "test:staff:headed": "playwright test -c playwright.staff.config.ts --headed",
-    "report:staff": "playwright show-report playwright-report-staff"
+    "report:staff": "playwright show-report playwright-report-staff",
+    "test:load": "playwright test -c playwright.load.config.ts",
+    "report:load": "playwright show-report playwright-report-load"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

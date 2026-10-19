@@ -62,6 +62,10 @@
           <span class="price-wait">{{ quoteError() ? 'Price unavailable' : 'Loading…' }}</span>
         }
       </div>
+      @if (q) {
+        <!-- LMKT-96: the price shown is indicative; a market order fills at the price when it executes. -->
+        <p class="price-note">Indicative – your fill price may differ · Price as of {{ q.lastUpdate | date: 'medium' }}</p>
+      }
 
       <app-stock-chart [symbol]="stock.symbol" [quote]="q" [pricesDown]="quoteError()" />
 

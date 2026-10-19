@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortfolioHistoryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Holdings Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.portfolio</a> &gt; <span class="el_source">PortfolioHistoryService.java</span></div><h1>PortfolioHistoryService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.portfolio;
+
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.market.model.ChartRange;
+import com.lemarketjames.market.model.MarketHours;
+import com.lemarketjames.market.model.PricePoint;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.market.service.PriceHistoryService;
+import com.lemarketjames.orders.client.OrderSummary;
+import com.lemarketjames.orders.client.OrdersClient;
+import com.lemarketjames.portfolio.dto.PortfolioPoint;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+/**
+ * What the caller's stocks were worth over a {@link ChartRange}, for the overview's portfolio chart.
+ * Like the overview's &quot;Portfolio value&quot; card it counts stocks only, not cash, so the chart's last
+ * point is the card's figure.
+ *
+ * &lt;p&gt;There is no stored record of past holdings, so they are rebuilt from the account's filled
+ * orders (buy-sell-service, via {@link OrdersClient}): at each moment, the shares held are the sum
+ * of the fills up to then, valued at each stock's price at that moment.
+ */
+@Service
+public class PortfolioHistoryService {
+
+    private final AccountRepository accountRepository;
+    private final OrdersClient ordersClient;
+    private final MarketDataService marketData;
+    private final PriceHistoryService priceHistory;
+
+    public PortfolioHistoryService(AccountRepository accountRepository, OrdersClient ordersClient,
+<span class="fc" id="L48">                                   MarketDataService marketData, PriceHistoryService priceHistory) {</span>
+<span class="fc" id="L49">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L50">        this.ordersClient = ordersClient;</span>
+<span class="fc" id="L51">        this.marketData = marketData;</span>
+<span class="fc" id="L52">        this.priceHistory = priceHistory;</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * @param username the signed-in user, from the JWT
+     * @param range    the span to cover
+     * @return the value of the user's stocks over {@code range}, oldest first; empty if they have
+     *         never owned a stock in it or prices are unavailable
+     */
+    public List&lt;PortfolioPoint&gt; history(String username, ChartRange range) {
+<span class="fc" id="L62">        Integer accountId = accountRepository.findAccountIdByUsername(username)</span>
+<span class="fc" id="L63">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No account found for username: &quot; + username));</span>
+
+<span class="fc" id="L65">        Map&lt;Integer, List&lt;OrderSummary&gt;&gt; fillsByStock = ordersClient.getOrdersForAccount(accountId).stream()</span>
+<span class="fc" id="L66">                .filter(OrderSummary::isFilled)</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">                .filter(order -&gt; order.filledAt() != null &amp;&amp; order.instrumentId() != null)</span>
+<span class="fc" id="L68">                .collect(Collectors.groupingBy(OrderSummary::instrumentId));</span>
+
+<span class="fc" id="L70">        List&lt;StockSeries&gt; stocks = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L71">        fillsByStock.forEach((instrumentId, fills) -&gt; marketData.findByInstrumentId(instrumentId)</span>
+<span class="fc" id="L72">                .map(quote -&gt; series(quote, fills, range))</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                .filter(series -&gt; !series.prices.isEmpty())</span>
+<span class="fc" id="L74">                .ifPresent(stocks::add));</span>
+
+        // Every moment any held stock has a price is a point on the chart.
+<span class="fc" id="L77">        TreeSet&lt;Instant&gt; times = new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L78">        stocks.forEach(stock -&gt; times.addAll(stock.prices.keySet()));</span>
+
+<span class="fc" id="L80">        List&lt;PortfolioPoint&gt; points = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (Instant time : times) {</span>
+<span class="fc" id="L82">            BigDecimal value = stocks.stream().map(stock -&gt; stock.valueAt(time)).reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+            // Before the first purchase there is nothing to draw; starting at the first holding keeps
+            // the chart's change over the range meaningful.
+<span class="fc bfc" id="L85" title="All 4 branches covered.">            if (points.isEmpty() &amp;&amp; value.signum() == 0) {</span>
+<span class="fc" id="L86">                continue;</span>
+            }
+<span class="fc" id="L88">            points.add(new PortfolioPoint(time, value.setScale(2, RoundingMode.HALF_UP)));</span>
+<span class="fc" id="L89">        }</span>
+<span class="fc" id="L90">        return points;</span>
+    }
+
+    private StockSeries series(QuoteSnapshot quote, List&lt;OrderSummary&gt; fills, ChartRange range) {
+<span class="fc" id="L94">        int instrumentId = quote.instrument().instrumentId();</span>
+<span class="fc" id="L95">        NavigableMap&lt;Instant, Double&gt; prices = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (range.intraday()) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (PricePoint point : priceHistory.intraday(instrumentId)) {</span>
+<span class="fc" id="L98">                prices.put(point.time(), point.price());</span>
+<span class="fc" id="L99">            }</span>
+        } else {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            LocalDate today = quote.tradingDate() == null ? LocalDate.now(ZoneOffset.UTC) : quote.tradingDate();</span>
+<span class="fc" id="L102">            MarketHours hours = quote.instrument().marketHours();</span>
+<span class="fc" id="L103">            priceHistory.dailyBars(instrumentId, range.startDate(today))</span>
+<span class="fc" id="L104">                    .forEach(bar -&gt; prices.put(hours.closingTime(bar.date()), bar.close()));</span>
+        }
+
+        // Shares held after each fill; order timestamps are UTC (contract C6).
+<span class="fc" id="L108">        NavigableMap&lt;Instant, BigDecimal&gt; sharesHeld = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L109">        BigDecimal held = BigDecimal.ZERO;</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (OrderSummary fill : fills.stream().sorted(Comparator.comparing(OrderSummary::filledAt)).toList()) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            held = fill.isBuy() ? held.add(fill.quantity()) : held.subtract(fill.quantity());</span>
+<span class="fc" id="L112">            sharesHeld.put(fill.filledAt().toInstant(ZoneOffset.UTC), held);</span>
+<span class="fc" id="L113">        }</span>
+<span class="fc" id="L114">        return new StockSeries(prices, sharesHeld);</span>
+    }
+
+    /** One stock's prices and the shares held over time. */
+<span class="fc" id="L118">    private record StockSeries(NavigableMap&lt;Instant, Double&gt; prices, NavigableMap&lt;Instant, BigDecimal&gt; sharesHeld) {</span>
+
+        BigDecimal valueAt(Instant time) {
+<span class="fc" id="L121">            BigDecimal shares = Optional.ofNullable(sharesHeld.floorEntry(time)).map(Map.Entry::getValue)</span>
+<span class="fc" id="L122">                    .orElse(BigDecimal.ZERO);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (shares.signum() == 0) {</span>
+<span class="fc" id="L124">                return BigDecimal.ZERO;</span>
+            }
+            // The latest price at or before this moment; a stock whose prices start later than
+            // another's is valued at its first price until then.
+<span class="fc" id="L128">            Map.Entry&lt;Instant, Double&gt; price = Optional.ofNullable(prices.floorEntry(time)).orElse(prices.firstEntry());</span>
+<span class="fc" id="L129">            return shares.multiply(BigDecimal.valueOf(price.getValue()));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

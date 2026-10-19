@@ -27,6 +27,7 @@ class StaffOpsServiceApplicationTest {
     void reportsHaveAPoolOfTheirOwn() {
         assertNotSame(ordinary, reporting);
         assertEquals("reporting", reporting.getPoolName());
-        assertEquals(3, reporting.getMaximumPoolSize());
+        // reporting.datasource.hikari.*'s one connection (LMKT-44), not the ordinary pool's three.
+        assertEquals(1, reporting.getMaximumPoolSize());
     }
 }

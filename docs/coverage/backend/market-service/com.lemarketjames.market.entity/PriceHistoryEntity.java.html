@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceHistoryEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.entity</a> &gt; <span class="el_source">PriceHistoryEntity.java</span></div><h1>PriceHistoryEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Objects;
+
+/**
+ * One trading day's OHLC bar ({@code price_history}, migration 022), keyed by instrument and
+ * exchange-local trading date. Seeded with six months of history; market-service writes the current
+ * day's bar every time it saves prices.
+ */
+@Entity
+@Table(name = &quot;price_history&quot;)
+@IdClass(PriceHistoryEntity.Key.class)
+public class PriceHistoryEntity extends OhlcBar {
+
+    @Id
+    @Column(name = &quot;instrument_id&quot;)
+    private Integer instrumentId;
+
+    @Id
+    @Column(name = &quot;trading_date&quot;)
+    private LocalDate tradingDate;
+
+<span class="nc" id="L32">    public PriceHistoryEntity() {</span>
+<span class="nc" id="L33">    }</span>
+
+    public PriceHistoryEntity(Integer instrumentId, LocalDate tradingDate, BigDecimal openPrice,
+                              BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice, Long volume) {
+<span class="fc" id="L37">        super(openPrice, highPrice, lowPrice, closePrice, volume);</span>
+<span class="fc" id="L38">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L39">        this.tradingDate = tradingDate;</span>
+<span class="fc" id="L40">    }</span>
+
+    public Integer getInstrumentId() {
+<span class="fc" id="L43">        return instrumentId;</span>
+    }
+
+    public LocalDate getTradingDate() {
+<span class="fc" id="L47">        return tradingDate;</span>
+    }
+
+    /** Composite primary key: (instrument_id, trading_date). */
+    public static class Key implements Serializable {
+
+        private Integer instrumentId;
+        private LocalDate tradingDate;
+
+<span class="fc" id="L56">        public Key() {</span>
+<span class="fc" id="L57">        }</span>
+
+<span class="fc" id="L59">        public Key(Integer instrumentId, LocalDate tradingDate) {</span>
+<span class="fc" id="L60">            this.instrumentId = instrumentId;</span>
+<span class="fc" id="L61">            this.tradingDate = tradingDate;</span>
+<span class="fc" id="L62">        }</span>
+
+        @Override
+        public boolean equals(Object other) {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            if (this == other) {</span>
+<span class="fc" id="L67">                return true;</span>
+            }
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (!(other instanceof Key key)) {</span>
+<span class="fc" id="L70">                return false;</span>
+            }
+<span class="fc bfc" id="L72" title="All 4 branches covered.">            return Objects.equals(instrumentId, key.instrumentId) &amp;&amp; Objects.equals(tradingDate, key.tradingDate);</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L77">            return Objects.hash(instrumentId, tradingDate);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

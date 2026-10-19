@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OhlcBar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.entity</a> &gt; <span class="el_source">OhlcBar.java</span></div><h1>OhlcBar.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+
+import java.math.BigDecimal;
+
+/**
+ * The open, high, low, close and volume columns that every stored price bar has, whatever span it
+ * covers: a minute in {@code price_candles}, a trading day in {@code price_history}. Each subclass
+ * adds its own table, key and time column.
+ */
+@MappedSuperclass
+public abstract class OhlcBar {
+
+    @Column(name = &quot;open_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal openPrice;
+
+    @Column(name = &quot;high_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal highPrice;
+
+    @Column(name = &quot;low_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal lowPrice;
+
+    @Column(name = &quot;close_price&quot;, nullable = false, precision = 14, scale = 4)
+    private BigDecimal closePrice;
+
+    @Column(nullable = false)
+    private Long volume;
+
+<span class="nc" id="L31">    protected OhlcBar() {</span>
+<span class="nc" id="L32">    }</span>
+
+    protected OhlcBar(BigDecimal openPrice, BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice,
+<span class="fc" id="L35">                      Long volume) {</span>
+<span class="fc" id="L36">        this.openPrice = openPrice;</span>
+<span class="fc" id="L37">        this.highPrice = highPrice;</span>
+<span class="fc" id="L38">        this.lowPrice = lowPrice;</span>
+<span class="fc" id="L39">        this.closePrice = closePrice;</span>
+<span class="fc" id="L40">        this.volume = volume;</span>
+<span class="fc" id="L41">    }</span>
+
+    public BigDecimal getOpenPrice() {
+<span class="fc" id="L44">        return openPrice;</span>
+    }
+
+    public BigDecimal getHighPrice() {
+<span class="fc" id="L48">        return highPrice;</span>
+    }
+
+    public BigDecimal getLowPrice() {
+<span class="fc" id="L52">        return lowPrice;</span>
+    }
+
+    public BigDecimal getClosePrice() {
+<span class="fc" id="L56">        return closePrice;</span>
+    }
+
+    public Long getVolume() {
+<span class="fc" id="L60">        return volume;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
