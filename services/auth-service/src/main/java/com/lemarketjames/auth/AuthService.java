@@ -241,7 +241,9 @@ public class AuthService {
         Instant invalidatedAt = account instanceof ClientEntity client
             ? client.getSessionInvalidatedAt()
             : ((StaffUserEntity) account).getSessionInvalidatedAt();
-        return invalidatedAt != null && !now.isAfter(invalidatedAt)
+        // JWT timestamps have second precision, so compare at that precision too. A login a few
+        // milliseconds after logout can otherwise receive the same iat and be rejected again.
+        return invalidatedAt != null && now.getEpochSecond() <= invalidatedAt.getEpochSecond()
             ? invalidatedAt.plusSeconds(1)
             : null;
         }

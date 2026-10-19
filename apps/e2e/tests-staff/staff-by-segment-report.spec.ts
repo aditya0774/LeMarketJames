@@ -1,6 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
 import { connectDatabase } from '../tests/support/database';
-import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
 
 const REPORT = '/analyst/reports/activity-by-client-segment';
@@ -196,22 +195,8 @@ test('LMKT-43 AC4: signed-out visitors cannot open the page or request data', as
 });
 
 for (const [role, user] of [['CLIENT', CLIENT], ['TRADING_OPS', TRADING_OPS]] as const) {
-  test(`LMKT-43 AC4: ${role} cannot open the page or bypass it with the API`, async ({ page, playwright }) => {
-    let loginUser: TestUser = user;
-    if (role === 'CLIENT') {
-      // This test logs the client out and immediately back in. A unique account prevents other
-      // fully-parallel staff tests using seed_active from invalidating that fresh session.
-      loginUser = newUser('segmentclient');
-      const trading = await playwright.request.newContext({
-        baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
-      });
-      try {
-        await registerViaApi(trading, loginUser);
-      } finally {
-        await trading.dispose();
-      }
-    }
-    await signIn(page, loginUser);
+  test(`LMKT-43 AC4: ${role} cannot open the page or bypass it with the API`, async ({ page }) => {
+    await signIn(page, user);
     if (role === 'CLIENT') {
       await expect(page.getByRole('alert')).toContainText('This login is for staff only');
     } else {
@@ -219,7 +204,7 @@ for (const [role, user] of [['CLIENT', CLIENT], ['TRADING_OPS', TRADING_OPS]] as
     }
     // Authenticate directly as well: UI sign-out must not hide a missing server-side role check.
     const login = await page.request.post('/api/auth/login', {
-      data: { username: loginUser.email, password: loginUser.password },
+      data: { username: user.email, password: user.password },
     });
     expect(login.status()).toBe(200);
     expect((await page.request.get('/api/auth/me')).status()).toBe(200);
