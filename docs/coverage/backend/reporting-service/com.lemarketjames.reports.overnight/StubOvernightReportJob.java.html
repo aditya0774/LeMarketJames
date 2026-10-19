@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StubOvernightReportJob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Reporting Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">StubOvernightReportJob.java</span></div><h1>StubOvernightReportJob.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.reports.period.ReportCalendar;
+import com.lemarketjames.reports.period.ReportPeriod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+
+/**
+ * Stands in for the heavy reports until they are built (LMKT-45 is built against a stub job).
+ *
+ * &lt;p&gt;It reads what a real report would: the run date's trades from {@code reporting_trades}, the
+ * one data source of every report, counted only (no single trade, nothing about a client). That
+ * exercises the read-only safeguards and the run date's range the way a real report will. The seed
+ * data (C3) already has trades on many days, so no seeding is needed for it.
+ *
+ * &lt;p&gt;It succeeds, unless {@code reporting.overnight.stub.fail-with} is set, in which case it fails
+ * with that message: that is how a failed run is shown on a running stack.
+ */
+@Component
+public class StubOvernightReportJob implements OvernightReportJob {
+
+    static final String NAME = &quot;Stub overnight report&quot;;
+<span class="fc" id="L28">    private static final Logger log = LoggerFactory.getLogger(StubOvernightReportJob.class);</span>
+
+    private final JdbcTemplate jdbc;
+    private final ReportCalendar calendar;
+    private final String failWith;
+
+    public StubOvernightReportJob(JdbcTemplate jdbc, ReportCalendar calendar,
+<span class="fc" id="L35">                                  @Value(&quot;${reporting.overnight.stub.fail-with:}&quot;) String failWith) {</span>
+<span class="fc" id="L36">        this.jdbc = jdbc;</span>
+<span class="fc" id="L37">        this.calendar = calendar;</span>
+<span class="fc" id="L38">        this.failWith = failWith;</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public String name() {
+<span class="nc" id="L43">        return NAME;</span>
+    }
+
+    @Override
+    public void run(LocalDate runDate) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (!failWith.isBlank()) {</span>
+<span class="fc" id="L49">            throw new IllegalStateException(failWith);</span>
+        }
+        // The run date as a half-open UTC range, from ReportCalendar like every report (README rule 4).
+<span class="fc" id="L52">        ReportPeriod day = calendar.between(runDate, runDate);</span>
+<span class="fc" id="L53">        Long trades = jdbc.queryForObject(</span>
+                &quot;SELECT COUNT(*) FROM reporting_trades WHERE filled_at &gt;= ? AND filled_at &lt; ?&quot;,
+<span class="fc" id="L55">                Long.class, day.start(), day.end());</span>
+<span class="fc" id="L56">        log.info(&quot;Stub overnight report produced for {}: {} trades&quot;, runDate, trades);</span>
+<span class="fc" id="L57">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
