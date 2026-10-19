@@ -1,7 +1,7 @@
 import { expect, Page, test } from '@playwright/test';
 import { Client } from 'pg';
 import { connectDatabase } from '../tests/support/database';
-import { ANALYST, signIn, TRADING_OPS } from './support/staff';
+import { ANALYST, openAnalystTab, signIn, TRADING_OPS } from './support/staff';
 
 /**
  * LMKT-45 end to end: the overnight reports list through the real staff app, staff gateway and
@@ -73,7 +73,7 @@ async function openList(page: Page) {
   await signIn(page, ANALYST);
   await expect(page).toHaveURL(/\/analyst$/);
   const response = page.waitForResponse(r => new URL(r.url()).pathname === API);
-  await page.locator('.report-card', { hasText: 'Overnight Reports' }).click();
+  await openAnalystTab(page, 'Overnight');
   const answer = await response;
   expect(answer.status(), await answer.text()).toBe(200);
   // Through the staff app's own origin, i.e. the staff gateway, never reporting-service directly.
@@ -103,7 +103,7 @@ test('LMKT-45 AC2/AC3: the list shows each run with its status, ready time and f
     expect(Date.parse(run.readyBy)).toBe(Date.parse(READY_BY));
   }
 
-  await expect(page.locator(`${CONTENT} .meta-pill`)).toHaveText(`Times in ${timeZone}`);
+  await expect(page.locator(`${CONTENT} .zone`)).toHaveText(`Times in ${timeZone}`);
 
   const ready = row(page, `${PREFIX} ready`);
   await expect(ready.locator('.status-badge')).toHaveText('Ready');
