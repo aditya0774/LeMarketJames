@@ -26,6 +26,15 @@ Reports share the database with live trading. Three limits, set in [application.
 
 The last two are set on each connection when the pool opens it, so they hold for every query whether or not it runs in a Spring transaction. A report that hits the timeout fails; make the query cheaper rather than raising the limit.
 
+## Most active stocks insight (LMKT-47)
+
+`GET /api/v1/reports/insights/most-active-stocks` returns the five symbols with the highest gross
+traded value for the current Monday-to-today week in the configured reports time zone. It reads
+only `reporting_trades`, groups filled orders by symbol, and recomputes on every request. The
+response includes the week dates, rank, symbol, trade count, share volume, traded value, and
+`generatedAt` refresh time. Only `ANALYST` may call it; the shared reports security rule returns
+`401` for missing authentication and `403` for `CLIENT`, `TRADING_OPS`, and every other role.
+
 ## Tests
 
 | Test | Checks | Runs |
