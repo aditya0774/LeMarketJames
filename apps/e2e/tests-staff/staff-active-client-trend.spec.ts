@@ -7,7 +7,7 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
 
 /**
  * LMKT-48: the active-client trend tile on the Analyst dashboard, end to end (S40-INT). Everything
- * goes through the real staff app, staff gateway and reporting-service, without mocks.
+ * goes through the real staff app and staff-ops-service, without mocks.
  *
  * AC1  the tile shows how many distinct clients traded on each of the last 30 days, from real data
  * AC2  the tile shows when the figures were last refreshed, and a trade made now shows up
@@ -25,7 +25,7 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
 const TREND = '/api/v1/reports/insights/active-clients';
 const INSIGHTS = '/api/v1/reports/insights';
 const WINDOW_DAYS = 30;
-// Clients register through the trading app; the staff gateway has no registration route.
+// Clients register through the trading app; the staff app has no registration route.
 const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const TILE = 'staff-active-client-trend-tile';
 

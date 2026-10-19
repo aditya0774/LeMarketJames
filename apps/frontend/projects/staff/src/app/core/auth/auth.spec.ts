@@ -18,7 +18,7 @@ describe('Auth', () => {
   it('signs in on this app\'s own origin and keeps who signed in and their role', async () => {
     const signedIn = auth.login('ops@seed.lemarket.com', 'Pass123!');
 
-    // A relative URL: the staff app's proxy or Nginx forwards it to the staff gateway.
+    // A relative URL: the staff app's proxy or Nginx forwards it to the services.
     const request = http.expectOne('/api/auth/login');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ username: 'ops@seed.lemarket.com', password: 'Pass123!' });

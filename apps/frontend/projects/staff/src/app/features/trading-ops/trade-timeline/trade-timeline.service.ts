@@ -7,7 +7,7 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
 /**
  * Fetches an order's timeline: its audit events, oldest first
  * (C6, `GET /api/v1/orders/{orderId}/timeline`). Restricted to the TRADING_OPS role by
- * buy-sell-service and reached through the staff gateway.
+ * orders-service and reached through the staff app's own origin.
  */
 @Injectable({
   providedIn: 'root'

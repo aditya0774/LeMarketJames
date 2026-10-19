@@ -68,7 +68,7 @@ export class Login {
       await this.auth.login(this.form.value.username, this.form.value.password);
       if (this.auth.hasRole('CLIENT')) {
         // Clients and staff share one sign-in endpoint (C7), so a client's credentials work here
-        // and the gateway has already given this browser a staff_jwt. Nothing in this app is
+        // and the staff app has already given this browser a staff_jwt. Nothing in this app is
         // for clients: sign out again so it doesn't keep one.
         await this.auth.logout();
         this.showAlert('info', 'Client account', STAFF_ONLY_MESSAGE);

@@ -2,7 +2,7 @@ package com.lemarketjames.common.events;
 
 /**
  * The Kafka topics of the order events (contract C6), one per event. They are here, rather than
- * in buy-sell-service, because the services that consume the events need the same names and
+ * in orders-service, because the services that consume the events need the same names and
  * cannot depend on the service that publishes them. This is the only place the names are written.
  */
 public final class OrderEventTopicNames {

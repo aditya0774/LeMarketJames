@@ -7,8 +7,8 @@ import { TestUser, newUser, registerViaApi } from '../tests/support/users';
 /**
  * LMKT-44: reports must not slow down live trading (BR-16, BRS §9.2).
  *
- * reporting-service reads the reporting_trades view on the database that order execution writes
- * to, protected only by its read-side limits (services/reporting-service/README.md). This test is
+ * staff-ops-service reads the reporting_trades view on the database that order execution writes
+ * to, protected only by its read-side limits (services/staff-ops-service/README.md). This test is
  * the evidence that those limits are enough. It measures how long a client's order takes to
  * reach FILLED, first with orders alone (the baseline) and then while analysts run reports
  * nonstop, and fails if reports make confirmations noticeably slower.
@@ -168,7 +168,7 @@ function reportRequests(): string[] {
   ];
 }
 
-/** Analysts request reports back to back, through the staff gateway, until told to stop. */
+/** Analysts request reports back to back, through the staff app, until told to stop. */
 function startReports(staff: APIRequestContext, analysts: number) {
   const tally: ReportTally = { ok: 0, failed: 0, failures: [], latenciesMs: [] };
   const requests = reportRequests();

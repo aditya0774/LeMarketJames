@@ -3,8 +3,8 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, openAnalystTab, signIn, signOut
 
 /**
  * LMKT-139: staff sign in on the staff app and each role gets its own pages
- * (contracts/C7-roles.md). Everything goes through the real staff app, staff gateway and
- * auth-service, without mocks. The tests only sign in and read, so they share the seed logins.
+ * (contracts/C7-roles.md). Everything goes through the real staff app and auth-service, without
+ * mocks. The tests only sign in and read, so they share the seed logins.
  */
 const TABS = ['Volume', 'By period', 'By stock', 'By segment', 'Overnight'];
 
@@ -76,8 +76,8 @@ test.describe('Staff login', () => {
 
     await expect(page.getByRole('alert')).toContainText('This login is for staff only');
     await expect(page).toHaveURL(/\/login$/);
-    // The gateway gave the client a staff session cookie on sign-in; it must be gone again,
-    // so the gateway no longer knows this browser.
+    // The staff app gave the client a staff session cookie on sign-in; it must be gone again,
+    // so the staff app no longer knows this browser.
     await expect.poll(async () => (await context.cookies()).map(cookie => cookie.name)).not.toContain('staff_jwt');
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
 

@@ -13,14 +13,14 @@ $ErrorActionPreference = 'Continue' # Native Java warnings use stderr; exit code
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Push-Location $repoRoot
 try {
-    & mvn -B -pl services/buy-sell-service -am install '-DskipTests'
+    & mvn -B -pl services/orders-service -am install '-DskipTests'
     if ($LASTEXITCODE -ne 0) { throw 'Maven build failed' }
-    $seedBuild = Join-Path $repoRoot 'services\buy-sell-service\target\historical-seed'
+    $seedBuild = Join-Path $repoRoot 'services\orders-service\target\historical-seed'
     New-Item -ItemType Directory -Force -Path $seedBuild | Out-Null
     $classpathFile = Join-Path $seedBuild 'classpath.txt'
-    & mvn -B -pl services/buy-sell-service dependency:build-classpath "-Dmdep.outputFile=$classpathFile" '-Dmdep.includeScope=runtime'
+    & mvn -B -pl services/orders-service dependency:build-classpath "-Dmdep.outputFile=$classpathFile" '-Dmdep.includeScope=runtime'
     if ($LASTEXITCODE -ne 0) { throw 'Dependency classpath failed' }
-    $seedClasspath = (Join-Path $repoRoot 'services\buy-sell-service\target\classes') + ';' + (Get-Content -Raw $classpathFile).Trim()
+    $seedClasspath = (Join-Path $repoRoot 'services\orders-service\target\classes') + ';' + (Get-Content -Raw $classpathFile).Trim()
     & javac -encoding UTF-8 -cp $seedClasspath -d $seedBuild scripts/seed/HistoricalSegmentSeed.java
     if ($LASTEXITCODE -ne 0) { throw 'Seed compilation failed' }
     $seedArguments = @()

@@ -1,0 +1,100 @@
+package com.lemarketjames.config;
+
+import com.lemarketjames.common.security.AccountAccessCheck;
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
+import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+/**
+ * Spring Security configuration for trading-service, one chain for every feature it serves.
+ *
+ * <ul>
+ *   <li>{@code /internal/**} needs no JWT: orders-service calls it server-to-server without a
+ *       browser's cookie (settlement and the SELL check), and the test controls live there too.
+ *       It stays unreachable from a browser because neither web app forwards anything but
+ *       {@code /api/**}.</li>
+ *   <li>{@code /api/market/**} needs no JWT either: orders-service reads prices there without a
+ *       cookie, and the quotes carry no user data.</li>
+ *   <li>Notifications are about a client's own orders, so only clients may read them (contract
+ *       C7). Market activity says how much of each stock traded and never who traded it, so anyone
+ *       signed in may read it.</li>
+ * </ul>
+ */
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    /** Every notification endpoint lives under this prefix, so one rule guards them all. */
+    public static final String NOTIFICATIONS_PATHS = "/api/v1/notifications/**";
+
+    /** Every activity endpoint lives under this prefix, so one rule guards them all. */
+    public static final String ACTIVITY_PATHS = "/api/v1/market-activity/**";
+
+    @Value("${app.cors.allowed-origin}")
+    private String allowedOrigin;
+
+    /**
+     * Configures the security filter chain for HTTP requests.
+     *
+     * @param http the HttpSecurity to configure
+     * @param jwtService the JWT service for token validation
+     * @param accessCheck ends the session of an account that may no longer be used (LMKT-57)
+     * @return the configured SecurityFilterChain
+     * @throws Exception if an error occurs during configuration
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
+                                                   AccountAccessCheck accessCheck) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                    (request, response, authException) -> response.sendError(401)))
+            .authorizeHttpRequests(auth -> auth
+                // Preserve the original failure status during the container's error dispatch.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                .requestMatchers("/", "/actuator/health", "/internal/**", "/api/market/**").permitAll()
+                // Staff have no trading account, so there is nothing of theirs to read here.
+                .requestMatchers(NOTIFICATIONS_PATHS).hasRole(Role.CLIENT.name())
+                .requestMatchers(ACTIVITY_PATHS, "/api/sessions/**").authenticated()
+                .anyRequest().authenticated())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    /**
+     * CORS for a browser that calls this service directly. The web apps call it on their own
+     * origin, which needs none; this service's own origin (localhost:8084) stays allowed for local calls.
+     *
+     * @return a CorsConfigurationSource with the configured CORS settings
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8084"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+}
