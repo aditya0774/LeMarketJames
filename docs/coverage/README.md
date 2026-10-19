@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `9b2a988c` on 2026-10-19 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `6476d511` on 2026-10-19 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -10,20 +10,13 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 |---|---:|---:|---:|
 | [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 53.07 | 78.00 | 199 / 424 |
 | [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 83.70 | 76.00 | 22 / 135 |
-| [activity-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/activity-service/index.html) | 95.52 | 100.00 | 3 / 67 |
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 95.85 | 82.69 | 12 / 289 |
-| [buy-sell-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/buy-sell-service/index.html) | 92.53 | 84.59 | 70 / 937 |
-| [core-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/core-service/index.html) | 85.38 | 82.35 | 38 / 260 |
-| [gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/gateway-service/index.html) | 94.74 | 100.00 | 2 / 38 |
-| [holdings-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/holdings-service/index.html) | 87.78 | 86.11 | 76 / 622 |
-| [market-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-service/index.html) | 88.17 | 85.71 | 62 / 524 |
-| [notification-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/notification-service/index.html) | 97.30 | 100.00 | 2 / 74 |
-| [reporting-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/reporting-service/index.html) | 79.28 | 86.54 | 104 / 502 |
-| [staff-gateway-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-gateway-service/index.html) | 81.82 | 100.00 | 2 / 11 |
-| [surveillance-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/surveillance-service/index.html) | 98.20 | 100.00 | 2 / 111 |
-| **Back end (all modules)** | 85.13 | 84.84 | 594 / 3994 |
+| [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 92.53 | 84.59 | 70 / 937 |
+| [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 84.88 | 89.06 | 93 / 615 |
+| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 88.41 | 86.94 | 175 / 1510 |
+| **Back end (all modules)** | 85.40 | 85.01 | 571 / 3910 |
 | **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 96.92 | 91.47 | 84 / 2729 |
-| **Everything** | 89.92 | 89.41 | 678 / 6723 |
+| **Everything** | 90.13 | 89.47 | 655 / 6639 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -33,14 +26,14 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 |---|---|---:|---:|
 | common | `com.lemarketjames.common.domain.ClientEntity` | 56 | 0.00 |
 | common | `com.lemarketjames.common.domain.StaffUserEntity` | 34 | 0.00 |
-| market-service | `com.lemarketjames.market.entity.InstrumentMarketParamsEntity` | 32 | 0.00 |
-| reporting-service | `com.lemarketjames.reports.overnight.ReportRunWriter` | 32 | 0.00 |
+| trading-service | `com.lemarketjames.market.entity.InstrumentMarketParamsEntity` | 32 | 0.00 |
+| staff-ops-service | `com.lemarketjames.reports.overnight.ReportRunWriter` | 29 | 9.38 |
 | common | `com.lemarketjames.common.instruments.Instrument` | 23 | 0.00 |
 | common | `com.lemarketjames.common.domain.AddressEntity` | 23 | 0.00 |
 | common | `com.lemarketjames.common.error.GlobalExceptionHandler` | 19 | 0.00 |
-| holdings-service | `com.lemarketjames.holdings.dto.HoldingDto` | 17 | 51.43 |
-| buy-sell-service | `com.lemarketjames.orders.entity.Order` | 16 | 79.22 |
-| core-service | `com.lemarketjames.sessions.entity.SessionEntity` | 15 | 0.00 |
+| trading-service | `com.lemarketjames.holdings.dto.HoldingDto` | 17 | 51.43 |
+| orders-service | `com.lemarketjames.orders.entity.Order` | 16 | 79.22 |
+| trading-service | `com.lemarketjames.sessions.entity.SessionEntity` | 15 | 0.00 |
 
 ## Lowest-covered front-end files (most missed lines)
 
@@ -61,6 +54,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-19 | `6476d511` | 85.40 | 85.01 | 96.92 | 91.47 |
 | 2026-10-19 | `9b2a988c` | 85.13 | 84.84 | 96.92 | 91.47 |
 | 2026-10-19 | `5521aa94` | 85.13 | 84.84 | 96.92 | 91.47 |
 | 2026-10-19 | `d7719c5a` | 85.47 | 84.82 | 96.92 | 91.47 |

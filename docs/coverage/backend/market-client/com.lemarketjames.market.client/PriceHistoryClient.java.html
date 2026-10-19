@@ -17,12 +17,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * {@link PriceHistoryService} over HTTP, reached at market-service's {@code /api/market/history/**}
+ * {@link PriceHistoryService} over HTTP, reached at trading-service's {@code /api/market/history/**}
  * and {@code /api/market/intraday/**}. Like {@link MarketDataClient}, a failed or slow call degrades
  * to an empty history (a chart with nothing to draw) rather than an error, since charts are
  * non-critical read data.
  *
- * &lt;p&gt;Only created in services that set {@code market.service.url}; market-service itself implements
+ * &lt;p&gt;Only created in services that set {@code market.service.url}; trading-service itself implements
  * {@link PriceHistoryService} directly.
  */
 @Service
@@ -52,7 +52,7 @@ public class PriceHistoryClient implements PriceHistoryService {
 <span class="fc" id="L52">                    .body(DailyBar[].class);</span>
 <span class="fc bfc" id="L53" title="All 2 branches covered.">            return bars == null ? List.of() : List.of(bars);</span>
 <span class="fc" id="L54">        } catch (RestClientException e) {</span>
-<span class="fc" id="L55">            log.warn(&quot;market-service history call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
+<span class="fc" id="L55">            log.warn(&quot;trading-service history call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
 <span class="fc" id="L56">            return List.of();</span>
         }
     }
@@ -66,7 +66,7 @@ public class PriceHistoryClient implements PriceHistoryService {
 <span class="fc" id="L66">                    .body(PricePoint[].class);</span>
 <span class="fc bfc" id="L67" title="All 2 branches covered.">            return points == null ? List.of() : List.of(points);</span>
 <span class="fc" id="L68">        } catch (RestClientException e) {</span>
-<span class="fc" id="L69">            log.warn(&quot;market-service intraday call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
+<span class="fc" id="L69">            log.warn(&quot;trading-service intraday call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
 <span class="fc" id="L70">            return List.of();</span>
         }
     }
