@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * LMKT-45 on a real PostgreSQL with migration 022 applied: the run writer can record runs although
+ * LMKT-45 on a real PostgreSQL with migration 023 applied: the run writer can record runs although
  * every connection of this service is read-only by default, a report runs once a night, a run only
  * moves forward, and every other write is still refused.
  *
- * <p>Runs in Jenkins' integration stage; locally, with a database from setup-db.ps1 and 022 applied:
+ * <p>Runs in Jenkins' integration stage; locally, with a database from setup-db.ps1 and 023 applied:
  * {@code mvn -B -pl services/reporting-service -am -Dspring.profiles.active=postgres-test
  * -Dtest=OvernightRunsIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test}.
  */

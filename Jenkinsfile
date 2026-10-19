@@ -318,7 +318,7 @@ pipeline {
                     # The tests below log in as lemarket_app, which 016 creates and restricts.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
                     # reporting-service validates its entities at startup, report_runs included.
-                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/022_report_runs.sql
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/023_report_runs.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to buy-sell-service: its integration tests

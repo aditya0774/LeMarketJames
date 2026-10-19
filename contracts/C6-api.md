@@ -602,7 +602,7 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 
 The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in reporting-service's [README](../services/reporting-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
 
-Unlike the other reports, it reads the service's own `report_runs` table ([022](../database/schema/022_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+Unlike the other reports, it reads the service's own `report_runs` table ([023](../database/schema/023_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
 
 **Parameters:** none.
 

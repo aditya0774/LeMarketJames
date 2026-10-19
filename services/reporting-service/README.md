@@ -109,7 +109,7 @@ the staff app's Analyst dashboard.
 | `OvernightReportJob` | One overnight report. Every Spring bean of this type runs each night; a real report joins by adding a bean. Today the only one is `StubOvernightReportJob`. |
 | `OvernightScheduleConfig` + `DailyTrigger` | Two triggers a night in the reports time zone, from C5: `lmj.reports.overnight-run-time` (02:00) starts the runs, `lmj.reports.ready-by` (07:00) is the deadline. The service refuses to start unless the run time is before the ready-by time. |
 | `OvernightRunner` | A night's runs: schedules one run per report for the trading day before, then runs them one after another (the pool is small), and records each as READY, LATE or FAILED. At the deadline it marks LATE every run still waiting or running; those carry on. |
-| `ReportRunWriter` | The service's only writer, to `report_runs` ([022](../../database/schema/022_report_runs.sql)) only (rule 5). |
+| `ReportRunWriter` | The service's only writer, to `report_runs` ([023](../../database/schema/023_report_runs.sql)) only (rule 5). |
 | `OvernightReportsService` + controller | The list: the last 30 nights, most recent first. |
 
 - **Once a night.** `UNIQUE (report_name, run_date)` means a restart or a second trigger never runs a report twice for the same night.

@@ -471,15 +471,15 @@ psql -h localhost -U lemarket -d lemarket -v ON_ERROR_STOP=1 -f database/schema/
 A database whose stored quotes have drifted far from its seeded fills (a long-running local one)
 gets a steep line between the last fill and today; a fresh database does not.
 
-## 022 — Overnight report runs
+## 023 — Overnight report runs
 
-`schema/022_report_runs.sql` adds `report_runs`: one row per overnight report per night, with its
+`schema/023_report_runs.sql` adds `report_runs`: one row per overnight report per night, with its
 status, when it was ready and why it failed (LMKT-45,
 [C6](../contracts/C6-api.md#get-apiv1reportsovernight)). Apply it before starting
 reporting-service: it runs with `ddl-auto=validate` and will not start without the table.
 
 ```powershell
-Get-Content database/schema/022_report_runs.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+Get-Content database/schema/023_report_runs.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
 ```
 
 The migration is idempotent; new Docker databases apply it automatically. `lemarket_app` needs no

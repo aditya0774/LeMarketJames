@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * One overnight run of one report ({@code report_runs}, migration 022). Read here only: every
+ * One overnight run of one report ({@code report_runs}, migration 023). Read here only: every
  * write goes through {@link ReportRunWriter}, which opens the read-write transaction this
  * otherwise read-only service needs, so the entity is immutable to Hibernate.
  */

@@ -1,4 +1,4 @@
--- 022: Overnight report runs (LMKT-45, contracts/C6-api.md "GET /api/v1/reports/overnight")
+-- 023: Overnight report runs (LMKT-45, contracts/C6-api.md "GET /api/v1/reports/overnight")
 --
 -- reporting-service runs the heavy reports overnight and records one row per report per night:
 -- whether it is waiting, running, ready, late or failed, when it was ready, and why it failed. The
