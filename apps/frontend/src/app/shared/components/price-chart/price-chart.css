@@ -1,0 +1,199 @@
+/* The Overview board's value chart. The plot sits 60px from the left for the price labels and
+   28px from the bottom for the dates; the SVG inside is a 100 × 100 box stretched over it. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.pc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pc-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pc-title h2 {
+  margin: 0;
+  font: 500 13px var(--font-body);
+  color: var(--dim);
+  letter-spacing: 0;
+}
+
+.pc-value {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.pc-change {
+  font-size: 12.5px;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.pc-ranges > button {
+  height: 30px;
+  min-width: 44px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.pc-body {
+  position: relative;
+  flex: 1;
+  min-height: var(--chart-height, 220px);
+}
+
+.pc-y {
+  position: absolute;
+  left: 0;
+  width: 52px;
+  text-align: right;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.pc-x {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.pc-x.start {
+  transform: none;
+}
+
+.pc-x.end {
+  transform: translateX(-100%);
+}
+
+.pc-plot,
+.pc-track {
+  position: absolute;
+  left: 60px;
+  right: 8px;
+  top: 8px;
+  bottom: 28px;
+}
+
+.pc-plot {
+  border-left: 1px solid var(--line6);
+  border-bottom: 1px solid var(--line6);
+}
+
+.pc-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pc-grid {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.pc-area {
+  fill: color-mix(in srgb, var(--pri) 7%, transparent);
+  stroke: none;
+}
+
+.pc-line {
+  fill: none;
+  stroke: var(--pri);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.pc-track {
+  cursor: crosshair;
+  border-radius: 4px;
+}
+
+.pc-track:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.pc-cross {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--acc);
+}
+
+.pc-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--pri);
+  border: 2px solid var(--card);
+}
+
+.pc-tip {
+  position: absolute;
+  top: 4px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--tip);
+  border: 1px solid var(--accline);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pc-tip.low {
+  top: auto;
+  bottom: 4px;
+}
+
+.pc-tip-val,
+.pc-tip-time {
+  white-space: nowrap;
+}
+
+.pc-tip-val {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pc-tip-time {
+  font-size: 11.5px;
+  color: var(--dim);
+}
+
+.pc-tip-chg {
+  font-size: 11.5px;
+}
+
+.pc-body .loading,
+.pc-empty {
+  padding: 24px 0;
+}

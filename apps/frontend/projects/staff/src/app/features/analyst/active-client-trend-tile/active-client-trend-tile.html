@@ -1,43 +1,46 @@
-<mat-card class="trend-tile">
-  <mat-card-content>
-    <div class="tile-header">
-      <h2>Active clients, last 30 days</h2>
-      <button mat-button type="button" class="refresh" (click)="refresh()">
-        <mat-icon>refresh</mat-icon> Refresh
-      </button>
+<section class="card trend-tile" aria-labelledby="trend-title">
+  <div class="tile-header">
+    <div>
+      <h2 id="trend-title">Active clients, last 30 days</h2>
+      <p class="report-note">Clients who traded on each day; today counts so far.</p>
+    </div>
+    <button type="button" class="btn btn-outline refresh" (click)="refresh()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" /></svg>
+      Refresh
+    </button>
+  </div>
+
+  @if (loading()) {
+    <p class="status loading">Loading…</p>
+  } @else if (error()) {
+    <p class="status error" role="alert">Could not load the active-client trend. Use Refresh to retry.</p>
+  } @else if (data(); as d) {
+    <p class="mono range">{{ d.startDate }} – {{ d.endDate }}</p>
+    <div class="figures">
+      <!-- The space sits inside the unit text: Angular drops whitespace between tags. -->
+      <p class="latest"><span class="mono">{{ latest() | number }}</span><span class="unit"> clients traded today so far</span></p>
+      <p class="peak"><span class="mono">Peak {{ chart().maximum | number }}</span><span class="unit"> in the window</span></p>
     </div>
 
-    @if (loading()) {
-      <p class="status loading">Loading…</p>
-    } @else if (error()) {
-      <p class="status error" role="alert">Could not load the active-client trend. Use Refresh to retry.</p>
-    } @else if (data(); as d) {
-      <p class="range">{{ d.startDate }} – {{ d.endDate }}</p>
-      <div class="figures">
-        <p class="latest">{{ latest() | number }} <span class="unit">clients traded today so far</span></p>
-        <p class="peak">Peak {{ chart().maximum | number }} <span class="unit">in the window</span></p>
-      </div>
-
-      @if (chart().maximum === 0) {
-        <p class="empty">No trades in this window.</p>
-      }
-
-      <svg class="chart" [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none"
-           role="img"
-           [attr.aria-label]="'Active clients per day from ' + d.startDate + ' to ' + d.endDate + ', ' + latest() + ' today, peak ' + chart().maximum">
-        <line class="baseline" x1="0" [attr.x2]="chartWidth" [attr.y1]="chartHeight" [attr.y2]="chartHeight" />
-        @for (bar of chart().bars; track bar.date) {
-          <rect class="bar" [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height">
-            <title>{{ bar.date }}: {{ bar.activeClients }} active clients</title>
-          </rect>
-        }
-      </svg>
-      <div class="axis">
-        <span>{{ d.startDate }}</span>
-        <span>{{ d.endDate }}</span>
-      </div>
-
-      <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
+    @if (chart().maximum === 0) {
+      <p class="empty">No trades in this window.</p>
     }
-  </mat-card-content>
-</mat-card>
+
+    <svg class="chart" [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none"
+         role="img"
+         [attr.aria-label]="'Active clients per day from ' + d.startDate + ' to ' + d.endDate + ', ' + latest() + ' today, peak ' + chart().maximum">
+      <line class="baseline" x1="0" [attr.x2]="chartWidth" [attr.y1]="chartHeight" [attr.y2]="chartHeight" />
+      @for (bar of chart().bars; track bar.date) {
+        <rect class="bar" [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height">
+          <title>{{ bar.date }}: {{ bar.activeClients }} active clients</title>
+        </rect>
+      }
+    </svg>
+    <div class="axis mono">
+      <span>{{ d.startDate }}</span>
+      <span>{{ d.endDate }}</span>
+    </div>
+
+    <p class="refreshed">Last refreshed {{ d.generatedAt | date: 'medium' }}</p>
+  }
+</section>

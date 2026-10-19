@@ -28,3 +28,20 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
     throw new Error(`Staff login failed: ${response.status()} ${await response.text()}`);
   }
 }
+
+/** The heading of the page a refused role is sent to. */
+export const ACCESS_DENIED_HEADING = "You don't have access to this page";
+
+/** Logs out the way staff do: "Log out" sits in the account menu behind the avatar button. */
+export async function signOut(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+}
+
+/** The analyst workspace tabs, as named on the tab bar. */
+export type AnalystTab = 'Volume' | 'By period' | 'By stock' | 'By segment' | 'Overnight';
+
+/** Opens an analyst report the way an analyst does, through the tab bar. */
+export async function openAnalystTab(page: Page, tab: AnalystTab): Promise<void> {
+  await page.getByRole('navigation', { name: 'Analyst reports' }).getByRole('link', { name: tab, exact: true }).click();
+}

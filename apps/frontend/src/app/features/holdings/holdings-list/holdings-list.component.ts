@@ -1,22 +1,24 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { HoldingsService, ErrorInfo } from '@app/core/holdings/holdings.service';
+import { Component, OnInit, inject } from '@angular/core';
+import { AsyncPipe, CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { HoldingsService } from '@app/core/holdings/holdings.service';
+import { allocation, allocationColor, portfolioTotals } from '@app/core/holdings/portfolio-totals';
 import { Auth } from '@app/core/auth/auth';
+import { InstrumentCatalog } from '@app/core/market/instrument-catalog';
 import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model';
+import { SignedCurrencyPipe } from '@app/shared/pipes/signed-currency.pipe';
 
 /**
- * Holdings Display Component
- * 
+ * Holdings Display Component (the Holdings tab)
+ *
+ * Laid out like the redesign's Holdings board: how the money is split across stocks, then one row
+ * per stock grouped into what was paid, what it is worth now and the gain or loss, with a totals
+ * row. Selecting a row opens that stock's trade history.
+ *
  * AC1: Unauthorized data access prevented
  * - Detects 403 errors and shows safe message: "You do not have permission to view this account."
  * - Never leaks sensitive data (account details, database errors)
- * 
+ *
  * AC2: Requests scoped to authenticated user
  * - Gets accountId from Auth service (not hardcoded or passed in)
  * - Passes authenticated user context to HoldingsService
@@ -25,18 +27,8 @@ import { HoldingDto, HoldingsResponse } from '@app/shared/models/holdings.model'
 @Component({
   selector: 'app-holdings-list',
   templateUrl: './holdings-list.component.html',
-  styleUrls: ['./holdings-list.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    DecimalPipe,
-    MatProgressSpinnerModule,
-    MatButtonModule,
-    MatTableModule,
-    MatCardModule,
-    MatIconModule
-  ]
+  styleUrl: './holdings-list.component.css',
+  imports: [AsyncPipe, RouterLink, CurrencyPipe, DecimalPipe, SignedCurrencyPipe],
 })
 export class HoldingsListComponent implements OnInit {
   // Use getters to access service signals (avoids initialization order issues)
@@ -56,8 +48,14 @@ export class HoldingsListComponent implements OnInit {
     return this.auth.currentUser;
   }
   
-  // For template
+  /** The holding figures each row shows, in column order. */
   displayedColumns: string[] = ['symbol', 'quantity', 'averageCost', 'currentPrice', 'totalCost', 'currentValue', 'gainLoss', 'gainLossPercent'];
+
+  private readonly catalog = inject(InstrumentCatalog);
+
+  protected readonly color = allocationColor;
+  protected readonly totalsOf = portfolioTotals;
+  protected readonly slicesOf = allocation;
 
   constructor(
     private readonly holdingsService: HoldingsService,
@@ -66,7 +64,18 @@ export class HoldingsListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Only for company names under each symbol; a failure just leaves them blank.
+    this.catalog.load().catch(() => undefined);
     this.loadHoldings();
+  }
+
+  /** Largest holding first, matching the split bar above the table. */
+  protected sorted(holdings: readonly HoldingDto[] | undefined): HoldingDto[] {
+    return [...(holdings ?? [])].sort((a, b) => b.currentValue - a.currentValue);
+  }
+
+  protected nameFor(symbol: string): string {
+    return this.catalog.bySymbol(symbol)?.name ?? '';
   }
 
   /**

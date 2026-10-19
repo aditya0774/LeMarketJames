@@ -186,9 +186,11 @@ describe('ActivityByClientSegment Component', () => {
       fixture.detectChanges();
       httpTestingController.expectOne((r) => r.url.includes('/api/v1/reports/activity')).flush({ success: true, data: mockSegmentData });
 
+      // Local midnight, as the date picker gives. new Date('2026-10-01') would be UTC midnight,
+      // which is still the previous day west of UTC.
       component.dateRangeForm.patchValue({
-        startDate: new Date('2026-10-01'),
-        endDate: new Date('2026-10-07'),
+        startDate: new Date(2026, 9, 1),
+        endDate: new Date(2026, 9, 7),
       });
       component['onDateRangeChange']();
 
@@ -215,8 +217,8 @@ describe('ActivityByClientSegment Component', () => {
       ];
 
       component.dateRangeForm.patchValue({
-        startDate: new Date('2026-09-01'),
-        endDate: new Date('2026-09-30'),
+        startDate: new Date(2026, 8, 1),
+        endDate: new Date(2026, 8, 30),
       });
       component['onDateRangeChange']();
 

@@ -1,22 +1,26 @@
 package com.lemarketjames.market.service;
 
 import com.lemarketjames.market.entity.MarketQuoteEntity;
+import com.lemarketjames.market.entity.PriceHistoryEntity;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.PriceCandle;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.repository.InstrumentMarketParamsRepository;
 import com.lemarketjames.market.repository.MarketQuoteRepository;
 import com.lemarketjames.market.repository.PriceCandleRepository;
+import com.lemarketjames.market.repository.PriceHistoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -47,6 +51,9 @@ class MarketPersistenceServiceTest {
 
     @Mock
     private PriceCandleRepository candleRepository;
+
+    @Mock
+    private PriceHistoryRepository historyRepository;
 
     @InjectMocks
     private MarketPersistenceService service;
@@ -345,6 +352,43 @@ class MarketPersistenceServiceTest {
         // Assert
         verify(quoteRepository).saveAll(any());
         verify(candleRepository).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("Should file each instrument's bar for its trading day so far")
+    @SuppressWarnings("unchecked")
+    void testSave_WritesTodaysDailyBar() {
+        MarketInstrument instrument = createTestInstrument();
+        LocalDate day = LocalDate.of(2026, 10, 5);
+        QuoteSnapshot snapshot = new QuoteSnapshot(instrument, 100.5, 100.0, 101.0, 99.0, 102.0, 98.5,
+                97.0, 1234L, TEST_INSTANT, day);
+        when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
+
+        service.save(List.of(snapshot), Collections.emptyList());
+
+        ArgumentCaptor<List<PriceHistoryEntity>> saved = ArgumentCaptor.forClass(List.class);
+        verify(historyRepository).saveAll(saved.capture());
+        PriceHistoryEntity bar = saved.getValue().get(0);
+        assertEquals(TEST_INSTRUMENT_ID, bar.getInstrumentId());
+        assertEquals(day, bar.getTradingDate());
+        assertEquals(new BigDecimal("99.0000"), bar.getOpenPrice());
+        assertEquals(new BigDecimal("102.0000"), bar.getHighPrice());
+        assertEquals(new BigDecimal("98.5000"), bar.getLowPrice());
+        assertEquals(new BigDecimal("100.5000"), bar.getClosePrice());
+        assertEquals(1234L, bar.getVolume());
+    }
+
+    @Test
+    @DisplayName("Should skip the daily bar for a snapshot without a trading date")
+    @SuppressWarnings("unchecked")
+    void testSave_SkipsUndatedSnapshot() {
+        when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
+
+        service.save(List.of(createTestSnapshot(createTestInstrument())), Collections.emptyList());
+
+        ArgumentCaptor<List<PriceHistoryEntity>> saved = ArgumentCaptor.forClass(List.class);
+        verify(historyRepository).saveAll(saved.capture());
+        assertTrue(saved.getValue().isEmpty());
     }
 
     // ========== Helper Methods ==========

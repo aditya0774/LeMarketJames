@@ -1,58 +1,67 @@
 <div class="by-stock-detail-container">
-  <!-- Back Navigation -->
-  <div class="back-button-wrapper">
-    <button mat-icon-button (click)="goBackToHoldings()" class="back-button" title="Back to Holdings">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
+  <button type="button" class="back-link back-button" (click)="goBackToHoldings()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+    Back to holdings
+  </button>
+
+  <div class="detail-head">
+    <div class="detail-title">
+      <span class="eyebrow">Trade history</span>
+      <h1><span class="mono">{{ selectedSymbol() }}</span><span class="name"> {{ companyName() }}</span></h1>
+    </div>
+    <div class="detail-actions">
+      <button type="button" class="btn btn-primary" (click)="tradeThisStock()">Trade {{ selectedSymbol() }}</button>
+      @if (ownedSymbols().length > 1) {
+        <label class="switch">
+          Switch stock
+          <select class="in in-sm" (change)="switchStock($any($event.target).value)">
+            @for (symbol of ownedSymbols(); track symbol) {
+              <option [value]="symbol" [selected]="symbol === selectedSymbol()">{{ symbol }} · {{ nameOf(symbol) }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
   </div>
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading()" class="state-container loading-state">
-    <mat-spinner [diameter]="48"></mat-spinner>
-    <p>Loading trades for {{ selectedSymbol() }}...</p>
-  </div>
+  @if (position(); as p) {
+    <section class="position" aria-label="Position summary">
+      <div><span>Shares you own</span><b class="mono">{{ p.quantity | number: '1.0-4' }}</b></div>
+      <div><span>Avg. paid per share</span><b class="mono">{{ p.averageCost | currency: 'USD' }}</b></div>
+      <div><span>Worth now</span><b class="mono">{{ p.currentValue | currency: 'USD' }}</b></div>
+      <div>
+        <span>Gain / loss</span>
+        <b class="mono" [class.up]="p.gainLoss > 0" [class.down]="p.gainLoss < 0">{{ p.gainLoss | signedCurrency }}</b>
+      </div>
+    </section>
+  }
 
-  <!-- Error State -->
-  <ng-container *ngIf="hasError()">
-    <mat-card class="state-container error-state">
-      <mat-card-content>
-        <h3>Unable to Load Trades</h3>
-        <p class="error-message">{{ error()?.message }}</p>
-        <button 
-          mat-raised-button 
-          color="primary" 
-          (click)="retry()"
-          class="retry-button">
-          Try Again
-        </button>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
+  @if (isLoading()) {
+    <output class="card loading"><span class="spinner"></span>Loading trades for {{ selectedSymbol() }}…</output>
+  }
 
-  <!-- Empty State -->
-  <ng-container *ngIf="hasNoTrades()">
-    <mat-card class="state-container empty-state">
-      <mat-card-content>
-        <h3>No Trading Activity</h3>
-        <p>There are no trades recorded for {{ selectedSymbol() }}.</p>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
+  @if (hasError()) {
+    <div class="card state-card error-state">
+      <h2>Unable to Load Trades</h2>
+      <p class="error-message">{{ error()?.message }}</p>
+      <button type="button" class="btn btn-outline retry-button" (click)="retry()">Try Again</button>
+    </div>
+  }
 
-  <!-- Success State: Trades Table -->
-  <ng-container *ngIf="!isLoading() && !hasError() && trades().length > 0">
-    <mat-card class="by-stock-card">
-      <mat-card-header>
-        <h2>{{ selectedSymbol() }} - Trade History</h2>
-      </mat-card-header>
+  @if (hasNoTrades()) {
+    <div class="card state-card empty-state">
+      <h2>No Trading Activity</h2>
+      <p>There are no trades recorded for {{ selectedSymbol() }}.</p>
+    </div>
+  }
 
-      <mat-card-content>
-        <!-- Trades Table -->
-        <app-by-stock-trades-table 
-          [trades]="trades()"
-          [selectedSymbol]="selectedSymbol()">
-        </app-by-stock-trades-table>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
+  @if (!isLoading() && !hasError() && trades().length > 0) {
+    <section class="card by-stock-card" [attr.aria-label]="selectedSymbol() + ' trades'">
+      <div class="card-head">
+        <h2>Completed trades</h2>
+        <span>Select a column to sort</span>
+      </div>
+      <app-by-stock-trades-table [trades]="trades()" [selectedSymbol]="selectedSymbol()" />
+    </section>
+  }
 </div>

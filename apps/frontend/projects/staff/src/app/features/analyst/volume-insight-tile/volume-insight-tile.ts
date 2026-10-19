@@ -3,12 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { interval } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
 import { VolumeInsightService } from '../../../shared/services/volume-insight.service';
@@ -40,11 +37,11 @@ function newCard(key: string, label: string, request: VolumeRangeRequest): Card 
   selector: 'staff-volume-insight-tile',
   imports: [
     DatePipe, DecimalPipe, NgTemplateOutlet, ReactiveFormsModule,
-    MatButtonModule, MatCardModule, MatDatepickerModule, MatFormFieldModule,
-    MatIconModule, MatInputModule, MatNativeDateModule,
+    MatDatepickerModule, MatFormFieldModule,
+    MatInputModule, MatNativeDateModule,
   ],
   templateUrl: './volume-insight-tile.html',
-  styleUrls: ['./volume-insight-tile.scss'],
+  styleUrl: './volume-insight-tile.css',
 })
 export class VolumeInsightTile {
   private readonly insights = inject(VolumeInsightService);
@@ -107,8 +104,15 @@ export class VolumeInsightTile {
     return change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
   }
 
+  /** The arrow shown before a change; the signed number beside it says the same in words. */
   icon(change: number): string {
-    return { up: 'arrow_upward', down: 'arrow_downward', flat: 'remove' }[this.direction(change)];
+    return { up: '▲', down: '▼', flat: '–' }[this.direction(change)];
+  }
+
+  /** One period's volume as a share of the larger of the two periods, for its bar (0–100). */
+  share(volume: number, other: number): number {
+    const largest = Math.max(volume, other);
+    return largest > 0 ? (volume / largest) * 100 : 0;
   }
 
   private load(key: string, silent: boolean): void {

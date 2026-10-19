@@ -3,14 +3,11 @@ import { Component, OnInit, OnDestroy, computed, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import {
   ReportingService,
@@ -31,7 +28,7 @@ function isOrderedRange(start: Date | null, end: Date | null): boolean {
 @Component({
   selector: 'staff-activity-by-client-segment',
   templateUrl: './activity-by-client-segment.html',
-  styleUrls: ['./activity-by-client-segment.scss'],
+  styleUrl: './activity-by-client-segment.css',
   standalone: true,
   imports: [
     SegmentComparisonCharts,
@@ -42,9 +39,6 @@ function isOrderedRange(start: Date | null, end: Date | null): boolean {
     MatInputModule,
     MatSelectModule,
     MatFormFieldModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatCardModule,
   ],
 })
 export class ActivityByClientSegment implements OnInit, OnDestroy {

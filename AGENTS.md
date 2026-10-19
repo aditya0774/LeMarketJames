@@ -5,7 +5,7 @@
 ## Architecture at a Glance
 
 - **Frontend** (4200): `apps/frontend/src/app` — Angular SPA
-- **Staff frontend** (4201): `apps/frontend/projects/staff/src/app` — separate Angular SPA for staff (Trading Ops, Analyst). A second project in the same Angular workspace as the trading frontend: same `package.json` and toolchain, no shared application code. Its backend entry point is the staff gateway (8090); it never calls the trading gateway. Like the trading frontend it calls `/api` on its own origin, forwarded by its own `proxy.conf.json` (dev server) or `nginx.conf` (Docker).
+- **Staff frontend** (4201): `apps/frontend/projects/staff/src/app` — separate Angular SPA for staff (Trading Ops, Analyst). A second project in the same Angular workspace as the trading frontend: same `package.json` and toolchain. The two share no features, routes or services; the UI building blocks both show the same way (the theme service and the account menu) live once in `apps/frontend/projects/shared-ui`, imported as `@lemarket/shared-ui`. Its backend entry point is the staff gateway (8090); it never calls the trading gateway. Like the trading frontend it calls `/api` on its own origin, forwarded by its own `proxy.conf.json` (dev server) or `nginx.conf` (Docker).
 - **Gateway** (8080): `services/gateway-service` — Spring Cloud Gateway; the only backend entry point for the frontend
 - **Staff gateway** (8090): the same `services/gateway-service` module started with the `staff` profile (`application-staff.yml`) — the only backend entry point for the staff frontend. It routes `/api/v1/reports/**` to `reporting-service`, sign-in, sign-out and `/api/auth/me` to `auth-service`, the Trading Ops trade search and order timeline to `buy-sell-service`, and `/api/v1/surveillance/**` to `surveillance-service`; nothing else. It also gives staff their own session cookie, `staff_jwt`, by renaming the services' `jwt` in both directions ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
 - **Auth service** (8082): `services/auth-service` — registration, login, logout, `/api/auth/me`
@@ -58,7 +58,8 @@ LeMarketJames/
 │   ├── activity-service/    # :8091  Kafka consumer: traded volume per stock
 │   └── core-service/        # :8081
 ├── apps/
-│   ├── frontend/            # Angular workspace: trading SPA (:4200) in src/, staff SPA (:4201) in projects/staff/
+│   ├── frontend/            # Angular workspace: trading SPA (:4200) in src/, staff SPA (:4201) in projects/staff/,
+│   │                        #   UI building blocks both use in projects/shared-ui/ (@lemarket/shared-ui)
 │   └── e2e/                 # Playwright end-to-end tests, run against a live stack
 ├── contracts/               # Shared contracts C1–C7 (read before coding)
 ├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)

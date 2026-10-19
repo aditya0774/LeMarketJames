@@ -67,6 +67,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "include": ["**/*.spec.ts", "../projects/shared-ui/src/**/*.spec.ts"],
             "coverageReporters": ["html", "cobertura", "lcovonly", "text-summary"]
           }
         }

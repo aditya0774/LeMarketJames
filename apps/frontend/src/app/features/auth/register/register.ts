@@ -1,15 +1,15 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { z } from 'zod';
 import { registerSchema, RegisterFormData } from './register.schema';
+import { PASSWORD_RULES, REGISTER_STEPS, US_STATES, stepOfField } from './register-steps';
 import { Auth } from '../../../core/auth/auth';
+import { Brand } from '../../../shared/components/brand/brand';
 
 @Component({
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Brand],
   selector: 'app-register',
-  standalone: true,
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
@@ -18,6 +18,11 @@ import { Auth } from '../../../core/auth/auth';
  * 
  * Handles user registration with comprehensive form validation and error handling.
  * All validation rules are defined in register.schema.ts using the Zod schema validation library.
+ *
+ * The form is the redesign's four-step flow (About you, Home address, Identity & funding,
+ * Sign-in details; see register-steps.ts). Continue checks only the current step's fields, so
+ * nobody sees errors for fields they haven't reached yet; the final submit still checks the whole
+ * schema, and any error, from the schema or the server, sends the user back to its step.
  * 
  * Form Data Structure:
  * - Name fields: firstName (required), middleName (optional), lastName (required)
@@ -41,6 +46,12 @@ export class Register {
   // Error message and submitting state as signals for reactive template updates
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
+
+  protected readonly steps = REGISTER_STEPS;
+  protected readonly states = US_STATES;
+  protected readonly passwordRules = PASSWORD_RULES;
+  /** The step on screen, 1-based. */
+  protected readonly step = signal(1);
 
   constructor(private readonly auth: Auth, private readonly router: Router) {}
 
@@ -207,6 +218,70 @@ export class Register {
     // This field itself is fine, even though other fields in the form are still invalid.
     this.clearFieldError(fieldName);
     return true;
+  }
+
+  /** The form's submit (Enter or the main button): moves on until the last step, then registers. */
+  protected continueOrSubmit(): void {
+    if (this.step() < this.steps.length) {
+      this.nextStep();
+    } else {
+      this.onSubmit();
+    }
+  }
+
+  /** Moves to the next step only when the current step's fields are valid. */
+  nextStep(): boolean {
+    const valid = this.validateStep(this.step());
+    if (valid) {
+      this.step.update((s) => s + 1);
+    }
+    return valid;
+  }
+
+  previousStep(): void {
+    this.step.update((s) => Math.max(1, s - 1));
+  }
+
+  /**
+   * Checks just one step's fields against the schema and shows (or clears) their errors.
+   * Errors in other steps are left alone, so later steps start clean.
+   */
+  validateStep(stepNumber: number): boolean {
+    const fields = this.steps[stepNumber - 1].fields;
+    const result = registerSchema.safeParse(this.registerData);
+    const issues = result.success ? [] : result.error.issues;
+    let valid = true;
+
+    for (const field of fields) {
+      const issue = issues.find((i) => i.path[0] === field);
+      if (issue) {
+        this.validationErrors[field] = issue.message;
+        valid = false;
+      } else {
+        this.clearFieldError(field);
+      }
+    }
+    return valid;
+  }
+
+  /** "Experienced" is offered only from a $100,000 deposit, the same rule as the schema. */
+  selectExperience(level: RegisterFormData['investmentExperience']): void {
+    if (level === 'experienced' && !this.isExperiencedAllowed()) {
+      return;
+    }
+    this.registerData.investmentExperience = level;
+    this.clearFieldError('investmentExperience');
+  }
+
+  /** Sends the user to the earliest step that has an error, so they can see what to fix. */
+  private goToFirstErrorStep(): void {
+    const errorSteps = Object.keys(this.validationErrors)
+      .filter((field) => this.validationErrors[field])
+      .map(stepOfField)
+      .filter((step): step is number => step !== null);
+    if (errorSteps.length) {
+      this.step.set(Math.min(...errorSteps));
+    }
   }
 
   /**
@@ -395,6 +470,7 @@ export class Register {
         this.registerData.investmentExperience = 'beginner';
       }
 
+      this.goToFirstErrorStep();
       return;
     }
 
@@ -432,6 +508,7 @@ export class Register {
           const body = error?.error;
           if (body?.errors) {
             this.validationErrors = body.errors;
+            this.goToFirstErrorStep();
           } else {
             this.errorMessage.set(body?.message ?? 'Registration failed. Please try again.');
           }

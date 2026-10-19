@@ -1,0 +1,59 @@
+<div class="pc-head">
+  <div class="pc-title">
+    <h2>{{ heading() }}</h2>
+    @if (latest() !== null && !loading() && !error()) {
+      @if (showValue()) {
+        <span class="mono pc-value">{{ money(latest()!) }}</span>
+      }
+      <span class="mono pc-change" [class.up]="change() >= 0" [class.down]="change() < 0">{{ changeLine() }}</span>
+    }
+  </div>
+  <fieldset class="seg pc-ranges">
+    <legend class="sr-only">Time range</legend>
+    @for (r of ranges; track r) {
+      <button type="button" class="mono" [attr.aria-pressed]="r === range()" (click)="chooseRange(r)">{{ r }}</button>
+    }
+  </fieldset>
+</div>
+
+<div class="pc-body">
+  @if (loading()) {
+    <output class="loading"><span class="spinner"></span>Chalking up…</output>
+  } @else if (error()) {
+    <div class="alert err" role="alert"><div><b>Couldn't load the chart</b>{{ error() }}</div></div>
+  } @else if (geometry(); as g) {
+    @for (t of g.yLabels; track t.text) {
+      <span class="mono pc-y" [style.top]="'calc(8px + (100% - 36px) * ' + t.at + ')'">{{ t.text }}</span>
+    }
+    @for (t of g.xLabels; track t.at; let first = $first; let last = $last) {
+      <span class="pc-x" [class.start]="first" [class.end]="last && !first" [style.left]="'calc(60px + (100% - 68px) * ' + t.at + ')'">{{ t.text }}</span>
+    }
+    <div class="pc-plot" role="img" [attr.aria-label]="summary()">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="pc-grid" [attr.d]="g.grid" vector-effect="non-scaling-stroke" />
+        <path class="pc-area" [attr.d]="g.area" />
+        <path class="pc-line" [attr.d]="g.line" vector-effect="non-scaling-stroke" />
+      </svg>
+      @if (hover(); as h) {
+        <div class="pc-cross" aria-hidden="true" [style.left.%]="h.x"></div>
+        <div class="pc-dot" aria-hidden="true" [style.left.%]="h.x" [style.top.%]="h.y"></div>
+        <!-- Shifted left by the same share of its own width as the point is across the plot, so it
+             always stays inside the chart, even on a phone. -->
+        <output class="pc-tip" [class.low]="h.low" [style.left.%]="h.x" [style.transform]="'translateX(-' + h.x + '%)'">
+          <span class="mono pc-tip-val">{{ h.value }}</span>
+          <span class="pc-tip-time">{{ h.time }}</span>
+          <span class="mono pc-tip-chg" [class.up]="h.up" [class.down]="!h.up">{{ h.change }}</span>
+        </output>
+      }
+    </div>
+    <!-- Takes the pointer and the keyboard over the plot; the values are announced by the tooltip. -->
+    <div class="pc-track" tabindex="0" aria-label="Explore the chart with the left and right arrow keys"
+         (mousemove)="track($event)" (mouseleave)="clear()" (keydown)="step($event)" (blur)="clear()"></div>
+  } @else {
+    <div class="empty-state pc-empty">
+      <strong>Nothing to chart yet</strong>
+      {{ emptyText() }}
+      <ng-content select="[empty-action]" />
+    </div>
+  }
+</div>

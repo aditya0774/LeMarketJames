@@ -1,46 +1,26 @@
 <div class="app-shell">
-  <!-- Primary navigation. Gold marks the current page; sign-out sits apart at the bottom. -->
-  <aside class="app-rail">
-    <div class="brand">
-      <img src="/lemarket-logo.png" alt="" />
-      <span class="wordmark"><span class="le-accent">Le</span>Market</span>
-    </div>
+  <!-- The redesign's header: brand on the left, the section tabs in the middle, the account menu
+       on the right. The current tab is marked with aria-current, not colour alone. -->
+  <header class="app-head">
+    <app-brand class="app-head-brand" link="/dashboard" />
 
-    <nav class="rail-nav" aria-label="Main">
-      <a class="rail-link" routerLink="/dashboard" routerLinkActive="active" title="Dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="9" rx="1" />
-          <rect x="14" y="3" width="7" height="5" rx="1" />
-          <rect x="14" y="12" width="7" height="9" rx="1" />
-          <rect x="3" y="16" width="7" height="5" rx="1" />
-        </svg>
-        Dashboard
-      </a>
-      <a class="rail-link" routerLink="/holdings" routerLinkActive="active" title="Holdings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M3 7h18v13H3z" />
-          <path d="M8 7V4h8v3" />
-          <path d="M3 12h18" />
-        </svg>
-        Holdings
-      </a>
+    <nav class="seg tabs app-tabs" aria-label="Main">
+      <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
+      <a routerLink="/market" routerLinkActive="active" ariaCurrentWhenActive="page">Market</a>
+      <a routerLink="/holdings" routerLinkActive="active" ariaCurrentWhenActive="page">Holdings</a>
+      <a routerLink="/orders" routerLinkActive="active" ariaCurrentWhenActive="page">Orders</a>
     </nav>
 
-    <div class="rail-foot">
-      <button type="button" class="rail-link" (click)="logout()" title="Log out">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M9 4H5v16h4" />
-          <path d="M16 8l4 4-4 4" />
-          <path d="M20 12H9" />
-        </svg>
-        Log out
-      </button>
+    <div class="app-head-end">
+      <a class="btn btn-primary trade-btn" routerLink="/trade" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        Trade
+      </a>
+      <lm-account-menu [name]="auth.currentUser() ?? ''" detail="Investing account" (loggedOut)="logout()" />
     </div>
-  </aside>
+  </header>
 
-  <div class="app-body">
-    <main class="app-main">
-      <router-outlet />
-    </main>
-  </div>
+  <main class="app-main">
+    <router-outlet />
+  </main>
 </div>

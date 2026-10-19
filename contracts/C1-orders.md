@@ -28,5 +28,5 @@ Every order story codes against the same order shape and lifecycle, so validatio
 ## Mirrors (change together with `OrderStatus`)
 
 - The `orders.order_status` CHECK constraint ([001](../database/schema/001_core_schema.sql)).
-- The frontend `OrderStatus` type ([order.service.ts](../apps/frontend/src/app/core/orders/order.service.ts)) and its open-status list ([order-status.ts](../apps/frontend/src/app/features/dashboard/orders-panel/order-status.ts)).
+- The frontend `OrderStatus` type ([order.service.ts](../apps/frontend/src/app/core/orders/order.service.ts)) and its open-status list ([order-status.ts](../apps/frontend/src/app/core/orders/order-status.ts)).
 - holdings-service's open-status list ([OrderSummary.java](../services/holdings-service/src/main/java/com/lemarketjames/orders/client/OrderSummary.java)).

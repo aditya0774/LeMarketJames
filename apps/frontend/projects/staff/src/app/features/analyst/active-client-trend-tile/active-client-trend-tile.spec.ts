@@ -54,7 +54,7 @@ describe('ActiveClientTrendTile', () => {
 
     expect(el().querySelectorAll('rect.bar').length).toBe(30);
     expect(el().querySelector('.range')!.textContent).toContain('2026-09-15 – 2026-10-14');
-    expect(el().querySelector('svg')!.getAttribute('aria-label')).toContain('peak 29');
+    expect(el().querySelector('svg.chart')!.getAttribute('aria-label')).toContain('peak 29');
   });
 
   it("shows today's count and the peak", async () => {
@@ -83,7 +83,7 @@ describe('ActiveClientTrendTile', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('[role="alert"]')).not.toBeNull();
-    expect(el().querySelector('svg')).toBeNull();
+    expect(el().querySelector('svg.chart')).toBeNull();
   });
 
   it('Refresh asks again', async () => {

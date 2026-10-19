@@ -1,0 +1,117 @@
+<section class="panel orders-panel">
+  <div class="panel-head orders-head">
+    <div class="orders-head-start">
+      <h2 class="sr-only">Orders</h2>
+      <fieldset class="filters">
+        <legend class="sr-only">Show orders by status</legend>
+        @for (f of filters; track f.value) {
+          <button type="button" class="chip" [class.active]="filter() === f.value"
+                  [attr.aria-pressed]="filter() === f.value" (click)="setFilter(f.value)">
+            {{ f.label }}
+          </button>
+        }
+      </fieldset>
+      <span class="live-badge" [class.live]="liveConnection() === 'live'" [class.reconnecting]="liveConnection() === 'reconnecting'">
+        {{ liveConnectionLabel() }}
+      </span>
+    </div>
+
+    <fieldset class="date-filters">
+      <legend class="sr-only">Filter orders by date</legend>
+      <label>Show by
+        <select class="in in-sm" aria-label="Period" [value]="period()" (change)="setPeriod($any($event.target).value)">
+          <option value="day">Day</option>
+          <option value="month">Month</option>
+          <option value="year">Year</option>
+        </select>
+      </label>
+      <label>{{ period() === 'day' ? 'Choose day' : period() === 'month' ? 'Choose month' : 'Choose year' }}
+        <input class="in in-sm" [type]="period() === 'day' ? 'date' : period() === 'month' ? 'month' : 'number'"
+          [attr.min]="period() === 'year' ? 1 : null" [attr.max]="period() === 'year' ? 9999 : null"
+          [value]="dateValue()" (input)="setDate($any($event.target).value)" />
+      </label>
+      <button type="button" class="btn btn-outline btn-sm clear-btn" (click)="clearFilter()">Clear filter</button>
+    </fieldset>
+  </div>
+
+  <!-- A one-line key to the statuses, so a first-time investor can read the table. -->
+  <div class="orders-legend">
+    <b>How orders move:</b>
+    <span><i class="lg-open">Submitted</i> → <i class="lg-open">Accepted</i> → <i class="lg-open">Pending</i> → <i class="lg-up">Filled</i></span>
+    <span><i class="lg-wait">Delayed</i> = waiting for the market to open, still active</span>
+    <span><i class="lg-down">Rejected</i> = didn't go through, reason shown</span>
+    <span class="lg-tz">Dates use your local time zone.</span>
+  </div>
+
+  <div class="panel-scroll">
+    <table aria-label="Orders">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Stock</th>
+          <th>Type</th>
+          <th class="num">Shares</th>
+          <th>Status</th>
+          <th class="num">Filled at</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (dateError()) {
+          <tr><td colspan="6" class="empty-row">{{ dateError() }}</td></tr>
+        } @else if (loading()) {
+          <tr><td colspan="6" class="empty-row">Loading orders…</td></tr>
+        } @else if (error()) {
+          <tr><td colspan="6" class="empty-row">{{ error() }}</td></tr>
+        } @else {
+          @for (row of pageRows(); track row.order.orderId) {
+            <tr [attr.data-order-id]="row.order.orderId">
+              <td class="mono when">{{ row.submittedAt | date: 'MMM d, y, HH:mm:ss z' }}</td>
+              <td><span class="sym">{{ row.symbol }}</span><span class="sym-name"> {{ row.instrumentName }}</span></td>
+              <td>
+                <span class="pill" [class.pill-buy]="row.order.orderType === 'BUY'" [class.pill-sell]="row.order.orderType === 'SELL'">
+                  {{ row.order.orderType }}
+                </span>
+              </td>
+              <td class="num mono">{{ row.order.quantity | number: '1.0-4' }}</td>
+              <td>
+                <div class="status-line">
+                  <span class="pill {{ statusPillClass(row.order.orderStatus) }}" [attr.title]="row.rejectionReason || null">
+                    {{ statusLabel(row.order.orderStatus) }}
+                  </span>
+                  <span class="steps" aria-hidden="true">
+                    @for (s of [1, 2, 3, 4]; track s) {
+                      <i [class]="stepClass(row, s)"></i>
+                    }
+                  </span>
+                </div>
+                <div class="status-note">{{ noteFor(row) }}</div>
+              </td>
+              <td class="num mono">{{ fillPriceFor(row) != null ? (fillPriceFor(row) | currency: 'USD') : '—' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">
+                {{ dateValue() ? 'No orders in this period' : orders().length ? 'No orders match this filter.' : 'No orders yet. Your first trade is the opening tip.' }}
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (!dateError() && !loading() && !error() && filtered().length) {
+    <div class="panel-foot">
+      <div class="pg-info">Showing {{ rangeStart() }}–{{ rangeEnd() }}@if (displayTotal() !== null) { of {{ displayTotal() }}} orders</div>
+      <div class="pg-row">
+        <button type="button" class="pg-btn" aria-label="Previous page" [disabled]="disablePrevious()" (click)="goToPage(activePage() - 1)">&lsaquo;</button>
+        @if (!isServerPagination()) {
+          @for (p of pages(); track p) {
+            <button type="button" class="pg-btn" [class.active]="p === page()" [attr.aria-current]="p === page() ? 'page' : null" (click)="goToPage(p)">{{ p }}</button>
+          }
+        }
+        <button type="button" class="pg-btn" aria-label="Next page" [disabled]="disableNext()" (click)="goToPage(activePage() + 1)">&rsaquo;</button>
+      </div>
+    </div>
+  }
+</section>

@@ -1,14 +1,13 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, computed, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { signal } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { TradeService } from '../../../core/trades/trade.service';
+import { HoldingsService } from '../../../core/holdings/holdings.service';
+import { InstrumentCatalog } from '../../../core/market/instrument-catalog';
 import { Auth } from '../../../core/auth/auth';
+import { HoldingDto } from '../../../shared/models/holdings.model';
 import { TradeDto } from '../../../shared/models/trade.model';
+import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
 import { ByStockTradesTable } from './by-stock-trades-table';
 
 /**
@@ -23,6 +22,9 @@ import { ByStockTradesTable } from './by-stock-trades-table';
  * - Display trades in sortable table
  * - Back navigation to holdings list
  * - Error and loading state handling
+ * - From the redesign's Holding board: the position summary (shares, average paid, worth now,
+ *   gain/loss), a "Trade" button for this stock and a switcher between the stocks the user owns.
+ *   These come from the holdings list; if it can't be loaded they are simply left out.
  * 
  * AC1: Unauthorized data access prevented
  * - Scoped to authenticated user (accountId from Auth service)
@@ -32,22 +34,16 @@ import { ByStockTradesTable } from './by-stock-trades-table';
 @Component({
   selector: 'app-by-stock-detail',
   templateUrl: './by-stock-detail.component.html',
-  styleUrls: ['./by-stock-detail.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatProgressSpinnerModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    ByStockTradesTable
-  ]
+  styleUrl: './by-stock-detail.component.css',
+  imports: [CurrencyPipe, DecimalPipe, SignedCurrencyPipe, ByStockTradesTable]
 })
 export class ByStockDetailComponent implements OnInit {
   private readonly tradeService = inject(TradeService);
   private readonly auth = inject(Auth);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly holdingsService = inject(HoldingsService);
+  private readonly catalog = inject(InstrumentCatalog);
 
   // State signals
   protected readonly trades = signal<TradeDto[]>([]);
@@ -59,7 +55,15 @@ export class ByStockDetailComponent implements OnInit {
   protected readonly hasNoTrades = computed(() => !this.isLoading() && !this.error() && this.trades().length === 0);
   protected readonly hasError = computed(() => !this.isLoading() && !!this.error());
 
+  private readonly holdings = signal<HoldingDto[]>([]);
+  /** This stock's line from the holdings list, for the summary; null if not held or not loaded. */
+  protected readonly position = computed(() => this.holdings().find((h) => h.symbol === this.selectedSymbol()) ?? null);
+  protected readonly ownedSymbols = computed(() => this.holdings().map((h) => h.symbol).sort());
+  protected readonly companyName = computed(() => this.nameOf(this.selectedSymbol() ?? ''));
+
   ngOnInit(): void {
+    this.catalog.load().catch(() => undefined);
+    this.loadHoldings();
     // Extract symbol from route parameter and load trades
     this.route.params.subscribe(params => {
       const symbol = params['symbol'];
@@ -135,6 +139,31 @@ export class ByStockDetailComponent implements OnInit {
     const symbol = this.selectedSymbol();
     if (symbol) {
       this.loadTrades(symbol);
+    }
+  }
+
+  protected nameOf(symbol: string): string {
+    return this.catalog.bySymbol(symbol)?.name ?? '';
+  }
+
+  /** Opens the trade page with this stock already chosen. */
+  protected tradeThisStock(): void {
+    void this.router.navigate(['/trade'], { queryParams: { symbol: this.selectedSymbol() } });
+  }
+
+  protected switchStock(symbol: string): void {
+    void this.router.navigate(['/holdings', symbol]);
+  }
+
+  private loadHoldings(): void {
+    try {
+      this.holdingsService.getOwnHoldings().subscribe({
+        next: (response) => this.holdings.set(response.holdings ?? []),
+        // The summary and switcher are extras; the trade history still shows without them.
+        error: () => this.holdings.set([]),
+      });
+    } catch {
+      this.holdings.set([]);
     }
   }
 

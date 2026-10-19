@@ -1,0 +1,83 @@
+<section class="panel market-panel">
+  <div class="panel-head">
+    <div>
+      <h2>All stocks</h2>
+      <div class="sub-s">Every stock you can trade, with live prices. Select one to buy or sell.</div>
+    </div>
+    <div class="in-wrap market-filter">
+      <span class="in-prefix">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+      </span>
+      <input class="in in-sm" type="search" placeholder="Search name or symbol" aria-label="Filter stocks" autocomplete="off"
+             [value]="filter()" (input)="filter.set($any($event.target).value)" />
+    </div>
+  </div>
+
+  <div class="panel-scroll">
+    <table aria-label="Live stock prices">
+      <thead>
+        <tr>
+          @if (watched()) {
+            <th class="star-col"><span class="sr-only">Watch</span></th>
+          }
+          <th>Stock</th>
+          <th class="num">Price</th>
+          <th class="num">Today</th>
+          <th>Today's trend</th>
+          <th><span class="sr-only">Action</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of visibleRows(); track row.instrument.symbol) {
+          @let q = row.quote;
+          <!-- The whole row opens the trade for that stock; Enter does the same from the keyboard. -->
+          <tr class="clickable" tabindex="0" [attr.aria-label]="'Trade ' + row.instrument.symbol"
+              (click)="selectSymbol.emit(row.instrument.symbol)" (keydown.enter)="selectSymbol.emit(row.instrument.symbol)">
+            @if (watched(); as watching) {
+              @let on = watching.has(row.instrument.symbol);
+              <!-- The star is its own control: it must not also open the trade, so the event stops here. -->
+              <td class="star-col">
+                <button type="button" class="star" [class.on]="on" [attr.aria-pressed]="on"
+                        [attr.aria-label]="(on ? 'Remove ' : 'Add ') + row.instrument.symbol + (on ? ' from' : ' to') + ' watchlist'"
+                        (click)="$event.stopPropagation(); toggleWatch.emit(row.instrument.symbol)"
+                        (keydown.enter)="$event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z" />
+                  </svg>
+                </button>
+              </td>
+            }
+            <td>
+              <div class="stock-cell">
+                <span class="sym">{{ row.instrument.symbol }}</span>
+                <span class="stock-name">{{ row.instrument.name }}</span>
+                @if (!row.instrument.tradable) {
+                  <span class="tag">Not tradable</span>
+                }
+              </div>
+            </td>
+            <td class="num mono">{{ q ? (q.price | currency: 'USD') : '—' }}</td>
+            <td class="num mono nowrap" [class.up]="q && q.priceChange >= 0" [class.down]="q && q.priceChange < 0">
+              @if (q) {
+                {{ q.priceChange >= 0 ? '▲' : '▼' }}
+                {{ (q.priceChangePercent < 0 ? -q.priceChangePercent : q.priceChangePercent) | number: '1.2-2' }}%
+              } @else {
+                —
+              }
+            </td>
+            <td><app-sparkline size="row" [values]="row.history" [label]="row.instrument.symbol + ' price today'" /></td>
+            <td class="num"><span class="btn btn-soft btn-sm trade-link">Trade</span></td>
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="watched() ? 6 : 5" class="empty-row">No stocks match “{{ filter() }}”.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="panel-foot">
+    <span>Showing <span class="mono">{{ visibleRows().length }}</span> of <span class="mono">{{ rows().length }}</span> stocks</span>
+  </div>
+</section>

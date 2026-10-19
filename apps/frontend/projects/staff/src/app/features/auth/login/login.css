@@ -1,21 +1,100 @@
-.field-label-row {
+/* The redesign's "Staff log in" board: an introduction panel beside the form. */
+
+.staff-login {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.intro {
+  flex: 1 1 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 40px clamp(16px, 4vw, 56px);
+  background: var(--bg2b);
+  border-right: 1px solid var(--lhdr);
+}
+
+.intro-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 440px;
+}
+
+.intro h1 {
+  font-size: 40px;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.intro p {
+  margin: 0;
+  font-size: var(--font-md);
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.roles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.roles li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card);
+  font-size: var(--font-base);
+  color: var(--dim);
 }
 
-.field-label-row label {
-  margin-bottom: 0;
-}
-
-.pw-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
+.roles b {
   font-weight: 600;
-  color: var(--gold);
+  color: var(--text);
+}
+
+.roles svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  stroke: var(--acc);
+}
+
+.audited {
+  font-size: var(--font-xs);
+  color: var(--faint2);
+}
+
+.form-side {
+  flex: 1 1 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px var(--space-md);
+}
+
+.form-side .auth-card {
+  max-width: 400px;
+}
+
+.auth-title h2 {
+  font-size: var(--font-2xl);
+}
+
+.auth-title p {
+  font-size: var(--font-base);
 }

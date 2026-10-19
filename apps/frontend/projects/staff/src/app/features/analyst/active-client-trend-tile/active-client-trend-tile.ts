@@ -2,9 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { interval } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 
 import { ActiveClientTrendService } from '../../../shared/services/active-client-trend.service';
 import { ActiveClientTrendResponse } from '../../../shared/models/active-client-trend.model';
@@ -14,9 +11,9 @@ import { AUTO_REFRESH_MS } from '../volume-insight-tile/volume-insight-tile';
 /** Insight tile: distinct clients who traded on each of the last 30 days (LMKT-48). */
 @Component({
   selector: 'staff-active-client-trend-tile',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatCardModule, MatIconModule],
+  imports: [DatePipe, DecimalPipe],
   templateUrl: './active-client-trend-tile.html',
-  styleUrls: ['./active-client-trend-tile.scss'],
+  styleUrl: './active-client-trend-tile.css',
 })
 export class ActiveClientTrendTile {
   private readonly trend = inject(ActiveClientTrendService);

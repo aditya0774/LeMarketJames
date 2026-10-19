@@ -25,7 +25,7 @@ test.describe('Staff account cut off mid-session', () => {
 
       await signIn(page, staff);
       await expect(page).toHaveURL(/\/analyst$/);
-      await expect(page.getByRole('heading', { name: 'Analyst Dashboard' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Trading volume', exact: true })).toBeVisible();
 
       await setStaffActive(db, staff.username, false);
 
@@ -41,7 +41,7 @@ test.describe('Staff account cut off mid-session', () => {
       await expect(page).toHaveURL(/\/login\?reason=inactive$/);
       await expect(page.getByRole('alert')).toContainText('Account not active');
       await expect(page.getByRole('alert')).toContainText(INACTIVE_MESSAGE);
-      await expect(page.getByRole('heading', { name: 'Analyst Dashboard' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Trading volume', exact: true })).toHaveCount(0);
 
       // The cookie no longer opens the app either.
       await page.goto('/analyst');

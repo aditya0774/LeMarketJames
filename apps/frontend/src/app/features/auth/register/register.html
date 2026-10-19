@@ -1,411 +1,289 @@
-<div class="auth-wrap">
-  <a class="back-link" routerLink="/">&larr; Back</a>
+<div class="reg">
+  <header class="auth-head reg-head">
+    @if (step() === 1) {
+      <a class="back-link" routerLink="/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+        Back
+      </a>
+    } @else {
+      <button type="button" class="back-link reg-back" (click)="previousStep()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+        Back
+      </button>
+    }
+    <app-brand />
+    <span class="auth-head-end">Have an account? <a routerLink="/login">Log in</a></span>
+  </header>
 
-  <div class="auth-brand">
-    <img src="/lemarket-logo.png" alt="LeMarket logo" />
-    <span class="wordmark"><span class="le-accent">Le</span>Market</span>
-  </div>
-
-  <div class="auth-panel wide">
-    <div class="auth-card wide">
-      <h2>Create your account</h2>
-      <div class="sub">A few details to verify your identity and get you trading.</div>
-
-      @if (errorMessage()) {
-        <div class="alert err">
-          <span aria-hidden="true">&#9888;</span>
-          <div><b>Registration failed</b>{{ errorMessage() }}</div>
+  <!-- All validation rules are defined in register.schema.ts using Zod; register-steps.ts splits
+       the fields into the four steps. -->
+  <form method="post" class="reg-form" (ngSubmit)="continueOrSubmit()">
+    <div class="reg-body">
+      <aside class="reg-aside">
+        <div class="reg-intro">
+          <h1>Bring your talents.</h1>
+          <p>Open your account in four short steps — about five minutes.</p>
         </div>
-      }
-
-      <!-- Registration form: collects user identity, address, financial, and security information -->
-      <!-- All validation rules are defined in register.schema.ts using Zod -->
-      <form method="post" (ngSubmit)="onSubmit()">
-        <div class="form-section-title first">Personal information</div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="firstName">First name</label>
-            <input
-              id="firstName"
-              name="firstName"
-              placeholder="Jane"
-              [(ngModel)]="registerData.firstName"
-              (blur)="validateField('firstName')"
-              (input)="clearFieldError('firstName')"
-            />
-            @if (validationErrors['firstName']) {
-              <div class="field-error">{{ validationErrors['firstName'] }}</div>
-            }
-          </div>
-
-          <div class="field">
-            <label for="lastName">Last name</label>
-            <input
-              id="lastName"
-              name="lastName"
-              placeholder="Doe"
-              [(ngModel)]="registerData.lastName"
-              (blur)="validateField('lastName')"
-              (input)="clearFieldError('lastName')"
-            />
-            @if (validationErrors['lastName']) {
-              <div class="field-error">{{ validationErrors['lastName'] }}</div>
-            }
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="middleName">Middle name <span class="opt-tag">Optional</span></label>
-          <input
-            id="middleName"
-            name="middleName"
-            placeholder="Middle name"
-            [(ngModel)]="registerData.middleName"
-            (blur)="validateField('middleName')"
-            (input)="clearFieldError('middleName')"
-          />
-          @if (validationErrors['middleName']) {
-            <div class="field-error">{{ validationErrors['middleName'] }}</div>
-          }
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="dateOfBirth">Date of birth</label>
-            <input
-              id="dateOfBirth"
-              name="dateOfBirth"
-              type="date"
-              [(ngModel)]="registerData.dateOfBirth"
-              (change)="onDateOfBirthChange(registerData.dateOfBirth)"
-              (blur)="validateField('dateOfBirth')"
-            />
-            @if (validationErrors['dateOfBirth']) {
-              <div class="field-error">{{ validationErrors['dateOfBirth'] }}</div>
-            }
-          </div>
-
-          <div class="field">
-            <label for="phoneNumber">Phone number</label>
-            <input
-              id="phoneNumber"
-              name="phoneNumber"
-              type="tel"
-              maxlength="14"
-              placeholder="(555) 123-4567"
-              [(ngModel)]="registerData.phoneNumber"
-              (blur)="validateField('phoneNumber')"
-              (input)="onPhoneInput($event)"
-            />
-            @if (validationErrors['phoneNumber']) {
-              <div class="field-error">{{ validationErrors['phoneNumber'] }}</div>
-            }
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="email">Email address</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="jane@example.com"
-            [(ngModel)]="registerData.email"
-            (blur)="validateField('email')"
-            (input)="clearFieldError('email')"
-          />
-          @if (validationErrors['email']) {
-            <div class="field-error">{{ validationErrors['email'] }}</div>
-          }
-        </div>
-
-        <div class="form-section-title">Home address</div>
-
-        <div class="field">
-          <label for="streetAddress">Street address</label>
-          <input
-            id="streetAddress"
-            name="streetAddress"
-            placeholder="123 Main St"
-            [(ngModel)]="registerData.streetAddress"
-            (blur)="validateField('streetAddress')"
-            (input)="clearFieldError('streetAddress')"
-          />
-          @if (validationErrors['streetAddress']) {
-            <div class="field-error">{{ validationErrors['streetAddress'] }}</div>
-          }
-        </div>
-
-        <div class="field">
-          <label for="apartment">Apartment / unit <span class="opt-tag">Optional</span></label>
-          <input
-            id="apartment"
-            name="apartment"
-            placeholder="Apt, suite, unit"
-            [(ngModel)]="registerData.apartment"
-            (blur)="validateField('apartment')"
-            (input)="clearFieldError('apartment')"
-          />
-          @if (validationErrors['apartment']) {
-            <div class="field-error">{{ validationErrors['apartment'] }}</div>
-          }
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="city">City</label>
-            <input
-              id="city"
-              name="city"
-              placeholder="Springfield"
-              [(ngModel)]="registerData.city"
-              (blur)="validateField('city')"
-              (input)="clearFieldError('city')"
-            />
-            @if (validationErrors['city']) {
-              <div class="field-error">{{ validationErrors['city'] }}</div>
-            }
-          </div>
-
-          <div class="field" style="flex: 0.8">
-            <label for="state">State</label>
-            <select
-              id="state"
-              name="state"
-              [(ngModel)]="registerData.state"
-              (blur)="validateField('state')"
-              (change)="clearFieldError('state')"
+        <ol class="reg-steps" aria-label="Steps">
+          @for (s of steps; track s.label; let i = $index) {
+            <li
+              [class.current]="i + 1 === step()"
+              [class.done]="i + 1 < step()"
+              [attr.aria-current]="i + 1 === step() ? 'step' : null"
             >
-              <option value="">Select a state</option>
-              <option value="Alabama">Alabama</option>
-              <option value="Alaska">Alaska</option>
-              <option value="Arizona">Arizona</option>
-              <option value="Arkansas">Arkansas</option>
-              <option value="California">California</option>
-              <option value="Colorado">Colorado</option>
-              <option value="Connecticut">Connecticut</option>
-              <option value="Delaware">Delaware</option>
-              <option value="Florida">Florida</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Hawaii">Hawaii</option>
-              <option value="Idaho">Idaho</option>
-              <option value="Illinois">Illinois</option>
-              <option value="Indiana">Indiana</option>
-              <option value="Iowa">Iowa</option>
-              <option value="Kansas">Kansas</option>
-              <option value="Kentucky">Kentucky</option>
-              <option value="Louisiana">Louisiana</option>
-              <option value="Maine">Maine</option>
-              <option value="Maryland">Maryland</option>
-              <option value="Massachusetts">Massachusetts</option>
-              <option value="Michigan">Michigan</option>
-              <option value="Minnesota">Minnesota</option>
-              <option value="Mississippi">Mississippi</option>
-              <option value="Missouri">Missouri</option>
-              <option value="Montana">Montana</option>
-              <option value="Nebraska">Nebraska</option>
-              <option value="Nevada">Nevada</option>
-              <option value="New Hampshire">New Hampshire</option>
-              <option value="New Jersey">New Jersey</option>
-              <option value="New Mexico">New Mexico</option>
-              <option value="New York">New York</option>
-              <option value="North Carolina">North Carolina</option>
-              <option value="North Dakota">North Dakota</option>
-              <option value="Ohio">Ohio</option>
-              <option value="Oklahoma">Oklahoma</option>
-              <option value="Oregon">Oregon</option>
-              <option value="Pennsylvania">Pennsylvania</option>
-              <option value="Rhode Island">Rhode Island</option>
-              <option value="South Carolina">South Carolina</option>
-              <option value="South Dakota">South Dakota</option>
-              <option value="Tennessee">Tennessee</option>
-              <option value="Texas">Texas</option>
-              <option value="Utah">Utah</option>
-              <option value="Vermont">Vermont</option>
-              <option value="Virginia">Virginia</option>
-              <option value="Washington">Washington</option>
-              <option value="West Virginia">West Virginia</option>
-              <option value="Wisconsin">Wisconsin</option>
-              <option value="Wyoming">Wyoming</option>
-            </select>
-            @if (validationErrors['state']) {
-              <div class="field-error">{{ validationErrors['state'] }}</div>
-            }
-          </div>
-
-          <div class="field" style="flex: 0.7">
-            <label for="zipCode">ZIP code</label>
-            <input
-              id="zipCode"
-              name="zipCode"
-              maxlength="5"
-              placeholder="62701"
-              [(ngModel)]="registerData.zipCode"
-              (blur)="validateField('zipCode')"
-              (input)="onZipCodeInput($event)"
-            />
-            @if (validationErrors['zipCode']) {
-              <div class="field-error">{{ validationErrors['zipCode'] }}</div>
-            }
-          </div>
-        </div>
-
-        <div class="form-section-title">Investor profile</div>
-
-        <div class="field">
-          <label for="ssn">Social Security Number</label>
-          <input
-            id="ssn"
-            name="ssn"
-            maxlength="11"
-            placeholder="XXX-XX-XXXX"
-            [(ngModel)]="registerData.ssn"
-            (blur)="validateField('ssn')"
-            (input)="onSsnInput($event)"
-          />
-          <div class="hint">
-            Used only to verify your identity, as required by federal brokerage regulations.
-            Encrypted at rest.
-          </div>
-          @if (validationErrors['ssn']) {
-            <div class="field-error">{{ validationErrors['ssn'] }}</div>
+              <span class="mono reg-dot">{{ i + 1 < step() ? '✓' : i + 1 }}</span>
+              <span>{{ s.label }}</span>
+            </li>
           }
+        </ol>
+        <div class="reg-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+          <span>Your details are encrypted. We only ask for what US brokerage rules require.</span>
+        </div>
+      </aside>
+
+      <section class="reg-card">
+        <div class="reg-card-title">
+          <span class="mono">STEP {{ step() }} OF {{ steps.length }}</span>
+          <h2>{{ steps[step() - 1].label }}</h2>
         </div>
 
-        <div class="field-row">
-          <div class="field">
-            <label for="initialDeposit">Initial deposit (USD)</label>
-            <input
-              id="initialDeposit"
-              name="initialDeposit"
-              type="number"
-              min="5000"
-              placeholder="5000"
-              [(ngModel)]="registerData.initialDeposit"
-              (blur)="validateField('initialDeposit')"
-              (input)="onInitialDepositInput()"
-            />
-            <div class="hint">Minimum $5,000</div>
-            @if (validationErrors['initialDeposit']) {
-              <div class="field-error">{{ validationErrors['initialDeposit'] }}</div>
-            }
+        @if (errorMessage()) {
+          <div class="alert err" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+            <div><b>Registration failed</b>{{ errorMessage() }}</div>
           </div>
+        }
 
-          <div class="field">
-            <label for="investmentExperience">Investment experience</label>
-            <select
-              id="investmentExperience"
-              name="investmentExperience"
-              [(ngModel)]="registerData.investmentExperience"
-              (change)="clearFieldError('investmentExperience')"
-            >
-              <option value="beginner">Beginner</option>
-              <option value="experienced" [disabled]="!isExperiencedAllowed()">Experienced</option>
-            </select>
-            @if (!isExperiencedAllowed()) {
-              <div class="hint">Experienced requires an initial deposit of $100,000 or more.</div>
-            }
-            @if (validationErrors['investmentExperience']) {
-              <div class="field-error">{{ validationErrors['investmentExperience'] }}</div>
-            }
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="employmentStatus">Employment status</label>
-          <select
-            id="employmentStatus"
-            name="employmentStatus"
-            [(ngModel)]="registerData.employmentStatus"
-            (blur)="validateField('employmentStatus')"
-            (change)="clearFieldError('employmentStatus')"
-          >
-            <option value="employed">Employed</option>
-            <option value="notEmployed">Not employed</option>
-          </select>
-          @if (validationErrors['employmentStatus']) {
-            <div class="field-error">{{ validationErrors['employmentStatus'] }}</div>
+        @switch (step()) {
+          @case (1) {
+            <div class="g3">
+              <div class="field">
+                <label for="firstName">First name</label>
+                <input id="firstName" name="firstName" placeholder="Jane" [(ngModel)]="registerData.firstName"
+                       (blur)="validateField('firstName')" (input)="clearFieldError('firstName')" />
+                @if (validationErrors['firstName']) {
+                  <div class="field-error">{{ validationErrors['firstName'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="middleName">Middle name<span class="opt-tag">OPTIONAL</span></label>
+                <input id="middleName" name="middleName" placeholder="Middle name" [(ngModel)]="registerData.middleName"
+                       (blur)="validateField('middleName')" (input)="clearFieldError('middleName')" />
+                @if (validationErrors['middleName']) {
+                  <div class="field-error">{{ validationErrors['middleName'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="lastName">Last name</label>
+                <input id="lastName" name="lastName" placeholder="Doe" [(ngModel)]="registerData.lastName"
+                       (blur)="validateField('lastName')" (input)="clearFieldError('lastName')" />
+                @if (validationErrors['lastName']) {
+                  <div class="field-error">{{ validationErrors['lastName'] }}</div>
+                }
+              </div>
+            </div>
+            <div class="g2">
+              <div class="field">
+                <label for="dateOfBirth">Date of birth</label>
+                <input id="dateOfBirth" name="dateOfBirth" type="date" [(ngModel)]="registerData.dateOfBirth"
+                       (change)="onDateOfBirthChange(registerData.dateOfBirth)" (blur)="validateField('dateOfBirth')" />
+                <span class="hint">You must be 18 or older.</span>
+                @if (validationErrors['dateOfBirth']) {
+                  <div class="field-error">{{ validationErrors['dateOfBirth'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="phoneNumber">Phone number</label>
+                <input id="phoneNumber" name="phoneNumber" type="tel" maxlength="14" placeholder="(330) 555-0123"
+                       [(ngModel)]="registerData.phoneNumber" (blur)="validateField('phoneNumber')" (input)="onPhoneInput($event)" />
+                <span class="hint">10 digits, US numbers only.</span>
+                @if (validationErrors['phoneNumber']) {
+                  <div class="field-error">{{ validationErrors['phoneNumber'] }}</div>
+                }
+              </div>
+            </div>
+            <div class="field">
+              <label for="email">Email address</label>
+              <input id="email" name="email" type="email" placeholder="jane@example.com" [(ngModel)]="registerData.email"
+                     (blur)="validateField('email')" (input)="clearFieldError('email')" />
+              <span class="hint">You'll use this to log in.</span>
+              @if (validationErrors['email']) {
+                <div class="field-error">{{ validationErrors['email'] }}</div>
+              }
+            </div>
           }
-        </div>
 
-        <div class="form-section-title">Account security</div>
-
-        <div class="field">
-          <label for="username">Username</label>
-          <input
-            id="username"
-            name="username"
-            placeholder="janedoe"
-            [(ngModel)]="registerData.username"
-            (blur)="validateField('username')"
-            (input)="clearFieldError('username')"
-          />
-          @if (validationErrors['username']) {
-            <div class="field-error">{{ validationErrors['username'] }}</div>
+          @case (2) {
+            <div class="g2">
+              <div class="field">
+                <label for="streetAddress">Street address</label>
+                <input id="streetAddress" name="streetAddress" placeholder="123 Main St" [(ngModel)]="registerData.streetAddress"
+                       (blur)="validateField('streetAddress')" (input)="clearFieldError('streetAddress')" />
+                @if (validationErrors['streetAddress']) {
+                  <div class="field-error">{{ validationErrors['streetAddress'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="apartment">Apartment / unit<span class="opt-tag">OPTIONAL</span></label>
+                <input id="apartment" name="apartment" placeholder="Apt, suite, unit" [(ngModel)]="registerData.apartment"
+                       (blur)="validateField('apartment')" (input)="clearFieldError('apartment')" />
+                @if (validationErrors['apartment']) {
+                  <div class="field-error">{{ validationErrors['apartment'] }}</div>
+                }
+              </div>
+            </div>
+            <div class="g3">
+              <div class="field">
+                <label for="city">City</label>
+                <input id="city" name="city" placeholder="Akron" [(ngModel)]="registerData.city"
+                       (blur)="validateField('city')" (input)="clearFieldError('city')" />
+                @if (validationErrors['city']) {
+                  <div class="field-error">{{ validationErrors['city'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="state">State</label>
+                <select id="state" name="state" [(ngModel)]="registerData.state"
+                        (blur)="validateField('state')" (change)="clearFieldError('state')">
+                  <option value="">Select a state</option>
+                  @for (s of states; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+                @if (validationErrors['state']) {
+                  <div class="field-error">{{ validationErrors['state'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="zipCode">ZIP code</label>
+                <input id="zipCode" name="zipCode" inputmode="numeric" maxlength="5" placeholder="44308"
+                       [(ngModel)]="registerData.zipCode" (blur)="validateField('zipCode')" (input)="onZipCodeInput($event)" />
+                @if (validationErrors['zipCode']) {
+                  <div class="field-error">{{ validationErrors['zipCode'] }}</div>
+                }
+              </div>
+            </div>
+            <span class="hint">We need a US home address to open a brokerage account. No P.O. boxes.</span>
           }
-        </div>
 
-        <div class="field">
-          <div class="field-label-row">
-            <label for="password">Password</label>
-            <button
-              type="button"
-              class="pw-toggle"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            >
-              {{ showPassword ? 'Hide' : 'Show' }}
-            </button>
-          </div>
-          <input
-            [type]="showPassword ? 'text' : 'password'"
-            id="password"
-            name="password"
-            placeholder="Minimum 8 characters"
-            [(ngModel)]="registerData.password"
-            (blur)="validateField('password')"
-            (input)="validatePasswordMatch()"
-          />
-          @if (validationErrors['password']) {
-            <div class="field-error">{{ validationErrors['password'] }}</div>
+          @case (3) {
+            <div class="g2">
+              <div class="field">
+                <label for="ssn">Social Security number</label>
+                <input id="ssn" name="ssn" inputmode="numeric" maxlength="11" placeholder="XXX-XX-XXXX" [(ngModel)]="registerData.ssn"
+                       (blur)="validateField('ssn')" (input)="onSsnInput($event)" />
+                <span class="hint">Used only to verify who you are, as federal brokerage rules require. Encrypted at rest.</span>
+                @if (validationErrors['ssn']) {
+                  <div class="field-error">{{ validationErrors['ssn'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="initialDeposit">Starting deposit (USD)</label>
+                <div class="in-wrap">
+                  <span class="in-prefix">$</span>
+                  <input id="initialDeposit" name="initialDeposit" class="in" type="number" min="5000" placeholder="5,000"
+                         [(ngModel)]="registerData.initialDeposit" (blur)="validateField('initialDeposit')" (input)="onInitialDepositInput()" />
+                </div>
+                <span class="hint">Minimum $5,000. This becomes your buying power.</span>
+                @if (validationErrors['initialDeposit']) {
+                  <div class="field-error">{{ validationErrors['initialDeposit'] }}</div>
+                }
+              </div>
+            </div>
+            <fieldset class="reg-exp">
+              <legend>Investing experience</legend>
+              <div class="g2">
+                <button type="button" class="exp-card" [attr.aria-pressed]="registerData.investmentExperience === 'beginner'"
+                        (click)="selectExperience('beginner')">
+                  <b>Beginner</b>
+                  <span>New to investing, or still learning.</span>
+                </button>
+                <button type="button" class="exp-card" [attr.aria-pressed]="registerData.investmentExperience === 'experienced'"
+                        [disabled]="!isExperiencedAllowed()" (click)="selectExperience('experienced')">
+                  <b>Experienced</b>
+                  <span>Needs a deposit of $100,000 or more.</span>
+                </button>
+              </div>
+              @if (validationErrors['investmentExperience']) {
+                <div class="field-error">{{ validationErrors['investmentExperience'] }}</div>
+              }
+            </fieldset>
+            <div class="field narrow">
+              <label for="employmentStatus">Employment status</label>
+              <select id="employmentStatus" name="employmentStatus" [(ngModel)]="registerData.employmentStatus"
+                      (blur)="validateField('employmentStatus')" (change)="clearFieldError('employmentStatus')">
+                <option value="employed">Employed</option>
+                <option value="notEmployed">Not employed</option>
+              </select>
+              @if (validationErrors['employmentStatus']) {
+                <div class="field-error">{{ validationErrors['employmentStatus'] }}</div>
+              }
+            </div>
           }
-        </div>
 
-        <div class="field">
-          <div class="field-label-row">
-            <label for="confirmPassword">Confirm password</label>
-            <button
-              type="button"
-              class="pw-toggle"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            >
-              {{ showPassword ? 'Hide' : 'Show' }}
-            </button>
-          </div>
-          <input
-            [type]="showPassword ? 'text' : 'password'"
-            id="confirmPassword"
-            name="confirmPassword"
-            placeholder="Re-enter password"
-            [(ngModel)]="registerData.confirmPassword"
-            (blur)="validateField('confirmPassword')"
-            (input)="validatePasswordMatch()"
-          />
-          @if (validationErrors['confirmPassword']) {
-            <div class="field-error">{{ validationErrors['confirmPassword'] }}</div>
+          @case (4) {
+            <div class="field narrow">
+              <label for="username">Username</label>
+              <input id="username" name="username" placeholder="janedoe" autocomplete="username" [(ngModel)]="registerData.username"
+                     (blur)="validateField('username')" (input)="clearFieldError('username')" />
+              @if (validationErrors['username']) {
+                <div class="field-error">{{ validationErrors['username'] }}</div>
+              }
+            </div>
+            <div class="g2">
+              <div class="field">
+                <label for="password">Password</label>
+                <div class="pw-wrap">
+                  <input [type]="showPassword ? 'text' : 'password'" id="password" name="password" placeholder="At least 8 characters"
+                         autocomplete="new-password" [(ngModel)]="registerData.password"
+                         (blur)="validateField('password')" (input)="validatePasswordMatch()" />
+                  <!-- One toggle shows or hides both password boxes. -->
+                  <button type="button" class="pw-toggle" (click)="togglePasswordVisibility()"
+                          [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+                    {{ showPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+                @if (validationErrors['password']) {
+                  <div class="field-error">{{ validationErrors['password'] }}</div>
+                }
+              </div>
+              <div class="field">
+                <label for="confirmPassword">Confirm password</label>
+                <input [type]="showPassword ? 'text' : 'password'" id="confirmPassword" name="confirmPassword"
+                       placeholder="Re-enter password" autocomplete="new-password" [(ngModel)]="registerData.confirmPassword"
+                       (blur)="validateField('confirmPassword')" (input)="validatePasswordMatch()" />
+                @if (validationErrors['confirmPassword']) {
+                  <div class="field-error">{{ validationErrors['confirmPassword'] }}</div>
+                }
+              </div>
+            </div>
+            <ul class="pw-rules" aria-label="Password requirements">
+              @for (rule of passwordRules; track rule.text) {
+                <li [class.met]="rule.test(registerData.password)">
+                  <span class="pw-tick" aria-hidden="true">{{ rule.test(registerData.password) ? '✓' : '' }}</span>
+                  {{ rule.text }}
+                  <span class="sr-only">{{ rule.test(registerData.password) ? '(done)' : '(not yet)' }}</span>
+                </li>
+              }
+            </ul>
+            <span class="hint">By creating an account you agree to lemarket's terms.</span>
           }
-        </div>
-
-
-
-        <button type="submit" class="btn btn-gold" style="margin-top: 6px" [disabled]="submitting()">
-          {{ submitting() ? 'Registering…' : 'Create account' }}
-        </button>
-      </form>
-
-      <div class="switch-line">Already have an account? <a routerLink="/login">Log in</a></div>
+        }
+      </section>
     </div>
-  </div>
+
+    <footer class="reg-foot">
+      <div class="reg-foot-inner">
+        <span class="mono">Step {{ step() }} of {{ steps.length }}</span>
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="submitting()">
+          @if (step() < steps.length) {
+            Continue
+          } @else {
+            {{ submitting() ? 'Registering…' : 'Create account' }}
+          }
+        </button>
+      </div>
+    </footer>
+  </form>
 </div>

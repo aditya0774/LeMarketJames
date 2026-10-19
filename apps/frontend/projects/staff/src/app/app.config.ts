@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { Auth } from './core/auth/auth';
+import { Theme } from '@lemarket/shared-ui';
 import { routes } from './app.routes';
 import { withCredentialsInterceptor } from './core/interceptors/with-credentials.interceptor';
 import { accountInactiveInterceptor } from './core/interceptors/account-inactive.interceptor';
@@ -12,6 +13,10 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAppInitializer(() => inject(Auth).restoreSession()),
+    // Created up front so the saved theme is applied before the first page renders.
+    provideAppInitializer(() => {
+      inject(Theme);
+    }),
     provideRouter(routes),
     provideHttpClient(withInterceptors([withCredentialsInterceptor, accountInactiveInterceptor]))
   ]

@@ -1,0 +1,18 @@
+.activity-by-stock-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.table-container {
+  overflow: hidden;
+}
+
+.error-state {
+  padding: 20px;
+}
+
+.error-state p {
+  margin: 6px 0 12px;
+  color: var(--dim);
+}

@@ -1,40 +1,174 @@
 /* LeMarket design tokens, shared by the trading app and the staff app.
-   Colour names are unchanged (purple and gold identity); the semantic aliases below are what
-   new component CSS should use, so a palette change stays a one-file edit. */
+
+   The palette comes from the "LeMarket Redesign" design: a dark purple-and-gold theme and a light
+   blue-and-red one. ThemeService puts data-theme="dark" | "light" on <html>; dark is also the
+   default, so the page is styled correctly before any script runs.
+
+   The token names follow the design (bg, card, line, text, dim, faint, pri, acc, …) so a value can
+   be checked against the design files directly. One name differs: the design calls the text colour
+   on a primary button "ink", which here is --on-pri, because --ink was already the page
+   background in this codebase. The "Legacy names" block keeps that and the other older names
+   pointing at the new palette, so CSS written before the redesign still follows the theme. */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces, darkest first */
+  --bg0: #060509;
+  --bg: #0b0a10;
+  --bg2: #0f0d14;
+  --bg2b: #0f0d16;
+  --bg3: #100e16;
+  --card: #131119;
+  --card2: #17141f;
+
+  /* Hairlines, faintest first */
+  --lsoft: #1a1722;
+  --lhdr: #1c1925;
+  --l4: #1e1b27;
+  --line: #221f2c;
+  --line5: #2a2636;
+  --line2: #2c2838;
+  --line3: #34304a;
+  --line6: #3a3550;
+  --accline: #3a2c63;
+  --disabled: #4e4960;
+
+  /* Text, strongest first */
+  --text: #f3f0f8;
+  --text2: #d9d4e4;
+  --text3: #d7cbf7;
+  --dim: #a39db5;
+  --faint: #8b859d;
+  --faint3: #7f7993;
+  --faint2: #6f6982;
+
+  /* Primary (gold): buttons, key figures, links */
+  --pri: #fdb927;
+  --prih: #ffd467;
+  --pritext: #fdd06b;
+  --warntext: #f5dfa8;
+  --on-pri: #16110a;
+
+  /* Accent (purple): selection, sell, focus */
+  --sel: #2a1f45;
+  --tip: #221d33;
+  --seltext: #e6dcff;
+  --acc2t: #cdb8ff;
+  --acc: #b79cff;
+  --focus: #a98bff;
+  --focusb: #8b6be8;
+  --acc3: #7b5cd6;
+  --bar2: #6d55b8;
+  --acc4: #5b45a3;
+  --c4: #4e3a8c;
+  --accb: #8b5cf6;
+  --on-acc: #ffffff;
+
+  /* Gains, losses and messages */
+  --up: #3dd68c;
+  --down: #ff6b6b;
+  --upt: #5be3a0;
+  --okt: #8bedbb;
+  --okt2: #a7ddbf;
+  --errt: #ff8a8a;
+  --errt2: #ffb3b3;
+
+  /* Data series, used in order for charts */
+  --d1: #fdb927;
+  --d2: #b79cff;
+  --d3: #7b5cd6;
+  --d4: #4e3a8c;
+  --d5: #d9d4e4;
+
+  --scrim: rgba(6, 5, 9, 0.72);
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg0: #e9eef4;
+  --bg: #f4f6f9;
+  --bg2: #ffffff;
+  --bg2b: #eaf0f7;
+  --bg3: #f1f5fa;
+  --card: #ffffff;
+  --card2: #f2f6fb;
+
+  --lsoft: #edf1f6;
+  --lhdr: #e1e7ef;
+  --l4: #e6ecf3;
+  --line: #dee5ee;
+  --line5: #d3dce7;
+  --line2: #cfd8e3;
+  --line3: #bcc8d6;
+  --line6: #b5c2d1;
+  --accline: #a9c6e8;
+  --disabled: #b0bccb;
+
+  --text: #0b1f3a;
+  --text2: #24364f;
+  --text3: #1d3b66;
+  --dim: #4d5f78;
+  --faint: #5e6f86;
+  --faint3: #66768c;
+  --faint2: #6e7d92;
+
+  --pri: #006bb6;
+  --prih: #00508a;
+  --pritext: #00589a;
+  --warntext: #0b3d6e;
+  --on-pri: #ffffff;
+
+  --sel: #dce9f7;
+  --tip: #ffffff;
+  --seltext: #0b3d6e;
+  --acc2t: #b30e35;
+  --acc: #d50f3f;
+  --focus: #006bb6;
+  --focusb: #006bb6;
+  --acc3: #d50f3f;
+  --bar2: #8fa0b3;
+  --acc4: #8cb4de;
+  --c4: #002b5c;
+  --accb: #006bb6;
+  --on-acc: #ffffff;
+
+  --up: #0b8a4b;
+  --down: #d1193e;
+  --upt: #0b7a43;
+  --okt: #0b6e3d;
+  --okt2: #2f6b4c;
+  --errt: #b3122f;
+  --errt2: #8f1530;
+
+  --d1: #006bb6;
+  --d2: #ed174c;
+  --d3: #002b5c;
+  --d4: #7fa7d6;
+  --d5: #c4ced4;
+
+  --scrim: rgba(11, 31, 58, 0.45);
+  --shadow: rgba(11, 31, 58, 0.16);
+}
 
 :root {
-  /* Palette */
-  --ink: #0f0a1a;
-  --ink-2: #170e28;
-  --ink-3: #20143a;
-  --purple-deep: #2b1145;
-  --purple: #4a1e73;
-  --purple-mid: #5c2a8c;
-  --purple-line: #432466;
-  --gold: #fdb927;
-  --gold-soft: #ffdd73;
-  --gold-dim: #8a6a1e;
-  --up: #3bd98a;
-  --down: #ff5c5c;
-  --text: #efe9f7;
-  --text-dim: #b7a8d1;
-  /* Lifted from #7c6d98 (about 3.9:1 on --ink-2) to clear WCAG AA (about 6:1) for small text. */
-  --text-faint: #9b8db8;
+  /* Tints worked out from the palette, so both themes get matching soft backgrounds. */
+  --pri-soft: color-mix(in srgb, var(--pri) 12%, transparent);
+  --acc-soft: color-mix(in srgb, var(--acc) 12%, transparent);
+  --accb-soft: color-mix(in srgb, var(--accb) 14%, transparent);
+  --up-soft: color-mix(in srgb, var(--up) 12%, transparent);
+  --down-soft: color-mix(in srgb, var(--down) 12%, transparent);
 
-  /* Semantic aliases */
-  --surface: var(--ink-2);
-  --surface-raised: var(--ink-3);
-  --border: var(--purple-line);
-  --border-subtle: rgba(67, 36, 102, 0.55);
-  --accent: var(--gold);
-  --on-accent: #241705;
-  --hover-row: rgba(255, 255, 255, 0.035);
-  --focus-ring: 0 0 0 2px var(--ink), 0 0 0 4px var(--gold);
-
-  /* Shape: flat surfaces, hairline borders. Shadow is reserved for things that float. */
-  --radius: 6px;
-  --radius-lg: 10px;
-  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+  /* Shape */
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-overlay: 0 12px 32px var(--shadow);
 
   /* Spacing */
   --space-2xs: 4px;
@@ -46,6 +180,8 @@
   --space-2xl: 32px;
   --space-3xl: 48px;
   --space-4xl: 64px;
+  /* Page side padding: 16px on a phone, growing to 40px on a wide screen. */
+  --gutter: clamp(16px, 3vw, 40px);
 
   /* Type scale */
   --font-3xs: 10px;
@@ -53,13 +189,37 @@
   --font-xs: 12px;
   --font-sm: 13px;
   --font-base: 14px;
-  --font-md: 17px;
+  --font-md: 15px;
   --font-lg: 18px;
   --font-xl: 22px;
   --font-2xl: 26px;
   --font-3xl: 30px;
-  --font-display: 38px;
+  --font-display: 40px;
 
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-head: 'Big Shoulders Display', 'Inter', sans-serif;
+  --font-body: 'Geist', system-ui, sans-serif;
+  --font-head: var(--font-body);
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  /* Legacy names. They keep pre-redesign CSS on the new palette until each page moves to the
+     design names above; new CSS should not use them. */
+  --ink: var(--bg);
+  --ink-2: var(--card);
+  --ink-3: var(--card2);
+  --purple-deep: var(--sel);
+  --purple: var(--acc4);
+  --purple-mid: var(--acc3);
+  --purple-line: var(--line2);
+  --gold: var(--pri);
+  --gold-soft: var(--prih);
+  --gold-dim: var(--pritext);
+  --text-dim: var(--dim);
+  --text-faint: var(--faint);
+  --surface: var(--card);
+  --surface-raised: var(--card2);
+  --border: var(--line);
+  --border-subtle: var(--lsoft);
+  --accent: var(--pri);
+  --on-accent: var(--on-pri);
+  --hover-row: var(--card2);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
 }

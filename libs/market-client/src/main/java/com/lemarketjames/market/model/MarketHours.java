@@ -96,6 +96,17 @@ public record MarketHours(ZoneId zone, LocalTime open, LocalTime close, boolean 
         return instant.atZone(zone).toLocalDate();
     }
 
+    /**
+     * @return when the session of {@code day} closes, used to stamp a daily close on a chart; a market
+     *         open all day closes at the following midnight
+     */
+    public Instant closingTime(LocalDate day) {
+        if (close.equals(LocalTime.MAX)) {
+            return day.plusDays(1).atStartOfDay(zone).toInstant();
+        }
+        return day.atTime(close).atZone(zone).toInstant();
+    }
+
     /** @return length of one trading session in seconds */
     public double sessionSeconds() {
         // LocalTime.MAX is 23:59:59.999..., so treat "open all day" as a full 24 hours.

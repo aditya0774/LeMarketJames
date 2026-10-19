@@ -113,7 +113,6 @@ test('LMKT-39 AC2: client/date search includes UTC boundaries and excludes other
   await openTradeSearch(page);
   await page.getByRole('radio', { name: 'Client search' }).check();
   await page.getByLabel('Client ID or client name').fill(String(trades.clientId));
-  await page.getByText('Optional client date range').click();
   await page.getByLabel('Start date (UTC)').fill('2026-01-10');
   await page.getByLabel('End date (UTC)').fill('2026-01-11');
   const result = await search(page, { clientId: String(trades.clientId), from: '2026-01-10', to: '2026-01-11' });

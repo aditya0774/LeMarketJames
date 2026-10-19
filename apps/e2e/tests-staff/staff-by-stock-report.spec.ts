@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { ANALYST, CLIENT, signIn } from './support/staff';
+import { ANALYST, CLIENT, openAnalystTab, signIn } from './support/staff';
 
 /**
  * LMKT-42 Staff App: Report trading activity by stock (analyst view)
@@ -54,13 +54,13 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     await expect(page).toHaveURL(/\/analyst$/);
 
     // Navigate to by-stock report (the dashboard lists each report as a card)
-    await page.locator('.report-card', { hasText: 'Activity by Stock' }).click();
+    await openAnalystTab(page, 'By stock');
     
     // Verify page loaded
     await expect(page).toHaveURL(/\/analyst\/reports\/activity-by-stock$/);
     
     // AC1: Report header is visible
-    const heading = page.getByRole('heading').filter({ hasText: 'Trading Activity by Stock' });
+    const heading = page.getByRole('heading', { name: 'Activity by stock', exact: true });
     await expect(heading).toBeVisible();
 
     // AC1: Date range pickers are visible
@@ -74,11 +74,11 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     // AC1: Table has expected columns
     const headers = page.locator('th');
     const headerTexts = await headers.allTextContents();
-    expect(headerTexts.some(t => t.includes('Symbol'))).toBe(true);
-    expect(headerTexts.some(t => t.includes('Total Quantity'))).toBe(true);
-    expect(headerTexts.some(t => t.includes('Total Gross Amount'))).toBe(true);
-    expect(headerTexts.some(t => t.includes('Buy Count'))).toBe(true);
-    expect(headerTexts.some(t => t.includes('Sell Count'))).toBe(true);
+    expect(headerTexts.some(t => t.includes('Stock'))).toBe(true);
+    expect(headerTexts.some(t => t.includes('Shares traded'))).toBe(true);
+    expect(headerTexts.some(t => t.includes('Gross amount'))).toBe(true);
+    expect(headerTexts.some(t => t.includes('Buys'))).toBe(true);
+    expect(headerTexts.some(t => t.includes('Sells'))).toBe(true);
 
     // AC1: Table has data rows
     const rows = page.locator('tbody tr, .trade-row');
@@ -133,7 +133,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     let firstRowInitial = await rows.first().textContent();
 
     // Click on Symbol header to sort
-    const symbolHeader = page.locator('th').filter({ hasText: /Symbol/ }).first();
+    const symbolHeader = page.getByRole('button', { name: /^Stock/ });
     await symbolHeader.click();
     await page.waitForTimeout(300); // Wait for sort animation
 
