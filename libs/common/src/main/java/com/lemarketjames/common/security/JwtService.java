@@ -73,6 +73,21 @@ public class JwtService {
                 .compact();
     }
 
+    /** Generates a token whose issue time is explicitly after a session invalidation cutoff. */
+    public String generateToken(String username, Set<Role> roles, Instant issuedAt) {
+        Date now = new Date();
+        Date issued = Date.from(issuedAt);
+        Date expiry = new Date(Math.max(now.getTime(), issued.getTime()) + expirationMs);
+
+        return Jwts.builder()
+                .subject(username)
+                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())
+                .issuedAt(issued)
+                .expiration(expiry)
+                .signWith(signingKey)
+                .compact();
+    }
+
     /**
      * Gets the token expiration time in seconds.
      *

@@ -228,10 +228,23 @@ public class AuthService {
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
         String username = account.getUsername();
         Set<Role> roles = account.roles();
-        String token = jwtService.generateToken(username, roles);
+        Instant issuedAt = loginIssuedAt(account);
+        String token = issuedAt == null
+            ? jwtService.generateToken(username, roles)
+            : jwtService.generateToken(username, roles, issuedAt);
         log.info("Login succeeded for username={} roles={}", username, roles);
         return new LoginResult(username, "Login successful", token, roles);
     }
+
+        private Instant loginIssuedAt(LoginAccount account) {
+        Instant now = clock.instant();
+        Instant invalidatedAt = account instanceof ClientEntity client
+            ? client.getSessionInvalidatedAt()
+            : ((StaffUserEntity) account).getSessionInvalidatedAt();
+        return invalidatedAt != null && !now.isAfter(invalidatedAt)
+            ? invalidatedAt.plusSeconds(1)
+            : null;
+        }
 
     /** Invalidates all tokens issued for the account at or before the logout time. */
     @Transactional
