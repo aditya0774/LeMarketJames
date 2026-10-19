@@ -1,0 +1,43 @@
+<mat-card class="active-stocks-tile">
+  <mat-card-content>
+    <div class="tile-header">
+      <div>
+        <h2>Most active stocks</h2>
+        @if (data(); as result) {
+          <p class="range">This week: {{ result.startDate }} – {{ result.endDate }}</p>
+        }
+      </div>
+      <button mat-button type="button" class="refresh" (click)="refresh()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+
+    @if (loading() && !data()) {
+      <p class="status">Loading…</p>
+    } @else if (error()) {
+      <p class="status error" role="alert">Could not load this insight. Use Refresh to retry.</p>
+    } @else if (data(); as result) {
+      @if (result.stocks.length) {
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Stock</th><th>Trades</th><th>Shares</th><th>Traded value</th></tr>
+          </thead>
+          <tbody>
+            @for (stock of result.stocks; track stock.symbol) {
+              <tr>
+                <td>{{ stock.rank }}</td>
+                <th scope="row">{{ stock.symbol }}</th>
+                <td>{{ stock.tradeCount | number }}</td>
+                <td>{{ stock.shareVolume | number }}</td>
+                <td>{{ stock.tradedValue | currency:'USD':'symbol':'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <p class="status">No filled trades this week.</p>
+      }
+      <p class="refreshed">Last refreshed {{ result.generatedAt | date: 'medium' }}</p>
+    }
+  </mat-card-content>
+</mat-card>
