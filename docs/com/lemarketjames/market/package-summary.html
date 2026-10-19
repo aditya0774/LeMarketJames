@@ -112,18 +112,20 @@ loadScripts(document, 'script');</script>
  price snapshot per instrument, and 1-minute OHLC candles
  (database/schema/006_market_simulation.sql).</div>
 </div>
-<div class="col-first even-row-color"><a href="model/package-summary.html">com.lemarketjames.market.model</a></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><a href="inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="model/package-summary.html">com.lemarketjames.market.model</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Immutable market types and the pricing maths, free of Spring and of any mutable state so they
  can be unit tested directly: the GBM formulas (<a href="model/GbmModel.html" title="class in com.lemarketjames.market.model"><code>GbmModel</code></a>),
  trading hours, an instrument's definition, a price snapshot, and a completed candle.</div>
 </div>
-<div class="col-first odd-row-color"><a href="repository/package-summary.html">com.lemarketjames.market.repository</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="repository/package-summary.html">com.lemarketjames.market.repository</a></div>
+<div class="col-last even-row-color">
 <div class="block">Spring Data repositories for the market feature's tables.</div>
 </div>
-<div class="col-first even-row-color"><a href="service/package-summary.html">com.lemarketjames.market.service</a></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><a href="service/package-summary.html">com.lemarketjames.market.service</a></div>
+<div class="col-last odd-row-color">
 <div class="block">The running market: the simulator that advances prices, the scheduler that drives it, database
  loading/saving, and the read-only <a href="service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a>
  other features depend on.</div>
@@ -152,13 +154,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab4">&nbsp;</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="MarketController.html" title="class in com.lemarketjames.market">MarketController</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">The first HTTP surface for the market feature: server-to-server callers (core-service today)
- reach <a href="service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over the network instead of as an in-process bean.</div>
+<div class="block">The market's HTTP surface for callers in other services: orders-service reads prices here,
+ through libs/market-client's MarketDataClient, while this service's own features use
+ <a href="service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> in-process.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Past prices for charts, for server-to-server callers (core-service for a stock's chart,
- holdings-service for the portfolio's).</div>
+<div class="block">Past prices for charts, for callers in other services (this service's own charts read
+ <code>PriceHistoryService</code> in-process).</div>
 </div>
 </div>
 </div>

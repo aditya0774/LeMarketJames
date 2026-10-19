@@ -5,7 +5,7 @@ import tradingConfig from './playwright.config';
  * End-to-end tests of the staff app (apps/frontend/projects/staff). Everything not set here is
  * the trading suite's configuration (playwright.config.ts), so both suites run the same way
  * against the same already running stack:
- * - Jenkins: the Docker Compose stack, where the staff Nginx on :4201 proxies /api to the staff gateway.
+ * - Jenkins: the Docker Compose stack, where the staff Nginx on :4201 proxies the staff paths to the services.
  * - Windows: scripts/windows/start-all.ps1, where `ng serve staff` on :4201 does the same.
  *
  * It is a separate configuration rather than another project in playwright.config.ts because
@@ -24,7 +24,7 @@ export default defineConfig({
     : [['list'], htmlReport],
   use: {
     ...tradingConfig.use,
-    // The same variable staff-gateway.spec.ts uses for the staff app's address.
+    // The same variable staff-api.spec.ts uses for the staff app's address.
     baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201',
   },
   projects: [{ name: 'staff', use: { ...devices['Desktop Chrome'] } }],

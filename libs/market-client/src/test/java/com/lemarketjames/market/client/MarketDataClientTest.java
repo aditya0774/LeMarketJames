@@ -37,7 +37,7 @@ class MarketDataClientTest {
 
         HttpServer hungServer = httpServer(exchange -> {
             try {
-                // Sleeps well past the client's read timeout, simulating a hung market-service.
+                // Sleeps well past the client's read timeout, simulating a hung trading-service.
                 Thread.sleep(SHORT_TIMEOUT_MS * 5);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

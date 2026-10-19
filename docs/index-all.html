@@ -171,7 +171,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.html#accountNotFound()" class="member-name-link">accountNotFound()</a> - Method in class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.html" title="class in com.lemarketjames.notifications">NotificationController</a></dt>
 <dd>
-<div class="block">The same answer holdings-service gives a login that has no account.</div>
+<div class="block">The same answer trading-service gives a login that has no account.</div>
 </dd>
 <dt><a href="com/lemarketjames/notifications/AccountNotFoundException.html" class="type-name-link" title="class in com.lemarketjames.notifications">AccountNotFoundException</a> - Exception Class in <a href="com/lemarketjames/notifications/package-summary.html">com.lemarketjames.notifications</a></dt>
 <dd>
@@ -246,12 +246,6 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/reports/controller/SegmentActivityController.html#activity(java.time.LocalDate,java.time.LocalDate)" class="member-name-link">activity(LocalDate, LocalDate)</a> - Method in class com.lemarketjames.reports.controller.<a href="com/lemarketjames/reports/controller/SegmentActivityController.html" title="class in com.lemarketjames.reports.controller">SegmentActivityController</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/ActivityServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">ActivityServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Shows how much of each stock has been trading.</div>
-</dd>
-<dt><a href="com/lemarketjames/ActivityServiceApplication.html#%3Cinit%3E()" class="member-name-link">ActivityServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/ActivityServiceApplication.html" title="class in com.lemarketjames">ActivityServiceApplication</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityService.html#activitySince(java.time.Instant)" class="member-name-link">activitySince(Instant)</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityService.html" title="class in com.lemarketjames.activity">MarketActivityService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AddressEntity.html" class="type-name-link" title="class in com.lemarketjames.common.domain">AddressEntity</a> - Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
@@ -315,8 +309,6 @@ loadScripts(document, 'script');</script>
 <div class="block">Application-wide configuration beans.</div>
 </dd>
 <dt><a href="com/lemarketjames/config/ApplicationConfig.html#%3Cinit%3E()" class="member-name-link">ApplicationConfig()</a> - Constructor for class com.lemarketjames.config.<a href="com/lemarketjames/config/ApplicationConfig.html" title="class in com.lemarketjames.config">ApplicationConfig</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/gateway/StaffSessionCookieGatewayFilterFactory.html#apply(java.lang.Object)" class="member-name-link">apply(Object)</a> - Method in class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/StaffSessionCookieGatewayFilterFactory.html" title="class in com.lemarketjames.gateway">StaffSessionCookieGatewayFilterFactory</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/model/QuoteSnapshot.html#askPrice()" class="member-name-link">askPrice()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a></dt>
 <dd>
@@ -465,10 +457,6 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/BuyOrderController.html#%3Cinit%3E(com.lemarketjames.orders.service.OrderService)" class="member-name-link">BuyOrderController(OrderService)</a> - Constructor for class com.lemarketjames.orders.<a href="com/lemarketjames/orders/BuyOrderController.html" title="class in com.lemarketjames.orders">BuyOrderController</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/BuySellServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">BuySellServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/BuySellServiceApplication.html#%3Cinit%3E()" class="member-name-link">BuySellServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/BuySellServiceApplication.html" title="class in com.lemarketjames">BuySellServiceApplication</a></dt>
-<dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:C">C</h2>
 <dl class="index">
@@ -539,8 +527,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/model/ChartRange.html" class="type-name-link" title="enum class in com.lemarketjames.market.model">ChartRange</a> - Enum Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
 <dd>
-<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
- chart (holdings-service) so both accept the same <code>range</code> values.</div>
+<div class="block">The time spans a price chart can show, shared by the stock chart and the portfolio chart (both in
+ trading-service) so both accept the same <code>range</code> values.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html#%3Cinit%3E(com.lemarketjames.orders.submission.ValidationRule,com.lemarketjames.orders.submission.SubmissionTrail.Result,java.lang.String)" class="member-name-link">Check(ValidationRule, SubmissionTrail.Result, String)</a> - Constructor for record class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Check.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail.Check</a></dt>
 <dd>
@@ -594,11 +582,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/config/ApplicationConfig.html#clock()" class="member-name-link">clock()</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/ApplicationConfig.html" title="class in com.lemarketjames.config">ApplicationConfig</a></dt>
 <dd>
-<div class="block">Provides system Clock for time-based operations.</div>
-</dd>
-<dt><a href="com/lemarketjames/market/config/MarketConfig.html#clock()" class="member-name-link">clock()</a> - Method in class com.lemarketjames.market.config.<a href="com/lemarketjames/market/config/MarketConfig.html" title="class in com.lemarketjames.market.config">MarketConfig</a></dt>
-<dd>
-<div class="block">UTC clock used for all market timestamps.</div>
+<div class="block">The one clock of this service: market timestamps and the activity window are measured with
+ it.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/DailyBar.html#close()" class="member-name-link">close()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
 <dd>
@@ -652,8 +637,6 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/config/package-summary.html">com.lemarketjames.config</a> - package com.lemarketjames.config</dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/gateway/package-summary.html">com.lemarketjames.gateway</a> - package com.lemarketjames.gateway</dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/package-summary.html">com.lemarketjames.holdings</a> - package com.lemarketjames.holdings</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a> - package com.lemarketjames.holdings.client</dt>
@@ -688,6 +671,8 @@ loadScripts(document, 'script');</script>
  price snapshot per instrument, and 1-minute OHLC candles
  (database/schema/006_market_simulation.sql).</div>
 </dd>
+<dt><a href="com/lemarketjames/market/inprocess/package-summary.html">com.lemarketjames.market.inprocess</a> - package com.lemarketjames.market.inprocess</dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a> - package com.lemarketjames.market.model</dt>
 <dd>
 <div class="block">Immutable market types and the pricing maths, free of Spring and of any mutable state so they
@@ -772,8 +757,6 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/service/package-summary.html">com.lemarketjames.sessions.service</a> - package com.lemarketjames.sessions.service</dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/staffgateway/package-summary.html">com.lemarketjames.staffgateway</a> - package com.lemarketjames.staffgateway</dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/surveillance/package-summary.html">com.lemarketjames.surveillance</a> - package com.lemarketjames.surveillance</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/package-summary.html">com.lemarketjames.trades</a> - package com.lemarketjames.trades</dt>
@@ -836,7 +819,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/CoreExceptionHandler.html" class="type-name-link" title="class in com.lemarketjames.common">CoreExceptionHandler</a> - Class in <a href="com/lemarketjames/common/package-summary.html">com.lemarketjames.common</a></dt>
 <dd>
-<div class="block">Translates core-service feature exceptions into structured error responses.</div>
+<div class="block">Translates the quote and session features' exceptions into structured error responses.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/CoreExceptionHandler.html#%3Cinit%3E()" class="member-name-link">CoreExceptionHandler()</a> - Constructor for class com.lemarketjames.common.<a href="com/lemarketjames/common/CoreExceptionHandler.html" title="class in com.lemarketjames.common">CoreExceptionHandler</a></dt>
 <dd>&nbsp;</dd>
@@ -905,6 +888,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html" title="class in com.lemarketjames.market.inprocess">InProcessPriceHistory</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/PriceHistoryController.html#dailyBars(int,java.time.LocalDate)" class="member-name-link">dailyBars(int, LocalDate)</a> - Method in class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
 <dd>
 <div class="block">One bar per trading day from <code>from</code>, ending with today's so far.</div>
@@ -928,6 +913,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html#data()" class="member-name-link">data()</a> - Method in record class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/overnight/OvernightReportsResponse.html#param-data"><code>data</code></a> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#DATA_SOURCE" class="member-name-link">DATA_SOURCE</a> - Static variable in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>
+<div class="block">Bean names, for the <code>@Qualifier</code>s and <code>@Transactional</code>s of report code.</div>
+</dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html#dataSource(org.springframework.boot.autoconfigure.jdbc.DataSourceProperties)" class="member-name-link">dataSource(DataSourceProperties)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></dt>
+<dd>
+<div class="block">Uses <code>spring.datasource.*</code> as Spring Boot's own pool would, Hikari settings included.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/DailyBar.html#date()" class="member-name-link">date()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
 <dd>
@@ -1021,6 +1014,10 @@ loadScripts(document, 'script');</script>
 <div class="block">At the ready-by time: marks LATE every run not finished yet, so the dashboard shows it is
  missing while it still waits or runs (AC2).</div>
 </dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#ENTITY_MANAGER_FACTORY" class="member-name-link">ENTITY_MANAGER_FACTORY</a> - Static variable in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html#entityManagerFactory(org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder,javax.sql.DataSource)" class="member-name-link">entityManagerFactory(EntityManagerFactoryBuilder, DataSource)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/InstrumentActivity.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/InstrumentActivity.html" title="class in com.lemarketjames.activity">InstrumentActivity</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1454,6 +1451,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findAll()" class="member-name-link">findAll()</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessMarketData.html#findAll()" class="member-name-link">findAll()</a> - Method in class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessMarketData.html" title="class in com.lemarketjames.market.inprocess">InProcessMarketData</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketDataService.html#findAll()" class="member-name-link">findAll()</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketSimulator.html#findAll()" class="member-name-link">findAll()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketSimulator.html" title="class in com.lemarketjames.market.service">MarketSimulator</a></dt>
@@ -1495,6 +1494,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessMarketData.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessMarketData.html" title="class in com.lemarketjames.market.inprocess">InProcessMarketData</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketDataService.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketSimulator.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId(int)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketSimulator.html" title="class in com.lemarketjames.market.service">MarketSimulator</a></dt>
@@ -1524,6 +1525,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/common/instruments/InstrumentRepository.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in interface com.lemarketjames.common.instruments.<a href="com/lemarketjames/common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessMarketData.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessMarketData.html" title="class in com.lemarketjames.market.inprocess">InProcessMarketData</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketDataService.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker(String)</a> - Method in interface com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></dt>
 <dd>&nbsp;</dd>
@@ -1590,18 +1593,6 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:G">G</h2>
 <dl class="index">
-<dt><a href="com/lemarketjames/gateway/GatewayApplication.html" class="type-name-link" title="class in com.lemarketjames.gateway">GatewayApplication</a> - Class in <a href="com/lemarketjames/gateway/package-summary.html">com.lemarketjames.gateway</a></dt>
-<dd>
-<div class="block">Entry point for the API gateway.</div>
-</dd>
-<dt><a href="com/lemarketjames/staffgateway/GatewayApplication.html" class="type-name-link" title="class in com.lemarketjames.staffgateway">GatewayApplication</a> - Class in <a href="com/lemarketjames/staffgateway/package-summary.html">com.lemarketjames.staffgateway</a></dt>
-<dd>
-<div class="block">Entry point for the API gateway.</div>
-</dd>
-<dt><a href="com/lemarketjames/gateway/GatewayApplication.html#%3Cinit%3E()" class="member-name-link">GatewayApplication()</a> - Constructor for class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/GatewayApplication.html" title="class in com.lemarketjames.gateway">GatewayApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/staffgateway/GatewayApplication.html#%3Cinit%3E()" class="member-name-link">GatewayApplication()</a> - Constructor for class com.lemarketjames.staffgateway.<a href="com/lemarketjames/staffgateway/GatewayApplication.html" title="class in com.lemarketjames.staffgateway">GatewayApplication</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/model/GbmModel.html" class="type-name-link" title="class in com.lemarketjames.market.model">GbmModel</a> - Class in <a href="com/lemarketjames/market/model/package-summary.html">com.lemarketjames.market.model</a></dt>
 <dd>
 <div class="block">Geometric Brownian Motion (GBM) price math.</div>
@@ -2508,7 +2499,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a greeting message.</div>
 </dd>
-<dt><a href="com/lemarketjames/Main.html#greeting()" class="member-name-link">greeting()</a> - Method in class com.lemarketjames.<a href="com/lemarketjames/Main.html" title="class in com.lemarketjames">Main</a></dt>
+<dt><a href="com/lemarketjames/HomeController.html#greeting()" class="member-name-link">greeting()</a> - Method in class com.lemarketjames.<a href="com/lemarketjames/HomeController.html" title="class in com.lemarketjames">HomeController</a></dt>
 <dd>
 <div class="block">Provides a simple greeting endpoint.</div>
 </dd>
@@ -2526,15 +2517,15 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/activity/OrderFilledListener.html#GROUP_ID" class="member-name-link">GROUP_ID</a> - Static variable in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/OrderFilledListener.html" title="class in com.lemarketjames.activity">OrderFilledListener</a></dt>
 <dd>
-<div class="block">This service's consumer group.</div>
+<div class="block">The market activity consumer group.</div>
 </dd>
 <dt><a href="com/lemarketjames/notifications/OrderStatusListener.html#GROUP_ID" class="member-name-link">GROUP_ID</a> - Static variable in class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/OrderStatusListener.html" title="class in com.lemarketjames.notifications">OrderStatusListener</a></dt>
 <dd>
-<div class="block">This service's consumer group.</div>
+<div class="block">The notifications consumer group.</div>
 </dd>
 <dt><a href="com/lemarketjames/surveillance/OrderSubmittedListener.html#GROUP_ID" class="member-name-link">GROUP_ID</a> - Static variable in class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/OrderSubmittedListener.html" title="class in com.lemarketjames.surveillance">OrderSubmittedListener</a></dt>
 <dd>
-<div class="block">This service's consumer group.</div>
+<div class="block">The surveillance consumer group.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:H">H</h2>
@@ -2893,22 +2884,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/holdings/service/HoldingsService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.common.domain.AccountRepository)" class="member-name-link">HoldingsService(HoldingsRepository, MarketDataService, AccountRepository)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/HoldingsService.html" title="class in com.lemarketjames.holdings.service">HoldingsService</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/HoldingsServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">HoldingsServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Entry point for the holdings microservice (client profile, holdings, portfolio, trade history).</div>
-</dd>
-<dt><a href="com/lemarketjames/HoldingsServiceApplication.html#%3Cinit%3E()" class="member-name-link">HoldingsServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/HoldingsServiceApplication.html" title="class in com.lemarketjames">HoldingsServiceApplication</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsSettlementClient.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">HoldingsSettlementClient</a> - Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
-<div class="block">Triggers holdings-service to settle a fill (debit/credit cash, upsert the holding).</div>
+<div class="block">Triggers trading-service to settle a fill (debit/credit cash, upsert the holding).</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsSettlementClient.html#%3Cinit%3E(java.lang.String,com.lemarketjames.orders.execution.ExecutionSettings)" class="member-name-link">HoldingsSettlementClient(String, ExecutionSettings)</a> - Constructor for class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/HoldingsSettlementClient.html" title="class in com.lemarketjames.holdings.client">HoldingsSettlementClient</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsSettlementController.html" class="type-name-link" title="class in com.lemarketjames.holdings">HoldingsSettlementController</a> - Class in <a href="com/lemarketjames/holdings/package-summary.html">com.lemarketjames.holdings</a></dt>
 <dd>
-<div class="block">Internal, server-to-server only: buy-sell-service calls this directly (Docker hostname, bypassing
- the gateway) when an order transitions to FILLED.</div>
+<div class="block">Internal, server-to-server only: orders-service calls this directly (Docker hostname, not
+ through a web app) when an order transitions to FILLED.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsSettlementController.html#%3Cinit%3E(com.lemarketjames.holdings.service.HoldingsSettlementService)" class="member-name-link">HoldingsSettlementController(HoldingsSettlementService)</a> - Constructor for class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/HoldingsSettlementController.html" title="class in com.lemarketjames.holdings">HoldingsSettlementController</a></dt>
 <dd>&nbsp;</dd>
@@ -2922,21 +2907,21 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationClient.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a> - Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
-<div class="block">Re-checks a SELL order's holdings with holdings-service before it is persisted.</div>
+<div class="block">Re-checks a SELL order's holdings with trading-service before it is persisted.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationClient.html#%3Cinit%3E(java.lang.String)" class="member-name-link">HoldingsValidationClient(String)</a> - Constructor for class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/HoldingsValidationClient.html" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsValidationInternalController.html" class="type-name-link" title="class in com.lemarketjames.holdings">HoldingsValidationInternalController</a> - Class in <a href="com/lemarketjames/holdings/package-summary.html">com.lemarketjames.holdings</a></dt>
 <dd>
-<div class="block">Internal, server-to-server only: core-service calls this directly (Docker hostname, bypassing
- the gateway) to re-check a SELL order's holdings before persisting it, since the browser's own
- <code>/api/v1/holdings/validate</code> call is advisory only.</div>
+<div class="block">Internal, server-to-server only: orders-service calls this directly (Docker hostname, not
+ through a web app) to re-check a SELL order's holdings before persisting it, since the browser's
+ own <code>/api/v1/holdings/validate</code> call is advisory only.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/HoldingsValidationInternalController.html#%3Cinit%3E(com.lemarketjames.holdings.service.HoldingsService)" class="member-name-link">HoldingsValidationInternalController(HoldingsService)</a> - Constructor for class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/HoldingsValidationInternalController.html" title="class in com.lemarketjames.holdings">HoldingsValidationInternalController</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationRequest.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">HoldingsValidationRequest</a> - Record Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
-<div class="block">Body posted to holdings-service's <code>POST /internal/holdings/validate</code>.</div>
+<div class="block">Body posted to trading-service's <code>POST /internal/holdings/validate</code>.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationRequest.html#%3Cinit%3E(java.lang.Integer,java.lang.String,java.lang.Integer,java.math.BigDecimal)" class="member-name-link">HoldingsValidationRequest(Integer, String, Integer, BigDecimal)</a> - Constructor for record class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/HoldingsValidationRequest.html" title="class in com.lemarketjames.holdings.client">HoldingsValidationRequest</a></dt>
 <dd>
@@ -2946,6 +2931,13 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The holidays as a set, for fast lookup on every tick.</div>
 </dd>
+<dt><a href="com/lemarketjames/HomeController.html" class="type-name-link" title="class in com.lemarketjames">HomeController</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
+<dd>
+<div class="block">The root greeting, kept from core-service's former main class: CI's smoke test reads it to
+ check that trading-service answers at all, without a session.</div>
+</dd>
+<dt><a href="com/lemarketjames/HomeController.html#%3Cinit%3E()" class="member-name-link">HomeController()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/HomeController.html" title="class in com.lemarketjames">HomeController</a></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:I">I</h2>
 <dl class="index">
@@ -2961,6 +2953,21 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketInstrument.html#param-initialPrice"><code>initialPrice</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessMarketData.html" class="type-name-link" title="class in com.lemarketjames.market.inprocess">InProcessMarketData</a> - Class in <a href="com/lemarketjames/market/inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></dt>
+<dd>
+<div class="block">The prices every feature of this service reads: the simulator's quotes, as a caller across the
+ network would see them.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessMarketData.html#%3Cinit%3E(com.lemarketjames.market.service.MarketSimulator,com.lemarketjames.market.service.MarketFeedControl,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">InProcessMarketData(MarketSimulator, MarketFeedControl, MarketFeedStatus)</a> - Constructor for class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessMarketData.html" title="class in com.lemarketjames.market.inprocess">InProcessMarketData</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html" class="type-name-link" title="class in com.lemarketjames.market.inprocess">InProcessPriceHistory</a> - Class in <a href="com/lemarketjames/market/inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></dt>
+<dd>
+<div class="block">The price history every feature of this service reads, as a caller across the network would
+ see it: empty while the feed is UNAVAILABLE (contract C4), as market-client's
+ <code>PriceHistoryClient</code> returns when the history endpoints answer 503.</div>
+</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html#%3Cinit%3E(com.lemarketjames.market.service.PriceHistoryReader,com.lemarketjames.market.service.MarketFeedControl)" class="member-name-link">InProcessPriceHistory(PriceHistoryReader, MarketFeedControl)</a> - Constructor for class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html" title="class in com.lemarketjames.market.inprocess">InProcessPriceHistory</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightResponse.html#inProgress()" class="member-name-link">inProgress()</a> - Method in record class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightResponse.html" title="class in com.lemarketjames.reports.insight">VolumeInsightResponse</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/reports/insight/VolumeInsightResponse.html#param-inProgress"><code>inProgress</code></a> record component.</div>
@@ -3079,7 +3086,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/InternalHoldingsValidationRequest.html" class="type-name-link" title="class in com.lemarketjames.holdings.dto">InternalHoldingsValidationRequest</a> - Class in <a href="com/lemarketjames/holdings/dto/package-summary.html">com.lemarketjames.holdings.dto</a></dt>
 <dd>
-<div class="block">Body for <code>POST /internal/holdings/validate</code>: buy-sell-service re-checking a SELL order's
+<div class="block">Body for <code>POST /internal/holdings/validate</code>: orders-service re-checking a SELL order's
  holdings before persisting it.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/dto/InternalHoldingsValidationRequest.html#%3Cinit%3E()" class="member-name-link">InternalHoldingsValidationRequest()</a> - Constructor for class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/InternalHoldingsValidationRequest.html" title="class in com.lemarketjames.holdings.dto">InternalHoldingsValidationRequest</a></dt>
@@ -3091,6 +3098,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/model/ChartRange.html#intraday()" class="member-name-link">intraday()</a> - Method in enum class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.inprocess.<a href="com/lemarketjames/market/inprocess/InProcessPriceHistory.html" title="class in com.lemarketjames.market.inprocess">InProcessPriceHistory</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/PriceHistoryController.html#intraday(int)" class="member-name-link">intraday(int)</a> - Method in class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
 <dd>
@@ -3180,6 +3189,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:J">J</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#JDBC" class="member-name-link">JDBC</a> - Static variable in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html#jdbcTemplate(javax.sql.DataSource)" class="member-name-link">jdbcTemplate(DataSource)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></dt>
+<dd>
+<div class="block">For libs/common's start-up check of the audit lockdown, which reads the account's rights.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" class="type-name-link" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
 <div class="block">Looks the token's account up in the shared database (LMKT-57).</div>
@@ -3361,39 +3376,17 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:M">M</h2>
 <dl class="index">
-<dt><a href="com/lemarketjames/ActivityServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/ActivityServiceApplication.html" title="class in com.lemarketjames">ActivityServiceApplication</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/AuthServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/AuthServiceApplication.html" title="class in com.lemarketjames">AuthServiceApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/BuySellServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/BuySellServiceApplication.html" title="class in com.lemarketjames">BuySellServiceApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/gateway/GatewayApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/GatewayApplication.html" title="class in com.lemarketjames.gateway">GatewayApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/Greeter.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/Greeter.html" title="class in com.lemarketjames">Greeter</a></dt>
 <dd>
 <div class="block">Main method that prints a greeting message to the console.</div>
 </dd>
-<dt><a href="com/lemarketjames/HoldingsServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/HoldingsServiceApplication.html" title="class in com.lemarketjames">HoldingsServiceApplication</a></dt>
+<dt><a href="com/lemarketjames/OrdersServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/OrdersServiceApplication.html" title="class in com.lemarketjames">OrdersServiceApplication</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/Main.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/Main.html" title="class in com.lemarketjames">Main</a></dt>
-<dd>
-<div class="block">Main entry point for the Spring Boot application.</div>
-</dd>
-<dt><a href="com/lemarketjames/MarketServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/MarketServiceApplication.html" title="class in com.lemarketjames">MarketServiceApplication</a></dt>
+<dt><a href="com/lemarketjames/StaffOpsServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/StaffOpsServiceApplication.html" title="class in com.lemarketjames">StaffOpsServiceApplication</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/NotificationServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/NotificationServiceApplication.html" title="class in com.lemarketjames">NotificationServiceApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/ReportingServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/ReportingServiceApplication.html" title="class in com.lemarketjames">ReportingServiceApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/staffgateway/GatewayApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.staffgateway.<a href="com/lemarketjames/staffgateway/GatewayApplication.html" title="class in com.lemarketjames.staffgateway">GatewayApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/SurveillanceServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/SurveillanceServiceApplication.html" title="class in com.lemarketjames">SurveillanceServiceApplication</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/Main.html" class="type-name-link" title="class in com.lemarketjames">Main</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Main application class for the LeMarketJames Spring Boot application.</div>
-</dd>
-<dt><a href="com/lemarketjames/Main.html#%3Cinit%3E()" class="member-name-link">Main()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/Main.html" title="class in com.lemarketjames">Main</a></dt>
+<dt><a href="com/lemarketjames/TradingServiceApplication.html#main(java.lang.String%5B%5D)" class="member-name-link">main(String[])</a> - Static method in class com.lemarketjames.<a href="com/lemarketjames/TradingServiceApplication.html" title="class in com.lemarketjames">TradingServiceApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Market.html#%3Cinit%3E()" class="member-name-link">Market()</a> - Constructor for class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Market.html" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></dt>
 <dd>&nbsp;</dd>
@@ -3445,8 +3438,9 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/MarketController.html" class="type-name-link" title="class in com.lemarketjames.market">MarketController</a> - Class in <a href="com/lemarketjames/market/package-summary.html">com.lemarketjames.market</a></dt>
 <dd>
-<div class="block">The first HTTP surface for the market feature: server-to-server callers (core-service today)
- reach <a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over the network instead of as an in-process bean.</div>
+<div class="block">The market's HTTP surface for callers in other services: orders-service reads prices here,
+ through libs/market-client's MarketDataClient, while this service's own features use
+ <a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> in-process.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/MarketController.html#%3Cinit%3E(com.lemarketjames.market.service.MarketDataService,com.lemarketjames.market.service.MarketFeedControl)" class="member-name-link">MarketController(MarketDataService, MarketFeedControl)</a> - Constructor for class com.lemarketjames.market.<a href="com/lemarketjames/market/MarketController.html" title="class in com.lemarketjames.market">MarketController</a></dt>
 <dd>&nbsp;</dd>
@@ -3456,7 +3450,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html" class="type-name-link" title="class in com.lemarketjames.market.client">MarketDataClient</a> - Class in <a href="com/lemarketjames/market/client/package-summary.html">com.lemarketjames.market.client</a></dt>
 <dd>
-<div class="block"><a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over HTTP, reached at market-service's <code>/api/market/**</code>.</div>
+<div class="block"><a href="com/lemarketjames/market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over HTTP, reached at trading-service's <code>/api/market/**</code>.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketDataClient.html#%3Cinit%3E(java.lang.String,long,long,com.lemarketjames.market.client.MarketFeedStatus)" class="member-name-link">MarketDataClient(String, long, long, MarketFeedStatus)</a> - Constructor for class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client">MarketDataClient</a></dt>
 <dd>&nbsp;</dd>
@@ -3470,8 +3464,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketFeedStatus.html" class="type-name-link" title="class in com.lemarketjames.market.client">MarketFeedStatus</a> - Class in <a href="com/lemarketjames/market/client/package-summary.html">com.lemarketjames.market.client</a></dt>
 <dd>
-<div class="block">Tracks whether <a href="com/lemarketjames/market/client/MarketDataClient.html" title="class in com.lemarketjames.market.client"><code>MarketDataClient</code></a>'s calls to market-service are currently succeeding,
- across every call this service makes.</div>
+<div class="block">Tracks whether the quote feed is currently answering, across every read this service makes.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/client/MarketFeedStatus.html#%3Cinit%3E()" class="member-name-link">MarketFeedStatus()</a> - Constructor for class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/MarketFeedStatus.html" title="class in com.lemarketjames.market.client">MarketFeedStatus</a></dt>
 <dd>&nbsp;</dd>
@@ -3533,12 +3526,6 @@ loadScripts(document, 'script');</script>
  (<code>sim.enabled=false</code>) have no background threads changing prices mid-test.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/config/MarketSchedulingConfig.html#%3Cinit%3E()" class="member-name-link">MarketSchedulingConfig()</a> - Constructor for class com.lemarketjames.market.config.<a href="com/lemarketjames/market/config/MarketSchedulingConfig.html" title="class in com.lemarketjames.market.config">MarketSchedulingConfig</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/MarketServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">MarketServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Entry point for the market microservice (simulated prices, exposed at /api/market/**).</div>
-</dd>
-<dt><a href="com/lemarketjames/MarketServiceApplication.html#%3Cinit%3E()" class="member-name-link">MarketServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/MarketServiceApplication.html" title="class in com.lemarketjames">MarketServiceApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/config/MarketSimulationProperties.html" class="type-name-link" title="class in com.lemarketjames.market.config">MarketSimulationProperties</a> - Class in <a href="com/lemarketjames/market/config/package-summary.html">com.lemarketjames.market.config</a></dt>
 <dd>
@@ -3670,12 +3657,6 @@ loadScripts(document, 'script');</script>
 <div class="block">Turns order status changes into notifications and reads a client's notifications back.</div>
 </dd>
 <dt><a href="com/lemarketjames/notifications/NotificationService.html#%3Cinit%3E(com.lemarketjames.notifications.NotificationRepository,com.lemarketjames.common.domain.AccountRepository)" class="member-name-link">NotificationService(NotificationRepository, AccountRepository)</a> - Constructor for class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationService.html" title="class in com.lemarketjames.notifications">NotificationService</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/NotificationServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">NotificationServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Tells clients what happened to their orders.</div>
-</dd>
-<dt><a href="com/lemarketjames/NotificationServiceApplication.html#%3Cinit%3E()" class="member-name-link">NotificationServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/NotificationServiceApplication.html" title="class in com.lemarketjames">NotificationServiceApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.NotificationView.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.lang.String,java.lang.String,java.lang.String,java.time.Instant)" class="member-name-link">NotificationView(Integer, Integer, String, String, String, Instant)</a> - Constructor for record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.NotificationView.html" title="class in com.lemarketjames.notifications">NotificationController.NotificationView</a></dt>
 <dd>
@@ -3853,7 +3834,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/OrderExceptionHandler.html" class="type-name-link" title="class in com.lemarketjames.common">OrderExceptionHandler</a> - Class in <a href="com/lemarketjames/common/package-summary.html">com.lemarketjames.common</a></dt>
 <dd>
-<div class="block">Translates buy-sell-service feature exceptions into structured error responses.</div>
+<div class="block">Translates orders-service feature exceptions into structured error responses.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/OrderExceptionHandler.html#%3Cinit%3E()" class="member-name-link">OrderExceptionHandler()</a> - Constructor for class com.lemarketjames.common.<a href="com/lemarketjames/common/OrderExceptionHandler.html" title="class in com.lemarketjames.common">OrderExceptionHandler</a></dt>
 <dd>&nbsp;</dd>
@@ -3880,7 +3861,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/events/OrderFilled.html" class="type-name-link" title="class in com.lemarketjames.orders.events">OrderFilled</a> - Record Class in <a href="com/lemarketjames/orders/events/package-summary.html">com.lemarketjames.orders.events</a></dt>
 <dd>
-<div class="block">Published inside buy-sell-service when an order is filled and settled (contract C6), in addition to
+<div class="block">Published inside orders-service when an order is filled and settled (contract C6), in addition to
  its <a href="com/lemarketjames/orders/events/OrderStatusChanged.html" title="class in com.lemarketjames.orders.events"><code>OrderStatusChanged</code></a>.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/events/OrderFilled.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderType,java.math.BigDecimal,java.math.BigDecimal,java.time.Instant,java.lang.String,java.time.Instant)" class="member-name-link">OrderFilled(Integer, Integer, Integer, Order.OrderType, BigDecimal, BigDecimal, Instant, String, Instant)</a> - Constructor for record class com.lemarketjames.orders.events.<a href="com/lemarketjames/orders/events/OrderFilled.html" title="class in com.lemarketjames.orders.events">OrderFilled</a></dt>
@@ -3974,7 +3955,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/client/OrdersClient.html" class="type-name-link" title="class in com.lemarketjames.orders.client">OrdersClient</a> - Class in <a href="com/lemarketjames/orders/client/package-summary.html">com.lemarketjames.orders.client</a></dt>
 <dd>
-<div class="block">Reads order data from buy-sell-service for trade history and buying power.</div>
+<div class="block">Reads order data from orders-service for trade history and buying power.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/client/OrdersClient.html#%3Cinit%3E(java.lang.String,jakarta.servlet.http.HttpServletRequest)" class="member-name-link">OrdersClient(String, HttpServletRequest)</a> - Constructor for class com.lemarketjames.orders.client.<a href="com/lemarketjames/orders/client/OrdersClient.html" title="class in com.lemarketjames.orders.client">OrdersClient</a></dt>
 <dd>&nbsp;</dd>
@@ -3982,13 +3963,17 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/service/OrderService.html#%3Cinit%3E(com.lemarketjames.orders.repository.OrderRepository,com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.orders.submission.SubmissionValidator,com.lemarketjames.orders.submission.SubmissionRecorder,com.lemarketjames.orders.execution.OrderTransitions,com.lemarketjames.common.audit.AuditEventRepository,com.lemarketjames.common.instruments.InstrumentRepository)" class="member-name-link">OrderService(OrderRepository, AccountAccess, SubmissionValidator, SubmissionRecorder, OrderTransitions, AuditEventRepository, InstrumentRepository)</a> - Constructor for class com.lemarketjames.orders.service.<a href="com/lemarketjames/orders/service/OrderService.html" title="class in com.lemarketjames.orders.service">OrderService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/OrdersServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">OrdersServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/OrdersServiceApplication.html#%3Cinit%3E()" class="member-name-link">OrdersServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/OrdersServiceApplication.html" title="class in com.lemarketjames">OrdersServiceApplication</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/client/OrderSummary.html#orderStatus()" class="member-name-link">orderStatus()</a> - Method in record class com.lemarketjames.orders.client.<a href="com/lemarketjames/orders/client/OrderSummary.html" title="class in com.lemarketjames.orders.client">OrderSummary</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>orderStatus</code> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/events/OrderStatusChanged.html" class="type-name-link" title="class in com.lemarketjames.orders.events">OrderStatusChanged</a> - Record Class in <a href="com/lemarketjames/orders/events/package-summary.html">com.lemarketjames.orders.events</a></dt>
 <dd>
-<div class="block">Published inside buy-sell-service after every order status transition (contract C6).</div>
+<div class="block">Published inside orders-service after every order status transition (contract C6).</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/events/OrderStatusChanged.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.Order.OrderStatus,java.time.Instant,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">OrderStatusChanged(Integer, Integer, Order.OrderStatus, Order.OrderStatus, Instant, RejectionReason)</a> - Constructor for record class com.lemarketjames.orders.events.<a href="com/lemarketjames/orders/events/OrderStatusChanged.html" title="class in com.lemarketjames.orders.events">OrderStatusChanged</a></dt>
 <dd>
@@ -4039,7 +4024,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/events/OrderSubmitted.html" class="type-name-link" title="class in com.lemarketjames.orders.events">OrderSubmitted</a> - Record Class in <a href="com/lemarketjames/orders/events/package-summary.html">com.lemarketjames.orders.events</a></dt>
 <dd>
-<div class="block">Published inside buy-sell-service when a new order passes its placement checks and is saved
+<div class="block">Published inside orders-service when a new order passes its placement checks and is saved
  (contract C6).</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/events/OrderSubmitted.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderType,java.math.BigDecimal,java.math.BigDecimal,java.time.Instant)" class="member-name-link">OrderSubmitted(Integer, Integer, Integer, Order.OrderType, BigDecimal, BigDecimal, Instant)</a> - Constructor for record class com.lemarketjames.orders.events.<a href="com/lemarketjames/orders/events/OrderSubmitted.html" title="class in com.lemarketjames.orders.events">OrderSubmitted</a></dt>
@@ -4063,7 +4048,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/client/OrderSummary.html" class="type-name-link" title="class in com.lemarketjames.orders.client">OrderSummary</a> - Record Class in <a href="com/lemarketjames/orders/client/package-summary.html">com.lemarketjames.orders.client</a></dt>
 <dd>
-<div class="block">The subset of core-service's <code>OrderResponse</code> this service needs for trade history and
+<div class="block">The subset of orders-service's <code>OrderResponse</code> this service needs for trade history and
  buying power.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/client/OrderSummary.html#%3Cinit%3E(java.lang.Integer,java.lang.String,java.math.BigDecimal,java.math.BigDecimal,java.lang.String,java.time.LocalDateTime)" class="member-name-link">OrderSummary(Integer, String, BigDecimal, BigDecimal, String, LocalDateTime)</a> - Constructor for record class com.lemarketjames.orders.client.<a href="com/lemarketjames/orders/client/OrderSummary.html" title="class in com.lemarketjames.orders.client">OrderSummary</a></dt>
@@ -4214,7 +4199,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Market.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a> - Class in <a href="com/lemarketjames/common/config/package-summary.html">com.lemarketjames.common.config</a></dt>
 <dd>
-<div class="block">How quotes are consumed (the feed itself is market-service's).</div>
+<div class="block">How quotes are consumed (the feed itself is trading-service's).</div>
 </dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Orders.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Orders</a> - Class in <a href="com/lemarketjames/common/config/package-summary.html">com.lemarketjames.common.config</a></dt>
 <dd>
@@ -4404,15 +4389,15 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html" class="type-name-link" title="class in com.lemarketjames.market.client">PriceHistoryClient</a> - Class in <a href="com/lemarketjames/market/client/package-summary.html">com.lemarketjames.market.client</a></dt>
 <dd>
-<div class="block"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at market-service's <code>/api/market/history/**</code>
+<div class="block"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at trading-service's <code>/api/market/history/**</code>
  and <code>/api/market/intraday/**</code>.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/client/PriceHistoryClient.html#%3Cinit%3E(java.lang.String,long,long)" class="member-name-link">PriceHistoryClient(String, long, long)</a> - Constructor for class com.lemarketjames.market.client.<a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/PriceHistoryController.html" class="type-name-link" title="class in com.lemarketjames.market">PriceHistoryController</a> - Class in <a href="com/lemarketjames/market/package-summary.html">com.lemarketjames.market</a></dt>
 <dd>
-<div class="block">Past prices for charts, for server-to-server callers (core-service for a stock's chart,
- holdings-service for the portfolio's).</div>
+<div class="block">Past prices for charts, for callers in other services (this service's own charts read
+ <code>PriceHistoryService</code> in-process).</div>
 </dd>
 <dt><a href="com/lemarketjames/market/PriceHistoryController.html#%3Cinit%3E(com.lemarketjames.market.service.PriceHistoryService,com.lemarketjames.market.service.MarketFeedControl)" class="member-name-link">PriceHistoryController(PriceHistoryService, MarketFeedControl)</a> - Constructor for class com.lemarketjames.market.<a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></dt>
 <dd>&nbsp;</dd>
@@ -4431,7 +4416,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html" class="type-name-link" title="class in com.lemarketjames.market.service">PriceHistoryReader</a> - Class in <a href="com/lemarketjames/market/service/package-summary.html">com.lemarketjames.market.service</a></dt>
 <dd>
-<div class="block">market-service's own <a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
+<div class="block">trading-service's own <a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
  today's minutes from <code>price_candles</code>, and both end with the live quote.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/service/PriceHistoryReader.html#%3Cinit%3E(com.lemarketjames.market.repository.PriceHistoryRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.service.MarketDataService)" class="member-name-link">PriceHistoryReader(PriceHistoryRepository, PriceCandleRepository, MarketDataService)</a> - Constructor for class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></dt>
@@ -4467,6 +4452,13 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>PriceRequest</code> record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" class="type-name-link" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a> - Class in <a href="com/lemarketjames/config/package-summary.html">com.lemarketjames.config</a></dt>
+<dd>
+<div class="block">The ordinary, writable connection pool, for everything but reports: the surveillance alerts the
+ order events raise, and the shared account entities the JWT filter checks a session against.</div>
+</dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html#%3Cinit%3E()" class="member-name-link">PrimaryDataSourceConfig()</a> - Constructor for class com.lemarketjames.config.<a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/profile/ProfileController.html" class="type-name-link" title="class in com.lemarketjames.profile">ProfileController</a> - Class in <a href="com/lemarketjames/profile/package-summary.html">com.lemarketjames.profile</a></dt>
 <dd>
 <div class="block">GET /api/v1/profile — the authenticated client's own profile + account info.</div>
@@ -4834,11 +4826,19 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The day in the reports time zone on which a stored UTC timestamp happened.</div>
 </dd>
-<dt><a href="com/lemarketjames/ReportingServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">ReportingServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#reportingDataSource(org.springframework.boot.autoconfigure.jdbc.DataSourceProperties)" class="member-name-link">reportingDataSource(DataSourceProperties)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
 <dd>
-<div class="block">Aggregate, read-only reports for analysts.</div>
+<div class="block">The database and account of <code>spring.datasource.*</code>, with the read-side limits on top.</div>
 </dd>
-<dt><a href="com/lemarketjames/ReportingServiceApplication.html#%3Cinit%3E()" class="member-name-link">ReportingServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/ReportingServiceApplication.html" title="class in com.lemarketjames">ReportingServiceApplication</a></dt>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html" class="type-name-link" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a> - Class in <a href="com/lemarketjames/config/package-summary.html">com.lemarketjames.config</a></dt>
+<dd>
+<div class="block">The reports' own connection pool, so reports can't starve live trading (LMKT-138).</div>
+</dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#%3Cinit%3E()" class="member-name-link">ReportingDataSourceConfig()</a> - Constructor for class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#reportingEntityManagerFactory(org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder,com.zaxxer.hikari.HikariDataSource)" class="member-name-link">reportingEntityManagerFactory(EntityManagerFactoryBuilder, HikariDataSource)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#reportingJdbcTemplate(com.zaxxer.hikari.HikariDataSource)" class="member-name-link">reportingJdbcTemplate(HikariDataSource)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/entity/ReportingTrade.html" class="type-name-link" title="class in com.lemarketjames.reports.entity">ReportingTrade</a> - Class in <a href="com/lemarketjames/reports/entity/package-summary.html">com.lemarketjames.reports.entity</a></dt>
 <dd>
@@ -4850,6 +4850,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Data access layer for querying settled trades from the reporting_trades view.</div>
 </dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#reportingTransactionManager(jakarta.persistence.EntityManagerFactory)" class="member-name-link">reportingTransactionManager(EntityManagerFactory)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportPeriod.html" class="type-name-link" title="class in com.lemarketjames.reports.period">ReportPeriod</a> - Record Class in <a href="com/lemarketjames/reports/period/package-summary.html">com.lemarketjames.reports.period</a></dt>
 <dd>
 <div class="block">A stretch of whole report-time-zone days, as the range of stored timestamps it covers.</div>
@@ -4881,7 +4883,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" class="type-name-link" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a> - Class in <a href="com/lemarketjames/reports/overnight/package-summary.html">com.lemarketjames.reports.overnight</a></dt>
 <dd>
-<div class="block">The only code in reporting-service that writes, and it writes only <code>report_runs</code>.</div>
+<div class="block">The only report code that writes, and it writes only <code>report_runs</code>.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/overnight/ReportRunWriter.html#%3Cinit%3E(org.springframework.jdbc.core.JdbcTemplate)" class="member-name-link">ReportRunWriter(JdbcTemplate)</a> - Constructor for class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a></dt>
 <dd>&nbsp;</dd>
@@ -5038,18 +5040,6 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/config/SecurityConfig.html#%3Cinit%3E()" class="member-name-link">SecurityConfig()</a> - Constructor for class com.lemarketjames.config.<a href="com/lemarketjames/config/SecurityConfig.html" title="class in com.lemarketjames.config">SecurityConfig</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/gateway/SecurityConfiguration.html" class="type-name-link" title="class in com.lemarketjames.gateway">SecurityConfiguration</a> - Class in <a href="com/lemarketjames/gateway/package-summary.html">com.lemarketjames.gateway</a></dt>
-<dd>
-<div class="block">Security configuration for the API Gateway.</div>
-</dd>
-<dt><a href="com/lemarketjames/staffgateway/SecurityConfiguration.html" class="type-name-link" title="class in com.lemarketjames.staffgateway">SecurityConfiguration</a> - Class in <a href="com/lemarketjames/staffgateway/package-summary.html">com.lemarketjames.staffgateway</a></dt>
-<dd>
-<div class="block">Security configuration for the API Gateway.</div>
-</dd>
-<dt><a href="com/lemarketjames/gateway/SecurityConfiguration.html#%3Cinit%3E()" class="member-name-link">SecurityConfiguration()</a> - Constructor for class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/SecurityConfiguration.html" title="class in com.lemarketjames.gateway">SecurityConfiguration</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/staffgateway/SecurityConfiguration.html#%3Cinit%3E()" class="member-name-link">SecurityConfiguration()</a> - Constructor for class com.lemarketjames.staffgateway.<a href="com/lemarketjames/staffgateway/SecurityConfiguration.html" title="class in com.lemarketjames.staffgateway">SecurityConfiguration</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/SecurityEventLog.html" class="type-name-link" title="class in com.lemarketjames.common.security">SecurityEventLog</a> - Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
 <div class="block">Writes security events that cut off access (LMKT-57, AC3), so sign-in and every service's
@@ -5059,10 +5049,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Configures the security filter chain for HTTP requests.</div>
 </dd>
-<dt><a href="com/lemarketjames/gateway/SecurityConfiguration.html#securityWebFilterChain(org.springframework.security.config.web.server.ServerHttpSecurity)" class="member-name-link">securityWebFilterChain(ServerHttpSecurity)</a> - Method in class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/SecurityConfiguration.html" title="class in com.lemarketjames.gateway">SecurityConfiguration</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/staffgateway/SecurityConfiguration.html#securityWebFilterChain(org.springframework.security.config.web.server.ServerHttpSecurity)" class="member-name-link">securityWebFilterChain(ServerHttpSecurity)</a> - Method in class com.lemarketjames.staffgateway.<a href="com/lemarketjames/staffgateway/SecurityConfiguration.html" title="class in com.lemarketjames.staffgateway">SecurityConfiguration</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentActivityRow.html#segment()" class="member-name-link">segment()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentActivityRow.html" title="class in com.lemarketjames.reports.dto">SegmentActivityRow</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>segment</code> record component.</div>
@@ -5560,7 +5546,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/surveillance/AlertReason.html#SETTLEMENT_REFUSED" class="member-name-link">SETTLEMENT_REFUSED</a> - Enum constant in enum class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></dt>
 <dd>
-<div class="block">The order was priced and sent to settlement, and holdings-service refused it: by then the
+<div class="block">The order was priced and sent to settlement, and trading-service refused it: by then the
  account no longer had the cash (a BUY) or the shares (a SELL).</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionControlController.ControlRequest.html#settlementAvailable()" class="member-name-link">settlementAvailable()</a> - Method in record class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionControlController.ControlRequest.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController.ControlRequest</a></dt>
@@ -5609,12 +5595,12 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/dto/SettlementRequest.html" class="type-name-link" title="class in com.lemarketjames.holdings.dto">SettlementRequest</a> - Class in <a href="com/lemarketjames/holdings/dto/package-summary.html">com.lemarketjames.holdings.dto</a></dt>
 <dd>
-<div class="block">Body for <code>POST /internal/holdings/settle</code>: the fill buy-sell-service just recorded, sent so
+<div class="block">Body for <code>POST /internal/holdings/settle</code>: the fill orders-service just recorded, sent so
  this service can apply its cash/holdings side effects.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/client/SettlementRequest.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">SettlementRequest</a> - Record Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
-<div class="block">Body posted to holdings-service's <code>POST /internal/holdings/settle</code>.</div>
+<div class="block">Body posted to trading-service's <code>POST /internal/holdings/settle</code>.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/dto/SettlementRequest.html#%3Cinit%3E()" class="member-name-link">SettlementRequest()</a> - Constructor for class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/SettlementRequest.html" title="class in com.lemarketjames.holdings.dto">SettlementRequest</a></dt>
 <dd>&nbsp;</dd>
@@ -5716,12 +5702,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/MarketInstrument.html#param-spreadBps"><code>spreadBps</code></a> record component.</div>
 </dd>
-<dt><a href="com/lemarketjames/gateway/StaffSessionCookieGatewayFilterFactory.html" class="type-name-link" title="class in com.lemarketjames.gateway">StaffSessionCookieGatewayFilterFactory</a> - Class in <a href="com/lemarketjames/gateway/package-summary.html">com.lemarketjames.gateway</a></dt>
+<dt><a href="com/lemarketjames/StaffOpsServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">StaffOpsServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
 <dd>
-<div class="block">Gives staff their own session cookie, so a staff session and a customer session can exist in
- one browser.</div>
+<div class="block">Entry point for staff-ops-service: aggregate, read-only reports for analysts and the
+ surveillance alerts Trading Ops reads.</div>
 </dd>
-<dt><a href="com/lemarketjames/gateway/StaffSessionCookieGatewayFilterFactory.html#%3Cinit%3E()" class="member-name-link">StaffSessionCookieGatewayFilterFactory()</a> - Constructor for class com.lemarketjames.gateway.<a href="com/lemarketjames/gateway/StaffSessionCookieGatewayFilterFactory.html" title="class in com.lemarketjames.gateway">StaffSessionCookieGatewayFilterFactory</a></dt>
+<dt><a href="com/lemarketjames/StaffOpsServiceApplication.html#%3Cinit%3E()" class="member-name-link">StaffOpsServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/StaffOpsServiceApplication.html" title="class in com.lemarketjames">StaffOpsServiceApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/StaffUserEntity.html" class="type-name-link" title="class in com.lemarketjames.common.domain">StaffUserEntity</a> - Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
 <dd>
@@ -5941,12 +5927,6 @@ loadScripts(document, 'script');</script>
 <div class="block">Decides which orders Trading Operations are alerted to, and reads the alerts back.</div>
 </dd>
 <dt><a href="com/lemarketjames/surveillance/SurveillanceService.html#%3Cinit%3E(com.lemarketjames.surveillance.OrderAlertRepository,com.lemarketjames.common.config.PlatformSettings)" class="member-name-link">SurveillanceService(OrderAlertRepository, PlatformSettings)</a> - Constructor for class com.lemarketjames.surveillance.<a href="com/lemarketjames/surveillance/SurveillanceService.html" title="class in com.lemarketjames.surveillance">SurveillanceService</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/SurveillanceServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">SurveillanceServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
-<dd>
-<div class="block">Watches new orders for Trading Operations.</div>
-</dd>
-<dt><a href="com/lemarketjames/SurveillanceServiceApplication.html#%3Cinit%3E()" class="member-name-link">SurveillanceServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/SurveillanceServiceApplication.html" title="class in com.lemarketjames">SurveillanceServiceApplication</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountStatus.html#SUSPENDED" class="member-name-link">SUSPENDED</a> - Enum constant in enum class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></dt>
 <dd>
@@ -6455,6 +6435,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Seconds of trading in one year.</div>
 </dd>
+<dt><a href="com/lemarketjames/TradingServiceApplication.html" class="type-name-link" title="class in com.lemarketjames">TradingServiceApplication</a> - Class in <a href="com/lemarketjames/package-summary.html">com.lemarketjames</a></dt>
+<dd>
+<div class="block">Entry point for trading-service: the simulated market, instruments, quotes and sessions, the
+ client profile, holdings, portfolio and trade history, and the notification and market-activity
+ consumers.</div>
+</dd>
+<dt><a href="com/lemarketjames/TradingServiceApplication.html#%3Cinit%3E()" class="member-name-link">TradingServiceApplication()</a> - Constructor for class com.lemarketjames.<a href="com/lemarketjames/TradingServiceApplication.html" title="class in com.lemarketjames">TradingServiceApplication</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/ReportingDataSourceConfig.html#TRANSACTION_MANAGER" class="member-name-link">TRANSACTION_MANAGER</a> - Static variable in class com.lemarketjames.config.<a href="com/lemarketjames/config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config">ReportingDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html#transactionManager(jakarta.persistence.EntityManagerFactory)" class="member-name-link">transactionManager(EntityManagerFactory)</a> - Method in class com.lemarketjames.config.<a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#transitionTo(com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">transitionTo(Order.OrderStatus)</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>
 <div class="block">Moves the order to <code>next</code>, stamping the matching timestamp.</div>

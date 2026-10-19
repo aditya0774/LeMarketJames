@@ -98,7 +98,7 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">PriceHistoryReader</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></span></div>
-<div class="block">market-service's own <a href="PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
+<div class="block">trading-service's own <a href="PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
  today's minutes from <code>price_candles</code>, and both end with the live quote. The stored rows lag
  the simulator by up to one snapshot interval, so the live price is what makes a chart's last point
  agree with the quote shown next to it.</div>

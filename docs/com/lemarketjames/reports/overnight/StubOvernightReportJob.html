@@ -166,7 +166,8 @@ implements <a href="OvernightReportJob.html" title="interface in com.lemarketjam
 <li>
 <section class="detail" id="&lt;init&gt;(org.springframework.jdbc.core.JdbcTemplate,com.lemarketjames.reports.period.ReportCalendar,java.lang.String)">
 <h3>StubOvernightReportJob</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">StubOvernightReportJob</span><wbr><span class="parameters">(org.springframework.jdbc.core.JdbcTemplate&nbsp;jdbc,
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">StubOvernightReportJob</span><wbr><span class="parameters">(@Qualifier("reportingJdbcTemplate")
+ org.springframework.jdbc.core.JdbcTemplate&nbsp;jdbc,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
  @Value("${reporting.overnight.stub.fail-with:}")
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;failWith)</span></div>

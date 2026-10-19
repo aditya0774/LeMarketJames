@@ -1,6 +1,6 @@
 -- 024: Idempotent deposits and withdrawals (LMKT-149, contracts/C6-api.md)
 --
--- A request ID identifies one cash movement. Keeping its outcome lets holdings-service answer a
+-- A request ID identifies one cash movement. Keeping its outcome lets trading-service answer a
 -- retry without changing the account twice. The account row and receipt are written in the same
 -- transaction, alongside the audit event.
 --

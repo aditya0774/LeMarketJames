@@ -35,7 +35,7 @@ export async function auditTrail(db: Client, orderId: number): Promise<AuditEven
 /**
  * The lifecycle steps of a trail, without the RULE_CHECKED event written for each placement check
  * between SUBMITTED and VALIDATED (C2). Which checks run depends on the side of the order, and
- * buy-sell-service's own tests cover them; these specs are about the steps around them.
+ * orders-service's own tests cover them; these specs are about the steps around them.
  */
 export function lifecycleSteps(trail: AuditEvent[]): string[] {
   return trail.filter(event => event.action !== 'RULE_CHECKED').map(event => event.action);
@@ -67,8 +67,8 @@ export async function storedOrder(db: Client, orderId: number): Promise<StoredOr
 }
 
 /**
- * Whether the order has a fill waiting to be settled: buy-sell-service sets the flag before it
- * calls holdings-service and clears it with the outcome (C6). No API shows it.
+ * Whether the order has a fill waiting to be settled: orders-service sets the flag before it
+ * calls trading-service and clears it with the outcome (C6). No API shows it.
  */
 export async function settlementPending(db: Client, orderId: number): Promise<boolean> {
   const result = await db.query('SELECT settlement_pending FROM orders WHERE order_id=$1', [orderId]);
@@ -85,7 +85,7 @@ export interface SettlementReceipt {
 }
 
 /**
- * Every outcome holdings-service has stored for the order. There is one per order once it has
+ * Every outcome trading-service has stored for the order. There is one per order once it has
  * been settled or refused, and none while every attempt has failed (C6).
  */
 export async function settlementReceipts(db: Client, orderId: number): Promise<SettlementReceipt[]> {

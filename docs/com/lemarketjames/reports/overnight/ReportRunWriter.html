@@ -93,12 +93,13 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@Component
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">ReportRunWriter</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">The only code in reporting-service that writes, and it writes only <code>report_runs</code>.
+<div class="block">The only report code that writes, and it writes only <code>report_runs</code>.
 
- <p>Every connection this service opens is read-only by default (README, "Read-side
- safeguards"), so a report can never write by mistake. Each method here opens its own
- transaction and makes it read-write as its first statement; PostgreSQL allows that over the
- default. Nothing else in the service does this.
+ <p>It goes through the reports' own pool (<a href="../../config/ReportingDataSourceConfig.html" title="class in com.lemarketjames.config"><code>ReportingDataSourceConfig</code></a>), whose every
+ connection is read-only by default (README, "Read-side safeguards"), so a report can never write
+ by mistake. Each method here opens its own transaction and makes it read-write as its first
+ statement; PostgreSQL allows that over the default. No other report code does this.
+ (Surveillance's alerts are written through the ordinary pool, which has no such default.)
 
  <p>Each update names the states it expects to find, so a run only moves forward:
  SCHEDULED → RUNNING → READY, LATE once the ready-by time passes (finished or not), and FAILED
@@ -198,7 +199,8 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(org.springframework.jdbc.core.JdbcTemplate)">
 <h3>ReportRunWriter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ReportRunWriter</span><wbr><span class="parameters">(org.springframework.jdbc.core.JdbcTemplate&nbsp;jdbc)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ReportRunWriter</span><wbr><span class="parameters">(@Qualifier("reportingJdbcTemplate")
+ org.springframework.jdbc.core.JdbcTemplate&nbsp;jdbc)</span></div>
 </section>
 </li>
 </ul>
@@ -212,7 +214,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="schedule(java.lang.String,java.time.LocalDate,java.time.Instant,java.time.Instant)">
 <h3>schedule</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&gt;</span>&nbsp;<span class="element-name">schedule</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reportName,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;runDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;scheduledFor,
@@ -227,7 +229,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="recordMissed(java.lang.String,java.time.LocalDate,java.time.Instant,java.time.Instant,java.lang.String)">
 <h3>recordMissed</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">recordMissed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reportName,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;runDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;scheduledFor,
@@ -244,7 +246,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="failInterrupted(java.lang.String)">
 <h3>failInterrupted</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">failInterrupted</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason)</span></div>
 <div class="block">Fails every run left unfinished (waiting, running, or late and not finished). Only for
  startup: the service just started, so nothing is running them any more.</div>
@@ -257,7 +259,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="start(java.util.UUID,java.time.Instant)">
 <h3>start</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">start</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&nbsp;runId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;now)</span></div>
 <div class="block">Records that the report started. A waiting run becomes RUNNING; one the deadline already
@@ -268,7 +270,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="finish(java.util.UUID,java.time.Instant)">
 <h3>finish</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">finish</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&nbsp;runId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;now)</span></div>
 <div class="block">Records that the report finished at <code>now</code>: READY if that is by the run's ready-by time,
@@ -279,7 +281,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="fail(java.util.UUID,java.lang.String)">
 <h3>fail</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">fail</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&nbsp;runId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason)</span></div>
 <div class="block">An unfinished run to FAILED with a reason. False when it had already finished or failed.</div>
@@ -288,7 +290,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="markLate(java.time.Instant)">
 <h3>markLate</h3>
-<div class="member-signature"><span class="annotations">@Transactional
+<div class="member-signature"><span class="annotations">@Transactional(transactionManager="reportingTransactionManager")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">markLate</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;now)</span></div>
 <div class="block">Marks LATE every run still waiting or running whose ready-by time has passed, so the
  dashboard shows it is missing before it finishes.</div>

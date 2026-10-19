@@ -93,10 +93,10 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@Component
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">MarketFeedStatus</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Tracks whether <a href="MarketDataClient.html" title="class in com.lemarketjames.market.client"><code>MarketDataClient</code></a>'s calls to market-service are currently succeeding,
- across every call this service makes. <code>MarketDataClient</code> reports each call's outcome
- here; callers who need to distinguish "the feed is down" from an ordinary empty result (an
- unsimulated instrument) read <a href="#isAvailable()"><code>isAvailable()</code></a>.
+<div class="block">Tracks whether the quote feed is currently answering, across every read this service makes.
+ <a href="MarketDataClient.html" title="class in com.lemarketjames.market.client"><code>MarketDataClient</code></a> reports each call's outcome here, and so does trading-service's
+ in-process <code>InProcessMarketData</code>; callers who need to distinguish "the feed is down" from
+ an ordinary empty result (an unsimulated instrument) read <a href="#isAvailable()"><code>isAvailable()</code></a>.
 
  <p>There is no separate "resume" action: the feed is back up the moment a call succeeds again,
  which is exactly what <a href="#recordSuccess()"><code>recordSuccess()</code></a> observes. Outage start and end are logged here

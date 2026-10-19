@@ -1,1 +1,6 @@
-{"/api/**":{"target":"http://10.14.140.190:8089","secure":false}}
+{
+  "/api/auth": { "target": "http://10.14.140.190:8082", "secure": false },
+  "/api/v1/orders": { "target": "http://10.14.140.190:8085", "secure": false },
+  "/api/v1/buy-orders": { "target": "http://10.14.140.190:8085", "secure": false },
+  "/api": { "target": "http://10.14.140.190:8084", "secure": false }
+}

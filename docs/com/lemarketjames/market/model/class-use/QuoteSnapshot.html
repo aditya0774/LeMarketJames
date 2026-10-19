@@ -60,20 +60,22 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="#com.lemarketjames.market.client">com.lemarketjames.market.client</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.market.model">com.lemarketjames.market.model</a></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><a href="#com.lemarketjames.market.inprocess">com.lemarketjames.market.inprocess</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.model">com.lemarketjames.market.model</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Immutable market types and the pricing maths, free of Spring and of any mutable state so they
  can be unit tested directly: the GBM formulas (<a href="../GbmModel.html" title="class in com.lemarketjames.market.model"><code>GbmModel</code></a>),
  trading hours, an instrument's definition, a price snapshot, and a completed candle.</div>
 </div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
+<div class="col-last even-row-color">
 <div class="block">The running market: the simulator that advances prices, the scheduler that drives it, database
  loading/saving, and the read-only <a href="../../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a>
  other features depend on.</div>
 </div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
@@ -113,6 +115,26 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">&nbsp;</div>
 <div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;</code></div>
 <div class="col-second even-row-color"><span class="type-name-label">MarketDataClient.</span><code><a href="../../client/MarketDataClient.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ticker)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.market.inprocess">
+<h2>Uses of <a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a> in <a href="../../inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></h2>
+<div class="caption"><span>Methods in <a href="../../inprocess/package-summary.html">com.lemarketjames.market.inprocess</a> that return types with arguments of type <a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a><wbr>&lt;<a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">InProcessMarketData.</span><code><a href="../../inprocess/InProcessMarketData.html#findAll()" class="member-name-link">findAll</a>()</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">InProcessMarketData.</span><code><a href="../../inprocess/InProcessMarketData.html#findByInstrumentId(int)" class="member-name-link">findByInstrumentId</a><wbr>(int&nbsp;instrumentId)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">InProcessMarketData.</span><code><a href="../../inprocess/InProcessMarketData.html#findByTicker(java.lang.String)" class="member-name-link">findByTicker</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ticker)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>

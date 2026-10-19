@@ -90,30 +90,6 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Simulated stock market: the platform's source of current prices (BR-08, BR-12, BR-13).</div>
 </div>
-<div class="col-first odd-row-color"><a href="../client/package-summary.html">com.lemarketjames.market.client</a></div>
-<div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="../config/package-summary.html">com.lemarketjames.market.config</a></div>
-<div class="col-last even-row-color">
-<div class="block">Configuration for the market feature: the <code>sim.*</code> properties, the UTC clock bean, and
- scheduling, which is enabled only when <code>sim.enabled</code> is true so tests have no background
- threads moving prices.</div>
-</div>
-<div class="col-first odd-row-color"><a href="../model/package-summary.html">com.lemarketjames.market.model</a></div>
-<div class="col-last odd-row-color">
-<div class="block">Immutable market types and the pricing maths, free of Spring and of any mutable state so they
- can be unit tested directly: the GBM formulas (<a href="../model/GbmModel.html" title="class in com.lemarketjames.market.model"><code>GbmModel</code></a>),
- trading hours, an instrument's definition, a price snapshot, and a completed candle.</div>
-</div>
-<div class="col-first even-row-color"><a href="../repository/package-summary.html">com.lemarketjames.market.repository</a></div>
-<div class="col-last even-row-color">
-<div class="block">Spring Data repositories for the market feature's tables.</div>
-</div>
-<div class="col-first odd-row-color"><a href="../service/package-summary.html">com.lemarketjames.market.service</a></div>
-<div class="col-last odd-row-color">
-<div class="block">The running market: the simulator that advances prices, the scheduler that drives it, database
- loading/saving, and the read-only <a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a>
- other features depend on.</div>
-</div>
 </div>
 </div>
 </li>
