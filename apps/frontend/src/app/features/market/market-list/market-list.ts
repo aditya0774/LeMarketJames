@@ -13,8 +13,9 @@ export interface MarketRow {
 
 /**
  * The redesign's "All stocks" table: every stock with its live price, day change and a trend
- * graph, and a search box. Presentational: the Market page polls quotes and passes rows in;
- * clicking a row asks it to open the trade for that stock.
+ * graph, a star to watch it, and a search box. Presentational: the Market page polls quotes and
+ * passes rows in; clicking a row asks it to open the trade for that stock, and the star asks it to
+ * add or remove the stock from the watchlist.
  */
 @Component({
   selector: 'app-market-list',
@@ -26,7 +27,10 @@ export class MarketList {
   private readonly catalog = inject(InstrumentCatalog);
 
   readonly rows = input<readonly MarketRow[]>([]);
+  /** The watched symbols, or null to show no stars (the watchlist is loading or not available). */
+  readonly watched = input<ReadonlySet<string> | null>(null);
   readonly selectSymbol = output<string>();
+  readonly toggleWatch = output<string>();
 
   protected readonly filter = signal('');
 

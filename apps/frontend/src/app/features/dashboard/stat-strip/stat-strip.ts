@@ -1,12 +1,14 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PortfolioTotals } from '../../../core/holdings/portfolio-totals';
 import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
+import { CashMovement } from '../../../core/cash/cash.service';
 
 /**
  * The Overview's four headline cards from the redesign: portfolio value, total gain/loss, buying
- * power, and open orders (which links to the Orders tab). Gain/loss is unrealised: no day-open
+ * power with Deposit and Withdraw (which ask the page to open "Move money"), and open orders
+ * (which links to the Orders tab). Gain/loss is unrealised: no day-open
  * portfolio value is exposed yet (see contracts/C6-api.md), so there is no "today" figure.
  */
 @Component({
@@ -34,7 +36,14 @@ import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
       <div class="stat-card">
         <span class="lbl">Buying power</span>
         <span class="val mono">{{ buyingPower() != null ? (buyingPower() | currency: 'USD') : '—' }}</span>
-        <span class="note">{{ buyingPower() != null ? 'Cash available to invest' : 'Balance unavailable' }}</span>
+        @if (buyingPower() != null) {
+          <div class="cash-btns">
+            <button type="button" class="btn btn-sm btn-soft" (click)="moveMoney.emit('DEPOSIT')">Deposit</button>
+            <button type="button" class="btn btn-sm btn-outline" (click)="moveMoney.emit('WITHDRAW')">Withdraw</button>
+          </div>
+        } @else {
+          <span class="note">Balance unavailable</span>
+        }
       </div>
       <a class="stat-card stat-link" routerLink="/orders">
         <span class="lbl">Open orders <span class="view">View →</span></span>
@@ -72,6 +81,16 @@ import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
       font-size: 24px;
       font-weight: 500;
     }
+    .cash-btns {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .cash-btns .btn {
+      height: 30px;
+      padding: 0 12px;
+      font-size: 12.5px;
+    }
     .note {
       font-size: var(--font-xs);
       color: var(--faint);
@@ -91,4 +110,5 @@ export class StatStrip {
   readonly totals = input.required<PortfolioTotals>();
   readonly openOrders = input(0);
   readonly buyingPower = input<number | null>(null);
+  readonly moveMoney = output<CashMovement>();
 }

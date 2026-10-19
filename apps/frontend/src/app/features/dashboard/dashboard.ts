@@ -18,19 +18,22 @@ import { QuickTrade } from './quick-trade/quick-trade';
 import { HoldingsSplit } from './holdings-split/holdings-split';
 import { Movers } from './movers/movers';
 import { PortfolioChart } from './portfolio-chart/portfolio-chart';
+import { MoveMoney } from './move-money/move-money';
+import { CashMovement } from '../../core/cash/cash.service';
 import { portfolioTotals } from '../../core/holdings/portfolio-totals';
 
 /**
  * Dashboard (the Overview tab)
  *
  * Signed-in home, from the redesign's Overview board: the four headline cards, the portfolio value
- * chart, quick trade, what the user owns and today's biggest movers. Container only: it loads holdings, the balance and the
+ * chart, quick trade, what the user owns and today's biggest movers. Deposit and Withdraw on the
+ * Buying power card open "Move money". Container only: it loads holdings, the balance and the
  * account's orders (for the open-order count, kept live by the order stream), polls every quote,
  * and hands the data to presentational children.
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [SessionExpired, StatStrip, QuickTrade, HoldingsSplit, Movers, PortfolioChart],
+  imports: [SessionExpired, StatStrip, QuickTrade, HoldingsSplit, Movers, PortfolioChart, MoveMoney],
   providers: [AccountOrders],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -50,6 +53,8 @@ export class Dashboard implements OnInit {
   protected readonly balance = signal<BalanceInfo | null>(null);
   /** Counts account reloads, so the portfolio chart reloads with the holdings it is built from. */
   protected readonly accountVersion = signal(0);
+  /** Which way "Move money" is open, or null while it is closed. */
+  protected readonly moneyDialog = signal<CashMovement | null>(null);
 
   protected readonly marketQuotes = signal<Record<string, Quote | null>>({});
   protected readonly marketHistory = signal<Record<string, number[]>>({});
@@ -91,6 +96,11 @@ export class Dashboard implements OnInit {
   protected onOrderPlaced(): void {
     this.refreshAccount();
     this.accountOrders.reload();
+  }
+
+  /** The answer carries the new balance, so buying power updates without another request. */
+  protected onMoneyMoved(balance: BalanceInfo): void {
+    this.balance.set(balance);
   }
 
   private refreshAccount(): void {

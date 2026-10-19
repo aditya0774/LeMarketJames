@@ -20,6 +20,9 @@
     <table aria-label="Live stock prices">
       <thead>
         <tr>
+          @if (watched()) {
+            <th class="star-col"><span class="sr-only">Watch</span></th>
+          }
           <th>Stock</th>
           <th class="num">Price</th>
           <th class="num">Today</th>
@@ -33,6 +36,20 @@
           <!-- The whole row opens the trade for that stock; Enter does the same from the keyboard. -->
           <tr class="clickable" tabindex="0" [attr.aria-label]="'Trade ' + row.instrument.symbol"
               (click)="selectSymbol.emit(row.instrument.symbol)" (keydown.enter)="selectSymbol.emit(row.instrument.symbol)">
+            @if (watched(); as watching) {
+              @let on = watching.has(row.instrument.symbol);
+              <!-- The star is its own control: it must not also open the trade, so the event stops here. -->
+              <td class="star-col">
+                <button type="button" class="star" [class.on]="on" [attr.aria-pressed]="on"
+                        [attr.aria-label]="(on ? 'Remove ' : 'Add ') + row.instrument.symbol + (on ? ' from' : ' to') + ' watchlist'"
+                        (click)="$event.stopPropagation(); toggleWatch.emit(row.instrument.symbol)"
+                        (keydown.enter)="$event.stopPropagation()">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z" />
+                  </svg>
+                </button>
+              </td>
+            }
             <td>
               <div class="stock-cell">
                 <span class="sym">{{ row.instrument.symbol }}</span>
@@ -55,7 +72,7 @@
             <td class="num"><span class="btn btn-soft btn-sm trade-link">Trade</span></td>
           </tr>
         } @empty {
-          <tr><td colspan="5" class="empty-row">No stocks match “{{ filter() }}”.</td></tr>
+          <tr><td [attr.colspan]="watched() ? 6 : 5" class="empty-row">No stocks match “{{ filter() }}”.</td></tr>
         }
       </tbody>
     </table>

@@ -53,7 +53,8 @@
 
 .row-chart {
   display: block;
-  width: 110px;
+  /* A container can widen it, e.g. the watchlist's full-width tiles. */
+  width: var(--row-chart-width, 110px);
   height: 28px;
 }
 

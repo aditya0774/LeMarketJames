@@ -35,3 +35,42 @@ tr.clickable:focus-visible {
 .trade-link {
   pointer-events: none;
 }
+
+/* The watch star: outlined, filled gold once the stock is on the watchlist. */
+.star-col {
+  width: 44px;
+  padding-right: 0;
+}
+
+.star {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.star:hover {
+  background: var(--card2);
+}
+
+.star svg {
+  width: 18px;
+  height: 18px;
+}
+
+.star path {
+  fill: none;
+  stroke: var(--faint2);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.star.on path {
+  fill: var(--pri);
+  stroke: var(--pri);
+}

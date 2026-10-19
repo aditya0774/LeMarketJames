@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
@@ -71,5 +71,61 @@ describe('MarketPage', () => {
     rows().find((r) => r.textContent?.includes('TSLA'))!.click();
 
     expect(navigate).toHaveBeenCalledWith(['/trade'], { queryParams: { symbol: 'TSLA' } });
+  });
+
+  describe('watchlist', () => {
+    const panel = () => fixture.nativeElement.querySelector('app-watchlist-panel') as HTMLElement;
+    const star = (symbol: string) =>
+      fixture.nativeElement.querySelector(`button.star[aria-label$="${symbol} to watchlist"], button.star[aria-label$="${symbol} from watchlist"]`) as HTMLButtonElement | null;
+
+    async function answerWatchlist(body: unknown, status = 200) {
+      TestBed.inject(HttpTestingController)
+        .expectOne('/api/v1/watchlist')
+        .flush(body, { status, statusText: status === 200 ? 'OK' : 'Not Found' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    it('lists the watched stocks with their prices, and stars them in the stock list', async () => {
+      await answerWatchlist({ success: true, watchlist: [{ symbol: 'TSLA', addedAt: '' }] });
+
+      expect(panel().querySelector('.count')?.textContent).toBe('1');
+      expect(panel().querySelector('li')?.textContent).toContain('TSLA');
+      expect(panel().querySelector('li')?.textContent).toContain('$248.90');
+      expect(star('TSLA')?.getAttribute('aria-pressed')).toBe('true');
+      expect(star('TSLA')?.getAttribute('aria-label')).toBe('Remove TSLA from watchlist');
+      expect(star('AAPL')?.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('adds a starred stock without opening its trade page', async () => {
+      await answerWatchlist({ success: true, watchlist: [] });
+      expect(panel().textContent).toContain('Nothing on your watchlist');
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+      star('AAPL')!.click();
+      fixture.detectChanges();
+
+      expect(panel().textContent).toContain('AAPL');
+      expect(navigate).not.toHaveBeenCalled();
+      const post = TestBed.inject(HttpTestingController).expectOne('/api/v1/watchlist');
+      expect(post.request.body).toEqual({ symbol: 'AAPL' });
+    });
+
+    it('removes a stock from the panel', async () => {
+      await answerWatchlist({ success: true, watchlist: [{ symbol: 'TSLA', addedAt: '' }] });
+
+      (panel().querySelector('button[aria-label="Remove TSLA from watchlist"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(panel().textContent).toContain('Nothing on your watchlist');
+      expect(TestBed.inject(HttpTestingController).expectOne('/api/v1/watchlist/TSLA').request.method).toBe('DELETE');
+    });
+
+    it('says the watchlist is coming soon, with no stars, until its back end exists', async () => {
+      await answerWatchlist(null, 404);
+
+      expect(panel().textContent).toContain('Watchlist coming soon');
+      expect(star('TSLA')).toBeNull();
+    });
   });
 });

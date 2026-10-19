@@ -12,6 +12,7 @@
     [totals]="totals()"
     [openOrders]="accountOrders.openCount()"
     [buyingPower]="balance()?.buyingPower ?? null"
+    (moveMoney)="moneyDialog.set($event)"
   />
 
   <app-portfolio-chart class="ov-chart" [refreshKey]="accountVersion()" />
@@ -37,3 +38,12 @@
 
   <app-movers class="ov-movers" [quotes]="marketQuotes()" [history]="marketHistory()" (selectSymbol)="chooseSymbol($event)" />
 </div>
+
+@if (moneyDialog(); as kind) {
+  <app-move-money
+    [start]="kind"
+    [buyingPower]="balance()?.buyingPower ?? null"
+    (moved)="onMoneyMoved($event)"
+    (closed)="moneyDialog.set(null)"
+  />
+}

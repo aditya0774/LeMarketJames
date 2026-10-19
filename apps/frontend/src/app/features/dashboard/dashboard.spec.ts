@@ -116,6 +116,23 @@ describe('Dashboard (Overview)', () => {
     expect(text()).toContain('Balance unavailable');
   });
 
+  it('opens "Move money" from the buying power card and shows the new buying power after a deposit', async () => {
+    await setup();
+    const deposit = Array.from(el().querySelectorAll<HTMLButtonElement>('.cash-btns button')).find((b) => b.textContent?.includes('Deposit'))!;
+
+    deposit.click();
+    fixture.detectChanges();
+    expect(el().querySelector('[role="dialog"]')?.textContent).toContain('Move money');
+
+    fixture.debugElement.query((d) => d.name === 'app-move-money').componentInstance.moved.emit({ buyingPower: 12_500 });
+    fixture.detectChanges();
+    expect(el().querySelectorAll('.stat-card .val')[2].textContent?.trim()).toBe('$12,500.00');
+
+    (el().querySelector('.mm-close') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el().querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it('splits what the user owns, largest first', async () => {
     await setup();
 

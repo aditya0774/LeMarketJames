@@ -1,0 +1,207 @@
+/* The design's "Move money" modal: a centred card over a scrim. */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--scrim);
+}
+
+.mm {
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: 18px;
+}
+
+.mm-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mm-head h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.mm-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mm-close:hover {
+  color: var(--text);
+}
+
+.mm-close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mm-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mm-amount label {
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.mm-input {
+  position: relative;
+}
+
+.mm-input span {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--faint);
+}
+
+.mm-input input {
+  width: 100%;
+  height: 54px;
+  padding-left: 32px;
+  font-size: 22px;
+}
+
+.mm-quick {
+  display: flex;
+  gap: 6px;
+}
+
+.mm-quick button {
+  flex: 1;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line2);
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mm-quick button:hover {
+  border-color: var(--line3);
+  color: var(--text);
+}
+
+.mm-power {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg2);
+  font-size: 13.5px;
+}
+
+.mm-power div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mm-power dt {
+  color: var(--dim);
+}
+
+.mm-power dd {
+  margin: 0;
+}
+
+.mm-power .after {
+  font-weight: 600;
+}
+
+.mm-power .after dt {
+  color: var(--text);
+}
+
+.mm-power .after dd {
+  color: var(--pri);
+}
+
+.mm-err {
+  margin: 0;
+  min-height: 18px;
+  font-size: 12.5px;
+  color: var(--errt);
+}
+
+.mm-go {
+  height: 50px;
+}
+
+.mm-note {
+  margin-top: -8px;
+  font-size: var(--font-xs);
+  color: var(--faint);
+  text-align: center;
+}
+
+.mm-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.mm-done strong {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.mm-tick {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--up) 12%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mm-tick svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: var(--up);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
