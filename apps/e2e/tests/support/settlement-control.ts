@@ -1,8 +1,8 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 import { OrderDto } from './orders';
 
-// holdings-service serves its test control and its settlement endpoint itself, never through a
-// gateway (C6), so they need their own address when the stack isn't on this machine.
+// trading-service serves its test control and its settlement endpoint itself, never through a
+// web app (C6), so they need their own address when the stack isn't on this machine.
 const HOLDINGS_SERVICE_URL = process.env.E2E_HOLDINGS_URL ?? 'http://localhost:8084';
 
 const faultsOf = (accountId: number) =>
@@ -34,8 +34,8 @@ export async function settlementFailuresOf(request: APIRequestContext, accountId
 }
 
 /**
- * Sends holdings-service the settlement request of an order that has a fill price, exactly as
- * buy-sell-service sends it (C6): the same fill, received again.
+ * Sends trading-service the settlement request of an order that has a fill price, exactly as
+ * orders-service sends it (C6): the same fill, received again.
  */
 export async function resendSettlement(request: APIRequestContext, accountId: number, instrumentId: number,
     order: OrderDto): Promise<APIResponse> {

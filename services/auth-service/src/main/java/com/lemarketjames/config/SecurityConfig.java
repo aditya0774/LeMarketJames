@@ -60,7 +60,7 @@ public class SecurityConfig {
 
     /**
      * CORS for direct calls to this service during local development. Browser traffic normally
-     * arrives through gateway-service, which applies its own CORS policy.
+     * arrives through a web app on the browser's own origin, which needs no CORS.
      *
      * @return a CorsConfigurationSource with the configured CORS settings
      */

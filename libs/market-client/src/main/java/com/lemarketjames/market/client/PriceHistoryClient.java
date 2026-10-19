@@ -17,12 +17,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * {@link PriceHistoryService} over HTTP, reached at market-service's {@code /api/market/history/**}
+ * {@link PriceHistoryService} over HTTP, reached at trading-service's {@code /api/market/history/**}
  * and {@code /api/market/intraday/**}. Like {@link MarketDataClient}, a failed or slow call degrades
  * to an empty history (a chart with nothing to draw) rather than an error, since charts are
  * non-critical read data.
  *
- * <p>Only created in services that set {@code market.service.url}; market-service itself implements
+ * <p>Only created in services that set {@code market.service.url}; trading-service itself implements
  * {@link PriceHistoryService} directly.
  */
 @Service
@@ -52,7 +52,7 @@ public class PriceHistoryClient implements PriceHistoryService {
                     .body(DailyBar[].class);
             return bars == null ? List.of() : List.of(bars);
         } catch (RestClientException e) {
-            log.warn("market-service history call failed for instrument {}: {}", instrumentId, e.getMessage());
+            log.warn("trading-service history call failed for instrument {}: {}", instrumentId, e.getMessage());
             return List.of();
         }
     }
@@ -66,7 +66,7 @@ public class PriceHistoryClient implements PriceHistoryService {
                     .body(PricePoint[].class);
             return points == null ? List.of() : List.of(points);
         } catch (RestClientException e) {
-            log.warn("market-service intraday call failed for instrument {}: {}", instrumentId, e.getMessage());
+            log.warn("trading-service intraday call failed for instrument {}: {}", instrumentId, e.getMessage());
             return List.of();
         }
     }

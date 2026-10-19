@@ -15,7 +15,7 @@ async function placeAndFill(request: APIRequestContext, accountId: number, instr
   return order;
 }
 
-test('BUY and SELL execute through the gateway and update cash, holdings, and trade history', async ({ request }) => {
+test('BUY and SELL execute through the trading app and update cash, holdings, and trade history', async ({ request }) => {
   const user = newUser('execute');
   await registerViaApi(request, user);
   const accountId = await loginViaApi(request, user);

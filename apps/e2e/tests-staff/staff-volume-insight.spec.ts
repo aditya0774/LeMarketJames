@@ -6,7 +6,7 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
 
 /**
  * LMKT-46: the volume insight tile on the Analyst dashboard, end to end (S38-INT). Everything
- * goes through the real staff app, staff gateway and reporting-service, without mocks.
+ * goes through the real staff app and staff-ops-service, without mocks.
  *
  * AC1  the tile compares today, this week and last week with the period before, from real data,
  *      and the user can compare two date ranges of their own
@@ -21,7 +21,7 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
  */
 const INSIGHT = '/api/v1/reports/insights/volume';
 const COMPARE = `${INSIGHT}/compare`;
-// Clients register through the trading app; the staff gateway has no registration route.
+// Clients register through the trading app; the staff app has no registration route.
 const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const TILE = 'staff-volume-insight-tile';
 const PRESETS = { TODAY: 'Today', THIS_WEEK: 'This week', LAST_WEEK: 'Last week' } as const;

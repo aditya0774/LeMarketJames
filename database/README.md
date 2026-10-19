@@ -8,21 +8,21 @@ All backend microservices connect to this same `lemarket` database. This folder 
 
 | Tables | Written by | Read by |
 |---|---|---|
-| `clients`, `addresses` | auth-service (registration, last login, lockout) | holdings-service (profile), core-service (client status) |
+| `clients`, `addresses` | auth-service (registration, last login, lockout) | trading-service (profile, client status) |
 | `staff_users` | seed data only (no staff admin yet) | auth-service (staff login) |
-| `accounts` | auth-service (created at registration), holdings-service (cash on settlement) | every servlet service |
-| `instruments` | migrations only | buy-sell-service (orders), core-service (`GET /api/v1/instruments`), market-service |
-| `orders` | buy-sell-service | buy-sell-service, holdings-service (through buy-sell's API) |
-| `settlement_receipts` | holdings-service | holdings-service (idempotent execution outcomes) |
-| `holdings` | holdings-service (settlement) | holdings-service |
-| `audit_log` | buy-sell-service and holdings-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
-| `market_quotes`, `price_candles` | market-service | market-service |
-| `price_history` | seed data ([022](#022--daily-price-history)), then market-service (today's bar) | market-service, for core-service's stock chart and holdings-service's portfolio chart ([C6](../contracts/C6-api.md#chart-ranges)) |
-| `instrument_market_params` | migrations only | market-service |
-| `reporting_trades` (view) | — | reporting-service, as the only data source of its reports ([C6](../contracts/C6-api.md#reports-reporting-service)); insights later |
-| `notifications` | notification-service, from `OrderStatusChanged` events on Kafka ([018](#018--tables-of-the-kafka-consumers)) | notification-service |
-| `order_alerts` | surveillance-service, from `OrderSubmitted` and `OrderStatusChanged` events on Kafka ([019](#019--one-alert-per-order-and-reason)) | surveillance-service |
-| `trade_activity` | activity-service, from `OrderFilled` events on Kafka | activity-service |
+| `accounts` | auth-service (created at registration), trading-service (cash on settlement) | every servlet service |
+| `instruments` | migrations only | orders-service (orders), trading-service (`GET /api/v1/instruments`, the market simulator) |
+| `orders` | orders-service | orders-service, trading-service (through orders-service's API) |
+| `settlement_receipts` | trading-service | trading-service (idempotent execution outcomes) |
+| `holdings` | trading-service (settlement) | trading-service |
+| `audit_log` | orders-service and trading-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
+| `market_quotes`, `price_candles` | trading-service (market simulator) | trading-service |
+| `price_history` | seed data ([022](#022--daily-price-history)), then trading-service (today's bar) | trading-service, for the stock chart and the portfolio chart ([C6](../contracts/C6-api.md#chart-ranges)) |
+| `instrument_market_params` | migrations only | trading-service (market simulator) |
+| `reporting_trades` (view) | — | staff-ops-service, as the only data source of its reports, through their read-only pool ([C6](../contracts/C6-api.md#reports-staff-ops-service)) |
+| `notifications` | trading-service's notification consumer, from `OrderStatusChanged` events on Kafka ([018](#018--tables-of-the-kafka-consumers)) | trading-service |
+| `order_alerts` | staff-ops-service's surveillance consumer, from `OrderSubmitted` and `OrderStatusChanged` events on Kafka ([019](#019--one-alert-per-order-and-reason)) | staff-ops-service |
+| `trade_activity` | trading-service's market-activity consumer, from `OrderFilled` events on Kafka | trading-service |
 
 The shared JPA mappings for `clients`/`addresses`/`accounts`/`staff_users`/`audit_log` live in `libs/common` (`com.lemarketjames.common.domain` and `.audit`). When a feature is extracted into its own service, update this table so it's clear who owns each write.
 
@@ -54,7 +54,7 @@ apply it automatically with the other initialization scripts.
 | `market_quotes` | Now one row per instrument; adds last/open/high/low/previous close/volume | Latest price snapshot, refreshed every few seconds so prices survive a restart. |
 | `price_candles` | New | 1-minute OHLC price history. |
 
-**core-service will not start until 006 is applied** (Hibernate schema validation fails on the
+**trading-service will not start until 006 is applied** (Hibernate schema validation fails on the
 missing tables). The script is idempotent, so it is safe to run again if you are unsure.
 
 Apply to an existing Docker database without losing data:
@@ -92,7 +92,7 @@ UPDATE instrument_market_params SET volatility = 0.70
 WHERE instrument_id = (SELECT instrument_id FROM instruments WHERE ticker = 'TSLA');
 ```
 
-Restart core-service to pick up changes. `initial_price` only applies when an instrument has no
+Restart trading-service to pick up changes. `initial_price` only applies when an instrument has no
 row in `market_quotes`; delete that row to restart an instrument from its initial price.
 
 To add an instrument to the market, insert it into `instruments` and add a matching
@@ -204,23 +204,23 @@ back cleanly; delete those leftover test instruments and their orders, then appl
 | 50 | SHOP | ShopiBron |
 | 51 | DE | Deere & Bronpany |
 
-Apply to an existing Docker database (idempotent). Stop market-service first: it holds LMT in
+Apply to an existing Docker database (idempotent). Stop trading-service first: it holds LMT in
 memory and would try to write LMT's price back after the delete.
 
 ```sh
-docker compose stop market-service
+docker compose stop trading-service
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/009_full_lebron_market.sql
-docker compose start market-service
+docker compose start trading-service
 ```
 
 ```powershell
-docker compose stop market-service
+docker compose stop trading-service
 Get-Content database/schema/009_full_lebron_market.sql | docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket
-docker compose start market-service
+docker compose start trading-service
 ```
 
 To restart a carried-over stock from its new `initial_price` instead of its stored price, delete its
-snapshot (with market-service stopped):
+snapshot (with trading-service stopped):
 
 ```sql
 DELETE FROM market_quotes
@@ -236,12 +236,12 @@ view. `011_seed_test_data.sql` is the seed data set. What they are for is descri
 [C3](../contracts/C3-seed-data.md).
 
 Both are idempotent. Apply them to an existing database without losing data (restart
-market-service afterwards so it picks up `CAVS`):
+trading-service afterwards so it picks up `CAVS`):
 
 ```sh
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/010_shared_contracts.sql
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/011_seed_test_data.sql
-docker compose restart market-service
+docker compose restart trading-service
 ```
 
 With a native Windows PostgreSQL install, `.\scripts\windows\setup-db.ps1 -Reset` rebuilds
@@ -249,10 +249,10 @@ everything including both.
 
 ## 012 — Durable order execution
 
-Apply `schema/012_order_execution.sql` before starting the updated buy-sell and holdings services.
+Apply `schema/012_order_execution.sql` before starting the updated orders- and trading-service.
 It adds the order's durable settlement flag and the settlement receipt table. Existing orders
 start with no intent; open orders are picked up by the execution worker. Final orders are untouched.
-Back up an existing database and stop the old order writer before switching to buy-sell.
+Back up an existing database and stop the old order writer before switching to orders-service.
 
 ```powershell
 Get-Content database/schema/012_order_execution.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
@@ -265,7 +265,7 @@ all settlements acquire the account lock first to serialize concurrent buys and 
 
 ## 013 — Quote used for a fill
 
-Apply `schema/013_execution_quote.sql` before starting the updated buy-sell service (it runs with
+Apply `schema/013_execution_quote.sql` before starting the updated orders-service (it runs with
 `ddl-auto=validate` and will not start without the columns). It adds `orders.quote_source` and
 `orders.quote_time`: the feed and the time of the quote an order was priced from at execution
 ([C6](../contracts/C6-api.md#automatic-execution-and-recovery)). Together with `price_per_unit`
@@ -371,16 +371,16 @@ This changes `log_line_prefix` for the whole PostgreSQL install and turns on DDL
 
 ## 018 — Tables of the Kafka consumers
 
-`schema/018_event_consumers.sql` adds one table for each service that listens to the order events
-on Kafka ([C6](../contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service)).
-Apply it before starting any of the three: each runs with `ddl-auto=validate` and will not start
-without its table.
+`schema/018_event_consumers.sql` adds one table for each consumer of the order events on Kafka
+([C6](../contracts/C6-api.md#the-consumers-notifications-surveillance-and-market-activity)), each
+then its own service. Apply it before starting trading- or staff-ops-service, which hold the
+consumers now: both run with `ddl-auto=validate` and will not start without their tables.
 
 | Table | Written by | One row per | The same event twice is caught by |
 |---|---|---|---|
-| `notifications` | notification-service | status change of an order, for its client | `UNIQUE (order_id, status)` |
-| `order_alerts` | surveillance-service | order large enough to alert Trading Ops | `UNIQUE (order_id)`, which [019](#019--one-alert-per-order-and-reason) replaces with `UNIQUE (order_id, reason)` |
-| `trade_activity` | activity-service | fill; it has no account column | the primary key, `order_id` |
+| `notifications` | trading-service (notifications) | status change of an order, for its client | `UNIQUE (order_id, status)` |
+| `order_alerts` | staff-ops-service (surveillance) | order large enough to alert Trading Ops | `UNIQUE (order_id)`, which [019](#019--one-alert-per-order-and-reason) replaces with `UNIQUE (order_id, reason)` |
+| `trade_activity` | trading-service (market activity) | fill; it has no account column | the primary key, `order_id` |
 
 ```powershell
 Get-Content database/schema/018_event_consumers.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
@@ -398,7 +398,7 @@ The rows are derived data: emptying a table loses nothing an order or the audit 
 
 `schema/019_order_alert_reasons.sql` lets an order have more than one alert, one per reason
 ([C6](../contracts/C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). Apply it before
-starting the updated surveillance-service (it runs with `ddl-auto=validate` and will not start
+starting the updated staff-ops-service (it runs with `ddl-auto=validate` and will not start
 without the new columns), and with the old one stopped: the old one does not fill `occurred_at`,
 so its inserts would be refused.
 
@@ -459,8 +459,8 @@ charts ([C6](../contracts/C6-api.md#chart-ranges)); 1D still reads `price_candle
 | Part | What it does |
 |---|---|
 | Table | New. `lemarket_app` gets read and write rights through the default privileges of [016](#016--audit-lockdown). |
-| Seed | Six months of weekdays before the day it runs, for every stock with market parameters. Each line is a random walk with the stock's own drift and volatility, its random numbers hashed from (stock, date) so the same day always seeds the same history. It is bent to pass through the price of every FILLED order in the window and to end at the stock's stored quote (else its initial price), so trades sit on the chart and it joins the live price. Today is left to market-service. Skipped once the table has rows. |
-| Upkeep | market-service writes each stock's bar for the current trading day every time it saves prices, so the history grows by a day per trading day. |
+| Seed | Six months of weekdays before the day it runs, for every stock with market parameters. Each line is a random walk with the stock's own drift and volatility, its random numbers hashed from (stock, date) so the same day always seeds the same history. It is bent to pass through the price of every FILLED order in the window and to end at the stock's stored quote (else its initial price), so trades sit on the chart and it joins the live price. Today is left to trading-service's simulator. Skipped once the table has rows. |
+| Upkeep | trading-service's simulator writes each stock's bar for the current trading day every time it saves prices, so the history grows by a day per trading day. |
 
 Apply it to an existing local database:
 

@@ -181,17 +181,13 @@ pipeline {
                     }
                 }
 
-                stage('Test core service units') {
+                stage('Test orders service units') {
                     steps {
                         sh '''
                             set -eu
-                            mvn -B -pl services/core-service test
+                            mvn -B -pl services/orders-service test
                         '''
                     }
-                }
-
-                stage('Test buy-sell service units') {
-                    steps { sh 'mvn -B -pl services/buy-sell-service test' }
                 }
 
                 stage('Test auth service units') {
@@ -203,52 +199,24 @@ pipeline {
                     }
                 }
 
-                stage('Test market service units') {
+                // Includes the notification and market-activity consumers. Their tests need no
+                // broker: each hands the record value to its listener directly and reads the
+                // result back from its endpoint.
+                stage('Test trading service units') {
                     steps {
                         sh '''
                             set -eu
-                            mvn -B -pl services/market-service test
+                            mvn -B -pl services/trading-service test
                         '''
                     }
                 }
 
-                stage('Test holdings service units') {
+                // Reports, and the surveillance consumer, which needs no broker either.
+                stage('Test staff ops service units') {
                     steps {
                         sh '''
                             set -eu
-                            mvn -B -pl services/holdings-service test
-                        '''
-                    }
-                }
-
-                stage('Test reporting service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/reporting-service test
-                        '''
-                    }
-                }
-
-                // The three Kafka consumers. Their tests need no broker: each hands the record
-                // value to its listener directly and reads the result back from its endpoint.
-                // One lane for the three, one after the other: they are small, and three more
-                // lanes would each start a JVM alongside the eight already running here.
-                stage('Test Kafka consumer service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/notification-service,services/surveillance-service,services/activity-service test
-                        '''
-                    }
-                }
-
-                // Covers both gateways: the staff gateway is this module's "staff" profile.
-                stage('Test gateway service units') {
-                    steps {
-                        sh '''
-                            set -eu
-                            mvn -B -pl services/gateway-service test
+                            mvn -B -pl services/staff-ops-service test
                         '''
                     }
                 }
@@ -273,7 +241,8 @@ pipeline {
         }
 
         // Also where Kafka starts, once per run: the full-stack stage further down finds the same
-        // container already running, and that is where the three consumers attach to it. The
+        // container already running, and that is where the consumers in trading-service and
+        // staff-ops-service attach to it. The
         // unit-test lanes above need no broker (stub publisher, listeners switched off).
         stage('Run backend integration tests on shared PostgreSQL') {
             when {
@@ -319,24 +288,24 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
-                    # kafka-test only means something to buy-sell-service: its integration tests
+                    # kafka-test only means something to orders-service: its integration tests
                     # publish order events to the broker started above (localhost:9092) instead of
                     # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
-                    mvn -B -pl services/core-service,services/buy-sell-service,services/auth-service,services/holdings-service,services/reporting-service -am \
+                    mvn -B -pl services/orders-service,services/auth-service,services/trading-service,services/staff-ops-service -am \
                         -Dspring.profiles.active=postgres-test,kafka-test \
                         "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
 
                     # The Kafka test skips itself when the kafka-test profile is missing, and a
                     # skipped test doesn't fail a build. Make sure it really ran here.
-                    kafka_report=services/buy-sell-service/target/surefire-reports/TEST-com.lemarketjames.orders.OrderEventKafkaIntegrationTest.xml
+                    kafka_report=services/orders-service/target/surefire-reports/TEST-com.lemarketjames.orders.OrderEventKafkaIntegrationTest.xml
                     grep '<testsuite ' "$kafka_report" | grep -q 'tests="[1-9]'
                     grep '<testsuite ' "$kafka_report" | grep -q 'skipped="0"'
                 '''
             }
             post {
                 always {
-                    junit 'services/core-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/buy-sell-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/holdings-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/reporting-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml'
+                    junit 'services/trading-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/trading-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml'
                 }
             }
         }
@@ -425,9 +394,7 @@ pipeline {
                     echo "$image_tag" > .image_tag
 
                     # Backend images build from the repo root so Maven can see the parent pom and libs/common.
-                    # staff-gateway-service has no image of its own: Compose runs gateway-service's
-                    # image a second time with the "staff" profile.
-                    for service in core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service; do
+                    for service in auth-service orders-service trading-service staff-ops-service; do
                         docker build -t "lemarketjames/$service:$image_tag" -f "services/$service/Dockerfile" .
                         docker image inspect "lemarketjames/$service:$image_tag" >/dev/null
                     done
@@ -538,15 +505,10 @@ pipeline {
                     fi
 
                     echo "Container user and group:"
-                    compose exec -T core-service id
                     compose exec -T auth-service id
-                    compose exec -T market-service id
-                    compose exec -T holdings-service id
-                    compose exec -T buy-sell-service id
-                    compose exec -T reporting-service id
-                    compose exec -T notification-service id
-                    compose exec -T surveillance-service id
-                    compose exec -T activity-service id
+                    compose exec -T orders-service id
+                    compose exec -T trading-service id
+                    compose exec -T staff-ops-service id
 
                     # Kafka has no HTTP health endpoint, so Compose's own health check is the test:
                     # it passes once the broker answers a client (see docker-compose.yml).
@@ -558,9 +520,9 @@ pipeline {
                         exit 1
                     fi
 
-                    # Use host-published ports; gateway-service maps host 8089 to container 8080,
-                    # and 8090 is the staff gateway. 8087, 8088 and 8091 are the Kafka consumers.
-                    for port in 8081 8082 8089 8083 8084 8085 8086 8087 8088 8091 8090; do
+                    # Use host-published ports: auth, trading, orders and staff-ops. The web apps
+                    # have no health endpoint; the routing checks below go through them instead.
+                    for port in 8082 8084 8085 8086; do
                         echo "Waiting for health endpoint on port $port"
                         healthy=0
                         status="000"
@@ -576,18 +538,30 @@ pipeline {
                         if [ "$healthy" -ne 1 ]; then
                             echo "Service on port $port did not become healthy in time (last status=$status, retries=$CI_HEALTH_RETRIES)"
                             compose ps
-                            compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service staff-gateway-service kafka
+                            compose logs auth-service orders-service trading-service staff-ops-service kafka
                             exit 1
                         fi
                     done
 
-                    # Through the gateway, so routing to core-service is exercised too.
-                    response=$(curl --fail --silent --show-error http://localhost:8089/)
+                    response=$(curl --fail --silent --show-error http://localhost:8084/)
                     echo "Spring Boot response: $response"
                     echo "$response" | grep -F "Hello from LeMarketJames!"
 
+                    # The web apps route /api by path (apps/frontend/nginx.conf and the staff app's).
+                    # Signed out, the trading app reaches auth-service (401 from /me) and
+                    # trading-service (401); the staff app has no route for a customer path (404).
+                    expect_status() {
+                        actual=$(curl --silent --output /dev/null --write-out "%{http_code}" "$2" || true)
+                        echo "$2 -> $actual (expected $1)"
+                        test "$actual" = "$1"
+                    }
+                    expect_status 401 http://localhost:4200/api/auth/me
+                    expect_status 401 http://localhost:4200/api/v1/holdings
+                    expect_status 401 http://localhost:4201/api/v1/reports/ping
+                    expect_status 404 http://localhost:4201/api/v1/holdings
+
                     echo "Spring Boot container logs:"
-                    compose logs core-service auth-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service gateway-service staff-gateway-service
+                    compose logs auth-service orders-service trading-service staff-ops-service
                 '''
             }
         }
@@ -656,8 +630,8 @@ pipeline {
             }
         }
 
-        // The same for the staff app: its nginx frontend on :4201, which proxies /api to the staff
-        // gateway. A separate run with its own configuration (apps/e2e/playwright.staff.config.ts)
+        // The same for the staff app: its nginx frontend on :4201, which proxies the staff paths to
+        // the services. A separate run with its own configuration (apps/e2e/playwright.staff.config.ts)
         // and its own report files, so neither suite overwrites the other's results.
         stage('Run staff app Playwright E2E tests') {
             when {
@@ -717,9 +691,9 @@ pipeline {
                     // What each consumer logged while handling the events, whether or not the check passed.
                     sh '''
                         if docker compose version >/dev/null 2>&1; then
-                            docker compose logs --tail=40 notification-service surveillance-service activity-service || true
+                            docker compose logs --tail=40 trading-service staff-ops-service || true
                         elif command -v docker-compose >/dev/null 2>&1; then
-                            docker-compose logs --tail=40 notification-service surveillance-service activity-service || true
+                            docker-compose logs --tail=40 trading-service staff-ops-service || true
                         fi
                     '''
                 }
@@ -743,8 +717,9 @@ pipeline {
                 sh '''
                     set -eu
 
-                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8089"
+                    # Through the trading app's Nginx: register/login reach auth-service, quotes
+                    # trading-service and orders orders-service.
+                    base="http://localhost:4200"
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -811,8 +786,9 @@ JSON
                 sh '''
                     set -eu
 
-                    # Through the gateway: register/login hit auth-service, the rest hits core-service.
-                    base="http://localhost:8089"
+                    # Through the trading app's Nginx: register/login reach auth-service, quotes
+                    # trading-service and orders orders-service.
+                    base="http://localhost:4200"
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
@@ -885,9 +861,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service db kafka || true
+                    docker compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service db kafka || true
+                    docker-compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
                 fi
             '''
         }
