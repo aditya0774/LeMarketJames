@@ -20,7 +20,7 @@ export class AppShell {
     try {
       await this.auth.logout();
     } finally {
-      await this.router.navigate(['/']);
+      await this.router.navigate(['/'], { replaceUrl: true });
     }
   }
 }

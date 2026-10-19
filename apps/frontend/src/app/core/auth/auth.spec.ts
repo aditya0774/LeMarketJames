@@ -100,6 +100,42 @@ describe('Auth', () => {
     expect(auth.roles()).toEqual([]);
   });
 
+  it('clears all session state when logout succeeds', async () => {
+    const loggedIn = auth.login({ username: 'alice', password: 'Pass123!' });
+    httpMock.expectOne(`${baseUrl}/login`).flush({
+      username: 'alice', roles: ['CLIENT'], accountId: 7
+    });
+    await loggedIn;
+
+    const loggedOut = auth.logout();
+    const request = httpMock.expectOne(`${baseUrl}/logout`);
+    expect(request.request.method).toBe('POST');
+    request.flush({ message: 'Logged out' });
+    await loggedOut;
+
+    expect(auth.currentUser()).toBeNull();
+    expect(auth.currentAccountId()).toBeNull();
+    expect(auth.roles()).toEqual([]);
+  });
+
+  it('clears all session state when logout fails', async () => {
+    const loggedIn = auth.login({ username: 'alice', password: 'Pass123!' });
+    httpMock.expectOne(`${baseUrl}/login`).flush({
+      username: 'alice', roles: ['CLIENT'], accountId: 7
+    });
+    await loggedIn;
+
+    const loggedOut = auth.logout();
+    httpMock.expectOne(`${baseUrl}/logout`).flush({}, {
+      status: 500, statusText: 'Server Error'
+    });
+
+    await expectAsync(loggedOut).toBeRejected();
+    expect(auth.currentUser()).toBeNull();
+    expect(auth.currentAccountId()).toBeNull();
+    expect(auth.roles()).toEqual([]);
+  });
+
   // LMKT-56: the server already ended the session, so nothing is sent (verify() checks it).
   it('clears the session without calling the server', async () => {
     const loggedIn = auth.login({ username: 'alice', password: 'Pass123!' });
