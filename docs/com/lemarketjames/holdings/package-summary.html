@@ -111,16 +111,16 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="HoldingsSettlementController.html" title="class in com.lemarketjames.holdings">HoldingsSettlementController</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Internal, server-to-server only: buy-sell-service calls this directly (Docker hostname, bypassing
- the gateway) when an order transitions to FILLED.</div>
+<div class="block">Internal, server-to-server only: orders-service calls this directly (Docker hostname, not
+ through a web app) when an order transitions to FILLED.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab4"><a href="HoldingsSettlementController.Outcome.html" title="class in com.lemarketjames.holdings">HoldingsSettlementController.Outcome</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab4">&nbsp;</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="HoldingsValidationInternalController.html" title="class in com.lemarketjames.holdings">HoldingsValidationInternalController</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Internal, server-to-server only: core-service calls this directly (Docker hostname, bypassing
- the gateway) to re-check a SELL order's holdings before persisting it, since the browser's own
- <code>/api/v1/holdings/validate</code> call is advisory only.</div>
+<div class="block">Internal, server-to-server only: orders-service calls this directly (Docker hostname, not
+ through a web app) to re-check a SELL order's holdings before persisting it, since the browser's
+ own <code>/api/v1/holdings/validate</code> call is advisory only.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SettlementControlController.html" title="class in com.lemarketjames.holdings">SettlementControlController</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">

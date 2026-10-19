@@ -26,7 +26,7 @@ describe('StaffShell', () => {
     expect(page.querySelectorAll('header a:not(.brand)')).toHaveLength(0);
   });
 
-  it('signs out through the gateway and returns to the staff login', async () => {
+  it('signs out through the API and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -36,7 +36,7 @@ describe('StaffShell', () => {
     auth.roles.set(['ANALYST']);
     const fixture = TestBed.createComponent(StaffShell);
     await fixture.whenStable();
-    // Resolves when the shell navigates, which it does only once the gateway has answered.
+    // Resolves when the shell navigates, which it does only once the API has answered.
     const navigatedTo = new Promise<unknown>((resolve) => {
       TestBed.inject(Router).navigate = async (commands) => {
         resolve(commands);

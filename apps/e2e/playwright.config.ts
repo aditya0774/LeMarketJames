@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * End-to-end tests run against an already running stack; they never start the app themselves.
- * - Jenkins: the Docker Compose stack, where the nginx frontend on :4200 proxies /api to the gateway.
- * - Windows: scripts/windows/start-all.ps1, where `ng serve` on :4200 proxies /api to the gateway.
+ * - Jenkins: the Docker Compose stack, where the nginx frontend on :4200 proxies /api to the services.
+ * - Windows: scripts/windows/start-all.ps1, where `ng serve` on :4200 proxies /api to the services.
  * Either way the browser and the API calls go through the same origin a real user would use.
  */
 const isCi = !!process.env.CI;

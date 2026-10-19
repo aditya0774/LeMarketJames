@@ -60,16 +60,18 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="#com.lemarketjames.market.client">com.lemarketjames.market.client</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><a href="#com.lemarketjames.market.inprocess">com.lemarketjames.market.inprocess</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
+<div class="col-last odd-row-color">
 <div class="block">The running market: the simulator that advances prices, the scheduler that drives it, database
  loading/saving, and the read-only <a href="../MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a>
  other features depend on.</div>
 </div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
-<div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.quotes">com.lemarketjames.quotes</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.quotes">com.lemarketjames.quotes</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
@@ -99,8 +101,26 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="../../client/PriceHistoryClient.html" class="type-name-link" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></code></div>
 <div class="col-last even-row-color">
-<div class="block"><a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at market-service's <code>/api/market/history/**</code>
+<div class="block"><a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at trading-service's <code>/api/market/history/**</code>
  and <code>/api/market/intraday/**</code>.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.market.inprocess">
+<h2>Uses of <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a> in <a href="../../inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></h2>
+<div class="caption"><span>Classes in <a href="../../inprocess/package-summary.html">com.lemarketjames.market.inprocess</a> that implement <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../inprocess/InProcessPriceHistory.html" class="type-name-link" title="class in com.lemarketjames.market.inprocess">InProcessPriceHistory</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">The price history every feature of this service reads, as a caller across the network would
+ see it: empty while the feed is UNAVAILABLE (contract C4), as market-client's
+ <code>PriceHistoryClient</code> returns when the history endpoints answer 503.</div>
 </div>
 </div>
 </section>
@@ -116,7 +136,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="../PriceHistoryReader.html" class="type-name-link" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">market-service's own <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
+<div class="block">trading-service's own <a href="../PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
  today's minutes from <code>price_candles</code>, and both end with the live quote.</div>
 </div>
 </div>

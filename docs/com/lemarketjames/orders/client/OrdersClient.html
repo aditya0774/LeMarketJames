@@ -93,9 +93,9 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@Service
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">OrdersClient</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Reads order data from buy-sell-service for trade history and buying power. buy-sell-service's
+<div class="block">Reads order data from orders-service for trade history and buying power. orders-service's
  /api/v1/orders/** endpoints are JWT-ownership-checked, so this relays the incoming request's own
- jwt cookie rather than bypassing that check — buy-sell-service's authorization is unchanged.</div>
+ jwt cookie rather than bypassing that check — orders-service's authorization is unchanged.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -166,7 +166,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getOrdersForAccount(int)">
 <h3>getOrdersForAccount</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="OrderSummary.html" title="class in com.lemarketjames.orders.client">OrderSummary</a>&gt;</span>&nbsp;<span class="element-name">getOrdersForAccount</span><wbr><span class="parameters">(int&nbsp;accountId)</span></div>
-<div class="block">Every order of the account. buy-sell-service pages this endpoint (20 orders by default), so
+<div class="block">Every order of the account. orders-service pages this endpoint (20 orders by default), so
  the pages are read in turn until a short one: buying power, trade history and the portfolio
  chart all need the whole list, not the latest page.</div>
 </section>

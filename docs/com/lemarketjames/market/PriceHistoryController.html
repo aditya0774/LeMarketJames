@@ -94,8 +94,8 @@ loadScripts(document, 'script');</script>
 @RequestMapping("/api/market")
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">PriceHistoryController</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Past prices for charts, for server-to-server callers (core-service for a stock's chart,
- holdings-service for the portfolio's). Kept out of <a href="MarketController.html" title="class in com.lemarketjames.market"><code>MarketController</code></a> so current quotes and
+<div class="block">Past prices for charts, for callers in other services (this service's own charts read
+ <code>PriceHistoryService</code> in-process). Kept out of <a href="MarketController.html" title="class in com.lemarketjames.market"><code>MarketController</code></a> so current quotes and
  history stay separate surfaces, mirroring the two client interfaces.
 
  <p>Like the quote endpoints, every endpoint answers 503 while the feed is

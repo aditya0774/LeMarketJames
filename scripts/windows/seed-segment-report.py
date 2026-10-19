@@ -39,7 +39,8 @@ def wait_for_fill(opener, base, order_id):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="http://localhost:8089")
+    # The trading app, which forwards /api to the services (its dev server or Nginx).
+    parser.add_argument("--base-url", default="http://localhost:4200")
     args = parser.parse_args()
     password = os.environ.get("DEMO_PASSWORD", "Pass123!")
     # Different activity and sizes make segment comparisons visible without changing prices.

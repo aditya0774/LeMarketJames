@@ -3,13 +3,14 @@
 # one large order is placed and filled, and each consumer must then show what it made of that
 # order's events, read back the way its users read it:
 #
-#   notification-service  the client's notifications say the order was FILLED     (trading gateway)
-#   surveillance-service  Trading Ops have an alert for the large order           (staff gateway)
-#   activity-service      market activity counts the fill for the stock           (trading gateway)
+#   notifications  (trading-service)    the client's notifications say the order was FILLED  (trading app)
+#   surveillance   (staff-ops-service)  Trading Ops have an alert for the large order        (staff app)
+#   activity       (trading-service)    market activity counts the fill for the stock        (trading app)
 #
 # Nothing here writes to the consumers' tables: every row checked below got there from a Kafka
-# record that buy-sell-service published. The script ends by printing the broker's own list of
-# consumer groups, which shows each service attached to its topic.
+# record that orders-service published. The script ends by printing the broker's own list of
+# consumer groups, which shows each consumer attached to its topic. The groups keep the names of
+# the services the consumers once were (notification-, surveillance- and activity-service).
 #
 # Runs only against the disposable Jenkins Compose stack, through the two frontend proxies.
 set -euo pipefail
@@ -53,13 +54,13 @@ psql_value() {
     compose exec -T db psql -At -U lemarket -d lemarket -c "$1"
 }
 
-for port in 8085 8087 8088 8091; do
+for port in 8084 8085 8086; do
     wait_until "the service on port $port" curl --fail --silent --output /dev/null "http://localhost:$port/actuator/health"
 done
 
 # --- Trading Ops sign in first: the alerts answer says how many shares make an order large ----
 # The seed Trading Ops login (contracts/C3-seed-data.md). Through the staff app's proxy, so the
-# staff gateway's route to surveillance-service is part of what is checked.
+# staff app's route to staff-ops-service's alerts is part of what is checked.
 curl --fail --silent --show-error "$staff/api/auth/login" \
     -c "$scratch/staff-cookies" -H 'Content-Type: application/json' \
     --data '{"username":"ops@seed.lemarket.com","password":"Pass123!"}' >/dev/null
@@ -100,13 +101,13 @@ order_is_filled() {
 }
 wait_until "order $order_id to fill" order_is_filled
 
-# --- 1. notification-service: the client is told ---------------------------------------------
+# --- 1. notifications (trading-service): the client is told ----------------------------------
 client_is_notified() {
     curl --fail --silent --show-error "$trading/api/v1/notifications" -b "$scratch/cookies" > "$scratch/notifications.json" \
         && json "$scratch/notifications.json" 'body.success && body.notifications.some(n => n.orderId === id && n.status === "FILLED")'
 }
 wait_until "the FILLED notification of order $order_id" client_is_notified
-echo "notification-service: the client's notifications for order $order_id:"
+echo "notifications: the client's notifications for order $order_id:"
 node -e 'const body = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
          for (const n of body.notifications.filter(n => n.orderId === Number(process.argv[2]))) console.log("  " + n.occurredAt + "  " + n.message);' \
     "$scratch/notifications.json" "$order_id"
@@ -114,7 +115,7 @@ node -e 'const body = JSON.parse(require("fs").readFileSync(process.argv[1], "ut
 duplicates=$(psql_value "SELECT count(*) FROM (SELECT status FROM notifications WHERE order_id=$order_id GROUP BY status HAVING count(*) > 1) d;")
 test "$duplicates" = 0
 
-# --- 2. surveillance-service: Trading Ops are alerted ----------------------------------------
+# --- 2. surveillance (staff-ops-service): Trading Ops are alerted ----------------------------
 ops_are_alerted() {
     curl --fail --silent --show-error "$staff/api/v1/surveillance/alerts" -b "$scratch/staff-cookies" > "$scratch/alerts.json" \
         && json "$scratch/alerts.json" 'body.success && body.alerts.some(a => a.orderId === id && a.reason === "LARGE_ORDER" && a.side === "BUY")'
@@ -122,13 +123,13 @@ ops_are_alerted() {
 wait_until "the alert for order $order_id" ops_are_alerted
 alerts=$(psql_value "SELECT count(*) FROM order_alerts WHERE order_id=$order_id AND account_id=$account_id AND quantity=$large_quantity;")
 test "$alerts" = 1
-echo "surveillance-service: Trading Ops have one LARGE_ORDER alert for order $order_id."
-# A client must not be able to read alerts: the trading gateway has no route to them, and the
+echo "surveillance: Trading Ops have one LARGE_ORDER alert for order $order_id."
+# A client must not be able to read alerts: the trading app has no route to them, and the
 # service itself refuses the role.
-client_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:8088/api/v1/surveillance/alerts" -b "$scratch/cookies")
+client_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:8086/api/v1/surveillance/alerts" -b "$scratch/cookies")
 test "$client_status" = 403
 
-# --- 3. activity-service: the fill is in the market's activity -------------------------------
+# --- 3. market activity (trading-service): the fill is in the market's activity -------------
 fill_is_counted() {
     curl --fail --silent --show-error "$trading/api/v1/market-activity" -b "$scratch/cookies" > "$scratch/activity.json" \
         && test "$(psql_value "SELECT count(*) FROM trade_activity WHERE order_id=$order_id AND instrument_id=$instrument_id AND quantity=$large_quantity;")" = 1 \
@@ -136,7 +137,7 @@ fill_is_counted() {
             'body.success && body.activity.some(a => a.instrumentId === Number(process.env.INSTRUMENT_ID) && a.trades >= 1 && a.volume >= Number(process.env.LARGE_QUANTITY))'
 }
 wait_until "the fill of order $order_id in market activity" fill_is_counted
-echo "activity-service: market activity for AAPL over the last $(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).windowHours' "$scratch/activity.json") hours:"
+echo "market activity: market activity for AAPL over the last $(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).windowHours' "$scratch/activity.json") hours:"
 node -e 'const body = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
          console.log("  " + JSON.stringify(body.activity.find(a => a.instrumentId === Number(process.argv[2]))));' \
     "$scratch/activity.json" "$instrument_id"

@@ -94,12 +94,12 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">HoldingsSettlementService</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">Applies the cash and holdings side effects of a fill. This is the only place in the system that
- writes to holdings or debits/credits cash — order placement (buy-sell-service) only validates and
+ writes to holdings or debits/credits cash — order placement (orders-service) only validates and
  records the order; nothing is settled until this runs.
 
  <p>Order placement's cash check is a point-in-time check and can't account for other orders
  placed in the meantime, so the cash/quantity checks here are re-validated defensively rather than
- trusted from buy-sell-service. This is not a full reservation/holds system: two orders placed before
+ trusted from orders-service. This is not a full reservation/holds system: two orders placed before
  either fills can still both pass their placement-time check and one settlement can fail here.</div>
 </section>
 <section class="summary">

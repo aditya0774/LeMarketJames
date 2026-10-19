@@ -13,7 +13,7 @@ import java.util.Set;
  * Trading hours for a market, used to decide when an instrument's price may move and how long
  * a "trading year" is for the GBM time step.
  *
- * <p>Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; market-service
+ * <p>Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; trading-service
  * configures them as {@code sim.holidays}). Half days are not modelled.
  *
  * @param zone               time zone the exchange operates in

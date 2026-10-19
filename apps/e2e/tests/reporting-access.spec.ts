@@ -1,13 +1,13 @@
 import { APIRequestContext, APIResponse, expect, test } from '@playwright/test';
 
 /**
- * LMKT-138: only analysts may read reports (contracts/C7-roles.md), checked on reporting-service's
+ * LMKT-138: only analysts may read reports (contracts/C7-roles.md), checked on staff-ops-service's
  * ping endpoint with the seed logins (contracts/C3-seed-data.md). These tests only log in and
  * read, so they can share the seed logins safely.
  *
- * This suite checks the service's own rule, so it calls reporting-service directly, which needs
+ * This suite checks the service's own rule, so it calls staff-ops-service directly, which needs
  * its own address when the stack isn't on this machine. The way staff really reach it, through
- * the staff gateway, is covered in staff-gateway.spec.ts; the trading gateway has no route to it.
+ * the staff app, is covered in staff-api.spec.ts; the trading app has no route to it.
  */
 const REPORTING_SERVICE_URL = process.env.E2E_REPORTING_URL ?? 'http://localhost:8086';
 const PING = `${REPORTING_SERVICE_URL}/api/v1/reports/ping`;
@@ -15,7 +15,7 @@ const SEED_PASSWORD = 'Pass123!';
 
 /**
  * Logs in the way the apps do, then calls ping with the token that login issued. The token is
- * passed on by hand because the login host and reporting-service's host need not be the same.
+ * passed on by hand because the login host and staff-ops-service's host need not be the same.
  */
 async function pingAs(request: APIRequestContext, seedName: string): Promise<APIResponse> {
   const login = await request.post('/api/auth/login', {
@@ -44,7 +44,7 @@ test.describe('Report access', () => {
     const response = await pingAs(request, 'analyst');
     expect(response.status(), await response.text()).toBe(200);
     const body = await response.json();
-    expect(body).toMatchObject({ success: true, service: 'reporting-service' });
+    expect(body).toMatchObject({ success: true, service: 'staff-ops-service' });
     // An IANA zone ID; which one is a setting (contracts/C5-config.md), so it isn't repeated here.
     expect(() => new Intl.DateTimeFormat('en-US', { timeZone: body.timeZone })).not.toThrow();
   });

@@ -14,8 +14,8 @@ import { newUser, registerViaApi } from './support/users';
 
 /**
  * LMKT-72 (S17, a buy) and LMKT-74 (S18, a sell): settlement on the live stack, of fills the
- * executor really made. Every order here is placed through the gateway, priced by the worker from
- * the feed and settled by holdings-service; nothing is inserted.
+ * executor really made. Every order here is placed through the trading app, priced by the worker
+ * from the feed and settled by trading-service; nothing is inserted.
  *
  * Two of these tests pause the execution worker for the whole stack, so the file runs in the
  * `execution-recovery` project, after the rest of the suite (playwright.config.ts).
@@ -29,7 +29,7 @@ test.describe.configure({ mode: 'default', timeout: 60_000 });
 const SYMBOL = 'MA';
 // What a new client registers with (support/users.ts).
 const OPENING_CASH = 10000;
-// The staff app, where Trading Ops read their alerts (the same variable staff-gateway.spec.ts uses).
+// The staff app, where Trading Ops read their alerts (the same variable staff-api.spec.ts uses).
 const STAFF = process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201';
 
 // The stages after this suite in Jenkins place orders too; never leave the worker paused for them.
@@ -98,7 +98,7 @@ async function buyAndFill(request: APIRequestContext, accountId: number, instrum
   return order;
 }
 
-/** AC4: the order ended REJECTED for this reason, and holdings-service applied none of it. */
+/** AC4: the order ended REJECTED for this reason, and trading-service applied none of it. */
 async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: string) {
   expect(order.orderStatus).toBe('REJECTED');
   expect(order.rejectionReason).toBe(reason);
@@ -115,7 +115,7 @@ async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: s
 /**
  * AC4: Trading Operations are alerted. Staff sign in on the staff app's own login page, and the
  * alert is read with that session through the staff app's origin: the staff app has no alerts
- * screen yet, so this is the staff gateway's answer to a signed-in TRADING_OPS browser (C6).
+ * screen yet, so this is the staff app's answer to a signed-in TRADING_OPS browser (C6).
  */
 async function expectTradingOpsAlerted(browser: Browser, order: OrderDto, accountId: number, reason: string) {
   const context = await browser.newContext({ baseURL: STAFF });
@@ -263,7 +263,7 @@ test.describe('A settlement that would overdraw the account is refused (S17 and 
 });
 
 /**
- * Failure injection: holdings-service's settlement test control (C5) makes this client's
+ * Failure injection: trading-service's settlement test control (C5) makes this client's
  * settlements fail after their writes have reached the database and before they are committed.
  * It is per account, so no other order on the stack is touched and the worker keeps running.
  */
