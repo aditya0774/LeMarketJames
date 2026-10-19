@@ -25,7 +25,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 | Overnight report time: `PlatformSettings.Reports` (`lmj.reports.overnight-run-time`) | reporting-service's overnight scheduler: when each night's overnight reports start, in the reports time zone. Keep it outside trading hours ([C6](C6-api.md#get-apiv1reportsovernight)). |
 | Overnight ready-by time: `PlatformSettings.Reports` (`lmj.reports.ready-by`) | reporting-service's overnight scheduler: when a successful run must be ready by, the same night. A run not finished by then is marked late, so the Analyst dashboard shows it; one that finishes after it stays late. Must be after the overnight report time; the service refuses to start otherwise. |
 | Large-order quantity: `PlatformSettings.Surveillance` (`lmj.surveillance.large-order-quantity`) | surveillance-service: an order placed for at least this many shares raises an alert for Trading Ops ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). The alerts endpoint returns the value in use. |
-| Cash movement limit: `PlatformSettings.Cash` (`lmj.cash.movement-limit`, default `$50,000.00`) | holdings-service: the largest amount accepted by one deposit or withdrawal ([C6](C6-api.md#planned-agreed-not-built)). |
+| Cash movement limit: `PlatformSettings.Cash` (`lmj.cash.movement-limit`, default `$50,000.00`) | holdings-service: the largest amount accepted by one deposit or withdrawal ([C6](C6-api.md#deposit-and-withdraw-cash)). |
 
 ## Changing a value
 

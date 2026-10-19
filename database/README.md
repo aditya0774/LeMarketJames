@@ -495,7 +495,7 @@ data.
 ## 024 — Cash movement receipts
 
 `schema/024_cash_movements.sql` adds `cash_movement_receipts`, the idempotency record for deposits
-and withdrawals ([C6](../contracts/C6-api.md#planned-agreed-not-built)). A request
+and withdrawals ([C6](../contracts/C6-api.md#deposit-and-withdraw-cash)). A request
 ID is stored once with its account, movement, amount and resulting cash balance, so retrying it
 cannot move cash twice. The migration also adds `CASH_DEPOSITED` and `CASH_WITHDRAWN` to the audit
 action constraint for databases that already applied 010 and 014.
