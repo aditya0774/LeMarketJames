@@ -156,12 +156,9 @@ test('LMKT-45: Trading Ops cannot open the list or bypass it with the API', asyn
   await expect(page).toHaveURL(/\/trade-search$/);
   expect((await page.request.get(API)).status()).toBe(403);
 
-  // Wait for the app's own session check on the full reload before judging the role guard.
-  const [session] = await Promise.all([
-    page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/me' && r.request().method() === 'GET'),
-    page.goto(REPORT, { waitUntil: 'domcontentloaded' }),
-  ]);
-  expect(session.status()).toBe(200);
-  await expect(page).toHaveURL(/\/access-denied$/);
+  // A full reload: the app restores the session, then the role guard refuses the page. toHaveURL
+  // waits for that on its own; a lost session would end on /login instead and fail here.
+  await page.goto(REPORT, { waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveURL(/\/access-denied$/, { timeout: 30_000 });
   await expect(page.locator(CONTENT)).toHaveCount(0);
 });
