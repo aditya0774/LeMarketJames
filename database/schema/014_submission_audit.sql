@@ -33,6 +33,6 @@ CREATE INDEX IF NOT EXISTS audit_log_request_idx ON audit_log (request_id);
 -- because it is re-applied before this file.
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_action_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_action_check
-    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED'));
+    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED', 'CASH_DEPOSITED', 'CASH_WITHDRAWN'));
 
 COMMIT;
