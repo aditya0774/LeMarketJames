@@ -99,12 +99,12 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">PriceHistoryClient</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></span></div>
-<div class="block"><a href="../service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at market-service's <code>/api/market/history/**</code>
+<div class="block"><a href="../service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at trading-service's <code>/api/market/history/**</code>
  and <code>/api/market/intraday/**</code>. Like <a href="MarketDataClient.html" title="class in com.lemarketjames.market.client"><code>MarketDataClient</code></a>, a failed or slow call degrades
  to an empty history (a chart with nothing to draw) rather than an error, since charts are
  non-critical read data.
 
- <p>Only created in services that set <code>market.service.url</code>; market-service itself implements
+ <p>Only created in services that set <code>market.service.url</code>; trading-service itself implements
  <a href="../service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> directly.</div>
 </section>
 <section class="summary">

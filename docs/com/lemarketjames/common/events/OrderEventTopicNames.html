@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">OrderEventTopicNames</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">The Kafka topics of the order events (contract C6), one per event. They are here, rather than
- in buy-sell-service, because the services that consume the events need the same names and
+ in orders-service, because the services that consume the events need the same names and
  cannot depend on the service that publishes them. This is the only place the names are written.</div>
 </section>
 <section class="summary">

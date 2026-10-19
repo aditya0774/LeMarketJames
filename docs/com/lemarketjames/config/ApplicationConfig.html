@@ -124,7 +124,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clock()" class="member-name-link">clock</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Provides system Clock for time-based operations.</div>
+<div class="block">The one clock of this service: market timestamps and the activity window are measured with
+ it.</div>
 </div>
 </div>
 </div>
@@ -162,7 +163,9 @@ loadScripts(document, 'script');</script>
 <h3>clock</h3>
 <div class="member-signature"><span class="annotations">@Bean
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a></span>&nbsp;<span class="element-name">clock</span>()</div>
-<div class="block">Provides system Clock for time-based operations.</div>
+<div class="block">The one clock of this service: market timestamps and the activity window are measured with
+ it. A bean, so that a test can fix or advance the time; UTC, because prices and fills are
+ stored in UTC.</div>
 </section>
 </li>
 </ul>

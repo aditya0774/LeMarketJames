@@ -93,10 +93,10 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@RestController
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">HoldingsValidationInternalController</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Internal, server-to-server only: core-service calls this directly (Docker hostname, bypassing
- the gateway) to re-check a SELL order's holdings before persisting it, since the browser's own
- <code>/api/v1/holdings/validate</code> call is advisory only. Deliberately outside /api/v1/** so no
- gateway route pattern can accidentally expose it to a browser (see SecurityConfig's /internal/**
+<div class="block">Internal, server-to-server only: orders-service calls this directly (Docker hostname, not
+ through a web app) to re-check a SELL order's holdings before persisting it, since the browser's
+ own <code>/api/v1/holdings/validate</code> call is advisory only. Deliberately outside /api/** so no
+ web app's routing can accidentally expose it to a browser (see SecurityConfig's /internal/**
  permit).</div>
 </section>
 <section class="summary">

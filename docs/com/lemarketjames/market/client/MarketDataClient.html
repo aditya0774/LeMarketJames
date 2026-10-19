@@ -99,20 +99,20 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">MarketDataClient</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a></span></div>
-<div class="block"><a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over HTTP, reached at market-service's <code>/api/market/**</code>.
+<div class="block"><a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over HTTP, reached at trading-service's <code>/api/market/**</code>.
  Since market prices are non-critical read data, a failed or slow call degrades to "no quote"
  (empty/404) rather than throwing, matching how callers already treated an unsimulated instrument
  before this feature was ever a separate service (see HoldingsService's zero-valued fallback).
 
  <p>Every call reports its outcome to <a href="MarketFeedStatus.html" title="class in com.lemarketjames.market.client"><code>MarketFeedStatus</code></a>, so a caller that needs to tell
  "the feed is down" apart from an ordinary empty result (an unsimulated instrument) can check
- <a href="MarketFeedStatus.html#isAvailable()"><code>MarketFeedStatus.isAvailable()</code></a>. The connect/read timeouts below mean a hung market-service
+ <a href="MarketFeedStatus.html#isAvailable()"><code>MarketFeedStatus.isAvailable()</code></a>. The connect/read timeouts below mean a hung trading-service
  surfaces as a failure instead of blocking the caller forever.
 
- <p>Only created in services that set <code>market.service.url</code> (core-service, holdings-service).
- market-service component-scans this library too (it needs the shared model and interface), and
- without this condition it would get a second <a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> bean next to its own
- <code>MarketSimulator</code> and fail to start.</div>
+ <p>Only created in services that set <code>market.service.url</code> (orders-service).
+ trading-service component-scans this library too (it needs the shared model and interface, and
+ <a href="MarketFeedStatus.html" title="class in com.lemarketjames.market.client"><code>MarketFeedStatus</code></a>), and without this condition it would get another
+ <a href="../service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> bean next to its own in-process ones.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
