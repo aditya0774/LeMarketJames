@@ -131,14 +131,28 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Latest persisted price for one instrument (<code>market_quotes</code>, one row per instrument).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">The open, high, low, close and volume columns that every stored price bar has, whatever span it
+ covers: a minute in <code>price_candles</code>, a trading day in <code>price_history</code>.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">One persisted 1-minute OHLC bar (<code>price_candles</code>, migration 006), keyed by instrument
  and UTC interval start.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Composite primary key: (instrument_id, interval_start).</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">One trading day's OHLC bar (<code>price_history</code>, migration 022), keyed by instrument and
+ exchange-local trading date.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Composite primary key: (instrument_id, trading_date).</div>
 </div>
 </div>
 </div>

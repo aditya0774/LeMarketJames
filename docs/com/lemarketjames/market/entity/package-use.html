@@ -50,7 +50,59 @@ loadScripts(document, 'script');</script>
 <div class="header">
 <h1 title="Uses of Package com.lemarketjames.market.entity" class="title">Uses of Package<br>com.lemarketjames.market.entity</h1>
 </div>
-No usage of com.lemarketjames.market.entity</main>
+<div class="caption"><span>Packages that use <a href="package-summary.html">com.lemarketjames.market.entity</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Package</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.market.entity">com.lemarketjames.market.entity</a></div>
+<div class="col-last even-row-color">
+<div class="block">JPA persistence layer for the market feature: simulation parameters per instrument, the latest
+ price snapshot per instrument, and 1-minute OHLC candles
+ (database/schema/006_market_simulation.sql).</div>
+</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.repository">com.lemarketjames.market.repository</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Spring Data repositories for the market feature's tables.</div>
+</div>
+</div>
+<section class="package-uses">
+<ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.market.entity">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.market.entity</a> used by <a href="package-summary.html">com.lemarketjames.market.entity</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/OhlcBar.html#com.lemarketjames.market.entity">OhlcBar</a></div>
+<div class="col-last even-row-color">
+<div class="block">The open, high, low, close and volume columns that every stored price bar has, whatever span it
+ covers: a minute in <code>price_candles</code>, a trading day in <code>price_history</code>.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.market.repository">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.market.entity</a> used by <a href="../repository/package-summary.html">com.lemarketjames.market.repository</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/PriceCandleEntity.html#com.lemarketjames.market.repository">PriceCandleEntity</a></div>
+<div class="col-last even-row-color">
+<div class="block">One persisted 1-minute OHLC bar (<code>price_candles</code>, migration 006), keyed by instrument
+ and UTC interval start.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/PriceHistoryEntity.html#com.lemarketjames.market.repository">PriceHistoryEntity</a></div>
+<div class="col-last odd-row-color">
+<div class="block">One trading day's OHLC bar (<code>price_history</code>, migration 022), keyed by instrument and
+ exchange-local trading date.</div>
+</div>
+</div>
+</section>
+</li>
+</ul>
+</section>
+</main>
 <footer role="contentinfo">
 <hr>
 <p class="legal-copy"><small>Copyright &#169; 1980. All rights reserved.</small></p>

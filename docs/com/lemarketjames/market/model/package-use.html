@@ -74,6 +74,10 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.quotes">com.lemarketjames.quotes</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="package-uses">
 <ul class="block-list">
@@ -83,6 +87,15 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/DailyBar.html#com.lemarketjames.market">DailyBar</a></div>
+<div class="col-last even-row-color">
+<div class="block">One trading day of an instrument's price (<code>price_history</code>, migration 022).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/PricePoint.html#com.lemarketjames.market">PricePoint</a></div>
+<div class="col-last odd-row-color">
+<div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
+ or the latest live price.</div>
+</div>
 <div class="col-first even-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.market">QuoteSnapshot</a></div>
 <div class="col-last even-row-color">
 <div class="block">Immutable point-in-time view of an instrument's price.</div>
@@ -96,6 +109,15 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/DailyBar.html#com.lemarketjames.market.client">DailyBar</a></div>
+<div class="col-last even-row-color">
+<div class="block">One trading day of an instrument's price (<code>price_history</code>, migration 022).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/PricePoint.html#com.lemarketjames.market.client">PricePoint</a></div>
+<div class="col-last odd-row-color">
+<div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
+ or the latest live price.</div>
+</div>
 <div class="col-first even-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.market.client">QuoteSnapshot</a></div>
 <div class="col-last even-row-color">
 <div class="block">Immutable point-in-time view of an instrument's price.</div>
@@ -109,18 +131,23 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/MarketHours.html#com.lemarketjames.market.model">MarketHours</a></div>
+<div class="col-first even-row-color"><a href="class-use/ChartRange.html#com.lemarketjames.market.model">ChartRange</a></div>
 <div class="col-last even-row-color">
+<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ chart (holdings-service) so both accept the same <code>range</code> values.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MarketHours.html#com.lemarketjames.market.model">MarketHours</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Trading hours for a market, used to decide when an instrument's price may move and how long
  a "trading year" is for the GBM time step.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/MarketInstrument.html#com.lemarketjames.market.model">MarketInstrument</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/MarketInstrument.html#com.lemarketjames.market.model">MarketInstrument</a></div>
+<div class="col-last even-row-color">
 <div class="block">Immutable definition of a simulated instrument: its identity from <code>instruments</code> plus
  its simulation settings from <code>instrument_market_params</code>.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.market.model">QuoteSnapshot</a></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.market.model">QuoteSnapshot</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Immutable point-in-time view of an instrument's price.</div>
 </div>
 </div>
@@ -132,14 +159,23 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/MarketInstrument.html#com.lemarketjames.market.service">MarketInstrument</a></div>
+<div class="col-first even-row-color"><a href="class-use/DailyBar.html#com.lemarketjames.market.service">DailyBar</a></div>
 <div class="col-last even-row-color">
+<div class="block">One trading day of an instrument's price (<code>price_history</code>, migration 022).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MarketInstrument.html#com.lemarketjames.market.service">MarketInstrument</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Immutable definition of a simulated instrument: its identity from <code>instruments</code> plus
  its simulation settings from <code>instrument_market_params</code>.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/PriceCandle.html#com.lemarketjames.market.service">PriceCandle</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><a href="class-use/PriceCandle.html#com.lemarketjames.market.service">PriceCandle</a></div>
+<div class="col-last even-row-color">
 <div class="block">A completed 1-minute OHLC (open/high/low/close) bar, ready to be stored in <code>price_candles</code>.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/PricePoint.html#com.lemarketjames.market.service">PricePoint</a></div>
+<div class="col-last odd-row-color">
+<div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
+ or the latest live price.</div>
 </div>
 <div class="col-first even-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.market.service">QuoteSnapshot</a></div>
 <div class="col-last even-row-color">
@@ -157,6 +193,34 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><a href="class-use/QuoteSnapshot.html#com.lemarketjames.orders.service">QuoteSnapshot</a></div>
 <div class="col-last even-row-color">
 <div class="block">Immutable point-in-time view of an instrument's price.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.portfolio">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.market.model</a> used by <a href="../../portfolio/package-summary.html">com.lemarketjames.portfolio</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/ChartRange.html#com.lemarketjames.portfolio">ChartRange</a></div>
+<div class="col-last even-row-color">
+<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ chart (holdings-service) so both accept the same <code>range</code> values.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.quotes">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.market.model</a> used by <a href="../../quotes/package-summary.html">com.lemarketjames.quotes</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/ChartRange.html#com.lemarketjames.quotes">ChartRange</a></div>
+<div class="col-last even-row-color">
+<div class="block">The time spans a price chart can show, shared by the stock chart (core-service) and the portfolio
+ chart (holdings-service) so both accept the same <code>range</code> values.</div>
 </div>
 </div>
 </section>

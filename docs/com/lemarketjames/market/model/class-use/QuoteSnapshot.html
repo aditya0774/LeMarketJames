@@ -177,8 +177,9 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color"><span class="type-name-label">MarketPersistenceService.</span><code><a href="../../service/MarketPersistenceService.html#save(java.util.Collection,java.util.List)" class="member-name-link">save</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="../QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;&nbsp;snapshots,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a>&gt;&nbsp;candles)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and
- appends completed candles to <code>price_candles</code>, in a single transaction.</div>
+<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and its
+ bar for the current trading day into <code>price_history</code>, and appends completed candles to
+ <code>price_candles</code>, in a single transaction.</div>
 </div>
 </div>
 </section>
