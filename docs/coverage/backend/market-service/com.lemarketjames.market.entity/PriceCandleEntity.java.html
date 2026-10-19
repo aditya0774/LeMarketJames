@@ -18,7 +18,7 @@ import java.util.Objects;
 @Entity
 @Table(name = &quot;price_candles&quot;)
 @IdClass(PriceCandleEntity.Key.class)
-public class PriceCandleEntity {
+public class PriceCandleEntity extends OhlcBar {
 
     @Id
     @Column(name = &quot;instrument_id&quot;)
@@ -28,61 +28,22 @@ public class PriceCandleEntity {
     @Column(name = &quot;interval_start&quot;)
     private LocalDateTime intervalStart;
 
-    @Column(name = &quot;open_price&quot;, nullable = false, precision = 14, scale = 4)
-    private BigDecimal openPrice;
-
-    @Column(name = &quot;high_price&quot;, nullable = false, precision = 14, scale = 4)
-    private BigDecimal highPrice;
-
-    @Column(name = &quot;low_price&quot;, nullable = false, precision = 14, scale = 4)
-    private BigDecimal lowPrice;
-
-    @Column(name = &quot;close_price&quot;, nullable = false, precision = 14, scale = 4)
-    private BigDecimal closePrice;
-
-    @Column(nullable = false)
-    private Long volume;
-
-<span class="nc" id="L46">    public PriceCandleEntity() {</span>
-<span class="nc" id="L47">    }</span>
+<span class="nc" id="L31">    public PriceCandleEntity() {</span>
+<span class="nc" id="L32">    }</span>
 
     public PriceCandleEntity(Integer instrumentId, LocalDateTime intervalStart, BigDecimal openPrice,
-<span class="fc" id="L50">                             BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice, Long volume) {</span>
-<span class="fc" id="L51">        this.instrumentId = instrumentId;</span>
-<span class="fc" id="L52">        this.intervalStart = intervalStart;</span>
-<span class="fc" id="L53">        this.openPrice = openPrice;</span>
-<span class="fc" id="L54">        this.highPrice = highPrice;</span>
-<span class="fc" id="L55">        this.lowPrice = lowPrice;</span>
-<span class="fc" id="L56">        this.closePrice = closePrice;</span>
-<span class="fc" id="L57">        this.volume = volume;</span>
-<span class="fc" id="L58">    }</span>
+                             BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice, Long volume) {
+<span class="fc" id="L36">        super(openPrice, highPrice, lowPrice, closePrice, volume);</span>
+<span class="fc" id="L37">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L38">        this.intervalStart = intervalStart;</span>
+<span class="fc" id="L39">    }</span>
 
     public Integer getInstrumentId() {
-<span class="nc" id="L61">        return instrumentId;</span>
+<span class="fc" id="L42">        return instrumentId;</span>
     }
 
     public LocalDateTime getIntervalStart() {
-<span class="nc" id="L65">        return intervalStart;</span>
-    }
-
-    public BigDecimal getOpenPrice() {
-<span class="nc" id="L69">        return openPrice;</span>
-    }
-
-    public BigDecimal getHighPrice() {
-<span class="nc" id="L73">        return highPrice;</span>
-    }
-
-    public BigDecimal getLowPrice() {
-<span class="nc" id="L77">        return lowPrice;</span>
-    }
-
-    public BigDecimal getClosePrice() {
-<span class="nc" id="L81">        return closePrice;</span>
-    }
-
-    public Long getVolume() {
-<span class="nc" id="L85">        return volume;</span>
+<span class="fc" id="L46">        return intervalStart;</span>
     }
 
     /** Composite primary key: (instrument_id, interval_start). */
@@ -91,28 +52,28 @@ public class PriceCandleEntity {
         private Integer instrumentId;
         private LocalDateTime intervalStart;
 
-<span class="nc" id="L94">        public Key() {</span>
-<span class="nc" id="L95">        }</span>
+<span class="fc" id="L55">        public Key() {</span>
+<span class="fc" id="L56">        }</span>
 
-<span class="nc" id="L97">        public Key(Integer instrumentId, LocalDateTime intervalStart) {</span>
-<span class="nc" id="L98">            this.instrumentId = instrumentId;</span>
-<span class="nc" id="L99">            this.intervalStart = intervalStart;</span>
-<span class="nc" id="L100">        }</span>
+<span class="fc" id="L58">        public Key(Integer instrumentId, LocalDateTime intervalStart) {</span>
+<span class="fc" id="L59">            this.instrumentId = instrumentId;</span>
+<span class="fc" id="L60">            this.intervalStart = intervalStart;</span>
+<span class="fc" id="L61">        }</span>
 
         @Override
         public boolean equals(Object other) {
-<span class="nc bnc" id="L104" title="All 2 branches missed.">            if (this == other) {</span>
-<span class="nc" id="L105">                return true;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">            if (this == other) {</span>
+<span class="fc" id="L66">                return true;</span>
             }
-<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (!(other instanceof Key key)) {</span>
-<span class="nc" id="L108">                return false;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            if (!(other instanceof Key key)) {</span>
+<span class="fc" id="L69">                return false;</span>
             }
-<span class="nc bnc" id="L110" title="All 4 branches missed.">            return Objects.equals(instrumentId, key.instrumentId) &amp;&amp; Objects.equals(intervalStart, key.intervalStart);</span>
+<span class="fc bfc" id="L71" title="All 4 branches covered.">            return Objects.equals(instrumentId, key.instrumentId) &amp;&amp; Objects.equals(intervalStart, key.intervalStart);</span>
         }
 
         @Override
         public int hashCode() {
-<span class="nc" id="L115">            return Objects.hash(instrumentId, intervalStart);</span>
+<span class="fc" id="L76">            return Objects.hash(instrumentId, intervalStart);</span>
         }
     }
 }
