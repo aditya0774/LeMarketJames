@@ -3,30 +3,25 @@ package com.lemarketjames.reports.service;
 import com.lemarketjames.reports.dto.PeriodAggregation;
 import com.lemarketjames.reports.dto.TradeReportRequest;
 import com.lemarketjames.reports.dto.TradeReportResponse;
-import com.lemarketjames.reports.entity.ReportingTrade;
 import com.lemarketjames.reports.period.ReportBucket;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.ReportingTradeRepository;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.IsoFields;
-import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 /**
  * Business logic for trade aggregation reports.
- * Groups settled trades by period (day, week, month, year) and aggregates counts and values.
+ * Counts and totals settled trades per period (day, week, month, year); the grouping itself
+ * runs in the database ({@link ReportingTradeRepository#aggregateByPeriod}), and this class
+ * validates the request and labels each period.
  */
 @Service
 public class TradeReportService {
@@ -77,58 +72,26 @@ public class TradeReportService {
         // Get query time zone (report zone, not for display)
         ZoneId queryZone = reportCalendar.zone();
 
-        // Query trades within the date range
+        // Group in the database, so only one row per period comes back instead of every trade.
+        // Loading every trade held a pooled connection and the shared database long enough to
+        // slow live order execution under report load (LMKT-44).
         ReportPeriod queryRange = reportCalendar.between(from, to);
-        List<ReportingTrade> trades = tradeRepository.findByFilledAtBetween(queryRange.start(), queryRange.end());
+        // ReportBucket's names are date_trunc's units: day, week, month, year.
+        String unit = periodType.name().toLowerCase(Locale.ROOT);
+        List<PeriodAggregation> data = tradeRepository
+                .aggregateByPeriod(unit, queryZone.getId(), queryRange.start(), queryRange.end())
+                .stream()
+                .map(row -> new PeriodAggregation(
+                        formatPeriod(LocalDate.parse(row.getPeriodStart()), periodType),
+                        Math.toIntExact(row.getTradeCount()),
+                        Math.toIntExact(row.getBuyCount()),
+                        Math.toIntExact(row.getSellCount()),
+                        row.getTotalValue()))
+                .toList();
 
-        // Aggregate trades by period
-        Map<String, PeriodAggregation> aggregations = new LinkedHashMap<>();
-
-        for (ReportingTrade trade : trades) {
-            // Determine which period this trade belongs to
-            LocalDate tradeLocalDate = trade.getFilledAt().atZone(queryZone).toLocalDate();
-            LocalDate bucketFirstDay = calculateBucketFirstDay(tradeLocalDate, periodType);
-            
-            // Format period key
-            String periodKey = formatPeriod(bucketFirstDay, periodType);
-
-            // Get or create aggregation for this period
-            aggregations.computeIfAbsent(periodKey, key -> 
-                new PeriodAggregation(key, 0, 0, 0, BigDecimal.ZERO)
-            );
-
-            // Update aggregation
-            PeriodAggregation agg = aggregations.get(periodKey);
-            agg.setTradeCount(agg.getTradeCount() + 1);
-            
-            if ("BUY".equals(trade.getSide())) {
-                agg.setBuyCount(agg.getBuyCount() + 1);
-            } else if ("SELL".equals(trade.getSide())) {
-                agg.setSellCount(agg.getSellCount() + 1);
-            }
-
-            BigDecimal tradeValue = trade.getGrossAmount() != null ? trade.getGrossAmount() : BigDecimal.ZERO;
-            agg.setTotalValue(agg.getTotalValue().add(tradeValue));
-        }
-
-        // Build response
-        List<PeriodAggregation> data = new ArrayList<>(aggregations.values());
         LocalDateTime generatedAt = LocalDateTime.now(clock);
 
         return new TradeReportResponse(data, generatedAt);
-    }
-
-    /**
-     * Calculate the first day of the bucket that the given day falls in.
-     * Mirrors ReportBucket logic without accessing private methods.
-     */
-    private LocalDate calculateBucketFirstDay(LocalDate day, ReportBucket bucket) {
-        return switch (bucket) {
-            case DAY -> day;
-            case WEEK -> day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            case MONTH -> day.withDayOfMonth(1);
-            case YEAR -> day.withDayOfYear(1);
-        };
     }
 
     /**

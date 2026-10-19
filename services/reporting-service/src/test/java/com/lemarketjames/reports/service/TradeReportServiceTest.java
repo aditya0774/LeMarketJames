@@ -3,9 +3,9 @@ package com.lemarketjames.reports.service;
 import com.lemarketjames.reports.dto.PeriodAggregation;
 import com.lemarketjames.reports.dto.TradeReportRequest;
 import com.lemarketjames.reports.dto.TradeReportResponse;
-import com.lemarketjames.reports.entity.ReportingTrade;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
+import com.lemarketjames.reports.repository.PeriodTotalsProjection;
 import com.lemarketjames.reports.repository.ReportingTradeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,20 +22,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for TradeReportService aggregation logic.
- * Tests period grouping, counting, and value aggregation.
+ * Unit tests for TradeReportService. The grouping itself runs in SQL
+ * (ReportingTradeRepository.aggregateByPeriod), so these check what the service owns: the
+ * request validation, what it asks the database for, and how each period row is labelled.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TradeReportServiceTest {
+
+    private static final ZoneId ZONE = ZoneId.of("America/New_York");
 
     @Mock
     private ReportingTradeRepository tradeRepository;
@@ -48,19 +52,23 @@ class TradeReportServiceTest {
 
     private TradeReportService reportService;
 
+    /** A row as the database returns it. */
+    private record Row(String getPeriodStart, long getTradeCount, long getBuyCount, long getSellCount,
+                       BigDecimal getTotalValue) implements PeriodTotalsProjection {
+    }
+
     @BeforeEach
     void setUp() {
-        ZoneId zone = ZoneId.of("America/New_York");
-        when(reportCalendar.zone()).thenReturn(zone);
+        when(reportCalendar.zone()).thenReturn(ZONE);
         when(clock.instant()).thenReturn(Instant.parse("2026-10-06T21:00:00Z"));
-        when(clock.getZone()).thenReturn(zone);
-        
+        when(clock.getZone()).thenReturn(ZONE);
+
         // Mock reportCalendar.between() to return a ReportPeriod
         when(reportCalendar.between(any(LocalDate.class), any(LocalDate.class)))
             .thenAnswer(invocation -> {
                 LocalDate firstDay = invocation.getArgument(0);
                 LocalDate lastDay = invocation.getArgument(1);
-                
+
                 // Validate just like the real method does
                 if (firstDay == null || lastDay == null) {
                     throw new IllegalArgumentException("Both the first and the last day of the report are required");
@@ -68,34 +76,20 @@ class TradeReportServiceTest {
                 if (lastDay.isBefore(firstDay)) {
                     throw new IllegalArgumentException("The report's last day must not be before its first day");
                 }
-                
+
                 // Create ReportPeriod like the real calendar would
-                LocalDateTime startUtc = LocalDateTime.ofInstant(
-                    firstDay.atStartOfDay(zone).toInstant(), 
-                    ZoneOffset.UTC
-                );
-                LocalDateTime endUtc = LocalDateTime.ofInstant(
-                    lastDay.plusDays(1).atStartOfDay(zone).toInstant(), 
-                    ZoneOffset.UTC
-                );
-                return new ReportPeriod(firstDay, startUtc, endUtc);
+                return new ReportPeriod(firstDay, startInUtc(firstDay), startInUtc(lastDay.plusDays(1)));
             });
-        
+
         reportService = new TradeReportService(tradeRepository, reportCalendar, clock);
     }
 
     @Test
     void testDailyAggregation() {
-        // Given: Three trades on two different days
-        LocalDateTime oct1 = LocalDateTime.of(2026, 10, 1, 10, 30, 0);
-        LocalDateTime oct2 = LocalDateTime.of(2026, 10, 2, 14, 15, 0);
-
-        List<ReportingTrade> trades = new ArrayList<>();
-        trades.add(createTrade(1, "BUY", new BigDecimal("100"), "10.00", oct1));
-        trades.add(createTrade(2, "SELL", new BigDecimal("50"), "12.00", oct1));
-        trades.add(createTrade(3, "BUY", new BigDecimal("25"), "11.50", oct2));
-
-        mockTradeRepository(trades);
+        // Given: two days with trades, as the database groups them
+        mockRows(
+            new Row("2026-10-01", 2, 1, 1, new BigDecimal("1600.00")),
+            new Row("2026-10-02", 1, 1, 0, new BigDecimal("287.50")));
 
         // When: Generating a daily report
         TradeReportRequest request = new TradeReportRequest("DAY",
@@ -124,17 +118,10 @@ class TradeReportServiceTest {
 
     @Test
     void testWeeklyAggregation() {
-        // Given: Trades in two different weeks
-        LocalDateTime monday = LocalDateTime.of(2026, 10, 5, 10, 0, 0); // Week 41
-        LocalDateTime tuesday = LocalDateTime.of(2026, 10, 6, 11, 0, 0);
-        LocalDateTime nextMonday = LocalDateTime.of(2026, 10, 12, 10, 0, 0); // Week 42
-
-        List<ReportingTrade> trades = new ArrayList<>();
-        trades.add(createTrade(1, "BUY", new BigDecimal("100"), "10.00", monday));
-        trades.add(createTrade(2, "SELL", new BigDecimal("50"), "12.00", tuesday));
-        trades.add(createTrade(3, "BUY", new BigDecimal("25"), "11.50", nextMonday));
-
-        mockTradeRepository(trades);
+        // Given: two weeks, each starting on its Monday
+        mockRows(
+            new Row("2026-10-05", 2, 1, 1, new BigDecimal("1600.00")),
+            new Row("2026-10-12", 1, 1, 0, new BigDecimal("287.50")));
 
         // When: Generating a weekly report
         TradeReportRequest request = new TradeReportRequest("WEEK",
@@ -151,15 +138,10 @@ class TradeReportServiceTest {
 
     @Test
     void testMonthlyAggregation() {
-        // Given: Trades in two different months
-        LocalDateTime sep30 = LocalDateTime.of(2026, 9, 30, 10, 0, 0);
-        LocalDateTime oct1 = LocalDateTime.of(2026, 10, 1, 10, 0, 0);
-
-        List<ReportingTrade> trades = new ArrayList<>();
-        trades.add(createTrade(1, "BUY", new BigDecimal("100"), "10.00", sep30));
-        trades.add(createTrade(2, "SELL", new BigDecimal("50"), "12.00", oct1));
-
-        mockTradeRepository(trades);
+        // Given: two months
+        mockRows(
+            new Row("2026-09-01", 1, 1, 0, new BigDecimal("1000.00")),
+            new Row("2026-10-01", 1, 0, 1, new BigDecimal("600.00")));
 
         // When: Generating a monthly report
         TradeReportRequest request = new TradeReportRequest("MONTH",
@@ -176,15 +158,10 @@ class TradeReportServiceTest {
 
     @Test
     void testYearlyAggregation() {
-        // Given: Trades in two different years
-        LocalDateTime dec31_2025 = LocalDateTime.of(2025, 12, 31, 10, 0, 0);
-        LocalDateTime jan1_2026 = LocalDateTime.of(2026, 1, 1, 10, 0, 0);
-
-        List<ReportingTrade> trades = new ArrayList<>();
-        trades.add(createTrade(1, "BUY", new BigDecimal("100"), "10.00", dec31_2025));
-        trades.add(createTrade(2, "SELL", new BigDecimal("50"), "12.00", jan1_2026));
-
-        mockTradeRepository(trades);
+        // Given: two years
+        mockRows(
+            new Row("2025-01-01", 1, 1, 0, new BigDecimal("1000.00")),
+            new Row("2026-01-01", 1, 0, 1, new BigDecimal("600.00")));
 
         // When: Generating a yearly report
         TradeReportRequest request = new TradeReportRequest("YEAR",
@@ -197,6 +174,28 @@ class TradeReportServiceTest {
         assertEquals(2, response.getData().size());
         assertEquals("2025", response.getData().get(0).getPeriod());
         assertEquals("2026", response.getData().get(1).getPeriod());
+    }
+
+    @Test
+    void asksTheDatabaseToGroupByTheBucketInTheReportZone() {
+        mockRows();
+
+        reportService.generateReport(new TradeReportRequest("WEEK",
+            LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 12), null));
+
+        // date_trunc's unit, the zone's IANA ID, and the calendar's half-open UTC range.
+        verify(tradeRepository).aggregateByPeriod("week", "America/New_York",
+            startInUtc(LocalDate.of(2026, 10, 5)), startInUtc(LocalDate.of(2026, 10, 13)));
+    }
+
+    @Test
+    void noTradesGivesAnEmptyReport() {
+        mockRows();
+
+        TradeReportResponse response = reportService.generateReport(new TradeReportRequest("DAY",
+            LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2), null));
+
+        assertTrue(response.getData().isEmpty());
     }
 
     @Test
@@ -235,47 +234,13 @@ class TradeReportServiceTest {
         assertThrows(IllegalArgumentException.class, () -> reportService.generateReport(request));
     }
 
-    /**
-     * Helper: Mock repository to return trades for any date range.
-     */
-    private void mockTradeRepository(List<ReportingTrade> trades) {
-        when(tradeRepository.findByFilledAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
-            .thenReturn(trades);
+    /** Helper: the database returns these rows for any request. */
+    private void mockRows(PeriodTotalsProjection... rows) {
+        when(tradeRepository.aggregateByPeriod(anyString(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class)))
+            .thenReturn(List.of(rows));
     }
 
-    /**
-     * Helper: Create a ReportingTrade with minimal fields.
-     */
-    private ReportingTrade createTrade(Integer orderId, String side, BigDecimal quantity, String pricePerUnit, LocalDateTime filledAt) {
-        ReportingTrade trade = new ReportingTrade();
-        // Use reflection to set private fields for testing
-        try {
-            var field = ReportingTrade.class.getDeclaredField("orderId");
-            field.setAccessible(true);
-            field.set(trade, orderId);
-
-            field = ReportingTrade.class.getDeclaredField("side");
-            field.setAccessible(true);
-            field.set(trade, side);
-
-            field = ReportingTrade.class.getDeclaredField("quantity");
-            field.setAccessible(true);
-            field.set(trade, quantity);
-
-            field = ReportingTrade.class.getDeclaredField("pricePerUnit");
-            field.setAccessible(true);
-            field.set(trade, new BigDecimal(pricePerUnit));
-
-            field = ReportingTrade.class.getDeclaredField("grossAmount");
-            field.setAccessible(true);
-            field.set(trade, new BigDecimal(pricePerUnit).multiply(quantity));
-
-            field = ReportingTrade.class.getDeclaredField("filledAt");
-            field.setAccessible(true);
-            field.set(trade, filledAt);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        return trade;
+    private static LocalDateTime startInUtc(LocalDate day) {
+        return LocalDateTime.ofInstant(day.atStartOfDay(ZONE).toInstant(), ZoneOffset.UTC);
     }
 }

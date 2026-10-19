@@ -6,3 +6,6 @@ results/
 # The same for the staff suite (playwright.staff.config.ts); its JUnit file is in results/ too.
 test-results-staff/
 playwright-report-staff/
+# The same for the report load test (playwright.load.config.ts).
+test-results-load/
+playwright-report-load/
