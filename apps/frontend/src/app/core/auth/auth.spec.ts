@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 import { Auth } from './auth';
 import { environment } from '../../../environments/environment';
+import { expect, vi } from 'vitest';
 
 describe('Auth', () => {
   let auth: Auth;
@@ -130,7 +131,7 @@ describe('Auth', () => {
       status: 500, statusText: 'Server Error'
     });
 
-    await expectAsync(loggedOut).toBeRejected();
+    await expect(loggedOut).rejects.toThrow();
     expect(auth.currentUser()).toBeNull();
     expect(auth.currentAccountId()).toBeNull();
     expect(auth.roles()).toEqual([]);

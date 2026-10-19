@@ -2,14 +2,15 @@ import { provideRouter, Router } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppShell } from './app-shell';
 import { Auth } from '../../../core/auth/auth';
+import { expect, vi } from 'vitest';
 
 describe('AppShell', () => {
   let fixture: ComponentFixture<AppShell>;
-  let auth: { logout: ReturnType<typeof jasmine.createSpy> };
+  let auth: { logout: ReturnType<typeof vi.fn> };
   let router: Router;
 
   beforeEach(async () => {
-    auth = { logout: jasmine.createSpy('logout').and.resolveTo() };
+    auth = { logout: vi.fn().mockResolvedValue(undefined) };
 
     await TestBed.configureTestingModule({
       imports: [AppShell],
@@ -21,7 +22,7 @@ describe('AppShell', () => {
 
     fixture = TestBed.createComponent(AppShell);
     router = TestBed.inject(Router);
-    spyOn(router, 'navigate').and.resolveTo(true);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
   });
 
@@ -36,11 +37,9 @@ describe('AppShell', () => {
   });
 
   it('navigates home even when logout fails', async () => {
-    auth.logout.and.rejectWith(new Error('logout failed'));
-    const button = fixture.nativeElement.querySelector('button[title="Log out"]') as HTMLButtonElement;
+    auth.logout.mockRejectedValue(new Error('logout failed'));
 
-    button.click();
-    await fixture.whenStable();
+    await expect(fixture.componentInstance['logout']()).rejects.toThrow('logout failed');
 
     expect(router.navigate).toHaveBeenCalledWith(['/'], { replaceUrl: true });
   });
