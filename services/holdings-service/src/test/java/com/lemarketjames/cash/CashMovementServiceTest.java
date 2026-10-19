@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -80,7 +81,7 @@ class CashMovementServiceTest {
     void withdrawalLeavesCashReservedForOpenBuyOrders() {
         when(account.getCashBalance()).thenReturn(new BigDecimal("1000.00"));
         when(receipts.findById(REQUEST_ID)).thenReturn(Optional.empty());
-        when(orders.getOrdersForAccount(7)).thenReturn(List.of(
+        when(orders.getOrdersForAccountRequired(7)).thenReturn(List.of(
                 new OrderSummary(1, "BUY", new BigDecimal("2"), new BigDecimal("100.00"), "ACCEPTED", null),
                 new OrderSummary(2, "SELL", new BigDecimal("9"), new BigDecimal("100.00"), "ACCEPTED", null),
                 new OrderSummary(3, "BUY", new BigDecimal("5"), new BigDecimal("100.00"), "FILLED", null)));
@@ -96,7 +97,7 @@ class CashMovementServiceTest {
     void refusesWithdrawalAboveBuyingPower() {
         when(account.getCashBalance()).thenReturn(new BigDecimal("1000.00"));
         when(receipts.findById(REQUEST_ID)).thenReturn(Optional.empty());
-        when(orders.getOrdersForAccount(7)).thenReturn(List.of(
+        when(orders.getOrdersForAccountRequired(7)).thenReturn(List.of(
                 new OrderSummary(1, "BUY", new BigDecimal("2"), new BigDecimal("100.00"), "ACCEPTED", null)));
 
         CashMovementException error = assertThrows(CashMovementException.class, () -> service.move(
@@ -105,6 +106,19 @@ class CashMovementServiceTest {
         assertEquals(CashMovementService.INSUFFICIENT_FUNDS, error.getCode());
         assertEquals("You can withdraw up to $800.00.", error.getMessage());
         verify(account, never()).setCashBalance(any());
+    }
+
+    @Test
+    void withdrawalFailsClosedWhenOpenOrdersCannotBeRead() {
+        when(receipts.findById(REQUEST_ID)).thenReturn(Optional.empty());
+        when(orders.getOrdersForAccountRequired(7)).thenThrow(new RestClientException("unavailable"));
+
+        assertThrows(RestClientException.class, () -> service.move(
+                "alice", CashMovementType.WITHDRAWAL, new BigDecimal("10.00"), REQUEST_ID));
+
+        verify(account, never()).setCashBalance(any());
+        verify(receipts, never()).save(any());
+        verify(audit, never()).recordCashMovement(any());
     }
 
     @Test

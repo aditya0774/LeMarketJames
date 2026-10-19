@@ -378,7 +378,8 @@ power without another request.
   [C5](C5-config.md) per-movement limit. A refusal is
   `400 { success: false, code: "INVALID_AMOUNT", error }`.
 - A withdrawal may take at most `buyingPower`, leaving the cash reserved by open BUY orders in the
-  account. A refusal is `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`.
+  account. A refusal is `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`. If open orders
+  cannot be read, the withdrawal fails without changing cash; an outage never counts as no orders.
 - `requestId` is a UUID made by the app for an attempt and retained for its retries. The first call
   stores its result; another call with the same ID returns successfully without moving cash again.
 - The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event

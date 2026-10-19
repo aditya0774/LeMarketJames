@@ -89,7 +89,7 @@ public class CashMovementService {
     }
 
     private BigDecimal withdraw(AccountEntity account, BigDecimal amount) {
-        BigDecimal reserved = orders.getOrdersForAccount(account.getAccountId()).stream()
+        BigDecimal reserved = orders.getOrdersForAccountRequired(account.getAccountId()).stream()
                 .filter(OrderSummary::isOpen)
                 .filter(OrderSummary::isBuy)
                 .map(order -> order.quantity().multiply(
