@@ -5,11 +5,15 @@
     <title>lemarket</title>
     <base href="/" />
     <!-- Apply the saved colour theme before the styles paint, so a light-theme user never sees
-         a dark flash. Theme (core/theme/theme.ts) takes over once Angular starts. -->
+         a dark flash. Theme (projects/shared-ui) takes over once Angular starts. -->
     <script>
       try {
-        if (localStorage.getItem('lemarket-theme') === 'light') document.documentElement.dataset.theme = 'light';
-      } catch (e) {}
+        if (localStorage.getItem('lemarket-theme') === 'light') {
+          document.documentElement.dataset.theme = 'light';
+        }
+      } catch {
+        // Storage blocked (private window, site data off): stay on the dark default.
+      }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />

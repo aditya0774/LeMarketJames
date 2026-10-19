@@ -89,6 +89,41 @@ class PriceHistoryReaderTest {
                 new PricePoint(NOW, 231.0)), points);
     }
 
+    @Test
+    void withoutATradingDateOnlyTheStoredDaysAreReturned() {
+        LocalDate from = LocalDate.of(2026, 10, 13);
+        QuoteSnapshot undated = new QuoteSnapshot(AAPL, 231.0, 230.9, 231.1, 229.0, 232.0, 228.5, 228.0, 9_000L, NOW, null);
+        when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(undated));
+        when(historyRepository.findByInstrumentIdAndTradingDateGreaterThanEqualOrderByTradingDate(1, from))
+                .thenReturn(List.of(bar(from, "225")));
+
+        assertEquals(List.of(from), reader.dailyBars(1, from).stream().map(DailyBar::date).toList());
+        // Nothing to file today's minutes under either.
+        assertTrue(reader.intraday(1).isEmpty());
+    }
+
+    @Test
+    void aRangeStartingAfterTodayHasNoLiveBar() {
+        LocalDate tomorrow = TODAY.plusDays(1);
+        when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(LIVE));
+        when(historyRepository.findByInstrumentIdAndTradingDateGreaterThanEqualOrderByTradingDate(1, tomorrow))
+                .thenReturn(List.of());
+
+        assertTrue(reader.dailyBars(1, tomorrow).isEmpty());
+    }
+
+    @Test
+    void intradayOfAnUnknownInstrumentIsEmptyAndAQuoteWithoutATimeAddsNoPoint() {
+        when(marketData.findByInstrumentId(99)).thenReturn(Optional.empty());
+        assertTrue(reader.intraday(99).isEmpty());
+
+        QuoteSnapshot untimed = new QuoteSnapshot(AAPL, 231.0, 230.9, 231.1, 229.0, 232.0, 228.5, 228.0, 9_000L, null, TODAY);
+        when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(untimed));
+        when(candleRepository.findByInstrumentIdAndIntervalStartGreaterThanEqualOrderByIntervalStart(
+                org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+        assertTrue(reader.intraday(1).isEmpty());
+    }
+
     private static PriceHistoryEntity bar(LocalDate date, String close) {
         BigDecimal price = new BigDecimal(close);
         return new PriceHistoryEntity(1, date, price, price, price, price, 1_000L);

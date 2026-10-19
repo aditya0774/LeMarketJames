@@ -192,6 +192,16 @@ class QuotesControllerTest {
     }
 
     @Test
+    void historyDuringAnOutageReturns503PriceUnavailable() throws Exception {
+        feedStatus.recordFailure();
+        when(marketData.findByTicker(eq("AAPL"))).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/quotes/AAPL/history").param("range", "1M").cookie(loginAs("quotesuser10")))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Price unavailable"));
+    }
+
+    @Test
     void historyOfAnUnknownSymbolIs404() throws Exception {
         when(marketData.findByTicker(eq("INVALID"))).thenReturn(Optional.empty());
 

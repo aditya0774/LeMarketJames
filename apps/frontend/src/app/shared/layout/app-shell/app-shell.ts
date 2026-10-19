@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
 import { Brand } from '../../components/brand/brand';
-import { AccountMenu } from '../account-menu/account-menu';
+import { AccountMenu } from '@lemarket/shared-ui';
 
 /**
  * Signed-in layout: the header with the section tabs and the account menu, above the page

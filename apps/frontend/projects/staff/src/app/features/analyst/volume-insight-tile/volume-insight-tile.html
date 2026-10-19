@@ -60,7 +60,7 @@
     }
   </div>
 
-  <form class="card custom" [formGroup]="pick" (ngSubmit)="compare()">
+  <form method="post" class="card custom" [formGroup]="pick" (ngSubmit)="compare()">
     <h3>Compare your own date ranges</h3>
     <div class="pickers report-dates">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">

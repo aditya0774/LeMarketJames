@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { Auth, Role } from '../../../core/auth/auth';
 import { Brand } from '../../components/brand/brand';
-import { AccountMenu } from '../account-menu/account-menu';
+import { AccountMenu } from '@lemarket/shared-ui';
 
 /** How each staff role is named in the header and the account menu. */
 const ROLE_LABELS: Partial<Record<Role, string>> = {

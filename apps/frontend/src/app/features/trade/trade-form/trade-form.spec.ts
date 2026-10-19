@@ -152,6 +152,72 @@ describe('TradeForm', () => {
     expect(placedEvents).toBe(0);
   });
 
+  it('steps the shares up and down, never below one, and starts again from a cleared box', () => {
+    const plus = el().querySelector('button[aria-label="Increase quantity"]') as HTMLButtonElement;
+    const minus = el().querySelector('button[aria-label="Decrease quantity"]') as HTMLButtonElement;
+    const qty = () => (el().querySelector('#trade-qty') as HTMLInputElement).value;
+
+    plus.click();
+    plus.click();
+    fixture.detectChanges();
+    expect(qty()).toBe('3');
+    expect(el().textContent).toContain('$250.00'); // buying power after 3 × $250 from $1,000
+
+    minus.click();
+    minus.click();
+    minus.click();
+    fixture.detectChanges();
+    expect(qty()).toBe('1');
+
+    setQty('');
+    expect(submitButton().disabled).toBe(true);
+    expect(el().textContent).not.toContain('Buying power after');
+    plus.click();
+    fixture.detectChanges();
+    expect(qty()).toBe('1');
+  });
+
+  it('shows the first progress step for a status the ticket does not chart', () => {
+    pending = new Subject();
+    fixture.componentInstance.submit();
+    pending.next({ success: true, orderId: 7, orderStatus: 'DELAYED' });
+    pending.complete();
+    fixture.detectChanges();
+
+    expect(el().querySelectorAll('.tf-steps li.on')).toHaveLength(1);
+  });
+
+  for (const answer of [
+    { body: { success: true, orderStatus: 'REJECTED', rejectionReason: 'Market closed' }, message: 'Market closed' },
+    { body: { success: false }, message: 'The order was rejected.' },
+  ]) {
+    it(`reports a rejection: ${answer.message}`, () => {
+      pending = new Subject();
+      fixture.componentInstance.submit();
+      pending.next(answer.body);
+      pending.complete();
+      fixture.detectChanges();
+
+      expect(el().querySelector('[role=alert]')?.textContent).toContain(answer.message);
+    });
+  }
+
+  for (const failure of [
+    { error: new HttpErrorResponse({ status: 409, error: { message: 'Duplicate order' } }), message: 'Duplicate order' },
+    { error: new HttpErrorResponse({ status: 500, error: null }), message: 'Unable to place the order.' },
+    { error: new Error('Network unreachable'), message: 'Network unreachable' },
+    { error: 'boom', message: 'Unable to place the order.' },
+  ]) {
+    it(`explains a failure: ${failure.message}`, () => {
+      pending = new Subject();
+      fixture.componentInstance.submit();
+      pending.error(failure.error);
+      fixture.detectChanges();
+
+      expect(el().querySelector('[role=alert]')?.textContent).toContain(failure.message);
+    });
+  }
+
   it('blocks selling more shares than held', () => {
     sell();
     setQty('4');

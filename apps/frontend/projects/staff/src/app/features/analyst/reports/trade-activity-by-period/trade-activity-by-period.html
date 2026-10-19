@@ -9,7 +9,7 @@
       }
     </fieldset>
 
-    <form [formGroup]="range" class="report-dates" (ngSubmit)="applyRange()">
+    <form method="post" [formGroup]="range" class="report-dates" (ngSubmit)="applyRange()">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>From</mat-label>
         <input matInput [matDatepicker]="fromPicker" formControlName="from" />

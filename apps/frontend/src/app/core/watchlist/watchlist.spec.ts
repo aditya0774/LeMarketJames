@@ -94,6 +94,17 @@ describe('Watchlist', () => {
     expect(watchlist.changeError()).toContain("Couldn't remove TSLA");
   });
 
+  it('sends nothing when adding a stock already watched or removing one that is not', async () => {
+    await loadWith(['TSLA']);
+
+    await watchlist.add('TSLA');
+    await watchlist.remove('AAPL');
+
+    http.expectNone('/api/v1/watchlist');
+    http.expectNone('/api/v1/watchlist/AAPL');
+    expect(watchlist.symbols()).toEqual(['TSLA']);
+  });
+
   it("forgets one account's watchlist when another signs in", async () => {
     await loadWith(['TSLA']);
 

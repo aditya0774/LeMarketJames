@@ -19,7 +19,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "price_history")
 @IdClass(PriceHistoryEntity.Key.class)
-public class PriceHistoryEntity {
+public class PriceHistoryEntity extends OhlcBar {
 
     @Id
     @Column(name = "instrument_id")
@@ -29,33 +29,14 @@ public class PriceHistoryEntity {
     @Column(name = "trading_date")
     private LocalDate tradingDate;
 
-    @Column(name = "open_price", nullable = false, precision = 14, scale = 4)
-    private BigDecimal openPrice;
-
-    @Column(name = "high_price", nullable = false, precision = 14, scale = 4)
-    private BigDecimal highPrice;
-
-    @Column(name = "low_price", nullable = false, precision = 14, scale = 4)
-    private BigDecimal lowPrice;
-
-    @Column(name = "close_price", nullable = false, precision = 14, scale = 4)
-    private BigDecimal closePrice;
-
-    @Column(nullable = false)
-    private Long volume;
-
     public PriceHistoryEntity() {
     }
 
     public PriceHistoryEntity(Integer instrumentId, LocalDate tradingDate, BigDecimal openPrice,
                               BigDecimal highPrice, BigDecimal lowPrice, BigDecimal closePrice, Long volume) {
+        super(openPrice, highPrice, lowPrice, closePrice, volume);
         this.instrumentId = instrumentId;
         this.tradingDate = tradingDate;
-        this.openPrice = openPrice;
-        this.highPrice = highPrice;
-        this.lowPrice = lowPrice;
-        this.closePrice = closePrice;
-        this.volume = volume;
     }
 
     public Integer getInstrumentId() {
@@ -64,26 +45,6 @@ public class PriceHistoryEntity {
 
     public LocalDate getTradingDate() {
         return tradingDate;
-    }
-
-    public BigDecimal getOpenPrice() {
-        return openPrice;
-    }
-
-    public BigDecimal getHighPrice() {
-        return highPrice;
-    }
-
-    public BigDecimal getLowPrice() {
-        return lowPrice;
-    }
-
-    public BigDecimal getClosePrice() {
-        return closePrice;
-    }
-
-    public Long getVolume() {
-        return volume;
     }
 
     /** Composite primary key: (instrument_id, trading_date). */

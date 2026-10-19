@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AccountMenu } from './account-menu';
-import { Theme } from '../../../core/theme/theme';
+import { Theme } from '../theme/theme';
 
-describe('AccountMenu (staff)', () => {
+describe('AccountMenu', () => {
   let fixture: ComponentFixture<AccountMenu>;
   const el = () => fixture.nativeElement as HTMLElement;
   const avatar = () => el().querySelector<HTMLButtonElement>('.avatar-btn')!;

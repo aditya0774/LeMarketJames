@@ -1,17 +1,17 @@
 import { Component, ElementRef, HostListener, inject, input, output, signal, viewChild } from '@angular/core';
-import { Theme, ThemeName } from '../../../core/theme/theme';
+import { Theme, ThemeName } from '../theme/theme';
 
 /**
- * The avatar button at the right of the staff header and the panel it opens: who is signed in,
- * their role, the Dark/Light theme switch and "Log out". (The trading app has its own copy; the
- * two apps share no code.)
+ * The avatar button at the right of each app's signed-in header and the panel it opens: who is
+ * signed in (and, in the staff app, their role), the Dark/Light theme switch and "Log out". Shared
+ * by the trading and staff apps so the header looks and behaves the same in both.
  *
  * It is a disclosure (a button with aria-expanded that shows a panel of ordinary buttons) rather
  * than an ARIA menu, so every control works with Tab and Enter and keeps its plain button role.
  * Escape or a click anywhere else closes it; Escape also puts focus back on the avatar.
  */
 @Component({
-  selector: 'staff-account-menu',
+  selector: 'lm-account-menu',
   template: `
     <div class="menu-wrap">
       <button

@@ -25,6 +25,8 @@ describe('TradePage', () => {
   let quoteResult: () => Observable<unknown>;
   let holdingsCalls: number;
   let balanceCalls: number;
+  let holdingsAnswer: () => Observable<unknown>;
+  let balanceAnswer: () => Promise<unknown>;
 
   async function setup(symbol: string | null = 'tsla') {
     params = new BehaviorSubject<Record<string, string>>(symbol ? { symbol } : {});
@@ -46,7 +48,7 @@ describe('TradePage', () => {
           useValue: {
             getOwnHoldings: () => {
               holdingsCalls++;
-              return of({ success: true, holdings: [{ symbol: 'TSLA', quantity: 3 }] });
+              return holdingsAnswer();
             },
           },
         },
@@ -55,7 +57,7 @@ describe('TradePage', () => {
           useValue: {
             getBalance: () => {
               balanceCalls++;
-              return Promise.resolve({ success: true, balance: { buyingPower: 5000 } });
+              return balanceAnswer();
             },
           },
         },
@@ -74,6 +76,35 @@ describe('TradePage', () => {
 
   beforeEach(() => {
     quoteResult = () => of({ success: true, quote });
+    holdingsAnswer = () => of({ success: true, holdings: [{ symbol: 'TSLA', quantity: 3 }] });
+    balanceAnswer = () => Promise.resolve({ success: true, balance: { buyingPower: 5000 } });
+  });
+
+  it('leaves holdings unknown when they fail, and shows the session-expired alert on 401', async () => {
+    holdingsAnswer = () => throwError(() => new HttpErrorResponse({ status: 401 }));
+    await setup();
+
+    expect(el().querySelector('app-session-expired')).not.toBeNull();
+    const tsla = Array.from((el().querySelector('.pick select') as HTMLSelectElement).options).find((o) => o.value === 'TSLA');
+    expect(tsla?.textContent).not.toContain('you own');
+  });
+
+  it('copes with holdings that throw before any request, and a balance that fails', async () => {
+    holdingsAnswer = () => {
+      throw new Error('No authenticated account found. Please log in.');
+    };
+    balanceAnswer = () => Promise.reject(new HttpErrorResponse({ status: 401 }));
+    await setup();
+
+    expect(el().querySelector('app-session-expired')).not.toBeNull();
+    expect(el().textContent).not.toContain('You own');
+  });
+
+  it('treats an unsuccessful balance answer as unknown buying power', async () => {
+    balanceAnswer = () => Promise.resolve({ success: false });
+    await setup();
+
+    expect(el().querySelector('app-session-expired')).toBeNull();
   });
 
   it('shows the live quote, its chart, the day range and the figures', async () => {

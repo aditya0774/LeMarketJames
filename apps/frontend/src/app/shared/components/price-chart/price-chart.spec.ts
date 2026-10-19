@@ -72,6 +72,74 @@ describe('PriceChart', () => {
     expect(el().querySelector('.pc-tip')).toBeNull();
   });
 
+  it('follows the pointer across the plot and hides the tooltip when it leaves', () => {
+    render({ points: POINTS, range: '1M' });
+    const track = el().querySelector('.pc-track') as HTMLElement;
+    track.getBoundingClientRect = () => ({ left: 100, width: 200 }) as DOMRect;
+
+    track.dispatchEvent(new MouseEvent('mousemove', { clientX: 300 }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip-val')?.textContent).toBe('$1,050.00');
+
+    // Past the left edge counts as the first point.
+    track.dispatchEvent(new MouseEvent('mousemove', { clientX: 20 }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip-val')?.textContent).toBe('$1,000.00');
+
+    track.dispatchEvent(new MouseEvent('mouseleave'));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip')).toBeNull();
+  });
+
+  it('starts the arrow keys from the latest point, steps back, and clears when focus leaves', () => {
+    render({ points: POINTS, range: '1M' });
+    const track = el().querySelector('.pc-track') as HTMLElement;
+
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip-val')?.textContent).toBe('$1,050.00');
+
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip-val')?.textContent).toBe('$1,100.00');
+
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip-val')?.textContent).toBe('$1,050.00');
+
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+    track.dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip')).toBeNull();
+  });
+
+  it('marks a fall over the range and puts the tooltip low over a high point', () => {
+    render({ points: [{ time: START, value: 1200 }, { time: START + DAY, value: 900 }], range: '1W' });
+    expect(el().querySelector('.pc-change')?.classList).toContain('down');
+
+    const track = el().querySelector('.pc-track') as HTMLElement;
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+    fixture.detectChanges();
+    expect(el().querySelector('.pc-tip')?.classList).toContain('low');
+    expect(el().querySelector('.pc-tip-chg')?.classList).toContain('up');
+  });
+
+  it('draws a single point in the middle of the chart', () => {
+    render({ points: [{ time: START, value: 500 }], range: '1D' });
+    const track = el().querySelector('.pc-track') as HTMLElement;
+
+    track.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+    fixture.detectChanges();
+
+    expect((el().querySelector('.pc-dot') as HTMLElement).style.left).toBe('50%');
+  });
+
+  it('describes an empty chart for screen readers', () => {
+    render({ points: [] });
+    expect((fixture.componentInstance as any).summary()).toBe('Portfolio value: no data');
+  });
+
   it('shows the loading, error and empty states', () => {
     render({ loading: true });
     expect(el().querySelector('output.loading')).not.toBeNull();

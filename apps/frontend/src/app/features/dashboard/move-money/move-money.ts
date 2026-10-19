@@ -179,21 +179,18 @@ export class MoveMoney {
   }
 
   protected keepFocusInside(event: Event): void {
+    // Never empty: the Close button is always there.
     const focusable = Array.from(
       this.panel().nativeElement.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])'),
     );
-    if (!focusable.length) {
-      return;
-    }
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
+    // Tab past the last control wraps to the first, and Shift+Tab before the first to the last.
     const backwards = (event as KeyboardEvent).shiftKey;
-    if (backwards && document.activeElement === first) {
+    const edge = backwards ? first : last;
+    if (document.activeElement === edge) {
       event.preventDefault();
-      last.focus();
-    } else if (!backwards && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
+      (backwards ? last : first).focus();
     }
   }
 }

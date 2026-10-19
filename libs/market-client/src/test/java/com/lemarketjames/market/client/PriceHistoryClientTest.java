@@ -48,6 +48,14 @@ class PriceHistoryClientTest {
     }
 
     @Test
+    void anEmptyBodyIsAnEmptyHistory() throws IOException {
+        start(200, "null", new AtomicReference<>());
+
+        assertTrue(client().dailyBars(7, LocalDate.of(2026, 9, 14)).isEmpty());
+        assertTrue(client().intraday(7).isEmpty());
+    }
+
+    @Test
     void aFailedCallIsAnEmptyHistory() throws IOException {
         start(503, "", new AtomicReference<>());
 

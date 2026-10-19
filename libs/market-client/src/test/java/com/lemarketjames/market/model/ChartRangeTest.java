@@ -16,6 +16,7 @@ class ChartRangeTest {
     @Test
     void codesAreMatchedIgnoringCase() {
         assertEquals(Optional.of(ChartRange.THREE_MONTHS), ChartRange.fromCode("3m"));
+        assertEquals("3M", ChartRange.THREE_MONTHS.code());
         assertEquals(Optional.empty(), ChartRange.fromCode("5Y"));
         assertEquals(Optional.empty(), ChartRange.fromCode(null));
     }

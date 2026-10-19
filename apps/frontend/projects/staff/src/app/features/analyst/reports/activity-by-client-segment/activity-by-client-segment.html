@@ -4,7 +4,7 @@
       <span class="badge">{{ selectedRangeLabel() }}</span>
       <span class="badge">{{ reportData().length }} segments</span>
     </div>
-    <form [formGroup]="dateRangeForm" class="report-dates">
+    <form method="post" [formGroup]="dateRangeForm" class="report-dates">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Start Date</mat-label>
         <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (dateChange)="onDateRangeChange()" />

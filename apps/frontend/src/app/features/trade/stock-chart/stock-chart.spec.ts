@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
 import { PriceHistory } from '../../../core/history/price-history';
 import { ChartRange } from '../../../shared/models/chart.model';
 import { Quote } from '../../../shared/models/quote.model';
@@ -41,9 +42,11 @@ describe('withLivePrice', () => {
 describe('StockChart', () => {
   let fixture: ComponentFixture<StockChart>;
   let requests: string[];
+  let answer: () => Observable<{ time: number; value: number }[]>;
 
   beforeEach(async () => {
     requests = [];
+    answer = () => of([{ time: T0, value: 230 }]);
     await TestBed.configureTestingModule({
       imports: [StockChart],
       providers: [
@@ -52,7 +55,7 @@ describe('StockChart', () => {
           useValue: {
             stock: (symbol: string, range: ChartRange) => {
               requests.push(`${symbol} ${range}`);
-              return of([{ time: T0, value: 230 }]);
+              return answer();
             },
           },
         },
@@ -73,6 +76,19 @@ describe('StockChart', () => {
     fixture.detectChanges();
 
     expect(requests).toEqual(['AAPL 1D', 'AAPL 1M', 'MSFT 1M']);
+  });
+
+  it('says when the chart cannot load, in words of its own for a feed outage', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    answer = () => throwError(() => new HttpErrorResponse({ status: 503 }));
+    (el.querySelectorAll<HTMLButtonElement>('.pc-ranges button')[1]).click();
+    fixture.detectChanges();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('The chart needs live prices and is back once they are.');
+
+    answer = () => throwError(() => new HttpErrorResponse({ status: 500 }));
+    (el.querySelectorAll<HTMLButtonElement>('.pc-ranges button')[2]).click();
+    fixture.detectChanges();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Something went wrong. Try again in a moment.');
   });
 
   it('waits without an error while prices are down, then loads again', () => {

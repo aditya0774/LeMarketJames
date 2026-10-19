@@ -1,7 +1,7 @@
 <div class="activity-by-stock-container">
   <div class="report-bar">
     <p class="report-note">All clients combined · select a column to sort</p>
-    <form [formGroup]="dateRangeForm" class="report-dates">
+    <form method="post" [formGroup]="dateRangeForm" class="report-dates">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Start date</mat-label>
         <input matInput [matDatepicker]="startPicker" formControlName="startDate" (change)="onDateRangeChange()" />

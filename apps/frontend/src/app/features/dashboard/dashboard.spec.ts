@@ -31,6 +31,8 @@ function order(orderId: number, orderStatus: OrderResponse['orderStatus']): Orde
   };
 }
 
+const NO_ACCOUNT = of('no account');
+
 describe('Dashboard (Overview)', () => {
   let fixture: ComponentFixture<Dashboard>;
   let allOrdersResult: Observable<unknown>;
@@ -55,6 +57,10 @@ describe('Dashboard (Overview)', () => {
           useValue: {
             getOwnHoldings: () => {
               holdingsCalls++;
+              // HoldingsService throws straight away when the session has no account.
+              if (holdingsResult === NO_ACCOUNT) {
+                throw new Error('No authenticated account found. Please log in.');
+              }
               return holdingsResult;
             },
             error: signal(null),
@@ -65,7 +71,7 @@ describe('Dashboard (Overview)', () => {
           useValue: {
             getBalance: () => {
               balanceCalls++;
-              return balance instanceof Error ? Promise.reject(balance) : Promise.resolve(balance);
+              return balance instanceof Error || balance instanceof HttpErrorResponse ? Promise.reject(balance) : Promise.resolve(balance);
             },
           },
         },
@@ -179,6 +185,31 @@ describe('Dashboard (Overview)', () => {
     await setup();
 
     expect(el().querySelector('app-holdings-split')?.textContent).toContain('No stocks yet');
+  });
+
+  it('shows the session-expired alert when the balance answers 401', async () => {
+    await setup(new HttpErrorResponse({ status: 401 }));
+
+    expect(text()).toContain('Your session has expired');
+    expect(el().querySelectorAll('.stat-card .val')[2].textContent?.trim()).toBe('—');
+  });
+
+  it("says why holdings couldn't load when the session has no account", async () => {
+    holdingsResult = NO_ACCOUNT;
+    await setup();
+
+    expect(el().querySelector('app-holdings-split')?.textContent).toContain('No authenticated account found. Please log in.');
+  });
+
+  it('reloads holdings, the balance and the orders after quick trade places an order', async () => {
+    await setup();
+    const before = { holdings: holdingsCalls, balance: balanceCalls };
+
+    fixture.debugElement.query((d) => d.name === 'app-quick-trade').componentInstance.orderPlaced.emit();
+    await fixture.whenStable();
+
+    expect(holdingsCalls).toBeGreaterThan(before.holdings);
+    expect(balanceCalls).toBeGreaterThan(before.balance);
   });
 
   it('shows the session-expired alert on 401', async () => {

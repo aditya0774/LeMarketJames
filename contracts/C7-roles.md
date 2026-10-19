@@ -71,6 +71,6 @@ As in the trading app, this decides what is shown and nothing more: the service 
 ## Mirrors (change together with `Role`)
 
 - The `staff_users.role` CHECK constraint ([010](../database/schema/010_shared_contracts.sql)); it lists every role except `CLIENT`.
-- The frontend `Role` type, once per app because the two share no code: the trading app's [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) and the staff app's [auth.ts](../apps/frontend/projects/staff/src/app/core/auth/auth.ts).
+- The frontend `Role` type, once per app because each app keeps its own auth code (they share only UI building blocks, `projects/shared-ui`): the trading app's [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) and the staff app's [auth.ts](../apps/frontend/projects/staff/src/app/core/auth/auth.ts).
 
 One more mirror, of the cookie name rather than of `Role`: `SERVICE_COOKIE` in the staff gateway's `StaffSessionCookieGatewayFilterFactory` repeats `JwtAuthenticationFilter.COOKIE_NAME`, because the gateway is reactive and cannot depend on `libs/common`. Change them together.

@@ -55,6 +55,22 @@ class QuoteHistoryServiceTest {
     }
 
     @Test
+    void aQuoteWithoutATradingDateCountsBackFromTodaysDate() {
+        QuoteSnapshot undated = new QuoteSnapshot(AAPL, 231.0, 230.9, 231.1, 229.0, 232.0, 228.5, 228.0, 9_000L, NOW, null);
+        when(marketData.findByTicker("AAPL")).thenReturn(Optional.of(undated));
+        when(priceHistory.dailyBars(1, LocalDate.now().minusWeeks(1))).thenReturn(List.of());
+
+        assertEquals(List.of(), service.history("AAPL", ChartRange.ONE_WEEK));
+    }
+
+    @Test
+    void aMissingSymbolIsNotFound() {
+        when(marketData.findByTicker("")).thenReturn(Optional.empty());
+
+        assertThrows(QuoteService.SymbolNotFoundException.class, () -> service.history(null, ChartRange.ONE_DAY));
+    }
+
+    @Test
     void anUnknownSymbolIsNotFoundAndAnOutageIsUnavailable() {
         when(marketData.findByTicker("NOPE")).thenReturn(Optional.empty());
 

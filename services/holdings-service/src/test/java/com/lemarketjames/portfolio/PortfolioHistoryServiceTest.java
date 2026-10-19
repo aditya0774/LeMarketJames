@@ -98,6 +98,29 @@ class PortfolioHistoryServiceTest {
     }
 
     @Test
+    void skipsFillsWithoutATimeOrStockAndStocksWithoutAQuote() {
+        signedInAsAlice();
+        when(ordersClient.getOrdersForAccount(7)).thenReturn(List.of(
+                new OrderSummary(1, "BUY", new BigDecimal("5"), BigDecimal.ONE, "FILLED", null),
+                new OrderSummary(null, "BUY", new BigDecimal("5"), BigDecimal.ONE, "FILLED", LocalDateTime.of(2026, 10, 1, 15, 0)),
+                fill(3, "BUY", "2", LocalDateTime.of(2026, 10, 1, 15, 0))));
+        when(marketData.findByInstrumentId(3)).thenReturn(Optional.empty());
+
+        assertTrue(service.history("alice", ChartRange.ONE_MONTH).isEmpty());
+    }
+
+    @Test
+    void aQuoteWithoutATradingDateCountsBackFromTodayInUtc() {
+        signedInAsAlice();
+        when(ordersClient.getOrdersForAccount(7)).thenReturn(List.of(fill(1, "BUY", "1", LocalDateTime.of(2026, 1, 1, 15, 0))));
+        QuoteSnapshot undated = new QuoteSnapshot(AAPL, 120, 119.9, 120.1, 118, 121, 117, 110, 5_000L, NOW, null);
+        when(marketData.findByInstrumentId(1)).thenReturn(Optional.of(undated));
+        when(priceHistory.dailyBars(1, LocalDate.now(java.time.ZoneOffset.UTC).minusMonths(6))).thenReturn(List.of());
+
+        assertTrue(service.history("alice", ChartRange.SIX_MONTHS).isEmpty());
+    }
+
+    @Test
     void anAccountThatNeverTradedHasNoHistory() {
         signedInAsAlice();
         when(ordersClient.getOrdersForAccount(7)).thenReturn(List.of());

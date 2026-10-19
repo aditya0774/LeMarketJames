@@ -217,6 +217,110 @@ describe('Register', () => {
       expect(component.registerData.investmentExperience).toBe('experienced');
     });
 
+    describe('on screen', () => {
+      const el = () => fixture.nativeElement as HTMLElement;
+      // ngModel writes its value a tick later, so each change waits for the view to settle.
+      // validationErrors is a plain object, and in the app only event handlers (which mark the view
+      // for checking) change it; a test that sets it directly has to mark the view itself.
+      const settle = async () => {
+        fixture.componentRef.changeDetectorRef.markForCheck();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const showStep = async (n: number) => {
+        (component as any).step.set(n);
+        await settle();
+      };
+      const fire = async (selector: string, type: string, value?: string) => {
+        const input = el().querySelector(selector) as HTMLInputElement | HTMLSelectElement;
+        if (value !== undefined) {
+          input.value = value;
+        }
+        input.dispatchEvent(new Event(type));
+        await settle();
+      };
+
+      it.each([1, 2, 3, 4])("shows each field's own error under it on step %i", async (n) => {
+        const fields = (component as any).steps[n - 1].fields as string[];
+        await showStep(n);
+        fields.forEach((field) => (component.validationErrors[field] = `${field} needs a look`));
+        await showStep(n);
+
+        const errors = Array.from(el().querySelectorAll('.field-error')).map((e) => e.textContent?.trim());
+        expect(errors).toEqual(fields.map((field) => `${field} needs a look`));
+      });
+
+      it('shows the server message above the step when registration fails', async () => {
+        (component as any).errorMessage.set('Registration failed. Please try again.');
+        await showStep(1);
+
+        expect(el().querySelector('[role="alert"]')?.textContent).toContain('Registration failed. Please try again.');
+      });
+
+      it('marks the steps done so far and offers Back after the first', async () => {
+        await showStep(3);
+
+        const dots = Array.from(el().querySelectorAll('.reg-steps li')).map((li) => li.className.trim());
+        expect(dots).toEqual(['done', 'done', 'current', '']);
+        expect(el().querySelector('.reg-steps li.current')?.getAttribute('aria-current')).toBe('step');
+        (el().querySelector('.reg-back') as HTMLButtonElement).click();
+        expect(step()).toBe(2);
+      });
+
+      it('clears an error as the user types, and checks the field when they leave it', async () => {
+        await showStep(1);
+        component.validationErrors['firstName'] = 'First name is required';
+        await fire('#firstName', 'input', 'Jane');
+        expect(component.validationErrors['firstName']).toBeFalsy();
+
+        await fire('#email', 'input', 'not-an-email');
+        await fire('#email', 'blur');
+        expect(component.validationErrors['email']).toBeTruthy();
+      });
+
+      it('formats the phone number, ZIP code and SSN as they are typed', async () => {
+        await showStep(1);
+        await fire('#phoneNumber', 'input', '5551234567');
+        expect(component.registerData.phoneNumber).toBe('(555) 123-4567');
+
+        await showStep(2);
+        await fire('#zipCode', 'input', '62701-99');
+        expect(component.registerData.zipCode).toBe('62701');
+        await fire('#state', 'change');
+
+        await showStep(3);
+        await fire('#ssn', 'input', '123456789');
+        expect(component.registerData.ssn).toBe('123-45-6789');
+      });
+
+      it('lets Experienced be picked only from a $100,000 deposit', async () => {
+        await showStep(3);
+        const experienced = () => el().querySelectorAll<HTMLButtonElement>('.exp-card')[1];
+        expect(experienced().disabled).toBe(true);
+
+        await fire('#initialDeposit', 'input', '150000');
+        experienced().click();
+        await settle();
+        expect(experienced().getAttribute('aria-pressed')).toBe('true');
+        await fire('#employmentStatus', 'change');
+      });
+
+      it('shows or hides both password boxes with one toggle, and says Create account on the last step', async () => {
+        await showStep(4);
+        const toggle = el().querySelector('.pw-toggle') as HTMLButtonElement;
+        expect(toggle.getAttribute('aria-label')).toBe('Show password');
+
+        toggle.click();
+        await settle();
+
+        expect((el().querySelector('#password') as HTMLInputElement).type).toBe('text');
+        expect((el().querySelector('#confirmPassword') as HTMLInputElement).type).toBe('text');
+        expect(toggle.textContent?.trim()).toBe('Hide');
+        expect(el().querySelector('button[type="submit"]')?.textContent?.trim()).toBe('Create account');
+      });
+    });
+
     it('ticks off the password rules as they are met', () => {
       component.registerData.password = 'abcdefgh';
       (component as any).step.set(4);

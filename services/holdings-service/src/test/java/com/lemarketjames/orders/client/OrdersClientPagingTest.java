@@ -33,6 +33,33 @@ class OrdersClientPagingTest {
     }
 
     @Test
+    void anEmptyBodyEndsTheListAndAFailedCallIsAnEmptyList() throws IOException {
+        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        server.createContext("/api/v1/orders/account/7", exchange -> respond(exchange, 200, "null"));
+        server.createContext("/api/v1/orders/account/8", exchange -> respond(exchange, 500, "{}"));
+        server.start();
+
+        OrdersClient client = new OrdersClient("http://localhost:" + server.getAddress().getPort(), signedIn());
+
+        assertEquals(List.of(), client.getOrdersForAccount(7));
+        assertEquals(List.of(), client.getOrdersForAccount(8));
+    }
+
+    private static HttpServletRequest signedIn() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getCookies()).thenReturn(new Cookie[] {new Cookie(JwtAuthenticationFilter.COOKIE_NAME, "token")});
+        return request;
+    }
+
+    private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
+    }
+
+    @Test
     void readsEveryPageUntilAShortOne() throws IOException {
         List<String> queries = new CopyOnWriteArrayList<>();
         server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);

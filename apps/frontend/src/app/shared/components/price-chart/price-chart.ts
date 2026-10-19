@@ -73,11 +73,9 @@ export class PriceChart {
     this.rangeChange.emit(range);
   }
 
+  // track and step are only wired up while there is a plot, so there is always at least one point.
   protected track(event: MouseEvent): void {
     const count = this.points().length;
-    if (!count) {
-      return;
-    }
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const fraction = Math.max(0, Math.min(1, (event.clientX - box.left) / box.width));
     this.hovered.set(Math.round(fraction * (count - 1)));
@@ -86,9 +84,6 @@ export class PriceChart {
   /** Arrow keys step through the points, Home/End jump to the ends and Escape hides the tooltip. */
   protected step(event: KeyboardEvent): void {
     const last = this.points().length - 1;
-    if (last < 0) {
-      return;
-    }
     const current = this.hovered();
     const moves: Record<string, number | null> = {
       ArrowLeft: current === null ? last : Math.max(0, current - 1),
