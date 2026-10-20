@@ -7,6 +7,7 @@ import {
   ChartRange,
   PortfolioHistoryResponse,
   QuoteHistoryResponse,
+  QuoteIntradayResponse,
 } from '../../shared/models/chart.model';
 
 /**
@@ -24,6 +25,13 @@ export class PriceHistory {
         params: { range },
       })
       .pipe(map((response) => (response.points ?? []).map((p) => ({ time: Date.parse(p.time), value: p.price }))));
+  }
+
+  /** Every stock's prices over today in one request, for the trend graphs: symbol → prices, oldest first. */
+  intraday(): Observable<Record<string, number[]>> {
+    return this.http
+      .get<QuoteIntradayResponse>(`${this.baseUrl}/api/quotes/intraday`)
+      .pipe(map((response) => response.points ?? {}));
   }
 
   portfolio(range: ChartRange): Observable<ChartPoint[]> {

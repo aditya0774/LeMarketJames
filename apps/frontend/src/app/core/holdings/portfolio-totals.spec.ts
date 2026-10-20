@@ -1,4 +1,5 @@
-import { allocation, portfolioTotals } from './portfolio-totals';
+import { allocation, portfolioTotals, revalue } from './portfolio-totals';
+import { Quote } from '../../shared/models/quote.model';
 import { HoldingDto } from '../../shared/models/holdings.model';
 
 const holding = (symbol: string, currentValue: number, totalCost: number): HoldingDto => ({
@@ -26,5 +27,18 @@ describe('portfolio totals', () => {
 
   it('has no slices for an empty portfolio', () => {
     expect(allocation([])).toEqual([]);
+  });
+
+  it('re-prices holdings at their live quote', () => {
+    const [live] = revalue([{ ...holding('A', 100, 80), quantity: 4 }], { A: { price: 30 } as Quote });
+
+    expect(live).toEqual(expect.objectContaining({ currentPrice: 30, currentValue: 120, gainLoss: 40, gainLossPercent: 50 }));
+  });
+
+  it('keeps the loaded value for a stock without a live quote', () => {
+    const held = holding('A', 100, 80);
+
+    expect(revalue([held], { A: null })).toEqual([held]);
+    expect(revalue([held], {})).toEqual([held]);
   });
 });

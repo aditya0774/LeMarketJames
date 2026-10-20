@@ -81,6 +81,19 @@ public class MarketPersistenceService {
     }
 
     /**
+     * @return per instrument id, the start of its latest stored candle at or after {@code since};
+     *         instruments with none are absent
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, Instant> latestCandleStarts(Instant since) {
+        Map<Integer, Instant> latest = new HashMap<>();
+        for (Object[] row : candleRepository.findLatestIntervalStarts(utc(since))) {
+            latest.put(((Number) row[0]).intValue(), ((LocalDateTime) row[1]).toInstant(ZoneOffset.UTC));
+        }
+        return latest;
+    }
+
+    /**
      * Upserts the latest price of every instrument into {@code market_quotes} (one row each) and its
      * bar for the current trading day into {@code price_history}, and appends completed candles to
      * {@code price_candles}, in a single transaction.
@@ -97,7 +110,7 @@ public class MarketPersistenceService {
                 .toList();
         quoteRepository.saveAll(quotes);
 
-        candleRepository.saveAll(candles.stream().map(MarketPersistenceService::toEntity).toList());
+        candleRepository.insertNew(candles.stream().map(MarketPersistenceService::toEntity).toList());
 
         // Today's bar so far: saving it on every snapshot means the day's final values are what
         // remains once the market closes. A snapshot without a trading date has nothing to file under.

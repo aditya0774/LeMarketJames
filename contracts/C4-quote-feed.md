@@ -43,3 +43,5 @@ The feed mode applies to the whole stack, and so does a held price. End-to-end t
 ## Market hours
 
 With `sim.respect-market-hours` on (the default), a stock's price only moves while its exchange is open: weekdays in the `MarketHours` session, excluding `sim.holidays`. Turn it off (`SIM_RESPECT_MARKET_HOURS=false`) to see prices move outside hours in development.
+
+On startup trading-service fills in the part of today's session it missed while it was down: for each stock, from the open (or from its last stored minute, if later) up to now or the close, simulated a tick at a time as if it had been running, and saved as today's minute candles. Starting at 10:41 on a trading day, the day's charts therefore already run from 09:30. Nothing is filled on a weekend or holiday, before the open, with market hours off, or with `sim.catch-up-on-start=false` (`SIM_CATCH_UP_ON_START`).

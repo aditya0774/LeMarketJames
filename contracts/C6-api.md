@@ -847,14 +847,14 @@ Portfolio history counts stocks only, like `invested`, so its last point is toda
 |---|---|
 | `GET /api/quotes/{symbol}` | `{ success: true, quote }`, `404 { success: false, error: "Symbol not found" }`, or `503 { success: false, error: "Price unavailable" }` while the feed is down ([C4](C4-quote-feed.md)) |
 | `GET /api/quotes` | `{ success: true, quotes: [quote…] }` sorted by symbol, or `503 { success: false, error: "Price unavailable" }` while the feed is down |
-
+| `GET /api/quotes/intraday` | `{ success: true, points: { SYMBOL: [price…] } }`: every stock's `1D` series (see [chart ranges](#chart-ranges)) as prices only, oldest first and ending with the live price, for the trading app's trend graphs in one request; or `503 { success: false, error: "Price unavailable" }` while the feed is down |
 | `GET /api/quotes/{symbol}/history?range=1D` | `{ success: true, symbol, range, points: [{ time, price }] }`: the stock's prices over the [chart range](#chart-ranges), oldest first and ending with the live price; `400 { success: false, error: "Unknown range" }`, and the same `404` and `503` as a single quote |
 
 `quote` = `{ symbol, name, price, priceChange, priceChangePercent, highPrice, lowPrice, openPrice, volume, marketCap, peRatio, dividendYield, lastUpdate }`.
 
 ### Chart ranges
 
-The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by the stock and portfolio charts, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
+The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by the stock and portfolio charts, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. It covers the day from the open even if trading-service started later: on startup the simulator fills in the part of today's session it missed (`sim.catch-up-on-start`, [C4](C4-quote-feed.md#market-hours)). Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
 
 Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDataClient` call); the feed resumes automatically on the next successful call, with the outage's start and end logged ([C4](C4-quote-feed.md)).
 

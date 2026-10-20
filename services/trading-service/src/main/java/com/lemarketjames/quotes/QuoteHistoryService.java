@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A stock's price over a {@link ChartRange}, for the trade page's chart. Kept apart from
@@ -61,6 +64,28 @@ public class QuoteHistoryService {
                 // A daily close is stamped at the exchange's closing time, so every point is an instant.
                 .map(bar -> new ChartPointDto(hours.closingTime(bar.date()), money(bar.close())))
                 .toList();
+    }
+
+    /**
+     * Every stock's prices over its current trading day (the same series as a {@code 1D} chart),
+     * so the trading app can draw all its trend graphs from one request.
+     *
+     * @return per symbol (sorted), the day's prices oldest first, ending with the live price
+     * @throws QuoteService.QuoteFeedUnavailableException if the feed is currently down
+     */
+    public Map<String, List<BigDecimal>> intradayForAll() {
+        // Reading the quotes first is what records an outage, as for a single quote.
+        Collection<QuoteSnapshot> quotes = marketData.findAll();
+        if (!feedStatus.isAvailable()) {
+            throw new QuoteService.QuoteFeedUnavailableException("Price unavailable");
+        }
+        Map<String, List<BigDecimal>> points = new TreeMap<>();
+        for (QuoteSnapshot quote : quotes) {
+            points.put(quote.instrument().ticker(), priceHistory.intraday(quote.instrument().instrumentId()).stream()
+                    .map(point -> money(point.price()))
+                    .toList());
+        }
+        return points;
     }
 
     private static BigDecimal money(double value) {

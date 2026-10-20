@@ -4,38 +4,41 @@ import { RouterLink } from '@angular/router';
 import { PortfolioTotals } from '../../../core/holdings/portfolio-totals';
 import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
 import { CashMovement } from '../../../core/cash/cash.service';
+import { RollingNumber } from '../../../shared/components/rolling-number/rolling-number';
 
 /**
  * The Overview's four headline cards from the redesign: portfolio value, total gain/loss, buying
  * power with Deposit and Withdraw (which ask the page to open "Move money"), and open orders
  * (which links to the Orders tab). Gain/loss is unrealised: no day-open
  * portfolio value is exposed yet (see contracts/C6-api.md), so there is no "today" figure.
+ * The figures roll to each new value (RollingNumber), since the page updates them live.
  */
 @Component({
   selector: 'app-stat-strip',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink, SignedCurrencyPipe],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink, SignedCurrencyPipe, RollingNumber],
   template: `
     <div class="stat-strip">
       <div class="stat-card">
         <span class="lbl">Portfolio value</span>
-        <span class="val mono">{{ totals().value | currency: 'USD' }}</span>
+        <span class="val mono"><app-rolling-number [text]="(totals().value | currency: 'USD') ?? ''" /></span>
         <span class="note">Your stocks at today's prices</span>
       </div>
       <div class="stat-card">
         <span class="lbl">Total gain / loss</span>
         <span class="val mono" [class.up]="totals().gainLoss > 0" [class.down]="totals().gainLoss < 0">
-          {{ totals().gainLoss | signedCurrency }}
+          <app-rolling-number [text]="totals().gainLoss | signedCurrency" />
         </span>
         <span class="note">
           <span class="mono" [class.up]="totals().gainLoss > 0" [class.down]="totals().gainLoss < 0">
-            {{ totals().gainLoss >= 0 ? '▲' : '▼' }} {{ (totals().gainLossPercent < 0 ? -totals().gainLossPercent : totals().gainLossPercent) | number: '1.2-2' }}%
+            {{ totals().gainLoss >= 0 ? '▲' : '▼' }}
+            <app-rolling-number [text]="((totals().gainLossPercent < 0 ? -totals().gainLossPercent : totals().gainLossPercent) | number: '1.2-2') + '%'" />
           </span>
           · locked in only when you sell
         </span>
       </div>
       <div class="stat-card">
         <span class="lbl">Buying power</span>
-        <span class="val mono">{{ buyingPower() != null ? (buyingPower() | currency: 'USD') : '—' }}</span>
+        <span class="val mono"><app-rolling-number [text]="buyingPower() != null ? ((buyingPower() | currency: 'USD') ?? '') : '—'" /></span>
         @if (buyingPower() != null) {
           <div class="cash-btns">
             <button type="button" class="btn btn-sm btn-soft" (click)="moveMoney.emit('DEPOSIT')">Deposit</button>

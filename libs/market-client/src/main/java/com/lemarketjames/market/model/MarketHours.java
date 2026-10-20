@@ -97,6 +97,14 @@ public record MarketHours(ZoneId zone, LocalTime open, LocalTime close, boolean 
     }
 
     /**
+     * @return when the session of {@code day} opens, used to fill in the part of today's session the
+     *         simulator missed while it was down; a market open all day opens at local midnight
+     */
+    public Instant openingTime(LocalDate day) {
+        return day.atTime(open).atZone(zone).toInstant();
+    }
+
+    /**
      * @return when the session of {@code day} closes, used to stamp a daily close on a chart; a market
      *         open all day closes at the following midnight
      */

@@ -9,15 +9,15 @@ import { Quote } from '../../shared/models/quote.model';
 import { SessionExpired } from '../../shared/components/session-expired/session-expired';
 import { MarketList, MarketRow } from './market-list/market-list';
 import { WatchlistPanel } from './watchlist-panel/watchlist-panel';
-import { appendQuotes } from './market-list/market-history';
+import { MarketHistory } from '../../core/market/market-history';
 
 /** The simulator ticks every second; 2s keeps the market graphs moving without flooding the API. */
 export const MARKET_REFRESH_MS = 2000;
 
 /**
  * The Market tab: the watchlist beside every stock with live prices, as on the redesign's Market
- * board. Polls one batch quote request for the whole market and keeps a short price trace per
- * stock for the trend graphs; both panels draw from the same rows. Selecting a stock opens the
+ * board. Polls one batch quote request for the whole market and records each stock's price trace
+ * for the trend graphs in MarketHistory, which outlives this page; both panels draw from the same rows. Selecting a stock opens the
  * trade page for it.
  */
 @Component({
@@ -65,14 +65,14 @@ export class MarketPage implements OnInit {
   protected readonly watchlist = inject(Watchlist);
 
   private readonly latest = signal<Record<string, Quote | null>>({});
-  private readonly history = signal<Record<string, number[]>>({});
+  private readonly marketHistory = inject(MarketHistory);
   protected readonly sessionExpired = signal(false);
 
   protected readonly rows = computed<MarketRow[]>(() =>
     this.catalog.all().map((instrument) => ({
       instrument,
       quote: this.latest()[instrument.symbol] ?? null,
-      history: this.history()[instrument.symbol] ?? [],
+      history: this.marketHistory.traces()[instrument.symbol] ?? [],
     })),
   );
 
@@ -83,6 +83,7 @@ export class MarketPage implements OnInit {
   });
 
   ngOnInit(): void {
+    this.marketHistory.load();
     // Quotes are polled per symbol, so the stock list has to arrive first.
     this.catalog.load().then(
       () => this.watchMarket(),
@@ -102,7 +103,7 @@ export class MarketPage implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((quotes) => {
         this.latest.set(quotes);
-        this.history.update((h) => appendQuotes(h, quotes));
+        this.marketHistory.record(quotes);
       });
   }
 }

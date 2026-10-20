@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,6 +79,23 @@ class QuoteHistoryServiceTest {
         feedStatus.recordFailure();
         assertThrows(QuoteService.QuoteFeedUnavailableException.class,
                 () -> service.history("NOPE", ChartRange.ONE_DAY));
+    }
+
+    @Test
+    void intradayForAllIsEveryStocksDayBySymbol() {
+        when(marketData.findAll()).thenReturn(List.of(quote()));
+        when(priceHistory.intraday(1)).thenReturn(List.of(new PricePoint(NOW.minusSeconds(60), 230.004),
+                new PricePoint(NOW, 231.456)));
+
+        assertEquals(Map.of("AAPL", List.of(new BigDecimal("230.00"), new BigDecimal("231.46"))),
+                service.intradayForAll());
+    }
+
+    @Test
+    void intradayForAllIsUnavailableDuringAnOutage() {
+        feedStatus.recordFailure();
+
+        assertThrows(QuoteService.QuoteFeedUnavailableException.class, service::intradayForAll);
     }
 
     private static QuoteSnapshot quote() {

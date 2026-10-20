@@ -56,6 +56,21 @@ describe('MarketPage', () => {
     expect(fixture.nativeElement.textContent).toContain(`of ${TEST_INSTRUMENTS.length} stocks`);
   });
 
+  it('carries the trend graphs on when the user leaves the tab and comes back', async () => {
+    const points = () =>
+      rows().find((r) => r.textContent?.includes('TSLA'))!.querySelector('.row-chart path')!.getAttribute('d')!.split(' ').length;
+    expect(points()).toBe(2);
+
+    // Switching tabs destroys the page; coming back makes a new one.
+    fixture.destroy();
+    fixture = TestBed.createComponent(MarketPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(points()).toBe(3);
+  });
+
   it('narrows the list as the user searches', () => {
     const search = fixture.nativeElement.querySelector('input[aria-label="Filter stocks"]') as HTMLInputElement;
     search.value = 'tsl';

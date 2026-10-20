@@ -243,6 +243,59 @@ class MarketSimulatorTest {
         assertThrows(IllegalArgumentException.class, () -> simulator.setPrice("AAPL", -1.0, true));
     }
 
+    // Startup catch-up: the minutes the service missed are simulated as if it had been running.
+    @Test
+    void catchUpFillsEveryMinuteSinceEachInstrumentsOwnStart() {
+        MarketSimulator simulator = newSimulator(OPEN, true, 42L);
+
+        // AAPL missed 70 minutes; MSFT already has all but the last 10 stored.
+        simulator.load(List.of(AAPL, MSFT), Map.of(),
+                Map.of(1, OPEN.minus(Duration.ofMinutes(70)), 2, OPEN.minus(Duration.ofMinutes(10))));
+
+        List<PriceCandle> candles = simulator.drainCompletedCandles();
+        List<PriceCandle> aapl = candles.stream().filter(c -> c.instrumentId() == 1).toList();
+        List<PriceCandle> msft = candles.stream().filter(c -> c.instrumentId() == 2).toList();
+        assertEquals(70, aapl.size(), "13:50 to 14:59 UTC, one candle a minute");
+        assertEquals(10, msft.size());
+        assertEquals(OPEN.minus(Duration.ofMinutes(10)), msft.get(0).intervalStart(), "nothing before MSFT's own start");
+        assertEquals(OPEN, simulator.findByTicker("AAPL").orElseThrow().lastUpdated(), "caught up to now");
+        assertNotEquals(227.55, simulator.findByTicker("AAPL").orElseThrow().lastPrice());
+    }
+
+    @Test
+    void catchUpAfterTheCloseFillsOnlyTheSession() {
+        // From 11:00 New York, booting at 18:00: trading stops at the 16:00 close.
+        MarketSimulator simulator = newSimulator(CLOSED, true, 42L);
+
+        simulator.load(List.of(AAPL), Map.of(), Map.of(1, OPEN));
+
+        List<PriceCandle> candles = simulator.drainCompletedCandles();
+        assertEquals(5 * 60, candles.size(), "11:00 to 15:59 New York");
+        assertEquals(Instant.parse("2026-09-16T19:59:00Z"), candles.get(candles.size() - 1).intervalStart());
+    }
+
+    @Test
+    void catchUpWithAFixedSeedReplaysTheSameDay() {
+        MarketSimulator first = newSimulator(OPEN, true, 42L);
+        MarketSimulator second = newSimulator(OPEN, true, 42L);
+        Map<Integer, Instant> from = Map.of(1, OPEN.minus(Duration.ofMinutes(30)));
+
+        first.load(List.of(AAPL), Map.of(), from);
+        second.load(List.of(AAPL), Map.of(), from);
+
+        assertEquals(first.drainCompletedCandles(), second.drainCompletedCandles());
+    }
+
+    @Test
+    void noCatchUpLeavesTheLoadedPrices() {
+        MarketSimulator simulator = newSimulator(OPEN, true, 42L);
+
+        simulator.load(List.of(AAPL), Map.of(), Map.of());
+
+        assertEquals(227.55, simulator.findByTicker("AAPL").orElseThrow().lastPrice(), 1e-9);
+        assertTrue(simulator.drainCompletedCandles().isEmpty());
+    }
+
     private static MarketSimulator simulator(Instant now, boolean respectMarketHours) {
         MarketSimulator simulator = newSimulator(now, respectMarketHours, 42L);
         simulator.load(List.of(AAPL, MSFT), Map.of());
