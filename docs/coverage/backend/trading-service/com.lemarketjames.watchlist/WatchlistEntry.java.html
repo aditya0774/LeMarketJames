@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WatchlistEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.watchlist</a> &gt; <span class="el_source">WatchlistEntry.java</span></div><h1>WatchlistEntry.java</h1><pre class="source lang-java linenums">package com.lemarketjames.watchlist;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
+import java.time.Instant;
+
+/**
+ * One stock on one client's watchlist. Holds ids only, with no relation to the account or
+ * instrument entities, so the feature reads nothing beyond the ticker it shows.
+ */
+@Entity
+@Table(name = &quot;watchlist&quot;, uniqueConstraints = @UniqueConstraint(
+        name = &quot;watchlist_account_instrument_uq&quot;, columnNames = {&quot;account_id&quot;, &quot;instrument_id&quot;}))
+public class WatchlistEntry {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;watchlist_id&quot;)
+    private Integer id;
+
+    @Column(name = &quot;account_id&quot;, nullable = false)
+    private Integer accountId;
+
+    @Column(name = &quot;instrument_id&quot;, nullable = false)
+    private Integer instrumentId;
+
+    @Column(name = &quot;added_at&quot;, nullable = false)
+    private Instant addedAt;
+
+<span class="fc" id="L36">    protected WatchlistEntry() {</span>
+        // for JPA
+<span class="fc" id="L38">    }</span>
+
+<span class="fc" id="L40">    public WatchlistEntry(Integer accountId, Integer instrumentId, Instant addedAt) {</span>
+<span class="fc" id="L41">        this.accountId = accountId;</span>
+<span class="fc" id="L42">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L43">        this.addedAt = addedAt;</span>
+<span class="fc" id="L44">    }</span>
+
+    public Instant getAddedAt() {
+<span class="fc" id="L47">        return addedAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

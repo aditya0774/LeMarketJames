@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WatchlistService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.watchlist</a> &gt; <span class="el_source">WatchlistService.java</span></div><h1>WatchlistService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.watchlist;
+
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.common.instruments.Instrument;
+import com.lemarketjames.common.instruments.InstrumentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * The authenticated client's watchlist (S41): the stocks they follow, scoped to their own account
+ * from the JWT username so one client can never read or change another's.
+ */
+@Service
+public class WatchlistService {
+
+    public static final String ACCOUNT_NOT_FOUND = &quot;ACCOUNT_NOT_FOUND&quot;;
+    public static final String SYMBOL_NOT_FOUND = &quot;SYMBOL_NOT_FOUND&quot;;
+    public static final String ALREADY_WATCHED = &quot;ALREADY_WATCHED&quot;;
+
+    private final WatchlistRepository watchlist;
+    private final AccountRepository accounts;
+    private final InstrumentRepository instruments;
+    private final Clock clock;
+
+    @Autowired
+    public WatchlistService(WatchlistRepository watchlist, AccountRepository accounts,
+                            InstrumentRepository instruments) {
+<span class="fc" id="L34">        this(watchlist, accounts, instruments, Clock.systemUTC());</span>
+<span class="fc" id="L35">    }</span>
+
+    WatchlistService(WatchlistRepository watchlist, AccountRepository accounts,
+<span class="fc" id="L38">                     InstrumentRepository instruments, Clock clock) {</span>
+<span class="fc" id="L39">        this.watchlist = watchlist;</span>
+<span class="fc" id="L40">        this.accounts = accounts;</span>
+<span class="fc" id="L41">        this.instruments = instruments;</span>
+<span class="fc" id="L42">        this.clock = clock;</span>
+<span class="fc" id="L43">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;WatchlistItem&gt; list(String username) {
+<span class="fc" id="L47">        return watchlist.findItemsByAccountId(accountId(username));</span>
+    }
+
+    @Transactional
+    public WatchlistItem add(String username, String symbol) {
+<span class="fc" id="L52">        Integer accountId = accountId(username);</span>
+<span class="fc" id="L53">        Instrument instrument = instrument(symbol);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (watchlist.existsByAccountIdAndInstrumentId(accountId, instrument.getInstrumentId())) {</span>
+<span class="fc" id="L55">            throw alreadyWatched(instrument);</span>
+        }
+        try {
+<span class="fc" id="L58">            WatchlistEntry saved = watchlist.saveAndFlush(</span>
+<span class="fc" id="L59">                    new WatchlistEntry(accountId, instrument.getInstrumentId(), clock.instant()));</span>
+<span class="fc" id="L60">            return new WatchlistItem(instrument.getTicker(), saved.getAddedAt());</span>
+<span class="fc" id="L61">        } catch (DataIntegrityViolationException ex) {</span>
+            // Another request (a second tab) added the same stock between the check and the insert;
+            // the unique constraint caught it, so the answer is the same as the check's.
+<span class="fc" id="L64">            throw alreadyWatched(instrument);</span>
+        }
+    }
+
+    /** Removing a stock that is not on the list changes nothing, so a repeated remove is harmless. */
+    @Transactional
+    public void remove(String username, String symbol) {
+<span class="fc" id="L71">        Integer accountId = accountId(username);</span>
+<span class="fc" id="L72">        instruments.findByTicker(normalize(symbol))</span>
+<span class="fc" id="L73">                .ifPresent(instrument -&gt; watchlist.deleteByAccountIdAndInstrumentId(</span>
+<span class="fc" id="L74">                        accountId, instrument.getInstrumentId()));</span>
+<span class="fc" id="L75">    }</span>
+
+    private Integer accountId(String username) {
+<span class="fc" id="L78">        return accounts.findAccountIdByUsername(username)</span>
+<span class="fc" id="L79">                .orElseThrow(() -&gt; new WatchlistException(ACCOUNT_NOT_FOUND, &quot;Account not found&quot;));</span>
+    }
+
+    private Instrument instrument(String symbol) {
+<span class="fc" id="L83">        return instruments.findByTicker(normalize(symbol))</span>
+<span class="fc" id="L84">                .orElseThrow(() -&gt; new WatchlistException(SYMBOL_NOT_FOUND, &quot;Symbol not found&quot;));</span>
+    }
+
+    private static WatchlistException alreadyWatched(Instrument instrument) {
+<span class="fc" id="L88">        return new WatchlistException(ALREADY_WATCHED, instrument.getTicker() + &quot; is already on your watchlist&quot;);</span>
+    }
+
+    /** Tickers are stored upper case; a blank or missing symbol matches nothing. */
+    private static String normalize(String symbol) {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        return symbol == null ? &quot;&quot; : symbol.trim().toUpperCase(Locale.ROOT);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
