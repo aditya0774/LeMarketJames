@@ -23,7 +23,7 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
 | The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
 | `/api/v1/reports/**`, `/api/v1/surveillance/**` | staff-ops-service | no: these paths reach trading-service, which has no such endpoint | yes |
-| Everything else under `/api/**`: quotes, instruments, sessions, `/api/market/**`, holdings, balance, profile, portfolio, trades, notifications, market activity | trading-service | yes | no |
+| Everything else under `/api/**`: quotes, instruments, sessions, `/api/market/**`, holdings, balance, profile, portfolio, trades, watchlist, notifications, market activity | trading-service | yes | no |
 
 - An app decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either app: a `CLIENT` who signs in through the staff app gets `403` on every staff route.
 - The session cookie has a different name in each app ([C7](C7-roles.md#the-staff-session-cookie)), so a session in one is not a session in the other.
@@ -382,6 +382,19 @@ power without another request.
   stores its result; another call with the same ID returns successfully without moving cash again.
 - The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event
   commit in one transaction. The event contains `amount`, `balanceAfter` and `requestId` ([C2](C2-audit.md)).
+
+### Watchlist
+
+The stocks a client follows (S41). Scoped to the account resolved from the caller's JWT, like holdings; a staff login has no account and gets `404 { success: false, code: "ACCOUNT_NOT_FOUND", error: "Account not found" }`. Stored in `watchlist` ([025](../database/README.md#025--watchlist)), one row per account and stock.
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/v1/watchlist` | `200 { success: true, watchlist: [{ symbol, addedAt }] }`, newest first. An empty list is `200` with `watchlist: []`. |
+| `POST /api/v1/watchlist` | Body `{ symbol }` → `201 { success: true, item: { symbol, addedAt } }`. `409 { success: false, code: "ALREADY_WATCHED", error }` when it is already on the list, also when two requests race. `404 { success: false, error: "Symbol not found" }` for a symbol not in `GET /api/v1/instruments`. |
+| `DELETE /api/v1/watchlist/{symbol}` | `204`, also when the stock was not on the list, so a repeated remove is harmless. |
+
+- `symbol` is matched case-insensitively against the instrument tickers; responses carry the ticker as listed.
+- Prices are not part of the watchlist: the trading app shows each watched stock's live quote from `GET /api/quotes`, which it already polls.
 
 ### GET /api/v1/portfolio/stream
 
@@ -964,12 +977,6 @@ These are contracts for upcoming stories. Build them as written, or update this 
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
-- **Watchlist (S41, LMKT-130/131/132):** trading-service, in its own `watchlist` feature package (the trading app's catch-all already routes `/api/v1/watchlist` there). It needs a new `watchlist (account_id, instrument_id, added_at)` table, unique on `(account_id, instrument_id)`, in the next free migration number. Scoped to the caller's account from the JWT, like holdings; staff (no account) get the holdings-style `404 ACCOUNT_NOT_FOUND`.
-  - `GET /api/v1/watchlist` → `{ success: true, watchlist: [{ symbol, addedAt }] }`, newest first; an empty list is `200` with `watchlist: []`.
-  - `POST /api/v1/watchlist { symbol }` → `201 { success: true, item: { symbol, addedAt } }`; `409 { success: false, code: "ALREADY_WATCHED", error }`; `404 { success: false, error: "Symbol not found" }` for a symbol not in `GET /api/v1/instruments`.
-  - `DELETE /api/v1/watchlist/{symbol}` → `204`, also when the stock was not on the list, so a repeated remove is harmless.
-  - Prices are not part of the watchlist: the trading app shows each watched stock's live quote from `GET /api/quotes`, which it already polls.
-  - Until the back end exists `GET /api/v1/watchlist` answers `404`, which the trading app reports as the watchlist not being available yet, without stars on the stock list.
 
 ## Changing a contract
 

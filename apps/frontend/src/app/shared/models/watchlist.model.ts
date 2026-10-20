@@ -1,4 +1,4 @@
-/** One watched stock (C6, Planned: Watchlist). Prices come from the quotes the app already polls. */
+/** One watched stock (C6: Watchlist). Prices come from the quotes the app already polls. */
 export interface WatchlistItem {
   symbol: string;
   addedAt: string;

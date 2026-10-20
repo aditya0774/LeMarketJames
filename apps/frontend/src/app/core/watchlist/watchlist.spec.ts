@@ -38,11 +38,11 @@ describe('Watchlist', () => {
     expect(watchlist.isWatched('TSLA')).toBe(true);
   });
 
-  it('is unavailable while the back end does not exist, and an error otherwise', async () => {
+  it('is an error when the list cannot be read, whatever the failure', async () => {
     let loading = watchlist.load();
     http.expectOne('/api/v1/watchlist').flush(null, { status: 404, statusText: 'Not Found' });
     await loading;
-    expect(watchlist.status()).toBe('unavailable');
+    expect(watchlist.status()).toBe('error');
 
     loading = watchlist.load();
     http.expectOne('/api/v1/watchlist').flush(null, { status: 500, statusText: 'Server Error' });

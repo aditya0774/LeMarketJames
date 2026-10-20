@@ -159,7 +159,6 @@ li.wl-none {
   stroke-linejoin: round;
 }
 
-.loading,
-.wl-empty {
+.loading {
   padding: 16px 8px;
 }

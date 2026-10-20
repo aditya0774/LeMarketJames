@@ -505,3 +505,17 @@ Get-Content database/schema/024_cash_movements.sql | psql -v ON_ERROR_STOP=1 -h 
 ```
 
 The receipt, cash balance change and audit event are committed in one trading-service transaction.
+
+## 025 — Watchlist
+
+`schema/025_watchlist.sql` adds `watchlist`: one row per account and stock a client follows
+([C6](../contracts/C6-api.md#watchlist)). The unique constraint on `(account_id, instrument_id)`
+refuses a duplicate even when two requests race, and trading-service answers it as
+`409 ALREADY_WATCHED`. Prices are not stored; the trading app shows each stock's live quote.
+
+```powershell
+Get-Content database/schema/025_watchlist.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+Rows go with their account (`ON DELETE CASCADE`). No grant is needed: 016's default privileges
+give `lemarket_app` the new table.

@@ -136,10 +136,10 @@ describe('MarketPage', () => {
       expect(TestBed.inject(HttpTestingController).expectOne('/api/v1/watchlist/TSLA').request.method).toBe('DELETE');
     });
 
-    it('says the watchlist is coming soon, with no stars, until its back end exists', async () => {
+    it('says the watchlist could not load, with no stars, when it cannot be read', async () => {
       await answerWatchlist(null, 404);
 
-      expect(panel().textContent).toContain('Watchlist coming soon');
+      expect(panel().textContent).toContain("Couldn't load your watchlist");
       expect(star('TSLA')).toBeNull();
     });
   });
