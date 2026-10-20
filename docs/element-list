@@ -65,3 +65,4 @@ com.lemarketjames.sessions.service
 com.lemarketjames.surveillance
 com.lemarketjames.trades
 com.lemarketjames.trades.dto
+com.lemarketjames.watchlist

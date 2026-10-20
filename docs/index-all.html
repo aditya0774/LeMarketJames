@@ -87,6 +87,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/cash/CashMovementService.html#ACCOUNT_NOT_FOUND" class="member-name-link">ACCOUNT_NOT_FOUND</a> - Static variable in class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementService.html" title="class in com.lemarketjames.cash">CashMovementService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#ACCOUNT_NOT_FOUND" class="member-name-link">ACCOUNT_NOT_FOUND</a> - Static variable in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/RejectionReason.html#ACCOUNT_RESTRICTED" class="member-name-link">ACCOUNT_RESTRICTED</a> - Enum constant in enum class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></dt>
 <dd>
 <div class="block">The client or account may not trade: status isn't ACTIVE, or trading is disabled on the account.</div>
@@ -274,6 +276,14 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityService.html#activitySince(java.time.Instant)" class="member-name-link">activitySince(Instant)</a> - Method in class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityService.html" title="class in com.lemarketjames.activity">MarketActivityService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistController.html#add(com.lemarketjames.watchlist.WatchlistRequest)" class="member-name-link">add(WatchlistRequest)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistController.html" title="class in com.lemarketjames.watchlist">WatchlistController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#add(java.lang.String,java.lang.String)" class="member-name-link">add(String, String)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#addedAt()" class="member-name-link">addedAt()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>addedAt</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/domain/AddressEntity.html" class="type-name-link" title="class in com.lemarketjames.common.domain">AddressEntity</a> - Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
 <dd>
 <div class="block">Maps to the `addresses` table; AuthService writes one RESIDENTIAL row per client at registration.</div>
@@ -326,6 +336,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>allTimeData</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#ALREADY_WATCHED" class="member-name-link">ALREADY_WATCHED</a> - Static variable in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/cash/CashMovementRequest.html#amount()" class="member-name-link">amount()</a> - Method in record class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementRequest.html" title="class in com.lemarketjames.cash">CashMovementRequest</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>amount</code> record component.</div>
@@ -897,6 +909,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/dto/package-summary.html">com.lemarketjames.trades.dto</a> - package com.lemarketjames.trades.dto</dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a> - package com.lemarketjames.watchlist</dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeInsightController.html#compare(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">compare(LocalDate, LocalDate, LocalDate, LocalDate)</a> - Method in class com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeInsightController.html" title="class in com.lemarketjames.reports.insight">VolumeInsightController</a></dt>
 <dd>
 <div class="block">Traded volume of two date ranges the caller chose.</div>
@@ -1082,6 +1096,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Accepted while the market is closed; waits for the open before being sent for execution.</div>
 </dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRepository.html#deleteByAccountIdAndInstrumentId(java.lang.Integer,java.lang.Integer)" class="member-name-link">deleteByAccountIdAndInstrumentId(Integer, Integer)</a> - Method in interface com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRepository.html" title="interface in com.lemarketjames.watchlist">WatchlistRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/cash/CashMovementController.html#deposit(com.lemarketjames.cash.CashMovementRequest)" class="member-name-link">deposit(CashMovementRequest)</a> - Method in class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementController.html" title="class in com.lemarketjames.cash">CashMovementController</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/cash/CashMovementType.html#DEPOSIT" class="member-name-link">DEPOSIT</a> - Enum constant in enum class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementType.html" title="enum class in com.lemarketjames.cash">CashMovementType</a></dt>
@@ -1460,6 +1476,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRequest.html" title="class in com.lemarketjames.watchlist">WatchlistRequest</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/instruments/Instrument.AssetClass.html#EQUITY" class="member-name-link">EQUITY</a> - Enum constant in enum class com.lemarketjames.common.instruments.<a href="com/lemarketjames/common/instruments/Instrument.AssetClass.html" title="enum class in com.lemarketjames.common.instruments">Instrument.AssetClass</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html#ERROR" class="member-name-link">ERROR</a> - Enum constant in enum class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionTrail.Result.html" title="enum class in com.lemarketjames.orders.submission">SubmissionTrail.Result</a></dt>
@@ -1507,6 +1531,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Execution controls; defaults are defined here rather than copied into deployment files.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionSettings.html#%3Cinit%3E()" class="member-name-link">ExecutionSettings()</a> - Constructor for class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionSettings.html" title="class in com.lemarketjames.orders.execution">ExecutionSettings</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRepository.html#existsByAccountIdAndInstrumentId(java.lang.Integer,java.lang.Integer)" class="member-name-link">existsByAccountIdAndInstrumentId(Integer, Integer)</a> - Method in interface com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRepository.html" title="interface in com.lemarketjames.watchlist">WatchlistRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountRepository.html#existsByAccountIdAndUsername(java.lang.Integer,java.lang.String)" class="member-name-link">existsByAccountIdAndUsername(Integer, String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a></dt>
 <dd>&nbsp;</dd>
@@ -1740,6 +1766,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/repository/OrderRepository.html#findHistory(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderStatus,java.time.LocalDateTime,java.time.LocalDateTime,org.springframework.data.domain.Pageable)" class="member-name-link">findHistory(Integer, Order.OrderStatus, LocalDateTime, LocalDateTime, Pageable)</a> - Method in interface com.lemarketjames.orders.repository.<a href="com/lemarketjames/orders/repository/OrderRepository.html" title="interface in com.lemarketjames.orders.repository">OrderRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRepository.html#findItemsByAccountId(java.lang.Integer)" class="member-name-link">findItemsByAccountId(Integer)</a> - Method in interface com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRepository.html" title="interface in com.lemarketjames.watchlist">WatchlistRepository</a></dt>
+<dd>
+<div class="block">The account's watched stocks with their tickers, newest first (ties by insert order).</div>
+</dd>
 <dt><a href="com/lemarketjames/market/repository/PriceCandleRepository.html#findLatestIntervalStarts(java.time.LocalDateTime)" class="member-name-link">findLatestIntervalStarts(LocalDateTime)</a> - Method in interface com.lemarketjames.market.repository.<a href="com/lemarketjames/market/repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a></dt>
 <dd>
 <div class="block">The start of each instrument's latest candle at or after <code>from</code> (UTC), as
@@ -1885,6 +1915,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/domain/ClientEntity.html#getAccountStatus()" class="member-name-link">getAccountStatus()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistEntry.html#getAddedAt()" class="member-name-link">getAddedAt()</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistEntry.html" title="class in com.lemarketjames.watchlist">WatchlistEntry</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AddressEntity.html#getAddressId()" class="member-name-link">getAddressId()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AddressEntity.html" title="class in com.lemarketjames.common.domain">AddressEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AddressEntity.html#getAddressType()" class="member-name-link">getAddressType()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AddressEntity.html" title="class in com.lemarketjames.common.domain">AddressEntity</a></dt>
@@ -1977,6 +2009,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/cash/CashMovementException.html#getCode()" class="member-name-link">getCode()</a> - Method in exception class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementException.html" title="class in com.lemarketjames.cash">CashMovementException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getCode()" class="member-name-link">getCode()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistException.html#getCode()" class="member-name-link">getCode()</a> - Method in exception class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistException.html" title="class in com.lemarketjames.watchlist">WatchlistException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/config/MarketSimulationProperties.html#getControl()" class="member-name-link">getControl()</a> - Method in class com.lemarketjames.market.config.<a href="com/lemarketjames/market/config/MarketSimulationProperties.html" title="class in com.lemarketjames.market.config">MarketSimulationProperties</a></dt>
 <dd>&nbsp;</dd>
@@ -2784,6 +2818,8 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="com/lemarketjames/cash/CashMovementExceptionHandler.html#handle(com.lemarketjames.cash.CashMovementException)" class="member-name-link">handle(CashMovementException)</a> - Method in class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementExceptionHandler.html" title="class in com.lemarketjames.cash">CashMovementExceptionHandler</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistExceptionHandler.html#handle(com.lemarketjames.watchlist.WatchlistException)" class="member-name-link">handle(WatchlistException)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistExceptionHandler.html" title="class in com.lemarketjames.watchlist">WatchlistExceptionHandler</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/error/GlobalExceptionHandler.html#handleAccessDenied(org.springframework.security.access.AccessDeniedException)" class="member-name-link">handleAccessDenied(AccessDeniedException)</a> - Method in class com.lemarketjames.common.error.<a href="com/lemarketjames/common/error/GlobalExceptionHandler.html" title="class in com.lemarketjames.common.error">GlobalExceptionHandler</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/error/GlobalExceptionHandler.html#handleAccountInactive(com.lemarketjames.common.security.AccountInactiveException)" class="member-name-link">handleAccountInactive(AccountInactiveException)</a> - Method in class com.lemarketjames.common.error.<a href="com/lemarketjames/common/error/GlobalExceptionHandler.html" title="class in com.lemarketjames.common.error">GlobalExceptionHandler</a></dt>
@@ -3097,6 +3133,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchResult.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchResult.html" title="class in com.lemarketjames.trades">TradeSearchResult</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRequest.html" title="class in com.lemarketjames.watchlist">WatchlistRequest</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -3609,6 +3653,10 @@ loadScripts(document, 'script');</script>
  overwrite the stored prices with its backdated copies.</div>
 </dd>
 <dt><a href="com/lemarketjames/reports/overnight/OvernightReportsController.html#list()" class="member-name-link">list()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsController.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistController.html#list()" class="member-name-link">list()</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistController.html" title="class in com.lemarketjames.watchlist">WatchlistController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#list(java.lang.String)" class="member-name-link">list(String)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/FeedMode.html#LIVE" class="member-name-link">LIVE</a> - Enum constant in enum class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/FeedMode.html" title="enum class in com.lemarketjames.market.service">FeedMode</a></dt>
 <dd>
@@ -5227,6 +5275,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/market/service/MarketSimulator.html#releasePrice(java.lang.String)" class="member-name-link">releasePrice(String)</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketSimulator.html" title="class in com.lemarketjames.market.service">MarketSimulator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistController.html#remove(java.lang.String)" class="member-name-link">remove(String)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistController.html" title="class in com.lemarketjames.watchlist">WatchlistController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#remove(java.lang.String,java.lang.String)" class="member-name-link">remove(String, String)</a> - Method in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
+<dd>
+<div class="block">Removing a stock that is not on the list changes nothing, so a repeated remove is harmless.</div>
+</dd>
 <dt><a href="com/lemarketjames/cash/CashMovementResult.html#replayed()" class="member-name-link">replayed()</a> - Method in record class com.lemarketjames.cash.<a href="com/lemarketjames/cash/CashMovementResult.html" title="class in com.lemarketjames.cash">CashMovementResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>replayed</code> record component.</div>
@@ -6425,6 +6479,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <code>symbol</code> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#symbol()" class="member-name-link">symbol()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>symbol</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html#symbol()" class="member-name-link">symbol()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRequest.html" title="class in com.lemarketjames.watchlist">WatchlistRequest</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>symbol</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#SYMBOL_NOT_FOUND" class="member-name-link">SYMBOL_NOT_FOUND</a> - Static variable in class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/quotes/QuoteService.SymbolNotFoundException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">SymbolNotFoundException(String)</a> - Constructor for exception class com.lemarketjames.quotes.<a href="com/lemarketjames/quotes/QuoteService.SymbolNotFoundException.html" title="class in com.lemarketjames.quotes">QuoteService.SymbolNotFoundException</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -6773,6 +6837,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchResult.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchResult.html" title="class in com.lemarketjames.trades">TradeSearchResult</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRequest.html" title="class in com.lemarketjames.watchlist">WatchlistRequest</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
@@ -7334,6 +7406,57 @@ the order they are declared.</div>
 <h2 class="title" id="I:W">W</h2>
 <dl class="index">
 <dt><a href="com/lemarketjames/orders/execution/ExecutionResult.html#waiting(com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">waiting(Order.OrderStatus)</a> - Static method in record class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistController.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistController</a> - Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">Watchlist endpoints from contract C6 (S41).</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistController.html#%3Cinit%3E(com.lemarketjames.watchlist.WatchlistService)" class="member-name-link">WatchlistController(WatchlistService)</a> - Constructor for class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistController.html" title="class in com.lemarketjames.watchlist">WatchlistController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistEntry.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistEntry</a> - Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">One stock on one client's watchlist.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistEntry.html#%3Cinit%3E()" class="member-name-link">WatchlistEntry()</a> - Constructor for class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistEntry.html" title="class in com.lemarketjames.watchlist">WatchlistEntry</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistEntry.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.time.Instant)" class="member-name-link">WatchlistEntry(Integer, Integer, Instant)</a> - Constructor for class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistEntry.html" title="class in com.lemarketjames.watchlist">WatchlistEntry</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistException.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistException</a> - Exception Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">A watchlist refusal with the stable code contract C6 gives it.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistException.html#%3Cinit%3E(java.lang.String,java.lang.String)" class="member-name-link">WatchlistException(String, String)</a> - Constructor for exception class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistException.html" title="class in com.lemarketjames.watchlist">WatchlistException</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistExceptionHandler.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistExceptionHandler</a> - Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">Maps watchlist refusals to the status and body contract C6 gives each of them.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistExceptionHandler.html#%3Cinit%3E()" class="member-name-link">WatchlistExceptionHandler()</a> - Constructor for class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistExceptionHandler.html" title="class in com.lemarketjames.watchlist">WatchlistExceptionHandler</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistItem</a> - Record Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">One watched stock as contract C6 returns it.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistItem.html#%3Cinit%3E(java.lang.String,java.time.Instant)" class="member-name-link">WatchlistItem(String, Instant)</a> - Constructor for record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistItem.html" title="class in com.lemarketjames.watchlist">WatchlistItem</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>WatchlistItem</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRepository.html" class="type-name-link" title="interface in com.lemarketjames.watchlist">WatchlistRepository</a> - Interface in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistRequest</a> - Record Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">Body of <code>POST /api/v1/watchlist</code>.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistRequest.html#%3Cinit%3E(java.lang.String)" class="member-name-link">WatchlistRequest(String)</a> - Constructor for record class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistRequest.html" title="class in com.lemarketjames.watchlist">WatchlistRequest</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>WatchlistRequest</code> record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html" class="type-name-link" title="class in com.lemarketjames.watchlist">WatchlistService</a> - Class in <a href="com/lemarketjames/watchlist/package-summary.html">com.lemarketjames.watchlist</a></dt>
+<dd>
+<div class="block">The authenticated client's watchlist (S41): the stocks they follow, scoped to their own account
+ from the JWT username so one client can never read or change another's.</div>
+</dd>
+<dt><a href="com/lemarketjames/watchlist/WatchlistService.html#%3Cinit%3E(com.lemarketjames.watchlist.WatchlistRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.instruments.InstrumentRepository)" class="member-name-link">WatchlistService(WatchlistRepository, AccountRepository, InstrumentRepository)</a> - Constructor for class com.lemarketjames.watchlist.<a href="com/lemarketjames/watchlist/WatchlistService.html" title="class in com.lemarketjames.watchlist">WatchlistService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/period/ReportBucket.html#WEEK" class="member-name-link">WEEK</a> - Enum constant in enum class com.lemarketjames.reports.period.<a href="com/lemarketjames/reports/period/ReportBucket.html" title="enum class in com.lemarketjames.reports.period">ReportBucket</a></dt>
 <dd>
