@@ -21,6 +21,7 @@ import { PortfolioChart } from './portfolio-chart/portfolio-chart';
 import { MoveMoney } from './move-money/move-money';
 import { CashMovement } from '../../core/cash/cash.service';
 import { portfolioTotals, revalue } from '../../core/holdings/portfolio-totals';
+import { PortfolioStream } from '../../core/holdings/portfolio-stream';
 
 /**
  * Dashboard (the Overview tab)
@@ -29,8 +30,9 @@ import { portfolioTotals, revalue } from '../../core/holdings/portfolio-totals';
  * chart, quick trade, what the user owns and today's biggest movers. Deposit and Withdraw on the
  * Buying power card open "Move money". Container only: it loads holdings, the balance and the
  * account's orders (for the open-order count, kept live by the order stream), polls every quote,
- * and hands the data to presentational children. The money figures re-price the loaded holdings at
- * each quote poll, so they move with the market without waiting for a holdings reload.
+ * and hands the data to presentational children. The portfolio stream reloads holdings and the
+ * balance when a fill settles (LMKT-28). The money figures re-price the loaded holdings at each
+ * quote poll, so they move with the market between those reloads.
  */
 @Component({
   selector: 'app-dashboard',
@@ -47,6 +49,7 @@ export class Dashboard implements OnInit {
   private readonly quotes = inject(Quotes);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly accountOrders = inject(AccountOrders);
+  private readonly portfolioStream = inject(PortfolioStream);
 
   protected readonly holdings = signal<HoldingDto[]>([]);
   protected readonly holdingsLoading = signal(true);
@@ -92,6 +95,8 @@ export class Dashboard implements OnInit {
     this.accountOrders.start();
     // An order moving on can change what the user owns and how much cash is left.
     this.accountOrders.statusChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refreshAccount());
+    // A settlement, or a reconnect after missing one, means holdings and cash may have changed.
+    this.portfolioStream.refreshes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refreshAccount());
   }
 
   protected chooseSymbol(symbol: string): void {

@@ -34,12 +34,13 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | Method & path | Request | Success |
 |---|---|---|
 | `POST /api/auth/register` | `username, password, email, fullName, streetAddress, apartment?, city, state, zipCode, country, ssn, initialDeposit, investmentExperience ("beginner" / "experienced"), employmentStatus, dateOfBirth (yyyy-MM-dd), phoneNumber` | `201 { username, message }` |
-| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, message }` and the `jwt` cookie |
+| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, email?, fullName?, message }` and the `jwt` cookie |
 | `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
-| `GET /api/auth/me` | none | `200 { username, roles, accountId? }` |
+| `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName? }` |
 
 - Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
+- `email` and `fullName` are present only for staff logins: the staff member's own row in `staff_users`, read only, for the staff app's Employee information page (LMKT-144). Clients never get them here; their details come from `/api/v1/profile`.
 - Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).
 - The right password for a login that may no longer be used gets `403 { "success": false, "code": "ACCOUNT_INACTIVE", "error", "message" }`, with both texts "This account is no longer active. Please contact the firm." That is any client that isn't `ACTIVE` ([AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)) or a staff login whose `active` flag is off. Match on `code` ([AccountInactiveException](../libs/common/src/main/java/com/lemarketjames/common/security/AccountInactiveException.java)), not the text. A wrong password never gets this response, so it never reveals an account's status, and an account that no longer exists gets the wrong-password `400`.
 - Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
@@ -331,7 +332,9 @@ nothing.
 
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
 The dashboard opens `GET /api/v1/orders/stream` for live order-status events and refreshes
-orders, holdings and history whenever a status-change event arrives.
+orders, holdings and history whenever a status-change event arrives. It also opens
+[`GET /api/v1/portfolio/stream`](#get-apiv1portfoliostream) and reloads holdings and the balance
+when a fill settles.
 Holdings (trading-service) reads order history and buying-power data from orders-service.
 
 ## Holdings, balance, profile, trades (trading-service)
@@ -379,6 +382,52 @@ power without another request.
   stores its result; another call with the same ID returns successfully without moving cash again.
 - The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event
   commit in one transaction. The event contains `amount`, `balanceAfter` and `requestId` ([C2](C2-audit.md)).
+
+### GET /api/v1/portfolio/stream
+
+Live settlement events for the signed-in client, delivered as Server-Sent Events (`text/event-stream`),
+so the Overview can re-read holdings and the balance as soon as a fill settles (LMKT-28).
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/v1/portfolio/stream` | SSE stream of the caller's own settlements |
+
+The stream emits a `balance-changed` event each time a settlement of the caller's account commits
+([BalanceChanged](../services/trading-service/src/main/java/com/lemarketjames/holdings/stream/BalanceChanged.java)).
+
+**Event payload:**
+
+```json
+{
+  "accountId": 7,
+  "orderId": 42,
+  "cash": 9823.45,
+  "occurredAt": "2026-10-20T14:30:01.123Z"
+}
+```
+
+`cash` is the account's cash after the settlement. The event is a signal to re-read: clients
+fetch `GET /api/v1/holdings` and `GET /api/balance` rather than compute from it.
+
+Access control and failures:
+
+| HTTP | When | Body |
+|---|---|---|
+| 200 | Stream opened | `text/event-stream` |
+| 401 | Not authenticated | see rules above |
+| 403 | Authenticated but not a client role | see rules above |
+| 404 | A client login without an account | `{ "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` |
+
+- The server infers the account from the authenticated caller; it does not accept an account-id parameter.
+  The stream never includes events for another account.
+- Only a settlement that committed a change is sent. A refused settlement (`INSUFFICIENT_CASH`,
+  `INSUFFICIENT_HOLDINGS`), a repeated request answered from its receipt, and a settlement that rolled
+  back send nothing.
+- On subscribe the server writes an SSE comment (`:connected`) at once, so the browser sees the
+  stream open, reconnects included.
+- There is no replay: events sent while a client was disconnected are lost. A client re-reads
+  holdings and the balance when the stream reopens after an error.
+- The trading app's Nginx routes this path unbuffered, like the order stream.
 
 ## Reports (staff-ops-service)
 
@@ -549,6 +598,37 @@ Insight: the traded volume of the last completed period compared with the period
 | HTTP | When | Body |
 |---|---|---|
 | 400 | `periodType` missing or not one of the four values | `{ "message": "..." }` |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
+### GET /api/v1/reports/insights/most-active-stocks
+
+Insight: the five stocks with the highest gross traded value in the current week, for `ANALYST`
+only. The current week starts on Monday in the configured reports time zone and includes trades
+through today. It is computed from `reporting_trades` on every request, so the dashboard can refresh
+it at least daily without a scheduled cache.
+
+**Response `200`:**
+
+```json
+{
+  "startDate": "2026-10-12",
+  "endDate": "2026-10-14",
+  "stocks": [
+    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530 },
+    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410 }
+  ],
+  "generatedAt": "2026-10-14T14:00:00Z"
+}
+```
+
+Rows are ordered by `tradedValue` descending, then symbol ascending for ties. `tradedValue` is the
+sum of `quantity × price` for both BUY and SELL fills. Fewer than five rows are returned when fewer
+than five symbols traded; no trades returns an empty `stocks` array. The response contains no
+client, account or order identifiers.
+
+| HTTP | When | Body |
+|---|---|---|
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 

@@ -1,0 +1,58 @@
+<div class="learn">
+  <header class="learn-intro">
+    <h1>Learn</h1>
+    <p>The basics of the stock market and investing, in plain English.</p>
+    <div class="learn-actions">
+      <a class="btn btn-primary" routerLink="/market">Browse the market</a>
+      <a class="btn btn-outline" routerLink="/learn/simulator">Try the stock simulator</a>
+    </div>
+  </header>
+
+  <section class="learn-next" aria-label="What to read next">
+    <p class="learn-progress muted" role="status">{{ readCount() }} of {{ total }} lessons read</p>
+    @if (upNext(); as next) {
+      <p class="learn-next-text">
+        <strong>{{ readCount() === 0 ? 'Start here' : 'Up next' }}:</strong> {{ next.title }}
+      </p>
+      <a class="btn btn-primary learn-next-btn" [routerLink]="['/learn', next.id]">
+        {{ readCount() === 0 ? 'Start the first lesson' : 'Continue' }}
+      </a>
+    } @else {
+      <p class="learn-next-text">
+        <strong>You have read every lesson.</strong> Try the idea out in the
+        <a routerLink="/learn/simulator">stock simulator</a>.
+      </p>
+    }
+  </section>
+
+  <div class="learn-filter" role="group" aria-label="Show lessons by level">
+    @for (f of filters; track f.value) {
+      <button
+        type="button"
+        class="chip"
+        [class.active]="filter() === f.value"
+        [attr.aria-pressed]="filter() === f.value"
+        (click)="setFilter(f.value)"
+      >
+        {{ f.label }}
+      </button>
+    }
+  </div>
+
+  <section class="lessons" aria-label="Lessons">
+    @for (entry of visibleEntries(); track entry.lesson.id) {
+      <a class="lesson" [routerLink]="['/learn', entry.lesson.id]">
+        <h2 class="lesson-title">{{ entry.number }}. {{ entry.lesson.title }}</h2>
+        <span class="lesson-meta">
+          {{ entry.lesson.level }} · {{ entry.lesson.minutes }} min
+          @if (progress.isRead(entry.lesson.id)) {
+            <span class="lesson-read-mark">&middot; &#10003; Read</span>
+          }
+        </span>
+        <p class="lesson-summary">{{ entry.lesson.summary }}</p>
+      </a>
+    }
+  </section>
+
+  <p class="learn-note muted">This is general education, not investment advice.</p>
+</div>

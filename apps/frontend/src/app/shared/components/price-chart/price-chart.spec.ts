@@ -34,6 +34,21 @@ describe('PriceChart', () => {
     );
   });
 
+  it('offers the range switch unless a page hides it', () => {
+    render({ points: POINTS });
+    expect(el().querySelectorAll('.pc-ranges button').length).toBe(5);
+
+    render({ points: POINTS, showRanges: false });
+    expect(el().querySelector('.pc-ranges')).toBeNull();
+  });
+
+  it('can describe the span in its own words instead of the range\'s', () => {
+    render({ points: POINTS, range: '3M', spanLabel: 'since you bought' });
+
+    expect(el().querySelector('.pc-change')?.textContent).toBe('▲ +$50.00 (+5.00%) since you bought');
+    expect(el().querySelector('.pc-plot')?.getAttribute('aria-label')).toContain('since you bought');
+  });
+
   it('can leave the value out', () => {
     render({ points: POINTS, showValue: false });
 

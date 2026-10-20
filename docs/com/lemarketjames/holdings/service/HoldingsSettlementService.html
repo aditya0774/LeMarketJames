@@ -112,11 +112,12 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint)" class="member-name-link">HoldingsSettlementService</a><wbr>(<a href="../repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint,org.springframework.context.ApplicationEventPublisher)" class="member-name-link">HoldingsSettlementService</a><wbr>(<a href="../repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../../common/audit/AuditRecorder.html" title="class in com.lemarketjames.common.audit">AuditRecorder</a>&nbsp;auditRecorder,
  <a href="../repository/SettlementReceiptRepository.html" title="interface in com.lemarketjames.holdings.repository">SettlementReceiptRepository</a>&nbsp;receipts,
- <a href="SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint)</code></div>
+ <a href="SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint,
+ org.springframework.context.ApplicationEventPublisher&nbsp;events)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -156,13 +157,14 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint,org.springframework.context.ApplicationEventPublisher)">
 <h3>HoldingsSettlementService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">HoldingsSettlementService</span><wbr><span class="parameters">(<a href="../repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../../common/audit/AuditRecorder.html" title="class in com.lemarketjames.common.audit">AuditRecorder</a>&nbsp;auditRecorder,
  <a href="../repository/SettlementReceiptRepository.html" title="interface in com.lemarketjames.holdings.repository">SettlementReceiptRepository</a>&nbsp;receipts,
- <a href="SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint)</span></div>
+ <a href="SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint,
+ org.springframework.context.ApplicationEventPublisher&nbsp;events)</span></div>
 </section>
 </li>
 </ul>

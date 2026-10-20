@@ -1,0 +1,100 @@
+/* Diagrams use the theme variables only, so both themes work without a second set of colours. */
+
+.visual {
+  margin: 4px 0 0;
+}
+
+.visual svg {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  background: var(--card2);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-lg);
+}
+
+.visual figcaption {
+  margin-top: 6px;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.note {
+  font-size: 10px;
+  fill: var(--dim);
+}
+
+.box {
+  fill: var(--card);
+  stroke: var(--line5);
+  stroke-width: 1.5;
+}
+
+.box.up {
+  stroke: var(--up);
+}
+
+.box.down {
+  stroke: var(--down);
+}
+
+.line,
+.axis,
+.mark,
+.trend {
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mark.up {
+  stroke: var(--up);
+  stroke-width: 2.5;
+}
+
+.mark.down {
+  stroke: var(--down);
+  stroke-width: 2.5;
+}
+
+.label.up {
+  fill: var(--up);
+}
+
+.label.down {
+  fill: var(--down);
+}
+
+.gap {
+  fill: var(--pri-soft);
+}
+
+.bar {
+  fill: var(--line5);
+}
+
+.loss {
+  fill: var(--down);
+}
+
+.trend {
+  stroke: var(--pri);
+  stroke-width: 2;
+}
+
+.dot {
+  fill: var(--dim);
+}
+
+.dot.now {
+  fill: var(--pri);
+}

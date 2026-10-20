@@ -1,0 +1,59 @@
+/* The result as three stat cards, the same look as the Overview's headline cards. A gain or loss
+   colours its value, and the arrow, sign and word say it too, so it never depends on colour alone. */
+
+:host {
+  display: block;
+}
+
+.sim-result {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--text);
+}
+
+.lbl {
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.val {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.note {
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.sim-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+@media (max-width: 900px) {
+  .sim-result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

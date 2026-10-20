@@ -1,0 +1,31 @@
+<div class="page-head">
+  <h1>Employee information</h1>
+</div>
+
+<section class="panel" aria-labelledby="your-details">
+  <div class="panel-head">
+    <h2 id="your-details">Your details</h2>
+  </div>
+  <dl class="details">
+    @if (auth.fullName(); as fullName) {
+      <div class="row">
+        <dt>Name</dt>
+        <dd data-field="fullName">{{ fullName }}</dd>
+      </div>
+    }
+    <div class="row">
+      <dt>Username</dt>
+      <dd class="mono" data-field="username">{{ auth.currentUser() }}</dd>
+    </div>
+    @if (auth.email(); as email) {
+      <div class="row">
+        <dt>Email</dt>
+        <dd data-field="email">{{ email }}</dd>
+      </div>
+    }
+    <div class="row">
+      <dt>Role</dt>
+      <dd data-field="role"><span class="badge">{{ role() }}</span></dd>
+    </div>
+  </dl>
+</section>

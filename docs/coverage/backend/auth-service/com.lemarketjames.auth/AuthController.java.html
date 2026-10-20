@@ -111,16 +111,22 @@ public class AuthController {
 
     /**
      * What the frontend needs to know about a session (contract C7): who, which roles, and, for
-     * clients only, the trading account. Staff have no account, so accountId is left out for them.
+     * clients only, the trading account. Staff have no account, so accountId is left out for them;
+     * instead they get their own email and full name for the staff app's Employee information page.
      */
     private Map&lt;String, Object&gt; sessionBody(String username, Set&lt;Role&gt; roles) {
-<span class="fc" id="L117">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L118">        body.put(&quot;username&quot;, username);</span>
-<span class="fc" id="L119">        body.put(&quot;roles&quot;, roles.stream().map(Role::name).sorted().toList());</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (roles.contains(Role.CLIENT)) {</span>
-<span class="fc" id="L121">            body.put(&quot;accountId&quot;, authService.getAccountId(username));</span>
+<span class="fc" id="L118">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L119">        body.put(&quot;username&quot;, username);</span>
+<span class="fc" id="L120">        body.put(&quot;roles&quot;, roles.stream().map(Role::name).sorted().toList());</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (roles.contains(Role.CLIENT)) {</span>
+<span class="fc" id="L122">            body.put(&quot;accountId&quot;, authService.getAccountId(username));</span>
+        } else {
+<span class="fc" id="L124">            authService.getStaffProfile(username).ifPresent(profile -&gt; {</span>
+<span class="fc" id="L125">                body.put(&quot;email&quot;, profile.email());</span>
+<span class="fc" id="L126">                body.put(&quot;fullName&quot;, profile.fullName());</span>
+<span class="fc" id="L127">            });</span>
         }
-<span class="fc" id="L123">        return body;</span>
+<span class="fc" id="L129">        return body;</span>
     }
 
     /**
@@ -131,13 +137,13 @@ public class AuthController {
      * @return a ResponseCookie configured with appropriate security settings
      */
     private ResponseCookie buildAuthCookie(String token, long maxAgeSeconds) {
-<span class="fc" id="L134">        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)</span>
-<span class="fc" id="L135">                .httpOnly(true)</span>
-<span class="fc" id="L136">                .secure(secureCookie)</span>
-<span class="fc" id="L137">                .sameSite(&quot;Lax&quot;)</span>
-<span class="fc" id="L138">                .path(&quot;/&quot;)</span>
-<span class="fc" id="L139">                .maxAge(maxAgeSeconds)</span>
-<span class="fc" id="L140">                .build();</span>
+<span class="fc" id="L140">        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)</span>
+<span class="fc" id="L141">                .httpOnly(true)</span>
+<span class="fc" id="L142">                .secure(secureCookie)</span>
+<span class="fc" id="L143">                .sameSite(&quot;Lax&quot;)</span>
+<span class="fc" id="L144">                .path(&quot;/&quot;)</span>
+<span class="fc" id="L145">                .maxAge(maxAgeSeconds)</span>
+<span class="fc" id="L146">                .build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

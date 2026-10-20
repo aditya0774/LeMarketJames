@@ -87,7 +87,7 @@ LeMarketJames/
 │   │   ├── src/app/               # Trading app (:4200)
 │   │   │   ├── core/              # App-wide singletons: auth, interceptors, API clients
 │   │   │   ├── shared/            # Reusable components, layout, models, pipes
-│   │   │   └── features/          # auth, home, dashboard, holdings, orders, trade
+│   │   │   └── features/          # auth, home, dashboard, holdings, orders, learn, trade
 │   │   ├── projects/staff/        # Staff app (:4201): a second Angular app in this workspace, with its own
 │   │   │                          #       nginx.conf and dev proxy (staff-proxy.mjs)
 │   │   ├── nginx.conf             # Trading app's Nginx: serves the app, routes /api to the services
@@ -673,6 +673,8 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 - The quote-feed test controls ([C4](contracts/C4-quote-feed.md)) on trading-service, reached directly at `http://localhost:8084`; set `E2E_MARKET_URL` if it is elsewhere.
 - The same database access as the order-history suite, to read the audit trail, which has no API yet.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
+
+`holdings-live.spec.ts` (LMKT-28) checks that a fill updates holdings and buying power on the Overview within 2 seconds, and that the page catches up after the portfolio stream drops. It needs what the execution suites need for an order to fill (`SIM_RESPECT_MARKET_HOURS=false`).
 
 `reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls staff-ops-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
 

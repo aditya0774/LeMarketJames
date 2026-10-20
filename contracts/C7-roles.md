@@ -68,6 +68,8 @@ Pages are guarded with `requiresRole(...roles)` ([role.guard.ts](../apps/fronten
 
 As in the trading app, this decides what is shown and nothing more: the service behind a page enforces the role itself.
 
+Employee information (`/employee-information`, LMKT-144) has no role guard: every signed-in staff member opens it from the account menu and sees only their own details, from their session ([C6](C6-api.md#auth-auth-service)). It is read-only; staff logins are made by engineers.
+
 ## Mirrors (change together with `Role`)
 
 - The `staff_users.role` CHECK constraint ([010](../database/schema/010_shared_contracts.sql)); it lists every role except `CLIENT`.

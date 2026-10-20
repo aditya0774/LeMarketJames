@@ -22,9 +22,31 @@ describe('StaffShell', () => {
     fixture.detectChanges();
     expect(page.querySelector('.logout-btn')).toBeTruthy();
     expect(page.querySelector('router-outlet')).toBeTruthy();
-    // The role is a label, never a link to another role's workspace.
-    expect(page.querySelectorAll('header a:not(.brand)')).toHaveLength(0);
+    // The role is a label, never a link to another role's workspace; the menu's only link is the
+    // signed-in member's own Employee information.
+    expect(page.querySelectorAll('header a:not(.brand):not(.page-link)')).toHaveLength(0);
   });
+
+  // LMKT-144: the header is on every page, so both roles reach Employee information from their dashboard.
+  for (const role of ['TRADING_OPS', 'ANALYST'] as const) {
+    it(`links ${role} to Employee information from the account menu`, async () => {
+      await TestBed.configureTestingModule({
+        imports: [StaffShell],
+        providers: [provideRouter([]), provideHttpClient()],
+      }).compileComponents();
+      TestBed.inject(Auth).roles.set([role]);
+      const fixture = TestBed.createComponent(StaffShell);
+      await fixture.whenStable();
+      const page = fixture.nativeElement as HTMLElement;
+
+      page.querySelector<HTMLButtonElement>('.avatar-btn')!.click();
+      fixture.detectChanges();
+
+      const link = page.querySelector<HTMLAnchorElement>('.menu a.page-link')!;
+      expect(link.textContent?.trim()).toBe('Employee information');
+      expect(link.getAttribute('href')).toBe('/employee-information');
+    });
+  }
 
   it('signs out through the API and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
@@ -37,9 +59,9 @@ describe('StaffShell', () => {
     const fixture = TestBed.createComponent(StaffShell);
     await fixture.whenStable();
     // Resolves when the shell navigates, which it does only once the API has answered.
-    const navigatedTo = new Promise<unknown>((resolve) => {
-      TestBed.inject(Router).navigate = async (commands) => {
-        resolve(commands);
+    const navigation = new Promise<{ commands: unknown; extras: unknown }>((resolve) => {
+      TestBed.inject(Router).navigate = async (commands, extras) => {
+        resolve({ commands, extras });
         return true;
       };
     });
@@ -49,7 +71,7 @@ describe('StaffShell', () => {
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.logout-btn')!.click();
     TestBed.inject(HttpTestingController).expectOne('/api/auth/logout').flush({ message: 'Logged out' });
 
-    expect(await navigatedTo).toEqual(['/login']);
+    expect(await navigation).toEqual({ commands: ['/login'], extras: { replaceUrl: true } });
     expect(auth.currentUser()).toBeNull();
   });
 });

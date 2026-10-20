@@ -1,0 +1,68 @@
+@if (entry(); as e) {
+  <article class="reader">
+    <header class="reader-top">
+      <a class="reader-back" routerLink="/learn">&larr; All lessons</a>
+      <p class="reader-count" role="status">Lesson {{ e.number }} of {{ total }}</p>
+      <div
+        class="reader-bar"
+        role="progressbar"
+        aria-label="Lesson progress"
+        aria-valuemin="1"
+        [attr.aria-valuemax]="total"
+        [attr.aria-valuenow]="e.number"
+      >
+        <span class="reader-bar-fill" [style.width.%]="percent()"></span>
+      </div>
+    </header>
+
+    <div class="reader-card">
+      <h1 #heading tabindex="-1" class="reader-title">{{ e.lesson.title }}</h1>
+      <p class="reader-meta">
+        {{ e.lesson.level }} · {{ e.lesson.minutes }} min
+        @if (progress.isRead(e.lesson.id)) {
+          <span class="reader-read-mark">&middot; &#10003; Read</span>
+        }
+      </p>
+      <p class="reader-summary">{{ e.lesson.summary }}</p>
+
+      @for (segments of e.paragraphs; track $index) {
+        <app-lesson-text [segments]="segments" />
+      }
+      @if (e.lesson.visual; as visual) {
+        <app-lesson-visual [id]="visual" />
+      }
+      <app-key-terms [terms]="e.terms" />
+
+      <div class="reader-actions">
+        @if (e.lesson.cta; as cta) {
+          <a class="btn btn-outline" [routerLink]="cta.route">{{ cta.label }}</a>
+        }
+        <button
+          type="button"
+          class="btn btn-outline"
+          [attr.aria-pressed]="progress.isRead(e.lesson.id)"
+          (click)="toggleRead()"
+        >
+          {{ progress.isRead(e.lesson.id) ? 'Read' : 'Mark as read' }}
+        </button>
+      </div>
+    </div>
+
+    <nav class="reader-nav" aria-label="Lesson navigation">
+      @if (e.prev) {
+        <button type="button" class="btn btn-outline" (click)="back()">&larr; Back</button>
+      } @else {
+        <span></span>
+      }
+      <button type="button" class="btn btn-primary" (click)="next()">
+        {{ e.next ? 'Next →' : 'Finish' }}
+      </button>
+    </nav>
+  </article>
+} @else {
+  <div class="reader reader-missing">
+    <h1>We couldn't find that lesson</h1>
+    <p class="muted">It may have been renamed. Pick one from the list.</p>
+    <a class="btn btn-primary" routerLink="/learn">All lessons</a>
+  </div>
+}

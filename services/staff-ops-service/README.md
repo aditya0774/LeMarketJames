@@ -47,6 +47,8 @@ What the load test taught us, so a new report doesn't undo it:
 | [VolumeInsightServiceTest](src/test/java/com/lemarketjames/reports/insight/VolumeInsightServiceTest.java) | Which two periods are compared for each period type, the change and percent (including no previous trades), time-zone and daylight-saving boundaries | same |
 | [ActiveClientTrendControllerTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendControllerTest.java) | The active-client trend's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`), response shape and that no identifier is returned | same |
 | [ActiveClientTrendServiceTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendServiceTest.java) | The 30-day window ending today, zero-filled quiet days, local-day UTC ranges, daylight-saving and late-evening boundaries | same |
+| [MostActiveStocksControllerTest](src/test/java/com/lemarketjames/reports/insight/MostActiveStocksControllerTest.java) | The most-active-stocks insight's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`) and response shape | same |
+| [MostActiveStocksServiceTest](src/test/java/com/lemarketjames/reports/insight/MostActiveStocksServiceTest.java) | The current Monday-to-today week in the reports time zone, the ranking and the refresh time | same |
 | [OvernightRunnerTest](src/test/java/com/lemarketjames/reports/overnight/OvernightRunnerTest.java) | A night's runs: every overnight report for the trading day before, finished with its time (READY or LATE is the writer's call), FAILED with its reason, one failure not stopping the next, no second run a night, LATE at the ready-by time, and the startup catch-up (run now, record as missed, or check last night) | same |
 | [OvernightScheduleConfigTest](src/test/java/com/lemarketjames/reports/overnight/OvernightScheduleConfigTest.java) | Runs at 02:00 New York time, outside trading hours, and the deadline at 07:00; summer, winter and both daylight-saving nights; the configured times; refusing a run time not before the ready-by time | same |
 | [OvernightReportsControllerTest](src/test/java/com/lemarketjames/reports/overnight/OvernightReportsControllerTest.java) | The overnight list's access (`401`, every role but `ANALYST` gets `403`) and its C6 shape, nulls included, with no client fields | same |
@@ -56,6 +58,7 @@ What the load test taught us, so a new report doesn't undo it:
 | [StaffOpsServiceApplicationTest](src/test/java/com/lemarketjames/StaffOpsServiceApplicationTest.java) | Reports and surveillance get separate pools | same |
 | [SurveillanceFlowTest](src/test/java/com/lemarketjames/surveillance/SurveillanceFlowTest.java) and the listener tests | Events become alerts, stored once, and only `TRADING_OPS` may read them | same |
 | [staff-overnight-reports.spec.ts](../../apps/e2e/tests-staff/staff-overnight-reports.spec.ts) | Overnight reports through the real staff app and service: runs written into `report_runs` show as Ready, Late and Failed with their times and reason, Refresh picks up a change, and signed-out visitors and Trading Ops are refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins (`E2E_ALLOW_DATABASE_SEED=true` and the `PG*` variables) |
+| [staff-most-active-stocks.spec.ts](../../apps/e2e/tests-staff/staff-most-active-stocks.spec.ts) | The most-active-stocks tile through the real staff app and service: this week's top five by traded value against `reporting_trades`, the refresh time, a new trade showing after Refresh, and signed-out visitors, clients and Trading Ops refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins |
 | [reporting-access.spec.ts](../../apps/e2e/tests/reporting-access.spec.ts) | The same access rules on the running service, with the seed logins | `cd apps/e2e && npm test` |
 | [report-load.spec.ts](../../apps/e2e/load/report-load.spec.ts) | Order confirmations stay on target while reports run (LMKT-44) | Jenkins' "Run report load test" stage; locally, `cd apps/e2e && npm run test:load` against a running stack |
 
@@ -110,6 +113,15 @@ the lower summary and share chart. All-time distinct clients are counted across 
 whole reporting view, independently of the selected dates; no client details leave it.
 See C6 for zero-baseline and date semantics. Controller tests cover comparisons,
 daylight-saving boundaries, custom dates, invalid ranges and role enforcement.
+
+## Most active stocks insight (LMKT-47)
+
+`GET /api/v1/reports/insights/most-active-stocks` returns the five symbols with the highest gross
+traded value for the current Monday-to-today week in the configured reports time zone. It reads
+only `reporting_trades`, groups filled orders by symbol, and recomputes on every request. The
+response includes the week dates, rank, symbol, trade count, share volume, traded value, and
+`generatedAt` refresh time. Only `ANALYST` may call it; the shared reports security rule returns
+`401` for missing authentication and `403` for `CLIENT`, `TRADING_OPS`, and every other role.
 
 ## Overnight reports (LMKT-45)
 

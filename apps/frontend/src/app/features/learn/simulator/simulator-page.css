@@ -1,0 +1,95 @@
+/* The simulator: a settings card beside the result, stacking on a narrow screen. */
+
+.sim {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.sim-back {
+  align-self: flex-start;
+  font-size: var(--font-sm);
+}
+
+.sim-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sim-intro h1 {
+  font-size: var(--font-xl);
+}
+
+.sim-intro p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.sim-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .sim-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 28px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-xl);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-sm);
+  font-weight: 500;
+}
+
+.sim-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sim-hint {
+  margin: 0;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.sim-error {
+  color: var(--down);
+}
+
+.sim-out {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sim-out app-price-chart {
+  display: block;
+  --chart-height: 220px;
+}
+
+.sim-disclaimer {
+  margin: 0;
+  font-size: var(--font-xs);
+  text-align: center;
+}

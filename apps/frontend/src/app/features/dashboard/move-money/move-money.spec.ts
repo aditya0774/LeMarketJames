@@ -107,14 +107,17 @@ describe('MoveMoney', () => {
     expect(go().disabled).toBe(true);
   });
 
-  it("says when moving money isn't available yet", async () => {
-    answer = () => Promise.reject(new HttpErrorResponse({ status: 404 }));
+  it("shows the backend's structured reason regardless of its status", async () => {
+    answer = () => Promise.reject(new HttpErrorResponse({
+      status: 404,
+      error: { error: 'Account not found' },
+    }));
     await open();
     type('100');
 
     await submit();
 
-    expect(el().querySelector('.mm-err')?.textContent).toBe("Deposits and withdrawals aren't available yet.");
+    expect(el().querySelector('.mm-err')?.textContent).toBe('Account not found');
   });
 
   it("shows the server's reason, and resends an unconfirmed attempt with the same request id", async () => {

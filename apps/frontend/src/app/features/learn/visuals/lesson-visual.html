@@ -1,0 +1,55 @@
+@if (description(); as text) {
+  <figure class="visual">
+    <svg viewBox="0 0 320 120" role="img" [attr.aria-label]="text" focusable="false">
+      @switch (id()) {
+        @case ('order-progress') {
+          <rect class="box" x="8" y="44" width="80" height="32" rx="8" />
+          <text class="label" x="48" y="64" text-anchor="middle">Open</text>
+          <path class="line" d="M88 60 H150 M150 60 L200 28 M150 60 L200 92" />
+          <rect class="box up" x="200" y="12" width="104" height="32" rx="8" />
+          <text class="label" x="252" y="32" text-anchor="middle">Filled</text>
+          <rect class="box down" x="200" y="76" width="104" height="32" rx="8" />
+          <text class="label" x="252" y="96" text-anchor="middle">Rejected</text>
+        }
+        @case ('bid-ask') {
+          <line class="axis" x1="16" y1="64" x2="304" y2="64" />
+          <rect class="gap" x="128" y="48" width="64" height="32" />
+          <line class="mark up" x1="128" y1="30" x2="128" y2="98" />
+          <line class="mark down" x1="192" y1="30" x2="192" y2="98" />
+          <text class="label up" x="128" y="20" text-anchor="middle">Bid</text>
+          <text class="label down" x="192" y="20" text-anchor="middle">Ask</text>
+          <text class="note" x="160" y="114" text-anchor="middle">spread</text>
+          <text class="note" x="64" y="58" text-anchor="middle">buyers wait here</text>
+          <text class="note" x="256" y="58" text-anchor="middle">sellers wait here</text>
+        }
+        @case ('diversification') {
+          <text class="note" x="80" y="14" text-anchor="middle">One stock</text>
+          <rect class="bar" x="56" y="24" width="48" height="76" rx="4" />
+          <rect class="loss" x="56" y="24" width="48" height="46" rx="4" />
+          <text class="label" x="80" y="116" text-anchor="middle">-60%</text>
+          <text class="note" x="240" y="14" text-anchor="middle">Five stocks</text>
+          <rect class="bar" x="180" y="24" width="12" height="76" rx="3" />
+          <rect class="bar" x="204" y="24" width="12" height="76" rx="3" />
+          <rect class="bar" x="228" y="24" width="12" height="76" rx="3" />
+          <rect class="bar" x="252" y="24" width="12" height="76" rx="3" />
+          <rect class="bar" x="276" y="24" width="12" height="76" rx="3" />
+          <rect class="loss" x="180" y="24" width="12" height="46" rx="3" />
+          <text class="label" x="240" y="116" text-anchor="middle">-12%</text>
+        }
+        @case ('day-range') {
+          <line class="axis" x1="40" y1="16" x2="40" y2="104" />
+          <text class="label up" x="52" y="24">High</text>
+          <text class="label down" x="52" y="104">Low</text>
+          <line class="mark" x1="40" y1="20" x2="120" y2="20" />
+          <line class="mark" x1="40" y1="100" x2="120" y2="100" />
+          <polyline class="trend" points="40,70 100,46 160,80 220,34 280,52" />
+          <circle class="dot" cx="40" cy="70" r="5" />
+          <text class="note" x="48" y="86">Open</text>
+          <circle class="dot now" cx="280" cy="52" r="5" />
+          <text class="note" x="280" y="72" text-anchor="middle">Now</text>
+        }
+      }
+    </svg>
+    <figcaption>{{ text }}</figcaption>
+  </figure>
+}

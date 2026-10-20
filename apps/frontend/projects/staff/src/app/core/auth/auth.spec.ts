@@ -78,6 +78,42 @@ describe('Auth', () => {
     expect(auth.roles()).toEqual([]);
   });
 
+  // LMKT-144: staff sessions carry the staff member's own email and full name.
+  it('keeps the staff email and full name from sign-in and from a restored session', async () => {
+    const signedIn = auth.login('ops@seed.lemarket.com', 'Pass123!');
+    http.expectOne('/api/auth/login').flush({
+      username: 'seed_ops', roles: ['TRADING_OPS'], email: 'ops@seed.lemarket.com', fullName: 'Olivia Ops',
+      message: 'Login successful',
+    });
+    await signedIn;
+    expect(auth.email()).toBe('ops@seed.lemarket.com');
+    expect(auth.fullName()).toBe('Olivia Ops');
+
+    const restored = auth.restoreSession();
+    http.expectOne('/api/auth/me').flush({
+      username: 'seed_analyst', roles: ['ANALYST'], email: 'analyst@seed.lemarket.com', fullName: 'Andy Analyst',
+    });
+    await restored;
+    expect(auth.email()).toBe('analyst@seed.lemarket.com');
+    expect(auth.fullName()).toBe('Andy Analyst');
+  });
+
+  it('forgets the staff email and full name on sign-out, and leaves them empty when not sent', async () => {
+    auth.email.set('ops@seed.lemarket.com');
+    auth.fullName.set('Olivia Ops');
+    const signedOut = auth.logout();
+    http.expectOne('/api/auth/logout').flush({ message: 'Logged out' });
+    await signedOut;
+    expect(auth.email()).toBeNull();
+    expect(auth.fullName()).toBeNull();
+
+    const restored = auth.restoreSession();
+    http.expectOne('/api/auth/me').flush({ username: 'seed_ops', roles: ['TRADING_OPS'] });
+    await restored;
+    expect(auth.email()).toBeNull();
+    expect(auth.fullName()).toBeNull();
+  });
+
   // LMKT-56: the server already ended the session, so nothing is sent (verify() checks it).
   it('clears the session without calling the server', () => {
     auth.currentUser.set('ops');
