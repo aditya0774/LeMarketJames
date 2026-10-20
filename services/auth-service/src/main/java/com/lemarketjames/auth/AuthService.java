@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -59,6 +60,19 @@ public class AuthService {
     public Integer getAccountId(String username) {
         return accountRepository.findAccountIdByUsername(username)
             .orElseThrow(() -> new AccessDeniedException("Account access is not allowed"));
+    }
+
+    /**
+     * The details a staff member's session shows about them (LMKT-144): what staff_users already
+     * stores, read only. Empty for a client or a staff login that no longer exists.
+     */
+    public Optional<StaffProfile> getStaffProfile(String username) {
+        return staffUserRepository.findByUsername(username)
+            .map(staff -> new StaffProfile(staff.getEmail(), staff.getFullName()));
+    }
+
+    /** A staff member's own email and full name, for the staff app's Employee information page. */
+    public record StaffProfile(String email, String fullName) {
     }
 
     /**

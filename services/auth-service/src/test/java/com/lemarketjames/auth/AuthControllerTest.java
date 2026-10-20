@@ -1,9 +1,14 @@
 package com.lemarketjames.auth;
 
 import com.lemarketjames.auth.dto.RegisterRequest;
+import com.lemarketjames.common.domain.StaffUserEntity;
+import com.lemarketjames.common.domain.StaffUserRepository;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import com.lemarketjames.common.security.Role;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +44,9 @@ class AuthControllerTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private StaffUserRepository staffUserRepository;
 
     /**
      * Tests that passwords are properly encoded with bcrypt hashing.
@@ -119,10 +128,50 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.roles[0]").value("CLIENT"))
-                .andExpect(jsonPath("$.accountId").exists());
+                .andExpect(jsonPath("$.accountId").exists())
+                // The staff-only profile fields never appear for a client (LMKT-144).
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.fullName").doesNotExist());
 
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // LMKT-144: a staff session carries the staff member's own email and full name, and no account.
+    @ParameterizedTest
+    @EnumSource(value = Role.class, names = {"TRADING_OPS", "ANALYST"})
+    void staffLoginAndMeCarryTheirOwnEmailAndFullName(Role role) throws Exception {
+        String username = "staff_" + role.name().toLowerCase(Locale.ROOT);
+        StaffUserEntity staff = new StaffUserEntity();
+        staff.setUsername(username);
+        staff.setEmail(username + "@staff.example.com");
+        staff.setPassword(authService.encodePassword("Pass123!"));
+        staff.setFullName("Staff " + role.name());
+        staff.setRole(role);
+        staffUserRepository.save(staff);
+
+        Cookie jwtCookie = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "username": "%s@staff.example.com", "password": "Pass123!" }
+                                """.formatted(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.roles[0]").value(role.name()))
+                .andExpect(jsonPath("$.email").value(username + "@staff.example.com"))
+                .andExpect(jsonPath("$.fullName").value("Staff " + role.name()))
+                .andReturn()
+                .getResponse()
+                .getCookie(JwtAuthenticationFilter.COOKIE_NAME);
+        assertNotNull(jwtCookie);
+
+        mockMvc.perform(get("/api/auth/me").cookie(jwtCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.roles[0]").value(role.name()))
+                .andExpect(jsonPath("$.email").value(username + "@staff.example.com"))
+                .andExpect(jsonPath("$.fullName").value("Staff " + role.name()))
+                .andExpect(jsonPath("$.accountId").doesNotExist());
     }
 
     @Test

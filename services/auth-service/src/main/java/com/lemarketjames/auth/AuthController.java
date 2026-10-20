@@ -106,7 +106,8 @@ public class AuthController {
 
     /**
      * What the frontend needs to know about a session (contract C7): who, which roles, and, for
-     * clients only, the trading account. Staff have no account, so accountId is left out for them.
+     * clients only, the trading account. Staff have no account, so accountId is left out for them;
+     * instead they get their own email and full name for the staff app's Employee information page.
      */
     private Map<String, Object> sessionBody(String username, Set<Role> roles) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -114,6 +115,11 @@ public class AuthController {
         body.put("roles", roles.stream().map(Role::name).sorted().toList());
         if (roles.contains(Role.CLIENT)) {
             body.put("accountId", authService.getAccountId(username));
+        } else {
+            authService.getStaffProfile(username).ifPresent(profile -> {
+                body.put("email", profile.email());
+                body.put("fullName", profile.fullName());
+            });
         }
         return body;
     }
