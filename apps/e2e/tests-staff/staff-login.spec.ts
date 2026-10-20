@@ -87,14 +87,26 @@ test.describe('Staff login', () => {
     }
   });
 
-  test('signing out returns to the staff login and ends the session', async ({ page }) => {
+  test('signing out invalidates the session and blocks Back navigation', async ({ page, context }) => {
     await signIn(page, TRADING_OPS);
     await expect(page).toHaveURL(/\/trade-search$/);
+
+    const oldStaffJwt = (await context.cookies()).find(cookie => cookie.name === 'staff_jwt')?.value;
+    if (!oldStaffJwt) {
+      throw new Error('Expected a staff session cookie before signing out');
+    }
 
     await signOut(page);
     await expect(page).toHaveURL(/\/login$/);
 
-    await page.goto('/trade-search');
+    const oldSession = await page.request.get('/api/auth/me', {
+      headers: { Cookie: `staff_jwt=${oldStaffJwt}` },
+    });
+    expect(oldSession.status(), await oldSession.text()).toBe(401);
+
+    await page.goBack();
     await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Account menu' })).toHaveCount(0);
   });
 });
