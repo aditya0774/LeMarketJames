@@ -8,6 +8,7 @@ import { Auth } from './core/auth/auth';
 import { authGuard } from './core/auth/auth.guard';
 import { requiresRole } from './core/auth/role.guard';
 import { homeFor } from './core/auth/staff-home';
+import { EMPLOYEE_INFORMATION } from './features/employee-information/employee-information.route';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login/login').then(m => m.Login) },
@@ -45,6 +46,12 @@ export const routes: Routes = [
             loadComponent,
           })),
         ],
+      },
+      // Open to every signed-in staff member, whatever the role: each sees their own details (LMKT-144).
+      {
+        path: EMPLOYEE_INFORMATION.path.slice(1),
+        title: EMPLOYEE_INFORMATION.title,
+        loadComponent: () => import('./features/employee-information/employee-information').then(m => m.EmployeeInformation),
       },
       // Open to every signed-in account: it is where a refused role is sent.
       { path: 'access-denied', loadComponent: () => import('./features/trade-search/access-denied').then(m => m.AccessDenied) },

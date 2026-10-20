@@ -29,7 +29,7 @@ describe('Staff routes', () => {
     expect(page.querySelector('h2')?.textContent).toContain('Staff log in');
   });
 
-  for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied']) {
+  for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock', '/access-denied', '/employee-information']) {
     it(`sends a signed-out visitor from ${address} to the staff login`, async () => {
       expect((await open(address)).url).toBe('/login');
     });
@@ -76,6 +76,15 @@ describe('Staff routes', () => {
     expect(refused.url).toBe('/access-denied');
     expect(refused.page.textContent).not.toContain('Trade search');
   });
+
+  // LMKT-144: every staff role opens its own Employee information; no role guard turns one away.
+  for (const role of ['TRADING_OPS', 'ANALYST'] as const) {
+    it(`opens Employee information for ${role}`, async () => {
+      const opened = await open('/employee-information', role);
+      expect(opened.url).toBe('/employee-information');
+      expect(opened.page.querySelector('h1')?.textContent).toContain('Employee information');
+    });
+  }
 
   // /trading-ops is no longer a route: it falls through to the start page, like any unknown address.
   it('sends an Analyst from the retired /trading-ops address to the Analyst dashboard', async () => {
