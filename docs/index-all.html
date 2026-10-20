@@ -106,6 +106,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Decides, on every authenticated request, whether the account behind a still-valid token may
  keep using it (LMKT-57).</div>
 </dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html" class="type-name-link" title="class in com.lemarketjames.common.domain">AccountAccessState</a> - Record Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
+<dd>
+<div class="block">The account state needed to decide whether a JWT may still be used.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountStatus,java.lang.Boolean,java.time.Instant)" class="member-name-link">AccountAccessState(AccountStatus, Boolean, Instant)</a> - Constructor for record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>AccountAccessState</code> record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountEntity.html" class="type-name-link" title="class in com.lemarketjames.common.domain">AccountEntity</a> - Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
 <dd>
 <div class="block">Maps to the `accounts` table: the trading account opened alongside a client at registration.</div>
@@ -189,9 +197,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Account ownership is resolved from persisted client identities.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#accountStatus()" class="member-name-link">accountStatus()</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>accountStatus</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountStatus.html" class="type-name-link" title="enum class in com.lemarketjames.common.domain">AccountStatus</a> - Enum Class in <a href="com/lemarketjames/common/domain/package-summary.html">com.lemarketjames.common.domain</a></dt>
 <dd>
 <div class="block">A client's standing (contract C3/C7).</div>
+</dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#active()" class="member-name-link">active()</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>active</code> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/domain/AccountStatus.html#ACTIVE" class="member-name-link">ACTIVE</a> - Enum constant in enum class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></dt>
 <dd>
@@ -1150,6 +1166,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/security/TokenClaims.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
@@ -1555,11 +1575,15 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Price per share to fill at, or null when the order isn't filling.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/domain/ClientRepository.html#findAccessStateByUsername(java.lang.String)" class="member-name-link">findAccessStateByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/StaffUserRepository.html#findAccessStateByUsername(java.lang.String)" class="member-name-link">findAccessStateByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserRepository.html" title="interface in com.lemarketjames.common.domain">StaffUserRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountRepository.html#findAccountIdByUsername(java.lang.String)" class="member-name-link">findAccountIdByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientRepository.html#findAccountStatusByUsername(java.lang.String)" class="member-name-link">findAccountStatusByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a></dt>
 <dd>
-<div class="block">Only the status, for the per-request access check (LMKT-57); empty when the client no longer exists.</div>
+<div class="block">Account state for the per-request access check; empty when the client no longer exists.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/domain/StaffUserRepository.html#findActiveByUsername(java.lang.String)" class="member-name-link">findActiveByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserRepository.html" title="interface in com.lemarketjames.common.domain">StaffUserRepository</a></dt>
 <dd>
@@ -1650,6 +1674,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/ClientRepository.html#findByUsername(java.lang.String)" class="member-name-link">findByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/StaffUserRepository.html#findByUsername(java.lang.String)" class="member-name-link">findByUsername(String)</a> - Method in interface com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserRepository.html" title="interface in com.lemarketjames.common.domain">StaffUserRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchRepository.html#findClients(java.lang.String,org.springframework.data.domain.Pageable)" class="member-name-link">findClients(String, Pageable)</a> - Method in interface com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/trades/TradeSearchRepository.html#findClientTrades(java.lang.Integer,java.time.LocalDateTime,java.time.LocalDateTime,com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">findClientTrades(Integer, LocalDateTime, LocalDateTime, Order.OrderStatus)</a> - Method in interface com.lemarketjames.trades.<a href="com/lemarketjames/trades/TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a></dt>
@@ -1737,6 +1763,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Generates a JWT token carrying the holder's roles, so every service can authorize the
  request from the token alone (contract C7).</div>
+</dd>
+<dt><a href="com/lemarketjames/common/security/JwtService.html#generateToken(java.lang.String,java.util.Set,java.time.Instant)" class="member-name-link">generateToken(String, Set&lt;Role&gt;, Instant)</a> - Method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a></dt>
+<dd>
+<div class="block">Generates a token whose issue time is explicitly after a session invalidation cutoff.</div>
 </dd>
 <dt><a href="com/lemarketjames/orders/dto/OrderResponse.html#getAcceptedAt()" class="member-name-link">getAcceptedAt()</a> - Method in class com.lemarketjames.orders.dto.<a href="com/lemarketjames/orders/dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></dt>
 <dd>&nbsp;</dd>
@@ -2448,6 +2478,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/entity/SessionEntity.html#getSessionId()" class="member-name-link">getSessionId()</a> - Method in class com.lemarketjames.sessions.entity.<a href="com/lemarketjames/sessions/entity/SessionEntity.html" title="class in com.lemarketjames.sessions.entity">SessionEntity</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/ClientEntity.html#getSessionInvalidatedAt()" class="member-name-link">getSessionInvalidatedAt()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/StaffUserEntity.html#getSessionInvalidatedAt()" class="member-name-link">getSessionInvalidatedAt()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserEntity.html" title="class in com.lemarketjames.common.domain">StaffUserEntity</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/InstrumentMarketParamsEntity.html#getSharesOutstanding()" class="member-name-link">getSharesOutstanding()</a> - Method in class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/InstrumentMarketParamsEntity.html" title="class in com.lemarketjames.market.entity">InstrumentMarketParamsEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/insight/VolumeTotals.html#getShareVolume()" class="member-name-link">getShareVolume()</a> - Method in interface com.lemarketjames.reports.insight.<a href="com/lemarketjames/reports/insight/VolumeTotals.html" title="interface in com.lemarketjames.reports.insight">VolumeTotals</a></dt>
@@ -2715,6 +2749,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/audit/SubmissionAuditEvent.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/SubmissionAuditEvent.html" title="class in com.lemarketjames.common.audit">SubmissionAuditEvent</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
@@ -3328,6 +3366,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Issues a new ID and puts it on the response straight away, so the caller receives it however
  the submission ends: accepted, refused with a response, or refused by an exception handler.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/TokenClaims.html#issuedAt()" class="member-name-link">issuedAt()</a> - Method in record class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/common/security/TokenClaims.html#param-issuedAt"><code>issuedAt</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/common/instruments/Instrument.html#isTradable()" class="member-name-link">isTradable()</a> - Method in class com.lemarketjames.common.instruments.<a href="com/lemarketjames/common/instruments/Instrument.html" title="class in com.lemarketjames.common.instruments">Instrument</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/domain/AccountEntity.html#isTradingEnabled()" class="member-name-link">isTradingEnabled()</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountEntity.html" title="class in com.lemarketjames.common.domain">AccountEntity</a></dt>
@@ -3501,9 +3543,13 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/auth/AuthService.LoginResult.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.util.Set)" class="member-name-link">LoginResult(String, String, String, Set&lt;Role&gt;)</a> - Constructor for class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthService.LoginResult.html" title="class in com.lemarketjames.auth">AuthService.LoginResult</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/auth/AuthController.html#logout()" class="member-name-link">logout()</a> - Method in class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthController.html" title="class in com.lemarketjames.auth">AuthController</a></dt>
+<dt><a href="com/lemarketjames/auth/AuthController.html#logout(java.lang.String)" class="member-name-link">logout(String)</a> - Method in class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthController.html" title="class in com.lemarketjames.auth">AuthController</a></dt>
 <dd>
 <div class="block">Logs out the current user by clearing the JWT authentication cookie.</div>
+</dd>
+<dt><a href="com/lemarketjames/auth/AuthService.html#logout(java.lang.String)" class="member-name-link">logout(String)</a> - Method in class com.lemarketjames.auth.<a href="com/lemarketjames/auth/AuthService.html" title="class in com.lemarketjames.auth">AuthService</a></dt>
+<dd>
+<div class="block">Invalidates all tokens issued for the account at or before the logout time.</div>
 </dd>
 <dt><a href="com/lemarketjames/market/model/DailyBar.html#low()" class="member-name-link">low()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
 <dd>
@@ -4829,6 +4875,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Reason given when the token's account no longer exists.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/security/SecurityEventLog.html#REASON_SESSION_INVALIDATED" class="member-name-link">REASON_SESSION_INVALIDATED</a> - Static variable in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/overnight/OvernightReportsService.html#recentRuns()" class="member-name-link">recentRuns()</a> - Method in class com.lemarketjames.reports.overnight.<a href="com/lemarketjames/reports/overnight/OvernightReportsService.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsService</a></dt>
 <dd>
 <div class="block">Runs of the last 30 nights, the most recent first.</div>
@@ -5106,7 +5154,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/common/security/AccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;)</a> - Method in interface com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;)</a> - Method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></dt>
+<dt><a href="com/lemarketjames/common/security/AccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set,java.time.Instant)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;, Instant)</a> - Method in interface com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/AccountAccessCheck.html" title="interface in com.lemarketjames.common.security">AccountAccessCheck</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html#revokedReason(java.lang.String,java.util.Set,java.time.Instant)" class="member-name-link">revokedReason(String, Set&lt;Role&gt;, Instant)</a> - Method in class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/Role.html" class="type-name-link" title="enum class in com.lemarketjames.common.security">Role</a> - Enum Class in <a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a></dt>
 <dd>
@@ -5307,6 +5357,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/exception/SessionExpiredException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">SessionExpiredException(String)</a> - Constructor for exception class com.lemarketjames.sessions.exception.<a href="com/lemarketjames/sessions/exception/SessionExpiredException.html" title="class in com.lemarketjames.sessions.exception">SessionExpiredException</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#sessionInvalidatedAt()" class="member-name-link">sessionInvalidatedAt()</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
+<dd>
+<div class="block">Returns the value of the <code>sessionInvalidatedAt</code> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/sessions/dto/SessionResponse.html" class="type-name-link" title="class in com.lemarketjames.sessions.dto">SessionResponse</a> - Class in <a href="com/lemarketjames/sessions/dto/package-summary.html">com.lemarketjames.sessions.dto</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/dto/SessionResponse.html#%3Cinit%3E(java.lang.Boolean,com.lemarketjames.sessions.dto.SessionDto,java.lang.String)" class="member-name-link">SessionResponse(Boolean, SessionDto, String)</a> - Constructor for class com.lemarketjames.sessions.dto.<a href="com/lemarketjames/sessions/dto/SessionResponse.html" title="class in com.lemarketjames.sessions.dto">SessionResponse</a></dt>
@@ -5650,6 +5704,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/holdings/dto/ValidateHoldingRequest.html#setSellQuantity(java.math.BigDecimal)" class="member-name-link">setSellQuantity(BigDecimal)</a> - Method in class com.lemarketjames.holdings.dto.<a href="com/lemarketjames/holdings/dto/ValidateHoldingRequest.html" title="class in com.lemarketjames.holdings.dto">ValidateHoldingRequest</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/sessions/dto/ValidateSessionRequest.html#setSessionId(java.lang.Integer)" class="member-name-link">setSessionId(Integer)</a> - Method in class com.lemarketjames.sessions.dto.<a href="com/lemarketjames/sessions/dto/ValidateSessionRequest.html" title="class in com.lemarketjames.sessions.dto">ValidateSessionRequest</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/ClientEntity.html#setSessionInvalidatedAt(java.time.Instant)" class="member-name-link">setSessionInvalidatedAt(Instant)</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/domain/StaffUserEntity.html#setSessionInvalidatedAt(java.time.Instant)" class="member-name-link">setSessionInvalidatedAt(Instant)</a> - Method in class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/StaffUserEntity.html" title="class in com.lemarketjames.common.domain">StaffUserEntity</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionSettings.html#setSettlementAvailable(boolean)" class="member-name-link">setSettlementAvailable(boolean)</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionSettings.html" title="class in com.lemarketjames.orders.execution">ExecutionSettings</a></dt>
 <dd>&nbsp;</dd>
@@ -6181,7 +6239,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">What a valid JWT says about its holder.</div>
 </dd>
-<dt><a href="com/lemarketjames/common/security/TokenClaims.html#%3Cinit%3E(java.lang.String,java.util.Set)" class="member-name-link">TokenClaims(String, Set&lt;Role&gt;)</a> - Constructor for record class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></dt>
+<dt><a href="com/lemarketjames/common/security/TokenClaims.html#%3Cinit%3E(java.lang.String,java.util.Set,java.time.Instant)" class="member-name-link">TokenClaims(String, Set&lt;Role&gt;, Instant)</a> - Constructor for record class com.lemarketjames.common.security.<a href="com/lemarketjames/common/security/TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></dt>
 <dd>
 <div class="block">Creates an instance of a <code>TokenClaims</code> record class.</div>
 </dd>
@@ -6210,6 +6268,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/audit/SubmissionAuditEvent.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.common.audit.<a href="com/lemarketjames/common/audit/SubmissionAuditEvent.html" title="class in com.lemarketjames.common.audit">SubmissionAuditEvent</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/common/domain/AccountAccessState.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountAccessState.html" title="class in com.lemarketjames.common.domain">AccountAccessState</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>

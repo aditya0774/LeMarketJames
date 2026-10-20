@@ -164,9 +164,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Generates a JWT token carrying the holder's roles, so every service can authorize the
  request from the token alone (contract C7).</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExpirationSeconds()" class="member-name-link">getExpirationSeconds</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#generateToken(java.lang.String,java.util.Set,java.time.Instant)" class="member-name-link">generateToken</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a>&gt;&nbsp;roles,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;issuedAt)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Generates a token whose issue time is explicitly after a session invalidation cutoff.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExpirationSeconds()" class="member-name-link">getExpirationSeconds</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets the token expiration time in seconds.</div>
 </div>
 </div>
@@ -260,6 +267,15 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>a signed JWT token string</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="generateToken(java.lang.String,java.util.Set,java.time.Instant)">
+<h3>generateToken</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">generateToken</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a>&gt;&nbsp;roles,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;issuedAt)</span></div>
+<div class="block">Generates a token whose issue time is explicitly after a session invalidation cutoff.</div>
 </section>
 </li>
 <li>
