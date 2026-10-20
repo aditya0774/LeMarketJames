@@ -94,7 +94,7 @@ LeMarketJames/
 │   │   ├── src/app/               # Trading app (:4200)
 │   │   │   ├── core/              # App-wide singletons: auth, interceptors, API clients
 │   │   │   ├── shared/            # Reusable components, layout, models, pipes
-│   │   │   └── features/          # auth, home, dashboard, holdings, orders, trade
+│   │   │   └── features/          # auth, home, dashboard, holdings, orders, learn, trade
 │   │   ├── projects/staff/        # Staff app (:4201): a second Angular app in this workspace
 │   │   ├── package.json           # npm dependencies (shared by both apps)
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)

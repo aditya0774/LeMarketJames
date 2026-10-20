@@ -24,7 +24,7 @@ describe('Trading Operations access', () => {
       const hrefs = Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll('nav a')).map((a) =>
         a.getAttribute('href'),
       );
-      expect(hrefs).toEqual(['/dashboard', '/market', '/holdings', '/orders']);
+      expect(hrefs).toEqual(['/dashboard', '/market', '/holdings', '/orders', '/learn']);
       expect(hrefs.some((href) => /trade-search|trading-ops|staff/.test(href ?? ''))).toBe(false);
     });
   }

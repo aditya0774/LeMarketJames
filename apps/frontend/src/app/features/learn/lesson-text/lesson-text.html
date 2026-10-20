@@ -1,0 +1,12 @@
+<p>
+  @for (segment of segments(); track $index) {
+    @if (segment.term; as term) {
+      <button type="button" class="term-link" [attr.aria-expanded]="isOpen(term)" (click)="toggle(term)">{{ segment.text }}</button>
+    } @else {
+      <span>{{ segment.text }}</span>
+    }
+  }
+</p>
+@if (openTerm(); as term) {
+  <p class="term-def" role="note"><strong>{{ term.term }}:</strong> {{ term.definition }}</p>
+}

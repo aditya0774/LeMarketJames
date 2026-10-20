@@ -1,0 +1,151 @@
+/* The Learn tab: an intro, a jump list, a grid of collapsible lesson cards (each explaining its own terms), in the same cards as the Trade board. */
+
+.learn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.learn-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.learn-intro h1 {
+  font-size: var(--font-xl);
+}
+
+.learn-intro p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.learn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.lessons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.learn-progress {
+  margin: 0;
+  font-size: var(--font-xs);
+}
+
+/* The one clear answer to "where do I start?", in the same card as the lessons. */
+.learn-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 16px 28px;
+  background: var(--pri-soft);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-xl);
+}
+
+.learn-next .learn-progress {
+  flex-basis: 100%;
+}
+
+.learn-next-text {
+  flex: 1 1 240px;
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.learn-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lesson-next {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: var(--font-sm);
+  font-weight: 500;
+}
+
+.lesson-read-mark {
+  color: var(--pri);
+}
+
+.lesson {
+  padding: 20px 28px;
+  /* Keeps the card's title below a sticky header when a #lesson link scrolls to it. */
+  scroll-margin-top: 80px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-xl);
+}
+
+/* Cards in one grid row stay aligned instead of stretching when one opens. */
+.lessons {
+  align-items: start;
+}
+
+.lesson summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.lesson summary:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.lesson .lesson-title {
+  font-size: var(--font-lg);
+}
+
+.lesson .lesson-meta {
+  font-size: var(--font-xs);
+  color: var(--faint);
+  text-transform: capitalize;
+}
+
+.lesson p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.lesson[open] > :not(summary) {
+  margin-top: 8px;
+}
+
+.lesson .lesson-summary {
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+.lesson app-lesson-visual {
+  display: block;
+}
+
+.lesson-actions {
+  display: flex;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.learn-note {
+  margin: 0;
+  font-size: var(--font-xs);
+  text-align: center;
+}

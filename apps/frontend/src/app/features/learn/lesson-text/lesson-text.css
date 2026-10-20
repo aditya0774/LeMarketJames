@@ -1,0 +1,42 @@
+/* A lesson paragraph with openable terms. Styled here because the page's CSS cannot reach into it. */
+
+:host {
+  display: block;
+}
+
+p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+/* Looks like text with a dotted underline, so it reads as "tap for the meaning", not as a link away. */
+.term-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline dotted var(--pri);
+  text-underline-offset: 3px;
+}
+
+.term-link:hover,
+.term-link[aria-expanded='true'] {
+  color: var(--pri);
+}
+
+.term-link:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.term-def {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--pri-soft);
+  border-radius: var(--radius-md);
+  color: var(--text);
+}

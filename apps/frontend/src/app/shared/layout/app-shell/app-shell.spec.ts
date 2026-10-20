@@ -27,6 +27,16 @@ describe('AppShell', () => {
     expect(fixture.nativeElement.querySelector('.avatar-btn').textContent.trim()).toBe('J');
   });
 
+  it('puts the Learn tab right after Orders', () => {
+    const fixture = TestBed.createComponent(AppShell);
+    fixture.detectChanges();
+
+    const tabs = Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll('.app-tabs a'));
+    const names = tabs.map((a) => a.textContent?.trim());
+    expect(names[names.indexOf('Orders') + 1]).toBe('Learn');
+    expect(tabs[names.indexOf('Learn')].getAttribute('href')).toBe('/learn');
+  });
+
   it('logs out and goes to the landing page', async () => {
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);

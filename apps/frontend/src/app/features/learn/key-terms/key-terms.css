@@ -1,0 +1,40 @@
+/* A box inside the lesson card; the chips are the app's shared .chip buttons. */
+
+:host {
+  display: block;
+}
+
+.key-terms {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: var(--card2);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-lg);
+}
+
+h3 {
+  margin: 0 0 8px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--faint);
+}
+
+.key-terms-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.key-terms-def {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  background: var(--pri-soft);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* The author's display rule would otherwise override the hidden attribute. */
+.key-terms-def[hidden] {
+  display: none;
+}
