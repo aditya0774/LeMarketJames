@@ -2,11 +2,15 @@ GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeInsightService,0,207,0,6,0,38,0,12,0,9
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeInsightController,0,19,0,0,0,5,0,3,0,3
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,ActiveClientTrendService,0,71,0,2,0,12,0,3,0,2
+LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,MostActiveStocksController,0,10,0,0,0,4,0,2,0,2
+LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,MostActiveStock,0,18,0,0,0,1,0,1,0,1
+LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,MostActiveStocksService,0,81,0,0,0,16,0,3,0,3
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,ActiveClientTrendResponse.DayCount,0,9,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,ActiveClientTrendController,0,10,0,0,0,4,0,2,0,2
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeInsightResponse.PeriodVolume,0,18,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeInsightResponse.VolumeChange,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeInsightResponse,0,21,0,0,0,1,0,1,0,1
+LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,MostActiveStocksResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,ActiveClientTrendResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.insight,VolumeComparisonResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Staff Ops Service,com.lemarketjames.reports.entity,ReportingTrade,39,0,0,0,13,0,13,0,13,0
