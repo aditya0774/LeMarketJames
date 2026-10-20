@@ -7,13 +7,16 @@ import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.dto.SettlementRequest;
 import com.lemarketjames.holdings.entity.HoldingsEntity;
 import com.lemarketjames.holdings.repository.HoldingsRepository;
+import com.lemarketjames.holdings.stream.BalanceChanged;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,15 +40,17 @@ public class HoldingsSettlementService {
     private final AuditRecorder auditRecorder;
     private final com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts;
     private final SettlementCheckpoint checkpoint;
+    private final ApplicationEventPublisher events;
 
     public HoldingsSettlementService(HoldingsRepository holdingsRepository, AccountRepository accountRepository,
                                      AuditRecorder auditRecorder, com.lemarketjames.holdings.repository.SettlementReceiptRepository receipts,
-                                     SettlementCheckpoint checkpoint) {
+                                     SettlementCheckpoint checkpoint, ApplicationEventPublisher events) {
         this.holdingsRepository = holdingsRepository;
         this.accountRepository = accountRepository;
         this.auditRecorder = auditRecorder;
         this.receipts = receipts;
         this.checkpoint = checkpoint;
+        this.events = events;
     }
 
     /**
@@ -83,6 +88,9 @@ public class HoldingsSettlementService {
         auditRecorder.record(AuditEventType.SETTLED, request.getOrderId(), request.getAccountId(), Map.of(
                 "cashDelta", buy ? cost.negate() : cost,
                 "quantityDelta", buy ? request.getQuantity() : request.getQuantity().negate()));
+        // Only an applied fill changes what the client sees; the stream listener sends it after commit.
+        events.publishEvent(new BalanceChanged(request.getAccountId(), request.getOrderId(),
+                findAccount(request.getAccountId()).getCashBalance(), Instant.now()));
         // Everything is written and nothing is committed: where a test may make the settlement fail.
         checkpoint.beforeCommit(request);
         log.info("Settled order={} account={} instrument={} type={} qty={} price={}",
