@@ -10,8 +10,8 @@ import {
 } from '../../shared/models/chart.model';
 
 /**
- * Past prices for the charts: one stock's (core-service) and the signed-in user's stocks as a whole
- * (holdings-service). Both come back as {@link ChartPoint}s so one chart component draws either.
+ * Past prices for the charts: one stock's and the signed-in user's stocks as a whole, both from
+ * trading-service. Both come back as {@link ChartPoint}s so one chart component draws either.
  */
 @Injectable({ providedIn: 'root' })
 export class PriceHistory {

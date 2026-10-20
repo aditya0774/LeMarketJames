@@ -97,7 +97,9 @@ loadScripts(document, 'script');</script>
 
  <p>Live prices change every second, which is too often to write on every tick, so the latest
  prices are written periodically (<code>sim.snapshot-interval-ms</code>) along with any completed
- 1-minute candles. All timestamps are stored as UTC.</div>
+ 1-minute candles and each instrument's bar for the current trading day (<code>price_history</code>),
+ which is how the daily price history grows past its seeded six months. All timestamps are stored
+ as UTC; trading dates are exchange-local.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -109,9 +111,10 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository)" class="member-name-link">MarketPersistenceService</a><wbr>(<a href="../repository/InstrumentMarketParamsRepository.html" title="interface in com.lemarketjames.market.repository">InstrumentMarketParamsRepository</a>&nbsp;paramsRepository,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.repository.PriceHistoryRepository)" class="member-name-link">MarketPersistenceService</a><wbr>(<a href="../repository/InstrumentMarketParamsRepository.html" title="interface in com.lemarketjames.market.repository">InstrumentMarketParamsRepository</a>&nbsp;paramsRepository,
  <a href="../repository/MarketQuoteRepository.html" title="interface in com.lemarketjames.market.repository">MarketQuoteRepository</a>&nbsp;quoteRepository,
- <a href="../repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a>&nbsp;candleRepository)</code></div>
+ <a href="../repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a>&nbsp;candleRepository,
+ <a href="../repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a>&nbsp;historyRepository)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -137,8 +140,9 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#save(java.util.Collection,java.util.List)" class="member-name-link">save</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="../model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;&nbsp;snapshots,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a>&gt;&nbsp;candles)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and
- appends completed candles to <code>price_candles</code>, in a single transaction.</div>
+<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and its
+ bar for the current trading day into <code>price_history</code>, and appends completed candles to
+ <code>price_candles</code>, in a single transaction.</div>
 </div>
 </div>
 </div>
@@ -158,11 +162,12 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.market.repository.InstrumentMarketParamsRepository,com.lemarketjames.market.repository.MarketQuoteRepository,com.lemarketjames.market.repository.PriceCandleRepository,com.lemarketjames.market.repository.PriceHistoryRepository)">
 <h3>MarketPersistenceService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">MarketPersistenceService</span><wbr><span class="parameters">(<a href="../repository/InstrumentMarketParamsRepository.html" title="interface in com.lemarketjames.market.repository">InstrumentMarketParamsRepository</a>&nbsp;paramsRepository,
  <a href="../repository/MarketQuoteRepository.html" title="interface in com.lemarketjames.market.repository">MarketQuoteRepository</a>&nbsp;quoteRepository,
- <a href="../repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a>&nbsp;candleRepository)</span></div>
+ <a href="../repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a>&nbsp;candleRepository,
+ <a href="../repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a>&nbsp;historyRepository)</span></div>
 </section>
 </li>
 </ul>
@@ -201,8 +206,9 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations">@Transactional
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">save</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="../model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&gt;&nbsp;snapshots,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../model/PriceCandle.html" title="class in com.lemarketjames.market.model">PriceCandle</a>&gt;&nbsp;candles)</span></div>
-<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and
- appends completed candles to <code>price_candles</code>, in a single transaction.</div>
+<div class="block">Upserts the latest price of every instrument into <code>market_quotes</code> (one row each) and its
+ bar for the current trading day into <code>price_history</code>, and appends completed candles to
+ <code>price_candles</code>, in a single transaction.</div>
 </section>
 </li>
 </ul>

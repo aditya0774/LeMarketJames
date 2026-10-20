@@ -12,6 +12,8 @@ import java.time.Instant;
  */
 public final class SecurityEventLog {
 
+    public static final String REASON_SESSION_INVALIDATED = "SESSION_INVALIDATED";
+
     /** Reason given when the token's account no longer exists. */
     public static final String REASON_NOT_FOUND = "NOT_FOUND";
 

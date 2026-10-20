@@ -104,7 +104,7 @@ loadScripts(document, 'script');</script>
  application.properties just to restate a default.
 
  <p>Available in every servlet service that depends on libs/common (auth, core, holdings).
- Market hours and holidays belong to market-service instead: see its MarketSimulationProperties.</div>
+ Market hours and holidays belong to trading-service instead: see its MarketSimulationProperties.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -128,28 +128,33 @@ loadScripts(document, 'script');</script>
 <div class="block">Login protection.</div>
 </div>
 <div class="col-first even-row-color"><code>static class&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="PlatformSettings.Market.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></code></div>
+<div class="col-second even-row-color"><code><a href="PlatformSettings.Cash.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Cash</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">How quotes are consumed (the feed itself is market-service's).</div>
+<div class="block">Deposits and withdrawals made after an account has been opened.</div>
 </div>
 <div class="col-first odd-row-color"><code>static class&nbsp;</code></div>
-<div class="col-second odd-row-color"><code><a href="PlatformSettings.Orders.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Orders</a></code></div>
+<div class="col-second odd-row-color"><code><a href="PlatformSettings.Market.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">How quotes are consumed (the feed itself is trading-service's).</div>
+</div>
+<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="PlatformSettings.Orders.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Orders</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Order placement rules.</div>
 </div>
-<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="PlatformSettings.Reports.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="PlatformSettings.Reports.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Scheduled reporting.</div>
 </div>
-<div class="col-first odd-row-color"><code>static class&nbsp;</code></div>
-<div class="col-second odd-row-color"><code><a href="PlatformSettings.Session.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Session</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="PlatformSettings.Session.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Session</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Logged-in sessions.</div>
 </div>
-<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="PlatformSettings.Surveillance.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Surveillance</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="PlatformSettings.Surveillance.html" class="type-name-link" title="class in com.lemarketjames.common.config">PlatformSettings.Surveillance</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Order surveillance: which new orders Trading Operations are alerted to.</div>
 </div>
 </div>
@@ -185,21 +190,24 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Auth.html" title="class in com.lemarketjames.common.config">PlatformSettings.Auth</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAuth()" class="member-name-link">getAuth</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Market.html" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMarket()" class="member-name-link">getMarket</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Cash.html" title="class in com.lemarketjames.common.config">PlatformSettings.Cash</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCash()" class="member-name-link">getCash</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Orders.html" title="class in com.lemarketjames.common.config">PlatformSettings.Orders</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrders()" class="member-name-link">getOrders</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Market.html" title="class in com.lemarketjames.common.config">PlatformSettings.Market</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMarket()" class="member-name-link">getMarket</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Reports.html" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getReports()" class="member-name-link">getReports</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Orders.html" title="class in com.lemarketjames.common.config">PlatformSettings.Orders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrders()" class="member-name-link">getOrders</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Session.html" title="class in com.lemarketjames.common.config">PlatformSettings.Session</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSession()" class="member-name-link">getSession</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Reports.html" title="class in com.lemarketjames.common.config">PlatformSettings.Reports</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getReports()" class="member-name-link">getReports</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Surveillance.html" title="class in com.lemarketjames.common.config">PlatformSettings.Surveillance</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSurveillance()" class="member-name-link">getSurveillance</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Session.html" title="class in com.lemarketjames.common.config">PlatformSettings.Session</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSession()" class="member-name-link">getSession</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="PlatformSettings.Surveillance.html" title="class in com.lemarketjames.common.config">PlatformSettings.Surveillance</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSurveillance()" class="member-name-link">getSurveillance</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -271,6 +279,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getSurveillance()">
 <h3>getSurveillance</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlatformSettings.Surveillance.html" title="class in com.lemarketjames.common.config">PlatformSettings.Surveillance</a></span>&nbsp;<span class="element-name">getSurveillance</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCash()">
+<h3>getCash</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="PlatformSettings.Cash.html" title="class in com.lemarketjames.common.config">PlatformSettings.Cash</a></span>&nbsp;<span class="element-name">getCash</span>()</div>
 </section>
 </li>
 </ul>

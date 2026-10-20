@@ -1,0 +1,12 @@
+/* Cards, tables (.t), alerts, buttons and status pills are the shared ones (styles/base.css). */
+.overnight { display: flex; flex-direction: column; gap: 18px; }
+.report-bar { justify-content: space-between; }
+.loading { padding: 32px; color: var(--dim); }
+.empty-state { padding: 32px; }
+.alert.err { justify-content: space-between; align-items: center; }
+.table-card { overflow-x: auto; }
+.report-name { display: block; font-weight: 600; }
+.run-date, .scheduled { color: var(--dim); font-size: var(--font-sm); }
+.ready-time { white-space: nowrap; }
+.failure-reason { color: var(--errt); }
+.late-note { color: var(--pritext); }

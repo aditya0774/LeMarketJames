@@ -79,6 +79,9 @@ public class ClientEntity implements LoginAccount {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    @Column(name = "session_invalidated_at")
+    private Instant sessionInvalidatedAt;
+
     @Override
     public Set<Role> roles() {
         return Set.of(Role.CLIENT);
@@ -115,6 +118,14 @@ public class ClientEntity implements LoginAccount {
     @Override
     public void setLockedUntil(Instant lockedUntil) {
         this.lockedUntil = lockedUntil;
+    }
+
+    public Instant getSessionInvalidatedAt() {
+        return sessionInvalidatedAt;
+    }
+
+    public void setSessionInvalidatedAt(Instant sessionInvalidatedAt) {
+        this.sessionInvalidatedAt = sessionInvalidatedAt;
     }
 
     public Integer getClientId() {

@@ -17,7 +17,7 @@ export class VolumeInsightService {
 
   get(periodType: VolumeInsightPeriodType): Observable<VolumeInsightResponse> {
     const params = new HttpParams().set('periodType', periodType);
-    // A timeout keeps the tile from loading forever if the gateway hangs.
+    // A timeout keeps the tile from loading forever if the API hangs.
     return this.http.get<VolumeInsightResponse>(this.apiUrl, { params }).pipe(timeout(10000));
   }
 

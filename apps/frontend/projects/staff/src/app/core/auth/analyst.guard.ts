@@ -4,7 +4,7 @@ import { Auth } from '../../../../src/app/core/auth/auth';
 
 /**
  * UI access check for ANALYST role.
- * The API (reporting-service) independently enforces ANALYST role (C7).
+ * The API (staff-ops-service) independently enforces ANALYST role (C7).
  * This guard redirects to login if not authenticated, or to /access-denied if not ANALYST.
  */
 export const analystGuard: CanActivateFn = () => {

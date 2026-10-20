@@ -171,15 +171,20 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Authenticates a client or staff user by email and password (contract C7: one login for both).</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#matchesPassword(java.lang.String,java.lang.String)" class="member-name-link">matchesPassword</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rawPassword,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encodedPassword)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#logout(java.lang.String)" class="member-name-link">logout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Invalidates all tokens issued for the account at or before the logout time.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#matchesPassword(java.lang.String,java.lang.String)" class="member-name-link">matchesPassword</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rawPassword,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encodedPassword)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Verifies that a raw password matches the encoded password hash.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="AuthService.AuthResponse.html" title="class in com.lemarketjames.auth">AuthService.AuthResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#register(com.lemarketjames.auth.dto.RegisterRequest)" class="member-name-link">register</a><wbr>(<a href="dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a>&nbsp;request)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="AuthService.AuthResponse.html" title="class in com.lemarketjames.auth">AuthService.AuthResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#register(com.lemarketjames.auth.dto.RegisterRequest)" class="member-name-link">register</a><wbr>(<a href="dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a>&nbsp;request)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Registers a new user with the provided registration request.</div>
 </div>
 </div>
@@ -273,6 +278,14 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if validation fails, the login is locked, or credentials are invalid</dd>
 <dd><code><a href="../common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></code> - if the password is right but the login may no longer be used (LMKT-57)</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="logout(java.lang.String)">
+<h3>logout</h3>
+<div class="member-signature"><span class="annotations">@Transactional
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">logout</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</span></div>
+<div class="block">Invalidates all tokens issued for the account at or before the logout time.</div>
 </section>
 </li>
 <li>

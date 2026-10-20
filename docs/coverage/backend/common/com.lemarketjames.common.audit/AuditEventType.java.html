@@ -32,6 +32,10 @@
     /** The order was refused. Details: {@code reason} (an order RejectionReason code). */
 <span class="fc" id="L33">    REJECTED,</span>
     /** Cash and holdings were updated for a fill. Details: {@code cashDelta}, {@code quantityDelta}. */
-<span class="fc" id="L35">    SETTLED</span>
+<span class="fc" id="L35">    SETTLED,</span>
+    /** Cash was deposited. Details: {@code amount}, {@code balanceAfter}, {@code requestId}. */
+<span class="fc" id="L37">    CASH_DEPOSITED,</span>
+    /** Cash was withdrawn. Details: {@code amount}, {@code balanceAfter}, {@code requestId}. */
+<span class="fc" id="L39">    CASH_WITHDRAWN</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

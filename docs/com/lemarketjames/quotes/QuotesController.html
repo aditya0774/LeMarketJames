@@ -106,7 +106,8 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.quotes.QuoteService)" class="member-name-link">QuotesController</a><wbr>(<a href="QuoteService.html" title="class in com.lemarketjames.quotes">QuoteService</a>&nbsp;quoteService)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.quotes.QuoteService,com.lemarketjames.quotes.QuoteHistoryService)" class="member-name-link">QuotesController</a><wbr>(<a href="QuoteService.html" title="class in com.lemarketjames.quotes">QuoteService</a>&nbsp;quoteService,
+ <a href="QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a>&nbsp;historyService)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -128,8 +129,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Every quote in one response, so the dashboard polls once per refresh rather than once per stock.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;?&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getQuote(java.lang.String)" class="member-name-link">getQuote</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getHistory(java.lang.String,java.lang.String)" class="member-name-link">getHistory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;range)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A stock's price over 1D, 1W, 1M, 3M or 6M, for the trade page's chart.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;?&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getQuote(java.lang.String)" class="member-name-link">getQuote</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -148,9 +155,10 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.quotes.QuoteService)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.quotes.QuoteService,com.lemarketjames.quotes.QuoteHistoryService)">
 <h3>QuotesController</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">QuotesController</span><wbr><span class="parameters">(<a href="QuoteService.html" title="class in com.lemarketjames.quotes">QuoteService</a>&nbsp;quoteService)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">QuotesController</span><wbr><span class="parameters">(<a href="QuoteService.html" title="class in com.lemarketjames.quotes">QuoteService</a>&nbsp;quoteService,
+ <a href="QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a>&nbsp;historyService)</span></div>
 </section>
 </li>
 </ul>
@@ -175,6 +183,17 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations">@GetMapping("/{symbol}")
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;?&gt;</span>&nbsp;<span class="element-name">getQuote</span><wbr><span class="parameters">(@PathVariable
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getHistory(java.lang.String,java.lang.String)">
+<h3>getHistory</h3>
+<div class="member-signature"><span class="annotations">@GetMapping("/{symbol}/history")
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;?&gt;</span>&nbsp;<span class="element-name">getHistory</span><wbr><span class="parameters">(@PathVariable
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol,
+ @RequestParam(defaultValue="1D")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;range)</span></div>
+<div class="block">A stock's price over 1D, 1W, 1M, 3M or 6M, for the trade page's chart.</div>
 </section>
 </li>
 </ul>

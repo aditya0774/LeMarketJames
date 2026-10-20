@@ -16,7 +16,7 @@ describe('TradeTimelineService', () => {
 
   afterEach(() => http.verify());
 
-  it('asks the staff gateway for the order timeline and passes the events on', () => {
+  it('asks the staff API for the order timeline and passes the events on', () => {
     const events: AuditEvent[] = [
       { eventType: 'SUBMITTED', occurredAt: '2026-09-21T10:30:00Z', details: { side: 'BUY', quantity: 10, price: 244.2366 } },
       { eventType: 'FILLED', occurredAt: '2026-09-21T10:30:03Z', details: { executionPrice: 244.2366, quantity: 10 } },

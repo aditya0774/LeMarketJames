@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceHistoryReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.service</a> &gt; <span class="el_source">PriceHistoryReader.java</span></div><h1>PriceHistoryReader.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.service;
+
+import com.lemarketjames.market.entity.PriceCandleEntity;
+import com.lemarketjames.market.entity.PriceHistoryEntity;
+import com.lemarketjames.market.model.DailyBar;
+import com.lemarketjames.market.model.PricePoint;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.repository.PriceCandleRepository;
+import com.lemarketjames.market.repository.PriceHistoryRepository;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * trading-service's own {@link PriceHistoryService}: past days come from {@code price_history} and
+ * today's minutes from {@code price_candles}, and both end with the live quote. The stored rows lag
+ * the simulator by up to one snapshot interval, so the live price is what makes a chart's last point
+ * agree with the quote shown next to it.
+ */
+@Service
+public class PriceHistoryReader implements PriceHistoryService {
+
+    private final PriceHistoryRepository historyRepository;
+    private final PriceCandleRepository candleRepository;
+    private final MarketDataService marketData;
+
+    public PriceHistoryReader(PriceHistoryRepository historyRepository, PriceCandleRepository candleRepository,
+<span class="fc" id="L34">                              MarketDataService marketData) {</span>
+<span class="fc" id="L35">        this.historyRepository = historyRepository;</span>
+<span class="fc" id="L36">        this.candleRepository = candleRepository;</span>
+<span class="fc" id="L37">        this.marketData = marketData;</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public List&lt;DailyBar&gt; dailyBars(int instrumentId, LocalDate from) {
+<span class="fc" id="L42">        Optional&lt;QuoteSnapshot&gt; live = marketData.findByInstrumentId(instrumentId);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (live.isEmpty()) {</span>
+<span class="fc" id="L44">            return List.of();</span>
+        }
+<span class="fc" id="L46">        QuoteSnapshot quote = live.get();</span>
+<span class="fc" id="L47">        LocalDate today = quote.tradingDate();</span>
+
+<span class="fc" id="L49">        List&lt;DailyBar&gt; bars = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (PriceHistoryEntity row : historyRepository</span>
+<span class="fc" id="L51">                .findByInstrumentIdAndTradingDateGreaterThanEqualOrderByTradingDate(instrumentId, from)) {</span>
+            // The stored bar for today is an older copy of the live one appended below.
+<span class="fc bfc" id="L53" title="All 4 branches covered.">            if (today == null || row.getTradingDate().isBefore(today)) {</span>
+<span class="fc" id="L54">                bars.add(toBar(row));</span>
+            }
+<span class="fc" id="L56">        }</span>
+<span class="fc bfc" id="L57" title="All 4 branches covered.">        if (today != null &amp;&amp; !today.isBefore(from)) {</span>
+<span class="fc" id="L58">            bars.add(new DailyBar(today, quote.openPrice(), quote.highPrice(), quote.lowPrice(),</span>
+<span class="fc" id="L59">                    quote.lastPrice(), quote.volume()));</span>
+        }
+<span class="fc" id="L61">        return bars;</span>
+    }
+
+    @Override
+    public List&lt;PricePoint&gt; intraday(int instrumentId) {
+<span class="fc" id="L66">        Optional&lt;QuoteSnapshot&gt; live = marketData.findByInstrumentId(instrumentId);</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">        if (live.isEmpty() || live.get().tradingDate() == null) {</span>
+<span class="fc" id="L68">            return List.of();</span>
+        }
+<span class="fc" id="L70">        QuoteSnapshot quote = live.get();</span>
+        // Candles are stored in UTC, the trading day is exchange-local: start from its local midnight.
+<span class="fc" id="L72">        LocalDateTime dayStart = LocalDateTime.ofInstant(</span>
+<span class="fc" id="L73">                quote.tradingDate().atStartOfDay(quote.instrument().marketHours().zone()).toInstant(),</span>
+                ZoneOffset.UTC);
+
+<span class="fc" id="L76">        List&lt;PricePoint&gt; points = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (PriceCandleEntity candle : candleRepository</span>
+<span class="fc" id="L78">                .findByInstrumentIdAndIntervalStartGreaterThanEqualOrderByIntervalStart(instrumentId, dayStart)) {</span>
+            // A candle's close is the price at the end of its minute.
+<span class="fc" id="L80">            points.add(new PricePoint(candle.getIntervalStart().plusMinutes(1).toInstant(ZoneOffset.UTC),</span>
+<span class="fc" id="L81">                    candle.getClosePrice().doubleValue()));</span>
+<span class="fc" id="L82">        }</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (quote.lastUpdated() != null) {</span>
+<span class="fc" id="L84">            points.add(new PricePoint(quote.lastUpdated(), quote.lastPrice()));</span>
+        }
+<span class="fc" id="L86">        return points;</span>
+    }
+
+    private static DailyBar toBar(PriceHistoryEntity row) {
+<span class="fc" id="L90">        return new DailyBar(row.getTradingDate(), value(row.getOpenPrice()), value(row.getHighPrice()),</span>
+<span class="fc" id="L91">                value(row.getLowPrice()), value(row.getClosePrice()), row.getVolume());</span>
+    }
+
+    private static double value(BigDecimal price) {
+<span class="fc" id="L95">        return price.doubleValue();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

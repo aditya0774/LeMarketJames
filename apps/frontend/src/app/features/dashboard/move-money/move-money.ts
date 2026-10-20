@@ -96,7 +96,7 @@ export class MoveMoney {
     }
     const all = Math.max(0, this.buyingPower() ?? 0);
     return [
-      ...[500, 1000].map((value) => ({ label: MONEY.format(value).replace('.00', ''), value })),
+      ...[500, 1000, 5000].map((value) => ({ label: MONEY.format(value).replace('.00', ''), value })),
       { label: 'All', value: all },
     ];
   });

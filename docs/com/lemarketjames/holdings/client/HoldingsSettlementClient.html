@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@Service
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">HoldingsSettlementClient</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Triggers holdings-service to settle a fill (debit/credit cash, upsert the holding). Unlike
+<div class="block">Triggers trading-service to settle a fill (debit/credit cash, upsert the holding). Unlike
  MarketDataClient's price reads, this is correctness-critical: a failure here must fail the whole
  status-update request rather than degrade silently, since an order should never end up FILLED
  without its cash/holdings side effects actually happening.</div>

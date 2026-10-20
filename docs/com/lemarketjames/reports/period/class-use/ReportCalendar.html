@@ -60,8 +60,10 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="#com.lemarketjames.reports.insight">com.lemarketjames.reports.insight</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.reports.service">com.lemarketjames.reports.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.reports.overnight">com.lemarketjames.reports.overnight</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.reports.service">com.lemarketjames.reports.service</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
@@ -100,6 +102,39 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color"><code><a href="../../insight/VolumeInsightService.html#%3Cinit%3E(com.lemarketjames.reports.insight.VolumeInsightRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">VolumeInsightService</a><wbr>(<a href="../../insight/VolumeInsightRepository.html" title="interface in com.lemarketjames.reports.insight">VolumeInsightRepository</a>&nbsp;repository,
  <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.reports.overnight">
+<h2>Uses of <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a> in <a href="../../overnight/package-summary.html">com.lemarketjames.reports.overnight</a></h2>
+<div class="caption"><span>Constructors in <a href="../../overnight/package-summary.html">com.lemarketjames.reports.overnight</a> with parameters of type <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../overnight/OvernightReportsService.html#%3Cinit%3E(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">OvernightReportsService</a><wbr>(<a href="../../overnight/ReportRunRepository.html" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a>&nbsp;runs,
+ <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../../overnight/OvernightRunner.html#%3Cinit%3E(java.util.List,com.lemarketjames.reports.overnight.ReportRunWriter,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.common.config.PlatformSettings,java.time.Clock)" class="member-name-link">OvernightRunner</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../overnight/OvernightReportJob.html" title="interface in com.lemarketjames.reports.overnight">OvernightReportJob</a>&gt;&nbsp;jobs,
+ <a href="../../overnight/ReportRunWriter.html" title="class in com.lemarketjames.reports.overnight">ReportRunWriter</a>&nbsp;writer,
+ <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="../../../common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../overnight/OvernightScheduleConfig.html#%3Cinit%3E(com.lemarketjames.reports.overnight.OvernightRunner,com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.reports.period.ReportCalendar)" class="member-name-link">OvernightScheduleConfig</a><wbr>(<a href="../../overnight/OvernightRunner.html" title="class in com.lemarketjames.reports.overnight">OvernightRunner</a>&nbsp;runner,
+ <a href="../../../common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;platformSettings,
+ <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../../overnight/StubOvernightReportJob.html#%3Cinit%3E(org.springframework.jdbc.core.JdbcTemplate,com.lemarketjames.reports.period.ReportCalendar,java.lang.String)" class="member-name-link">StubOvernightReportJob</a><wbr>(org.springframework.jdbc.core.JdbcTemplate&nbsp;jdbc,
+ <a href="../ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;failWith)</code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>

@@ -51,100 +51,111 @@ import java.util.Set;
     @Column(name = &quot;locked_until&quot;)
     private Instant lockedUntil;
 
-<span class="nc" id="L54">    @Column(name = &quot;created_at&quot;, nullable = false)</span>
-<span class="nc" id="L55">    private Instant createdAt = Instant.now();</span>
+    @Column(name = &quot;session_invalidated_at&quot;)
+    private Instant sessionInvalidatedAt;
+
+<span class="nc" id="L57">    @Column(name = &quot;created_at&quot;, nullable = false)</span>
+<span class="nc" id="L58">    private Instant createdAt = Instant.now();</span>
 
     public Integer getStaffId() {
-<span class="nc" id="L58">        return staffId;</span>
+<span class="nc" id="L61">        return staffId;</span>
     }
 
     @Override
     public String getUsername() {
-<span class="nc" id="L63">        return username;</span>
+<span class="nc" id="L66">        return username;</span>
     }
 
     public void setUsername(String username) {
-<span class="nc" id="L67">        this.username = username;</span>
-<span class="nc" id="L68">    }</span>
+<span class="nc" id="L70">        this.username = username;</span>
+<span class="nc" id="L71">    }</span>
 
     @Override
     public String getEmail() {
-<span class="nc" id="L72">        return email;</span>
+<span class="nc" id="L75">        return email;</span>
     }
 
     public void setEmail(String email) {
-<span class="nc" id="L76">        this.email = email;</span>
-<span class="nc" id="L77">    }</span>
+<span class="nc" id="L79">        this.email = email;</span>
+<span class="nc" id="L80">    }</span>
 
     @Override
     public String getPassword() {
-<span class="nc" id="L81">        return password;</span>
+<span class="nc" id="L84">        return password;</span>
     }
 
     public void setPassword(String password) {
-<span class="nc" id="L85">        this.password = password;</span>
-<span class="nc" id="L86">    }</span>
+<span class="nc" id="L88">        this.password = password;</span>
+<span class="nc" id="L89">    }</span>
 
     public String getFullName() {
-<span class="nc" id="L89">        return fullName;</span>
+<span class="nc" id="L92">        return fullName;</span>
     }
 
     public void setFullName(String fullName) {
-<span class="nc" id="L93">        this.fullName = fullName;</span>
-<span class="nc" id="L94">    }</span>
+<span class="nc" id="L96">        this.fullName = fullName;</span>
+<span class="nc" id="L97">    }</span>
 
     public Role getRole() {
-<span class="nc" id="L97">        return role;</span>
+<span class="nc" id="L100">        return role;</span>
     }
 
     /** Staff roles only; a staff user can never be a {@link Role#CLIENT}. */
     public void setRole(Role role) {
-<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (role == Role.CLIENT) {</span>
-<span class="nc" id="L103">            throw new IllegalArgumentException(&quot;Staff users cannot have the CLIENT role&quot;);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (role == Role.CLIENT) {</span>
+<span class="nc" id="L106">            throw new IllegalArgumentException(&quot;Staff users cannot have the CLIENT role&quot;);</span>
         }
-<span class="nc" id="L105">        this.role = role;</span>
-<span class="nc" id="L106">    }</span>
+<span class="nc" id="L108">        this.role = role;</span>
+<span class="nc" id="L109">    }</span>
 
     public boolean isActive() {
-<span class="nc" id="L109">        return active;</span>
+<span class="nc" id="L112">        return active;</span>
     }
 
     public void setActive(boolean active) {
-<span class="nc" id="L113">        this.active = active;</span>
-<span class="nc" id="L114">    }</span>
+<span class="nc" id="L116">        this.active = active;</span>
+<span class="nc" id="L117">    }</span>
 
     @Override
     public Set&lt;Role&gt; roles() {
-<span class="nc" id="L118">        return Set.of(role);</span>
+<span class="nc" id="L121">        return Set.of(role);</span>
     }
 
     @Override
     public boolean canLogIn() {
-<span class="nc" id="L123">        return active;</span>
+<span class="nc" id="L126">        return active;</span>
     }
 
     @Override
     public int getFailedLoginAttempts() {
-<span class="nc" id="L128">        return failedLoginAttempts;</span>
+<span class="nc" id="L131">        return failedLoginAttempts;</span>
     }
 
     @Override
     public void setFailedLoginAttempts(int failedLoginAttempts) {
-<span class="nc" id="L133">        this.failedLoginAttempts = failedLoginAttempts;</span>
-<span class="nc" id="L134">    }</span>
+<span class="nc" id="L136">        this.failedLoginAttempts = failedLoginAttempts;</span>
+<span class="nc" id="L137">    }</span>
 
     @Override
     public Instant getLockedUntil() {
-<span class="nc" id="L138">        return lockedUntil;</span>
+<span class="nc" id="L141">        return lockedUntil;</span>
     }
 
     @Override
     public void setLockedUntil(Instant lockedUntil) {
-<span class="nc" id="L143">        this.lockedUntil = lockedUntil;</span>
-<span class="nc" id="L144">    }</span>
+<span class="nc" id="L146">        this.lockedUntil = lockedUntil;</span>
+<span class="nc" id="L147">    }</span>
+
+    public Instant getSessionInvalidatedAt() {
+<span class="nc" id="L150">        return sessionInvalidatedAt;</span>
+    }
+
+    public void setSessionInvalidatedAt(Instant sessionInvalidatedAt) {
+<span class="nc" id="L154">        this.sessionInvalidatedAt = sessionInvalidatedAt;</span>
+<span class="nc" id="L155">    }</span>
 
     public Instant getCreatedAt() {
-<span class="nc" id="L147">        return createdAt;</span>
+<span class="nc" id="L158">        return createdAt;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

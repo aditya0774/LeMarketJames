@@ -34,6 +34,9 @@ async function selectSeedDataRange(page: Page): Promise<void> {
   );
   await page.getByRole('button', { name: 'Refresh' }).click();
   await reload;
+  // The response arrives before Angular draws its rows; tests read the table straight after this,
+  // so wait here until the seed trades are on screen.
+  await expect(page.locator('tbody tr.trade-row').first()).toBeVisible();
 }
 
 /** Signs in as the analyst through the staff login, then opens the report. */
@@ -80,10 +83,8 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     expect(headerTexts.some(t => t.includes('Buys'))).toBe(true);
     expect(headerTexts.some(t => t.includes('Sells'))).toBe(true);
 
-    // AC1: Table has data rows
-    const rows = page.locator('tbody tr, .trade-row');
-    const rowCount = await rows.count();
-    expect(rowCount).toBeGreaterThan(0);
+    // AC1: Table has data rows (a waiting assertion: the rows render after the response arrives)
+    await expect(page.locator('tbody tr.trade-row').first()).toBeVisible();
   });
 
   test('AC1: Date range filtering updates report', async ({ page }) => {
@@ -93,9 +94,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
     const table = page.locator('table, .aggregate-table');
     await expect(table).toBeVisible({ timeout: 5000 });
 
-    const initialRows = page.locator('tbody tr, .trade-row');
-    const initialCount = await initialRows.count();
-    expect(initialCount).toBeGreaterThan(0);
+    await expect(page.locator('tbody tr.trade-row').first()).toBeVisible();
 
     // Change the date range to the last 400 days. The seed trades are dated relative to the run
     // date (see 011_seed_test_data.sql), so a hardcoded day would hit an empty range.
@@ -237,7 +236,8 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
       });
     });
 
-    await openReport(page);
+    // The mocked answer is empty whatever the dates, so the default range will do.
+    await openReport(page, false);
 
     // Wait for empty state message
     const emptyState = page.locator('.empty-state');

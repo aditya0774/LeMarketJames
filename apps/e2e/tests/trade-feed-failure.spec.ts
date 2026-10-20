@@ -38,11 +38,13 @@ test.describe('Trading feed recovery', () => {
     // AC3: Restore feed to LIVE and verify recovery
     await setFeedMode(request, 'LIVE');
 
-    // Wait for the banner to disappear (quote should load and quoteError should clear)
-    await expect(errorBanner).not.toBeVisible({ timeout: 10000 });
+    // Wait for the banner to disappear (quote should load and quoteError should clear).
+    // A failed quote is retried every 5 s (DEFAULT_QUOTE_REFRESH_MS) and the feed needs a fresh tick
+    // first, so recovery can take two retries; 20 s leaves room on a slow CI agent.
+    await expect(errorBanner).not.toBeVisible({ timeout: 20000 });
 
     // AC3: Button should be enabled again once quote loads
-    await expect(buyButton).toBeEnabled({ timeout: 10000 });
+    await expect(buyButton).toBeEnabled({ timeout: 20000 });
 
     // AC4: Verify that the order can now be placed successfully
     await buyButton.click();

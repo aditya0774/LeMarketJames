@@ -1,0 +1,445 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/app/shared/components/price-chart/chart-geometry.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../../../prettify.css" />
+    <link rel="stylesheet" href="../../../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../../../index.html">All files</a> / <a href="index.html">src/app/shared/components/price-chart</a> chart-geometry.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>54/54</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">96.87% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>31/32</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>15/15</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>44/44</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">137x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">81x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">77x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">130x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">248x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">84x</span>
+<span class="cline-any cline-yes">217x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">77x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">124x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">37x</span>
+<span class="cline-any cline-yes">124x</span>
+<span class="cline-any cline-yes">124x</span>
+<span class="cline-any cline-yes">124x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">124x</span>
+<span class="cline-any cline-yes">93x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">155x</span>
+<span class="cline-any cline-yes">77x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ChartPoint, ChartRange } from '../../models/chart.model';
+&nbsp;
+/** A label on an axis: where it sits (0 = top/left, 1 = bottom/right) and its text. */
+export interface AxisLabel {
+  at: number;
+  text: string;
+}
+&nbsp;
+/**
+ * What the chart draws, in a 100 × 100 SVG box stretched over the plot area: the line, the shaded
+ * area under it, the horizontal grid lines and the axis labels.
+ */
+export interface ChartGeometry {
+  line: string;
+  area: string;
+  grid: string;
+  yLabels: AxisLabel[];
+  xLabels: AxisLabel[];
+  /** Each point's position in the box, for the hover marker. */
+  x: (index: number) =&gt; number;
+  y: (value: number) =&gt; number;
+}
+&nbsp;
+const MONEY = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+&nbsp;
+export function money(value: number): string {
+  return MONEY.format(value);
+}
+&nbsp;
+/**
+ * A point's time as the x axis shows it: the time of day for 1D, else the date. Daily closes are
+ * stamped at the exchange's closing bell, which in UTC is still the trading day, so dates are read
+ * in UTC and never slip a day for a viewer far east of New York.
+ */
+export function axisTime(time: number, range: ChartRange): string {
+  return range === '1D'
+    ? new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    : new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+&nbsp;
+/** A point's time in the hover tooltip: also names the day for 1D, and the year otherwise. */
+export function fullTime(time: number, range: ChartRange): string {
+  return range === '1D'
+    ? `${new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${axisTime(time, range)}`
+    : new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+&nbsp;
+/**
+ * "▲ +$12.30 (+1.25%)" for a move from `from` to `to`. The percentage is left out when the start is
+ * zero, where it has no meaning.
+ */
+export function changeText(from: number, to: number): string {
+  const change = to - from;
+  const arrow = change &gt;= 0 ? '▲ +' : '▼ −';
+  const amount = money(Math.abs(change));
+  if (!from) {
+    return `${arrow}${amount}`;
+  }
+  const percent = Math.abs((change / from) * 100).toFixed(2);
+  return `${arrow}${amount} (${change &gt;= 0 ? '+' : '−'}${percent}%)`;
+}
+&nbsp;
+/**
+ * Scales the values to the box. The y axis is three equal round steps (as on the redesign's
+ * Overview board): the smallest step of 1, 2, 2.5 or 5 times a power of ten for which three steps
+ * from a multiple of it below the lowest value reach the highest, so every label is a round number.
+ * Points are spread evenly along x, as stock charts do, so nights and weekends leave no gaps.
+ */
+export function chartGeometry(points: readonly ChartPoint[], range: ChartRange): ChartGeometry | null {
+  if (!points.length) {
+    return null;
+  }
+  // A single point is drawn as a flat line across the chart.
+  const series = points.length === 1 ? [points[0], points[0]] : points;
+  const values = series.map((p) =&gt; p.value);
+  const vmin = Math.min(...values);
+  const vmax = Math.max(...values);
+  // A flat series still needs a height to scale to.
+  const span = vmax - vmin || Math.max(Math.abs(vmax) * 0.02, 1);
+  const power = Math.pow(10, Math.floor(Math.log10(span / 3)));
+  // A flat series gets room above and below, rather than sitting on the bottom or top line.
+  const flat = vmax === vmin;
+  const floorValue = flat ? vmin - span / 2 : vmin;
+  const ceilingValue = flat ? vmax + span / 2 : vmax;
+  const bottom = (m: number) =&gt; Math.floor(floorValue / m) * m;
+  const nice =
+    [1, 2, 2.5, 5, 10, 20, 25, 50].map((m) =&gt; m * power).find((m) =&gt; bottom(m) + m * 3 &gt;= ceilingValue) ??
+<span class="branch-1 cbranch-no" title="branch not covered" >    power * 100;</span>
+  const lo = bottom(nice);
+  const hi = lo + nice * 3;
+&nbsp;
+  const last = series.length - 1;
+  const x = (index: number) =&gt; (100 * index) / last;
+  const y = (value: number) =&gt; (100 * (hi - value)) / (hi - lo);
+&nbsp;
+  const line = series.map((p, i) =&gt; `${i ? 'L' : 'M'}${x(i).toFixed(2)} ${y(p.value).toFixed(2)}`).join(' ');
+  const decimals = nice &lt; 1 ? 2 : 0;
+  const axisMoney = (v: number) =&gt;
+    hi &gt;= 10000 &amp;&amp; hi - lo &gt;= 2000
+      ? `$${(v / 1000).toFixed(1)}K`
+      : `$${v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+&nbsp;
+  const yLabels: AxisLabel[] = [];
+  const gridLines: string[] = [];
+  for (let k = 0; k &lt; 4; k++) {
+    const value = lo + ((hi - lo) * k) / 3;
+    const at = y(value);
+    yLabels.push({ at: at / 100, text: axisMoney(value) });
+    // The bottom line is the axis itself, drawn by the plot's border.
+    if (k) {
+      gridLines.push(`M0 ${at.toFixed(2)} H100`);
+    }
+  }
+&nbsp;
+  // Five dates (or times) along the bottom, without repeating one when there are few points.
+  const xIndexes = [...new Set([0, 0.25, 0.5, 0.75, 1].map((f) =&gt; Math.round(f * last)))];
+  const xLabels = xIndexes.map((i) =&gt; ({ at: i / last, text: axisTime(series[i].time, range) }));
+&nbsp;
+  return { line, area: `${line} L100 100 L0 100 Z`, grid: gridLines.join(' '), yLabels, xLabels, x, y };
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-10-20T14:29:18.514Z
+            </div>
+        <script src="../../../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../../../sorter.js"></script>
+        <script src="../../../../../block-navigation.js"></script>
+    </body>
+</html>
+    

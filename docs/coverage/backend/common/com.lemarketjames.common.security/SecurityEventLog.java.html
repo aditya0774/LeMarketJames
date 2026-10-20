@@ -12,13 +12,15 @@ import java.time.Instant;
  */
 public final class SecurityEventLog {
 
+    public static final String REASON_SESSION_INVALIDATED = &quot;SESSION_INVALIDATED&quot;;
+
     /** Reason given when the token's account no longer exists. */
     public static final String REASON_NOT_FOUND = &quot;NOT_FOUND&quot;;
 
     /** Reason given for a staff user whose login was deactivated. A client's reason is its AccountStatus name. */
     public static final String REASON_DEACTIVATED = &quot;DEACTIVATED&quot;;
 
-<span class="fc" id="L21">    private static final Logger log = LoggerFactory.getLogger(SecurityEventLog.class);</span>
+<span class="fc" id="L23">    private static final Logger log = LoggerFactory.getLogger(SecurityEventLog.class);</span>
 
     private SecurityEventLog() {
     }
@@ -31,7 +33,7 @@ public final class SecurityEventLog {
      * @param at       when; {@link Instant#toString()} prints it in UTC (ISO-8601, ending in Z)
      */
     public static void accessRevoked(String username, String reason, Instant at) {
-<span class="fc" id="L34">        log.warn(&quot;ACCESS_REVOKED username={} reason={} at={}&quot;, username, reason, at);</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L36">        log.warn(&quot;ACCESS_REVOKED username={} reason={} at={}&quot;, username, reason, at);</span>
+<span class="fc" id="L37">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

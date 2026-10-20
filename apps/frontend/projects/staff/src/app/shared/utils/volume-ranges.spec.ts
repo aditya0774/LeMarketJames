@@ -1,4 +1,4 @@
-import { mondayOf, toIsoDay, volumePresets } from './volume-ranges';
+import { calendarDayIn, mondayOf, toIsoDay, volumePresets } from './volume-ranges';
 
 describe('volume ranges', () => {
   it('formats the local calendar day', () => {
@@ -27,6 +27,22 @@ describe('volume ranges', () => {
     expect(lastWeek.request).toEqual({
       currentFrom: '2026-10-05', currentTo: '2026-10-11',
       previousFrom: '2026-09-28', previousTo: '2026-10-04',
+    });
+  });
+
+  it("takes today from the reports time zone, not the browser's", () => {
+    // 02:00 UTC on the 15th is still 22:00 on the 14th in New York.
+    const lateEvening = new Date('2026-10-15T02:00:00Z');
+
+    expect(toIsoDay(calendarDayIn(lateEvening, 'America/New_York'))).toBe('2026-10-14');
+    expect(toIsoDay(calendarDayIn(lateEvening, 'UTC'))).toBe('2026-10-15');
+
+    const [today, thisWeek] = volumePresets(lateEvening, 'America/New_York');
+    expect(today.request.currentFrom).toBe('2026-10-14');
+    expect(today.request.previousFrom).toBe('2026-10-13');
+    expect(thisWeek.request).toEqual({
+      currentFrom: '2026-10-12', currentTo: '2026-10-14',
+      previousFrom: '2026-10-05', previousTo: '2026-10-07',
     });
   });
 
