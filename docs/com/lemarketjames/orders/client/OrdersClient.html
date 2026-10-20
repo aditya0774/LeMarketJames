@@ -129,6 +129,11 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Every order of the account.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="OrderSummary.html" title="class in com.lemarketjames.orders.client">OrderSummary</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getOrdersForAccountRequired(int)" class="member-name-link">getOrdersForAccountRequired</a><wbr>(int&nbsp;accountId)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Reads every order or fails.</div>
+</div>
 </div>
 </div>
 </div>
@@ -169,6 +174,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Every order of the account. orders-service pages this endpoint (20 orders by default), so
  the pages are read in turn until a short one: buying power, trade history and the portfolio
  chart all need the whole list, not the latest page.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getOrdersForAccountRequired(int)">
+<h3>getOrdersForAccountRequired</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="OrderSummary.html" title="class in com.lemarketjames.orders.client">OrderSummary</a>&gt;</span>&nbsp;<span class="element-name">getOrdersForAccountRequired</span><wbr><span class="parameters">(int&nbsp;accountId)</span></div>
+<div class="block">Reads every order or fails. Money movement uses this fail-closed variant: treating an outage
+ as no open orders could let a withdrawal spend cash already promised to a BUY order.</div>
 </section>
 </li>
 </ul>

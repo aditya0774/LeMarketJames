@@ -2,6 +2,7 @@ com.lemarketjames
 com.lemarketjames.activity
 com.lemarketjames.auth
 com.lemarketjames.auth.dto
+com.lemarketjames.cash
 com.lemarketjames.common
 com.lemarketjames.common.audit
 com.lemarketjames.common.config
