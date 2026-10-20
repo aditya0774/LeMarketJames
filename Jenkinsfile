@@ -299,6 +299,9 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/016_audit_lockdown.sql
                     # staff-ops-service validates its entities at startup, report_runs included.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/023_report_runs.sql
+                    # trading-service validates its entities at startup too (HoldingsOwnDataIntegrationTest),
+                    # watchlist included, and a kept db volume never re-runs initdb.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/025_watchlist.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests

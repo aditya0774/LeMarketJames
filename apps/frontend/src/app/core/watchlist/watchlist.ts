@@ -5,11 +5,8 @@ import { environment } from '../../../environments/environment';
 import { Auth } from '../auth/auth';
 import { WatchlistResponse } from '../../shared/models/watchlist.model';
 
-/**
- * Where the watchlist stands: loading, ready, `unavailable` while the back end does not exist yet
- * (its endpoint answers 404, C6 Planned), or `error` for any other failure.
- */
-export type WatchlistStatus = 'loading' | 'ready' | 'unavailable' | 'error';
+/** Where the watchlist stands: loading, ready, or `error` when it could not be read. */
+export type WatchlistStatus = 'loading' | 'ready' | 'error';
 
 /**
  * The signed-in client's watchlist (S41): the stocks they keep an eye on, newest first. Adding and
@@ -49,8 +46,8 @@ export class Watchlist {
       const response = await firstValueFrom(this.http.get<WatchlistResponse>(this.url));
       this.list.set((response.watchlist ?? []).map((item) => item.symbol));
       this.status.set('ready');
-    } catch (err) {
-      this.status.set(err instanceof HttpErrorResponse && err.status === 404 ? 'unavailable' : 'error');
+    } catch {
+      this.status.set('error');
     }
   }
 

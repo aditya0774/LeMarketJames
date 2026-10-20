@@ -33,12 +33,6 @@ import { MarketRow } from '../market-list/market-list';
         @case ('loading') {
           <output class="loading"><span class="spinner"></span>Chalking up…</output>
         }
-        @case ('unavailable') {
-          <div class="empty-state wl-empty">
-            <strong>Watchlist coming soon</strong>
-            Keeping a list of stocks to follow isn't available yet.
-          </div>
-        }
         @case ('error') {
           <div class="alert err" role="alert">
             <div><b>Couldn't load your watchlist</b>Check your connection and try again.</div>
