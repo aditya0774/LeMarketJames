@@ -5,7 +5,13 @@
     <staff-brand link="/" />
     <div class="staff-header-end">
       <span class="staff-role">{{ roleLabel() }}</span>
-      <lm-account-menu [name]="auth.currentUser() ?? ''" [detail]="roleLabel()" (loggedOut)="logout()" />
+      <lm-account-menu
+        [name]="auth.currentUser() ?? ''"
+        [detail]="roleLabel()"
+        [pageLink]="employeeInformation.path"
+        [pageLabel]="employeeInformation.title"
+        (loggedOut)="logout()"
+      />
     </div>
   </header>
   <main class="staff-main">

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { AccountMenu } from './account-menu';
 import { Theme } from '../theme/theme';
 
@@ -11,6 +12,8 @@ describe('AccountMenu', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    // The optional page link is a router link; its page exists so following it navigates cleanly.
+    TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'employee-information', children: [] }])] });
     fixture = TestBed.createComponent(AccountMenu);
     fixture.componentRef.setInput('name', 'jane@example.com');
     fixture.componentRef.setInput('detail', 'Investing account');
@@ -64,6 +67,31 @@ describe('AccountMenu', () => {
 
     expect(el().querySelector('.menu')).toBeNull();
     expect(document.activeElement).toBe(avatar());
+  });
+
+  it('shows no page link unless one is given, as in the trading app', () => {
+    avatar().click();
+    fixture.detectChanges();
+
+    expect(el().querySelector('.menu a')).toBeNull();
+  });
+
+  it('links to the page about the account and closes when it is followed', async () => {
+    fixture.componentRef.setInput('pageLink', '/employee-information');
+    fixture.componentRef.setInput('pageLabel', 'Employee information');
+    avatar().click();
+    fixture.detectChanges();
+
+    const link = el().querySelector<HTMLAnchorElement>('.menu a.page-link')!;
+    expect(link.textContent?.trim()).toBe('Employee information');
+    expect(link.getAttribute('href')).toBe('/employee-information');
+
+    link.click();
+    // Let the navigation finish before the test ends.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el().querySelector('.menu')).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/employee-information');
   });
 
   it('closes on a click elsewhere but not inside', () => {

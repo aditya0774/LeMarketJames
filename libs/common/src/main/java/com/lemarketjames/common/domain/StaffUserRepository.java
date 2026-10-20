@@ -9,6 +9,7 @@ import java.util.Optional;
 /** findByEmail backs staff login, which uses the same email-based login as clients. */
 public interface StaffUserRepository extends JpaRepository<StaffUserEntity, Integer> {
 
+    /** The staff login behind a session: the JWT subject is the username, so session checks and /me (LMKT-144) look staff up by it. */
     Optional<StaffUserEntity> findByUsername(String username);
     Optional<StaffUserEntity> findByEmail(String email);
 

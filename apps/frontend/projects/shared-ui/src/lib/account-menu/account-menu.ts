@@ -1,9 +1,11 @@
 import { Component, ElementRef, HostListener, inject, input, output, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Theme, ThemeName } from '../theme/theme';
 
 /**
  * The avatar button at the right of each app's signed-in header and the panel it opens: who is
- * signed in (and, in the staff app, their role), the Dark/Light theme switch and "Log out". Shared
+ * signed in (and, in the staff app, their role and a link to their Employee information), the
+ * Dark/Light theme switch and "Log out". Shared
  * by the trading and staff apps so the header looks and behaves the same in both.
  *
  * It is a disclosure (a button with aria-expanded that shows a panel of ordinary buttons) rather
@@ -12,6 +14,7 @@ import { Theme, ThemeName } from '../theme/theme';
  */
 @Component({
   selector: 'lm-account-menu',
+  imports: [RouterLink],
   template: `
     <div class="menu-wrap">
       <button
@@ -31,6 +34,16 @@ import { Theme, ThemeName } from '../theme/theme';
             <b>{{ name() }}</b>
             <span>{{ detail() }}</span>
           </div>
+          @if (pageLink(); as link) {
+            <a class="menu-item page-link" [routerLink]="link" (click)="open.set(false)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="9" cy="11" r="2" />
+                <path d="M6 16c.6-1.2 1.7-2 3-2s2.4.8 3 2M14 10h4M14 14h3" />
+              </svg>
+              {{ pageLabel() }}
+            </a>
+          }
           <fieldset class="menu-theme">
             <legend>Appearance</legend>
             <div class="seg">
@@ -62,6 +75,13 @@ export class AccountMenu {
   readonly name = input.required<string>();
   /** The line under the name, e.g. the role. */
   readonly detail = input('');
+  /**
+   * An optional page about the signed-in account, linked under the name (the staff app's Employee
+   * information, LMKT-144). Left unset, the menu shows no link, as in the trading app.
+   */
+  readonly pageLink = input<string | null>(null);
+  /** The text of that link. */
+  readonly pageLabel = input('');
   readonly loggedOut = output<void>();
 
   protected readonly open = signal(false);
