@@ -96,7 +96,7 @@ LeMarketJames/
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
 │   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
 ├── contracts/                     # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
-├── database/schema/               # Numbered SQL files (001_ … 019_); 011 is the seed data set
+├── database/schema/               # Numbered SQL files (001_ … 024_); 011 is the seed data set
 ├── scripts/
 │   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file
@@ -244,7 +244,9 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
-- **Staff app**: trade search and order timeline for Trading Ops; aggregate, read-only trade reports for Analysts and surveillance alerts for Trading Ops (staff-ops-service)
+- **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding
+- **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
+- **Staff app**: trade search and order timeline for Trading Ops; surveillance alerts for Trading Ops (staff-ops-service); aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs ([C6](contracts/C6-api.md#reports-staff-ops-service))
 
 **Architecture Notes:**
 - Feature-based organization: a service per area (auth, orders, trading, staff ops), and inside a service one package per feature (`orders/`, `holdings/`, `portfolio/`, `quotes/`, `market/`, ...)
@@ -885,7 +887,7 @@ docker compose logs trading-service  # or any other service name from docker-com
 
 Common causes:
 - Database not running when the app expects it (use Docker Compose, not standalone `docker run`)
-- The schema is older than the code: `ddl-auto=validate` stops a service when a table or column is missing. Apply the new files in `database/schema/` or recreate the database (see [Database Connection Refused](#database-connection-refused-docker-compose-or-local-dev))
+- The schema is older than the code: `ddl-auto=validate` stops a service when a table or column is missing (on a native Windows stack the symptom is a service that never listens, for example nothing on 8086, and the staff app saying "Could not load this figure"). Apply the new files in `database/schema/` or recreate the database (see [Database Connection Refused](#database-connection-refused-docker-compose-or-local-dev))
 - The service was pointed at the owner account `lemarket`: a service refuses to start on an account that can change audit records; use `lemarket_app`
 - Java 21 not available in the container (check Dockerfile `FROM` base image)
 
