@@ -32,6 +32,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -204,6 +205,16 @@ class MarketPersistenceServiceTest {
     // ========== save Tests ==========
 
     @Test
+    @DisplayName("Should read the latest stored candle per instrument as UTC instants")
+    void testLatestCandleStarts() {
+        Instant since = Instant.parse("2026-10-05T13:30:00Z");
+        when(candleRepository.findLatestIntervalStarts(LocalDateTime.of(2026, 10, 5, 13, 30)))
+                .thenReturn(List.<Object[]>of(new Object[] {TEST_INSTRUMENT_ID, LocalDateTime.of(2026, 10, 5, 14, 41)}));
+
+        assertEquals(Map.of(TEST_INSTRUMENT_ID, Instant.parse("2026-10-05T14:41:00Z")), service.latestCandleStarts(since));
+    }
+
+    @Test
     @DisplayName("Should save quotes and candles together")
     void testSave_QuotesAndCandles() {
         // Arrange
@@ -213,14 +224,13 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act
         service.save(List.of(snapshot), List.of(candle));
 
         // Assert
         verify(quoteRepository).saveAll(any());
-        verify(candleRepository).saveAll(any());
+        verify(candleRepository).insertNew(anyList());
     }
 
     @Test
@@ -236,7 +246,6 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(List.of(existing));
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act
         service.save(List.of(snapshot), Collections.emptyList());
@@ -252,7 +261,6 @@ class MarketPersistenceServiceTest {
         // Arrange
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act & Assert
         assertDoesNotThrow(() -> service.save(Collections.emptyList(), Collections.emptyList()));
@@ -267,14 +275,13 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act
         service.save(List.of(snapshot), Collections.emptyList());
 
         // Assert
         verify(quoteRepository).saveAll(any());
-        verify(candleRepository).saveAll(anyList());
+        verify(candleRepository).insertNew(anyList());
     }
 
     @Test
@@ -285,14 +292,13 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act
         service.save(Collections.emptyList(), List.of(candle));
 
         // Assert
         verify(quoteRepository).saveAll(any());
-        verify(candleRepository).saveAll(any());
+        verify(candleRepository).insertNew(anyList());
     }
 
     @Test
@@ -321,7 +327,7 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenThrow(new RuntimeException("Database error"));
+        doThrow(new RuntimeException("Database error")).when(candleRepository).insertNew(anyList());
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> 
@@ -344,14 +350,13 @@ class MarketPersistenceServiceTest {
 
         when(quoteRepository.findAll()).thenReturn(Collections.emptyList());
         when(quoteRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
-        when(candleRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
 
         // Act
         service.save(List.of(snap1, snap2), List.of(candle1, candle2));
 
         // Assert
         verify(quoteRepository).saveAll(any());
-        verify(candleRepository).saveAll(any());
+        verify(candleRepository).insertNew(anyList());
     }
 
     @Test

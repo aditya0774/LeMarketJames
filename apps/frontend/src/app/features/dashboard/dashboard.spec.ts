@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { provideHttpClient, HttpErrorResponse } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { Observable, Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
 import { OrderResponse, OrdersStreamSnapshot, OrderService } from '../../core/orders/order.service';
@@ -31,6 +31,9 @@ function order(orderId: number, orderStatus: OrderResponse['orderStatus']): Orde
   };
 }
 
+/** The polled prices: AAPL and TSLA are worth more than when holdings loaded. */
+const QUOTES = { AAPL: quote('AAPL', 227.5, 0.8), TSLA: quote('TSLA', 248.9, -3.1), NVDA: quote('NVDA', 176, 1.2) };
+
 const NO_ACCOUNT = of('no account');
 
 describe('Dashboard (Overview)', () => {
@@ -40,11 +43,13 @@ describe('Dashboard (Overview)', () => {
   let balanceCalls: number;
   let holdingsCalls: number;
   let liveOrders: Subject<OrdersStreamSnapshot>;
+  let quoteFeed: BehaviorSubject<Record<string, ReturnType<typeof quote> | null>>;
 
   async function setup(balance: unknown = { success: true, balance: { buyingPower: 10000 } }) {
     balanceCalls = 0;
     holdingsCalls = 0;
     liveOrders = new Subject<OrdersStreamSnapshot>();
+    quoteFeed = new BehaviorSubject<Record<string, ReturnType<typeof quote> | null>>(QUOTES);
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
@@ -82,7 +87,7 @@ describe('Dashboard (Overview)', () => {
         {
           provide: Quotes,
           useValue: {
-            watchQuotes: () => of({ AAPL: quote('AAPL', 227.5, 0.8), TSLA: quote('TSLA', 248.9, -3.1), NVDA: quote('NVDA', 176, 1.2) }),
+            watchQuotes: () => quoteFeed.asObservable(),
           },
         },
       ],
@@ -105,14 +110,37 @@ describe('Dashboard (Overview)', () => {
     holdingsResult = of({ success: true, holdings });
   });
 
-  it('shows the four headline figures, open orders last', async () => {
+  const statValues = () => Array.from(el().querySelectorAll('.stat-card .val')).map((v) => v.textContent?.trim());
+
+  it('shows the four headline figures at live prices, open orders last', async () => {
     await setup();
 
-    const values = Array.from(el().querySelectorAll('.stat-card .val')).map((v) => v.textContent?.trim());
-    // Value 1600, cost 1500 → +$100 (+6.67%); 2 of 3 orders are still open.
-    expect(values).toEqual(['$1,600.00', '+$100.00', '$10,000.00', '2']);
-    expect(text()).toContain('6.67%');
+    // 10 AAPL at 227.50 + 2 TSLA at 248.90 = 2772.80 against a cost of 1500 → +$1,272.80 (+84.85%);
+    // 2 of 3 orders are still open.
+    expect(statValues()).toEqual(['$2,772.80', '+$1,272.80', '$10,000.00', '2']);
+    expect(text()).toContain('84.85%');
     expect(text()).toContain('Welcome back, lebron');
+  });
+
+  it('moves the money figures with each quote poll, without reloading holdings', async () => {
+    await setup();
+    const loads = holdingsCalls;
+
+    quoteFeed.next({ ...QUOTES, AAPL: quote('AAPL', 230, 1.9) });
+    fixture.detectChanges();
+
+    expect(statValues().slice(0, 2)).toEqual(['$2,797.80', '+$1,297.80']);
+    expect(holdingsCalls).toBe(loads);
+  });
+
+  it('keeps the loaded value of a stock whose quote is missing', async () => {
+    await setup();
+
+    quoteFeed.next({ ...QUOTES, TSLA: null });
+    fixture.detectChanges();
+
+    // AAPL live (2275) + TSLA as loaded (400).
+    expect(statValues()[0]).toBe('$2,675.00');
   });
 
   it('shows "—" for buying power when the balance is unavailable', async () => {
@@ -139,14 +167,14 @@ describe('Dashboard (Overview)', () => {
     expect(el().querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('splits what the user owns, largest first', async () => {
+  it('splits what the user owns at live prices, largest first', async () => {
     await setup();
 
     const rows = Array.from(el().querySelectorAll('app-holdings-split li')).map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
     expect(rows[0]).toContain('AAPL');
-    expect(rows[0]).toContain('75%');
+    expect(rows[0]).toContain('82%');
     expect(rows[1]).toContain('TSLA');
-    expect(el().querySelector('app-holdings-split svg')?.getAttribute('aria-label')).toBe('Portfolio split: AAPL 75%, TSLA 25%');
+    expect(el().querySelector('app-holdings-split svg')?.getAttribute('aria-label')).toBe('Portfolio split: AAPL 82%, TSLA 18%');
   });
 
   it('lists the biggest movers either way, largest first', async () => {

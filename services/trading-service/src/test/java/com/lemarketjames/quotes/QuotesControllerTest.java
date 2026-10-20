@@ -8,6 +8,7 @@ import com.lemarketjames.market.client.MarketFeedStatus;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.QuoteSnapshot;
 import com.lemarketjames.market.model.DailyBar;
+import com.lemarketjames.market.model.PricePoint;
 import com.lemarketjames.market.service.MarketDataService;
 import com.lemarketjames.market.service.PriceHistoryService;
 import jakarta.servlet.http.Cookie;
@@ -212,6 +213,35 @@ class QuotesControllerTest {
 
     // auth-service issues the jwt cookie in production; here the shared JwtService mints an
     // equivalent token so this service can be tested on its own.
+    @Test
+    void intradayEndpointRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/quotes/intraday"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void authenticatedRequestReturnsEveryStocksDay() throws Exception {
+        when(marketData.findAll()).thenReturn(List.of(sampleAaplQuote()));
+        when(priceHistory.intraday(1)).thenReturn(List.of(
+                new PricePoint(Instant.parse("2026-09-16T13:31:00Z"), 227.5),
+                new PricePoint(Instant.parse("2026-09-16T13:31:30Z"), 227.556)));
+
+        mockMvc.perform(get("/api/quotes/intraday").cookie(loginAs("quotesuser11")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.points.AAPL.length()").value(2))
+                .andExpect(jsonPath("$.points.AAPL[1]").value(227.56));
+    }
+
+    @Test
+    void intradayDuringAnOutageReturns503PriceUnavailable() throws Exception {
+        feedStatus.recordFailure();
+
+        mockMvc.perform(get("/api/quotes/intraday").cookie(loginAs("quotesuser12")))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Price unavailable"));
+    }
+
     private Cookie loginAs(String username) {
         return new Cookie(JwtAuthenticationFilter.COOKIE_NAME, jwtService.generateToken(username));
     }

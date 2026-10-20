@@ -3,6 +3,7 @@ package com.lemarketjames.quotes;
 import com.lemarketjames.market.model.ChartRange;
 import com.lemarketjames.quotes.dto.QuoteErrorResponse;
 import com.lemarketjames.quotes.dto.QuoteHistoryResponse;
+import com.lemarketjames.quotes.dto.QuoteIntradayResponse;
 import com.lemarketjames.quotes.dto.QuoteSuccessResponse;
 import com.lemarketjames.quotes.dto.QuotesListResponse;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,20 @@ public class QuotesController {
     public ResponseEntity<?> getAllQuotes() {
         try {
             return ResponseEntity.ok(new QuotesListResponse(true, quoteService.getAllQuotes()));
+        } catch (QuoteService.QuoteFeedUnavailableException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new QuoteErrorResponse(false, ex.getMessage()));
+        }
+    }
+
+    /**
+     * Every stock's prices over today, for the trend graphs. A literal path, so it is matched
+     * before {@code /{symbol}}.
+     */
+    @GetMapping("/intraday")
+    public ResponseEntity<?> getIntraday() {
+        try {
+            return ResponseEntity.ok(new QuoteIntradayResponse(true, historyService.intradayForAll()));
         } catch (QuoteService.QuoteFeedUnavailableException ex) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(new QuoteErrorResponse(false, ex.getMessage()));

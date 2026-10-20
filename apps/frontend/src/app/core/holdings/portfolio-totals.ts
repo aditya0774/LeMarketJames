@@ -1,4 +1,5 @@
 import { HoldingDto } from '../../shared/models/holdings.model';
+import { Quote } from '../../shared/models/quote.model';
 
 export interface PortfolioTotals {
   value: number;
@@ -6,6 +7,29 @@ export interface PortfolioTotals {
   gainLoss: number;
   /** Gain/loss relative to cost basis; 0 when nothing is held. */
   gainLossPercent: number;
+}
+
+/**
+ * Each holding re-priced at its latest live quote, so the Overview's money moves with the market
+ * between holdings reloads (which happen only when an order or deposit changes the account). A stock
+ * with no quote yet, or whose feed is down, keeps the value the backend computed at the last load.
+ */
+export function revalue(holdings: readonly HoldingDto[], quotes: Readonly<Record<string, Quote | null>>): HoldingDto[] {
+  return holdings.map((h) => {
+    const price = quotes[h.symbol]?.price;
+    if (price == null) {
+      return h;
+    }
+    const currentValue = h.quantity * price;
+    const gainLoss = currentValue - h.totalCost;
+    return {
+      ...h,
+      currentPrice: price,
+      currentValue,
+      gainLoss,
+      gainLossPercent: h.totalCost ? (gainLoss / h.totalCost) * 100 : 0,
+    };
+  });
 }
 
 /** Sums the per-holding figures the backend already computes, for the Overview's headline cards. */

@@ -35,4 +35,12 @@ describe('PriceHistory', () => {
 
     expect(await result).toEqual([{ time: Date.parse('2026-10-05T20:00:00Z'), value: 1234.5 }]);
   });
+
+  it("reads every stock's prices for today", async () => {
+    const result = firstValueFrom(service.intraday());
+
+    http.expectOne('/api/quotes/intraday').flush({ success: true, points: { AAPL: [230, 231.5] } });
+
+    expect(await result).toEqual({ AAPL: [230, 231.5] });
+  });
 });

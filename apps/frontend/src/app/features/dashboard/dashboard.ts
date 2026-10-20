@@ -11,7 +11,7 @@ import { HoldingDto } from '../../shared/models/holdings.model';
 import { Quote } from '../../shared/models/quote.model';
 import { BalanceInfo } from '../../shared/models/order.model';
 import { SessionExpired } from '../../shared/components/session-expired/session-expired';
-import { appendQuotes } from '../market/market-list/market-history';
+import { MarketHistory } from '../../core/market/market-history';
 import { MARKET_REFRESH_MS } from '../market/market-page';
 import { StatStrip } from './stat-strip/stat-strip';
 import { QuickTrade } from './quick-trade/quick-trade';
@@ -20,7 +20,7 @@ import { Movers } from './movers/movers';
 import { PortfolioChart } from './portfolio-chart/portfolio-chart';
 import { MoveMoney } from './move-money/move-money';
 import { CashMovement } from '../../core/cash/cash.service';
-import { portfolioTotals } from '../../core/holdings/portfolio-totals';
+import { portfolioTotals, revalue } from '../../core/holdings/portfolio-totals';
 
 /**
  * Dashboard (the Overview tab)
@@ -29,7 +29,8 @@ import { portfolioTotals } from '../../core/holdings/portfolio-totals';
  * chart, quick trade, what the user owns and today's biggest movers. Deposit and Withdraw on the
  * Buying power card open "Move money". Container only: it loads holdings, the balance and the
  * account's orders (for the open-order count, kept live by the order stream), polls every quote,
- * and hands the data to presentational children.
+ * and hands the data to presentational children. The money figures re-price the loaded holdings at
+ * each quote poll, so they move with the market without waiting for a holdings reload.
  */
 @Component({
   selector: 'app-dashboard',
@@ -57,7 +58,9 @@ export class Dashboard implements OnInit {
   protected readonly moneyDialog = signal<CashMovement | null>(null);
 
   protected readonly marketQuotes = signal<Record<string, Quote | null>>({});
-  protected readonly marketHistory = signal<Record<string, number[]>>({});
+  private readonly history = inject(MarketHistory);
+  /** The movers' trend graphs, kept app-wide so they carry on across tab switches. */
+  protected readonly marketHistory = this.history.traces;
   protected readonly instruments = computed(() => this.catalog.all());
 
   /** The stock loaded into quick trade: the largest holding, else the first stock listed. */
@@ -69,13 +72,16 @@ export class Dashboard implements OnInit {
   private readonly ownSessionExpired = signal(false);
   protected readonly sessionExpired = computed(() => this.ownSessionExpired() || this.accountOrders.sessionExpired());
 
-  protected readonly totals = computed(() => portfolioTotals(this.holdings()));
+  /** What the user owns, valued at the latest polled prices. */
+  protected readonly liveHoldings = computed(() => revalue(this.holdings(), this.marketQuotes()));
+  protected readonly totals = computed(() => portfolioTotals(this.liveHoldings()));
   /** Shares held per symbol for the trade ticket; null when holdings failed to load. */
   protected readonly heldBySymbol = computed(() =>
     this.holdingsError() ? null : Object.fromEntries(this.holdings().map((h) => [h.symbol, h.quantity])),
   );
 
   ngOnInit(): void {
+    this.history.load();
     // Quotes are polled per symbol, so the stock list has to arrive first.
     this.catalog.load().then(
       () => this.watchMarket(),
@@ -116,7 +122,7 @@ export class Dashboard implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((quotes) => {
         this.marketQuotes.set(quotes);
-        this.marketHistory.update((history) => appendQuotes(history, quotes));
+        this.history.record(quotes);
       });
   }
 

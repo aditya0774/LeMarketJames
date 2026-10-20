@@ -28,6 +28,7 @@ import java.util.SplittableRandom;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
@@ -112,6 +113,42 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
                 definitions.size(), stored.size());
     }
 
+    /**
+     * Loads the universe, then simulates the trading time each instrument missed while the service
+     * was down, so today's minute candles start at the open instead of at boot. Done under one lock
+     * with the load: a scheduled tick slipping in between would move the clock past the gap.
+     *
+     * <p>The gap is replayed one {@code sim.tick-ms} step at a time through the same step as a live
+     * tick, so prices, candles, volume, market hours and the day roll-over behave exactly as if the
+     * service had been running. An instrument is left alone until a step passes its own start.
+     *
+     * @param catchUpFrom per instrument id, the instant to simulate from; instruments not listed
+     *                    are not caught up
+     */
+    public synchronized void load(List<MarketInstrument> definitions, Map<Integer, StoredQuote> stored,
+                                  Map<Integer, Instant> catchUpFrom) {
+        load(definitions, stored);
+        if (catchUpFrom.isEmpty()) {
+            return;
+        }
+        Instant now = clock.instant();
+        Optional<Instant> earliest = catchUpFrom.values().stream().filter(now::isAfter).min(Instant::compareTo);
+        if (earliest.isEmpty()) {
+            return;
+        }
+        long stepMs = properties.getTickMs();
+        lastTickAt = earliest.get();
+        for (Instant at = earliest.get().plusMillis(stepMs); !at.isAfter(now); at = at.plusMillis(stepMs)) {
+            Instant stepAt = at;
+            step(stepAt, instrument -> {
+                Instant from = catchUpFrom.get(instrument.instrument().instrumentId());
+                return from != null && stepAt.isAfter(from);
+            });
+        }
+        log.info("Caught up {} instruments from {} to {}: {} minute candles simulated",
+                catchUpFrom.size(), earliest.get(), lastTickAt, completedCandles.size());
+    }
+
     /** Advances every open instrument to the current clock time. */
     public void tick() {
         tick(clock.instant());
@@ -122,6 +159,11 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
      * drive the market deterministically.
      */
     public synchronized void tick(Instant now) {
+        step(now, instrument -> true);
+    }
+
+    /** One tick at {@code now} for the instruments {@code included} lets through. Callers hold the lock. */
+    private void step(Instant now, Predicate<SimulatedInstrument> included) {
         if (instruments.isEmpty()) {
             return;
         }
@@ -131,6 +173,9 @@ public class MarketSimulator implements MarketDataService, MarketFeedControl {
         // One shared draw per tick is what makes instruments move together.
         double marketShock = random.nextGaussian();
         for (SimulatedInstrument instrument : instruments.values()) {
+            if (!included.test(instrument)) {
+                continue;
+            }
             if (pinned.contains(instrument.instrument().instrumentId())) {
                 // Held at the price a test set. While its exchange is open the quote is still
                 // re-stamped, otherwise it would age past the staleness limit (contract C5) and

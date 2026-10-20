@@ -30,7 +30,7 @@
 
   <app-holdings-split
     class="ov-split"
-    [holdings]="holdings()"
+    [holdings]="liveHoldings()"
     [loading]="holdingsLoading()"
     [error]="holdingsError()"
     (selectSymbol)="chooseSymbol($event)"

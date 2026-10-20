@@ -67,6 +67,14 @@ class MarketHoursTest {
     }
 
     @Test
+    void openingTimeIsTheSessionStartInTheExchangesZone() {
+        // 09:30 in New York on 15 October (EDT, UTC-4) is 13:30 UTC.
+        assertEquals(Instant.parse("2026-10-15T13:30:00Z"), MarketHours.US_EQUITY.openingTime(LocalDate.of(2026, 10, 15)));
+        // A market open all day opens at local midnight.
+        assertEquals(Instant.parse("2026-10-15T00:00:00Z"), MarketHours.CRYPTO.openingTime(LocalDate.of(2026, 10, 15)));
+    }
+
+    @Test
     void closingTimeIsTheSessionEndInTheExchangesZone() {
         // 16:00 in New York on 15 October (EDT, UTC-4) is 20:00 UTC.
         assertEquals(Instant.parse("2026-10-15T20:00:00Z"), MarketHours.US_EQUITY.closingTime(LocalDate.of(2026, 10, 15)));

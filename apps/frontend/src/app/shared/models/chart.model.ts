@@ -34,3 +34,9 @@ export interface PortfolioHistoryResponse {
   range: ChartRange;
   points: { time: string; value: number }[];
 }
+
+/** GET /api/quotes/intraday: every stock's prices over its current trading day, oldest first. */
+export interface QuoteIntradayResponse {
+  success: boolean;
+  points: Record<string, number[]>;
+}

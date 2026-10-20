@@ -49,6 +49,14 @@ public class MarketSimulationProperties {
     private boolean respectMarketHours = true;
 
     /**
+     * When true, startup simulates the part of today's session the service missed while it was down
+     * (from the open, or from the last stored minute, up to now or the close), so the day's charts
+     * start at the open rather than at boot. Only applies while ticking is enabled and
+     * respectMarketHours is true: without market hours there is no session to fill.
+     */
+    private boolean catchUpOnStart = true;
+
+    /**
      * Exchange holidays: exchange-local dates the market stays closed all day (only applies while
      * respectMarketHours is true). Defaults to the NYSE holidays for 2026 and 2027; override with a
      * comma-separated list of yyyy-MM-dd dates, e.g. {@code SIM_HOLIDAYS=2028-01-03,2028-01-17}.
@@ -154,5 +162,13 @@ public class MarketSimulationProperties {
 
     public void setRespectMarketHours(boolean respectMarketHours) {
         this.respectMarketHours = respectMarketHours;
+    }
+
+    public boolean isCatchUpOnStart() {
+        return catchUpOnStart;
+    }
+
+    public void setCatchUpOnStart(boolean catchUpOnStart) {
+        this.catchUpOnStart = catchUpOnStart;
     }
 }
