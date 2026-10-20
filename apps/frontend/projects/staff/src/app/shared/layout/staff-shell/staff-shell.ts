@@ -31,6 +31,6 @@ export class StaffShell {
 
   async logout(): Promise<void> {
     await this.auth.logout();
-    await this.router.navigate(['/login']);
+    await this.router.navigate(['/login'], { replaceUrl: true });
   }
 }
