@@ -129,6 +129,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Replaces the simulated universe.</div>
 </div>
+<div class="col-first odd-row-color"><code>void</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">MarketSimulator.</span><code><a href="../../service/MarketSimulator.html#load(java.util.List,java.util.Map,java.util.Map)" class="member-name-link">load</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../MarketInstrument.html" title="class in com.lemarketjames.market.model">MarketInstrument</a>&gt;&nbsp;definitions,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>,<wbr><a href="../../service/MarketSimulator.StoredQuote.html" title="class in com.lemarketjames.market.service">MarketSimulator.StoredQuote</a>&gt;&nbsp;stored,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&gt;&nbsp;catchUpFrom)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Loads the universe, then simulates the trading time each instrument missed while the service
+ was down, so today's minute candles start at the open instead of at boot.</div>
+</div>
 </div>
 </section>
 </li>

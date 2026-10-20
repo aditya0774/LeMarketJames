@@ -483,7 +483,8 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/service/MarketInitializer.html" title="class in com.lemarketjames.market.service">MarketInitializer</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Loads instruments and their last stored prices into the simulator on startup.</div>
+<div class="block">Loads instruments and their last stored prices into the simulator on startup, and fills in the
+ part of today's session the service missed while it was down.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/market/model/MarketInstrument.html" title="class in com.lemarketjames.market.model">MarketInstrument</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
@@ -869,89 +870,98 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">A completed 1-minute OHLC (open/high/low/close) bar, ready to be stored in <code>price_candles</code>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/repository/PriceCandleBatchInsert.html" title="interface in com.lemarketjames.market.repository">PriceCandleBatchInsert</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="block">Plain batched inserts for <code>price_candles</code>, mixed into <a href="com/lemarketjames/market/repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository"><code>PriceCandleRepository</code></a>.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">One persisted 1-minute OHLC bar (<code>price_candles</code>, migration 006), keyed by instrument
  and UTC interval start.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Composite primary key: (instrument_id, interval_start).</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/repository/PriceCandleRepository.html" title="interface in com.lemarketjames.market.repository">PriceCandleRepository</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/client/PriceHistoryClient.html" title="class in com.lemarketjames.market.client">PriceHistoryClient</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a> over HTTP, reached at trading-service's <code>/api/market/history/**</code>
  and <code>/api/market/intraday/**</code>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/PriceHistoryController.html" title="class in com.lemarketjames.market">PriceHistoryController</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Past prices for charts, for callers in other services (this service's own charts read
  <code>PriceHistoryService</code> in-process).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceHistoryEntity.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">One trading day's OHLC bar (<code>price_history</code>, migration 022), keyed by instrument and
  exchange-local trading date.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/entity/PriceHistoryEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceHistoryEntity.Key</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Composite primary key: (instrument_id, trading_date).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/service/PriceHistoryReader.html" title="class in com.lemarketjames.market.service">PriceHistoryReader</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">trading-service's own <a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
  today's minutes from <code>price_candles</code>, and both end with the live quote.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/repository/PriceHistoryRepository.html" title="interface in com.lemarketjames.market.repository">PriceHistoryRepository</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="com/lemarketjames/market/service/PriceHistoryService.html" title="interface in com.lemarketjames.market.service">PriceHistoryService</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Read-only access to past prices, for charts.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/market/model/PricePoint.html" title="class in com.lemarketjames.market.model">PricePoint</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">An instrument's price at one moment of the current trading day: the close of a 1-minute candle,
  or the latest live price.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/config/PrimaryDataSourceConfig.html" title="class in com.lemarketjames.config">PrimaryDataSourceConfig</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The ordinary, writable connection pool, for everything but reports: the surveillance alerts the
  order events raise, and the shared account entities the JWT filter checks a session against.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/ProfileController.html" title="class in com.lemarketjames.profile">ProfileController</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/ProfileController.html" title="class in com.lemarketjames.profile">ProfileController</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">GET /api/v1/profile — the authenticated client's own profile + account info.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/dto/ProfileDto.html" title="class in com.lemarketjames.profile.dto">ProfileDto</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/dto/ProfileDto.html" title="class in com.lemarketjames.profile.dto">ProfileDto</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Self-service client + account profile — a client can only ever fetch their own (see ProfileService).</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/ProfileService.html" title="class in com.lemarketjames.profile">ProfileService</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/profile/ProfileService.html" title="class in com.lemarketjames.profile">ProfileService</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Self-service only: a client can fetch their own profile, resolved from the JWT's username, same
  as every other own-data endpoint in this app (holdings, orders).</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/dto/QuoteDto.html" title="class in com.lemarketjames.quotes.dto">QuoteDto</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Contract-aligned quote payload for GET /api/quotes/{symbol}.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/dto/QuoteErrorResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteErrorResponse</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/dto/QuoteErrorResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteErrorResponse</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Error contract for quote lookups that cannot be resolved.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/model/QuoteFreshness.html" title="class in com.lemarketjames.market.model">QuoteFreshness</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/market/model/QuoteFreshness.html" title="class in com.lemarketjames.market.model">QuoteFreshness</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Decides whether a quote is too old to price an order with (contract C4/C5).</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/quotes/dto/QuoteHistoryResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteHistoryResponse</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">Successful contract-aligned response for GET /api/quotes/{symbol}/history.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/QuoteHistoryService.html" title="class in com.lemarketjames.quotes">QuoteHistoryService</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A stock's price over a <a href="com/lemarketjames/market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model"><code>ChartRange</code></a>, for the trade page's chart.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="com/lemarketjames/quotes/dto/QuoteIntradayResponse.html" title="class in com.lemarketjames.quotes.dto">QuoteIntradayResponse</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Successful contract-aligned response for GET /api/quotes/intraday: every stock's price over the
+ current trading day in one call, for the trading app's small trend graphs.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="com/lemarketjames/quotes/QuotesController.html" title="class in com.lemarketjames.quotes">QuotesController</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">

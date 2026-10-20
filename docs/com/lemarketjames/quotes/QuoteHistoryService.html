@@ -129,6 +129,12 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#history(java.lang.String,com.lemarketjames.market.model.ChartRange)" class="member-name-link">history</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rawSymbol,
  <a href="../market/model/ChartRange.html" title="enum class in com.lemarketjames.market.model">ChartRange</a>&nbsp;range)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#intradayForAll()" class="member-name-link">intradayForAll</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Every stock's prices over its current trading day (the same series as a <code>1D</code> chart),
+ so the trading app can draw all its trend graphs from one request.</div>
+</div>
 </div>
 </div>
 </div>
@@ -176,6 +182,20 @@ loadScripts(document, 'script');</script>
 <dt>Throws:</dt>
 <dd><code><a href="QuoteService.QuoteFeedUnavailableException.html" title="class in com.lemarketjames.quotes">QuoteService.QuoteFeedUnavailableException</a></code> - if the feed is currently down</dd>
 <dd><code><a href="QuoteService.SymbolNotFoundException.html" title="class in com.lemarketjames.quotes">QuoteService.SymbolNotFoundException</a></code> - if no simulated instrument has that ticker</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="intradayForAll()">
+<h3>intradayForAll</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&gt;&gt;</span>&nbsp;<span class="element-name">intradayForAll</span>()</div>
+<div class="block">Every stock's prices over its current trading day (the same series as a <code>1D</code> chart),
+ so the trading app can draw all its trend graphs from one request.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>per symbol (sorted), the day's prices oldest first, ending with the live price</dd>
+<dt>Throws:</dt>
+<dd><code><a href="QuoteService.QuoteFeedUnavailableException.html" title="class in com.lemarketjames.quotes">QuoteService.QuoteFeedUnavailableException</a></code> - if the feed is currently down</dd>
 </dl>
 </section>
 </li>

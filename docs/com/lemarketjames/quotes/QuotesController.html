@@ -135,8 +135,13 @@ loadScripts(document, 'script');</script>
 <div class="block">A stock's price over 1D, 1W, 1M, 3M or 6M, for the trade page's chart.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;?&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getQuote(java.lang.String)" class="member-name-link">getQuote</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getIntraday()" class="member-name-link">getIntraday</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Every stock's prices over today, for the trend graphs.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>org.springframework.http.ResponseEntity<wbr>&lt;?&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getQuote(java.lang.String)" class="member-name-link">getQuote</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -175,6 +180,15 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations">@GetMapping
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;?&gt;</span>&nbsp;<span class="element-name">getAllQuotes</span>()</div>
 <div class="block">Every quote in one response, so the dashboard polls once per refresh rather than once per stock.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getIntraday()">
+<h3>getIntraday</h3>
+<div class="member-signature"><span class="annotations">@GetMapping("/intraday")
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">org.springframework.http.ResponseEntity&lt;?&gt;</span>&nbsp;<span class="element-name">getIntraday</span>()</div>
+<div class="block">Every stock's prices over today, for the trend graphs. A literal path, so it is matched
+ before <code>/{symbol}</code>.</div>
 </section>
 </li>
 <li>

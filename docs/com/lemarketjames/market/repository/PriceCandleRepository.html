@@ -88,12 +88,12 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Superinterfaces:</dt>
-<dd><code>org.springframework.data.repository.CrudRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.ListCrudRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.ListPagingAndSortingRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.PagingAndSortingRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.query.QueryByExampleExecutor&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>&gt;</code>, <code>org.springframework.data.repository.Repository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code></dd>
+<dd><code>org.springframework.data.repository.CrudRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.ListCrudRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.ListPagingAndSortingRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code>org.springframework.data.repository.PagingAndSortingRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code>, <code><a href="PriceCandleBatchInsert.html" title="interface in com.lemarketjames.market.repository">PriceCandleBatchInsert</a></code>, <code>org.springframework.data.repository.query.QueryByExampleExecutor&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>&gt;</code>, <code>org.springframework.data.repository.Repository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="annotations">@Repository
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">PriceCandleRepository</span><span class="extends-implements">
-extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;</span></div>
+extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>,<wbr><a href="../entity/PriceCandleEntity.Key.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity.Key</a>&gt;, <a href="PriceCandleBatchInsert.html" title="interface in com.lemarketjames.market.repository">PriceCandleBatchInsert</a></span></div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -114,6 +114,12 @@ extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../ent
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">One instrument's 1-minute candles starting at or after <code>from</code> (UTC), oldest first.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[]&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#findLatestIntervalStarts(java.time.LocalDateTime)" class="member-name-link">findLatestIntervalStarts</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;from)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">The start of each instrument's latest candle at or after <code>from</code> (UTC), as
+ <code>[instrumentId, intervalStart]</code> rows; instruments with none are absent.</div>
+</div>
 </div>
 </div>
 </div>
@@ -132,6 +138,9 @@ extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../ent
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-org.springframework.data.repository.PagingAndSortingRepository">Methods inherited from interface&nbsp;org.springframework.data.repository.PagingAndSortingRepository</h3>
 <code>findAll</code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-com.lemarketjames.market.repository.PriceCandleBatchInsert">Methods inherited from interface&nbsp;com.lemarketjames.market.repository.<a href="PriceCandleBatchInsert.html" title="interface in com.lemarketjames.market.repository">PriceCandleBatchInsert</a></h3>
+<code><a href="PriceCandleBatchInsert.html#insertNew(java.util.List)">insertNew</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-org.springframework.data.repository.query.QueryByExampleExecutor">Methods inherited from interface&nbsp;org.springframework.data.repository.query.QueryByExampleExecutor</h3>
 <code>count, exists, findAll, findBy, findOne</code></div>
@@ -152,6 +161,17 @@ extends org.springframework.data.jpa.repository.JpaRepository&lt;<a href="../ent
 <div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../entity/PriceCandleEntity.html" title="class in com.lemarketjames.market.entity">PriceCandleEntity</a>&gt;</span>&nbsp;<span class="element-name">findByInstrumentIdAndIntervalStartGreaterThanEqualOrderByIntervalStart</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;instrumentId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;from)</span></div>
 <div class="block">One instrument's 1-minute candles starting at or after <code>from</code> (UTC), oldest first.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="findLatestIntervalStarts(java.time.LocalDateTime)">
+<h3>findLatestIntervalStarts</h3>
+<div class="member-signature"><span class="annotations">@Query("SELECT c.instrumentId, MAX(c.intervalStart) FROM PriceCandleEntity c WHERE c.intervalStart &gt;= :from GROUP BY c.instrumentId")
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[]&gt;</span>&nbsp;<span class="element-name">findLatestIntervalStarts</span><wbr><span class="parameters">(@Param("from")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;from)</span></div>
+<div class="block">The start of each instrument's latest candle at or after <code>from</code> (UTC), as
+ <code>[instrumentId, intervalStart]</code> rows; instruments with none are absent. Startup reads
+ it to know which part of today's session is already stored.</div>
 </section>
 </li>
 </ul>
