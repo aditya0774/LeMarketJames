@@ -63,6 +63,21 @@ test('deposit and withdrawal update every balance view and persist across a new 
   );
 
   await dialog.getByRole('button', { name: 'Withdraw', exact: true }).click();
+  const amount = dialog.getByLabel('Amount');
+  const moveButton = dialog.locator('.mm-go');
+
+  await amount.fill('0');
+  await expect(dialog.getByRole('alert')).toHaveText('Enter an amount above $0.');
+  await expect(moveButton).toBeDisabled();
+
+  await amount.fill('12.345');
+  await expect(dialog.getByRole('alert')).toHaveText('Enter an amount in dollars and cents, like 250.00.');
+  await expect(moveButton).toBeDisabled();
+
+  await amount.fill('10500.01');
+  await expect(dialog.getByRole('alert')).toHaveText('You can withdraw up to $10,500.00.');
+  await expect(moveButton).toBeDisabled();
+
   await dialog.getByRole('button', { name: '$1,000', exact: true }).click();
   await dialog.getByRole('button', { name: 'Withdraw $1,000.00' }).click();
   await expect(dialog.getByRole('status')).toContainText('Your buying power is now $9,500.00.');
