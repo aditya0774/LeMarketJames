@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaffOpsServiceApplication.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames</a> &gt; <span class="el_source">StaffOpsServiceApplication.java</span></div><h1>StaffOpsServiceApplication.java</h1><pre class="source lang-java linenums">package com.lemarketjames;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * Entry point for staff-ops-service: aggregate, read-only reports for analysts and the
+ * surveillance alerts Trading Ops reads. Kept out of the trading services so a heavy report can
+ * never slow down order placement; see this module's README for the rules every report follows.
+ *
+ * &lt;p&gt;Reports read through a pool of their own that the database holds to read-only, short queries
+ * ({@link com.lemarketjames.config.ReportingDataSourceConfig}); the alerts the order events raise
+ * are written through the ordinary one ({@link com.lemarketjames.config.PrimaryDataSourceConfig}).
+ */
+@SpringBootApplication
+<span class="fc" id="L16">public class StaffOpsServiceApplication {</span>
+    public static void main(String[] args) {
+<span class="nc" id="L18">        SpringApplication.run(StaffOpsServiceApplication.class, args);</span>
+<span class="nc" id="L19">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

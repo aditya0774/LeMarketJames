@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DailyTrigger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">DailyTrigger.java</span></div><h1>DailyTrigger.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.reports.period.ReportCalendar;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.TriggerContext;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+/**
+ * Fires once a day at a time of day in the reports time zone, every day of the year.
+ *
+ * &lt;p&gt;Not a cron trigger, because cron skips a time that a daylight-saving change jumps over: on
+ * the night clocks go forward in New York, 02:00 never happens, and a cron run at 02:00 would
+ * simply not run that night. Times are resolved by {@link ReportCalendar#at}, which moves a
+ * skipped time to just after the gap (03:00 that night), so every night has its run.
+ */
+<span class="fc" id="L19">record DailyTrigger(LocalTime time, ReportCalendar calendar) implements Trigger {</span>
+
+    @Override
+    public Instant nextExecution(TriggerContext context) {
+        // After the last run if there was one, otherwise after now.
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        Instant after = context.lastCompletion() != null ? context.lastCompletion() : context.getClock().instant();</span>
+<span class="fc" id="L25">        LocalDate day = calendar.reportDay(after);</span>
+<span class="fc" id="L26">        Instant candidate = calendar.at(day, time);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        return candidate.isAfter(after) ? candidate : calendar.at(day.plusDays(1), time);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L32">        return &quot;daily at &quot; + time + &quot; &quot; + calendar.zone().getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

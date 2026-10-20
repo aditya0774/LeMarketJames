@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrdersClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.client</a> &gt; <span class="el_source">OrdersClient.java</span></div><h1>OrdersClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.client;
+
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Reads order data from orders-service for trade history and buying power. orders-service's
+ * /api/v1/orders/** endpoints are JWT-ownership-checked, so this relays the incoming request's own
+ * jwt cookie rather than bypassing that check — orders-service's authorization is unchanged.
+ */
+@Service
+public class OrdersClient {
+
+<span class="fc" id="L26">    private static final Logger log = LoggerFactory.getLogger(OrdersClient.class);</span>
+
+    /** The largest page orders-service serves (its {@code MAX_SIZE}). */
+    static final int PAGE_SIZE = 100;
+    /** A bound on the paging loop, far above any real account (100,000 orders). */
+    private static final int MAX_PAGES = 1000;
+
+    private final RestClient restClient;
+    private final HttpServletRequest currentRequest;
+
+<span class="fc" id="L36">    public OrdersClient(@Value(&quot;${orders.service.url}&quot;) String ordersServiceUrl, HttpServletRequest currentRequest) {</span>
+<span class="fc" id="L37">        this.restClient = RestClient.builder().baseUrl(ordersServiceUrl).build();</span>
+<span class="fc" id="L38">        this.currentRequest = currentRequest;</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Every order of the account. orders-service pages this endpoint (20 orders by default), so
+     * the pages are read in turn until a short one: buying power, trade history and the portfolio
+     * chart all need the whole list, not the latest page.
+     */
+    public List&lt;OrderSummary&gt; getOrdersForAccount(int accountId) {
+        try {
+<span class="fc" id="L48">            String cookie = relayedJwtCookieHeader();</span>
+<span class="fc" id="L49">            List&lt;OrderSummary&gt; all = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">            for (int page = 0; page &lt; MAX_PAGES; page++) {</span>
+<span class="fc" id="L51">                OrderSummary[] orders = restClient.get()</span>
+<span class="fc" id="L52">                        .uri(&quot;/api/v1/orders/account/{accountId}?page={page}&amp;size={size}&quot;, accountId, page, PAGE_SIZE)</span>
+<span class="fc" id="L53">                        .header(HttpHeaders.COOKIE, cookie)</span>
+<span class="fc" id="L54">                        .retrieve()</span>
+<span class="fc" id="L55">                        .body(OrderSummary[].class);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                if (orders == null) {</span>
+<span class="fc" id="L57">                    break;</span>
+                }
+<span class="fc" id="L59">                all.addAll(Arrays.asList(orders));</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (orders.length &lt; PAGE_SIZE) {</span>
+<span class="fc" id="L61">                    break;</span>
+                }
+            }
+<span class="fc" id="L64">            return List.copyOf(all);</span>
+<span class="fc" id="L65">        } catch (RestClientException e) {</span>
+<span class="fc" id="L66">            log.warn(&quot;orders-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
+<span class="fc" id="L67">            return List.of();</span>
+        }
+    }
+
+    private String relayedJwtCookieHeader() {
+<span class="fc" id="L72">        Cookie[] cookies = currentRequest.getCookies();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
+<span class="fc" id="L74">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
+<span class="fc" id="L75">                .findFirst()</span>
+<span class="fc" id="L76">                .map(Cookie::getValue)</span>
+<span class="fc" id="L77">                .orElse(null);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (token == null) {</span>
+<span class="fc" id="L79">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to orders-service&quot;);</span>
+        }
+<span class="fc" id="L81">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
