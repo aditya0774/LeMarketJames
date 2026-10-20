@@ -8,12 +8,14 @@
       <span class="mono pc-change" [class.up]="change() >= 0" [class.down]="change() < 0">{{ changeLine() }}</span>
     }
   </div>
-  <fieldset class="seg pc-ranges">
-    <legend class="sr-only">Time range</legend>
-    @for (r of ranges; track r) {
-      <button type="button" class="mono" [attr.aria-pressed]="r === range()" (click)="chooseRange(r)">{{ r }}</button>
-    }
-  </fieldset>
+  @if (showRanges()) {
+    <fieldset class="seg pc-ranges">
+      <legend class="sr-only">Time range</legend>
+      @for (r of ranges; track r) {
+        <button type="button" class="mono" [attr.aria-pressed]="r === range()" (click)="chooseRange(r)">{{ r }}</button>
+      }
+    </fieldset>
+  }
 </div>
 
 <div class="pc-body">

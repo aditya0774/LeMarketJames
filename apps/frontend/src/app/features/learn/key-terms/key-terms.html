@@ -1,0 +1,25 @@
+@if (terms().length) {
+  <section class="key-terms" aria-label="Key terms">
+    <h3>Key terms</h3>
+    <div class="key-terms-chips">
+      @for (item of terms(); track item.term) {
+        <button
+          type="button"
+          class="chip"
+          [class.active]="isOpen(item)"
+          [attr.aria-expanded]="isOpen(item)"
+          [attr.aria-controls]="panelId"
+          (click)="toggle(item)"
+        >
+          {{ item.term }}
+        </button>
+      }
+    </div>
+    <!-- Always in the page so aria-controls has a target; it is only shown while a term is open. -->
+    <p class="key-terms-def" role="note" [id]="panelId" [hidden]="!openTerm()">
+      @if (openTerm(); as term) {
+        <strong>{{ term.term }}:</strong> {{ term.definition }}
+      }
+    </p>
+  </section>
+}

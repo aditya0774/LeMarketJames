@@ -34,6 +34,13 @@ describe('AppShell', () => {
 		expect(fixture.nativeElement.querySelector('.avatar-btn').textContent.trim()).toBe('J');
 	});
 
+	it('puts the Learn tab right after Orders', () => {
+		const tabs = Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll('.app-tabs a'));
+		const names = tabs.map((tab) => tab.textContent?.trim());
+		expect(names[names.indexOf('Orders') + 1]).toBe('Learn');
+		expect(tabs[names.indexOf('Learn')].getAttribute('href')).toBe('/learn');
+	});
+
 	it('logs out and replaces the protected history entry', async () => {
 		const avatar = fixture.nativeElement.querySelector('.avatar-btn') as HTMLButtonElement;
 		avatar.click();

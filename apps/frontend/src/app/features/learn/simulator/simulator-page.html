@@ -1,0 +1,95 @@
+<div class="sim">
+  <a class="sim-back" routerLink="/learn">&larr; Back to Learn</a>
+
+  <header class="sim-intro">
+    <h1>Stock simulator</h1>
+    <p>Pick a stock, a day in the past and an amount. See what that purchase would be worth today.</p>
+  </header>
+
+  <div class="sim-grid">
+    <section class="sim-form" aria-label="Simulation settings">
+      <label class="field">
+        Stock
+        <select class="in" [disabled]="!stocks().length" (change)="chooseStock($any($event.target).value)">
+          @for (s of stocks(); track s.symbol) {
+            <option [value]="s.symbol" [selected]="s.symbol === stock()?.symbol">{{ s.symbol }} · {{ s.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        Day you would have bought
+        <input
+          class="in"
+          type="date"
+          [value]="day()"
+          [min]="firstDay()"
+          [max]="lastDay()"
+          [disabled]="!firstDay()"
+          (change)="onDay($any($event.target).value)"
+        />
+      </label>
+      <div class="sim-picks" role="group" aria-label="Quick picks for the day">
+        @for (pick of quickPicks; track pick.months) {
+          <button type="button" class="chip" [disabled]="!lastDay()" (click)="pickMonthsAgo(pick.months)">
+            {{ pick.label }}
+          </button>
+        }
+      </div>
+      @if (firstDay()) {
+        <p class="sim-hint">Prices go back to {{ firstDay() }}.</p>
+      }
+
+      <label class="field">
+        Amount to invest ($)
+        <input
+          class="in"
+          type="number"
+          min="1"
+          step="any"
+          inputmode="decimal"
+          [value]="amount()"
+          [attr.aria-invalid]="!amountValid()"
+          (input)="onAmount($any($event.target).value)"
+        />
+      </label>
+      @if (!amountValid()) {
+        <p class="sim-hint sim-error" role="alert">Enter an amount above $0.</p>
+      }
+    </section>
+
+    <section class="sim-out" aria-live="polite" aria-label="Result">
+      @if (loading()) {
+        <output class="loading"><span class="spinner"></span>Loading prices…</output>
+      } @else if (error()) {
+        <div class="alert err" role="alert">
+          <div><b>Couldn't load prices</b>{{ error() }}</div>
+        </div>
+        <button type="button" class="btn btn-outline" (click)="retry()">Try again</button>
+      } @else if (!stock()) {
+        <p class="muted">There are no stocks to simulate yet.</p>
+      } @else if (simulation(); as sim) {
+        @if (dayNote(); as note) {
+          <p class="sim-hint">{{ note }}</p>
+        }
+        <app-simulation-summary [simulation]="sim" [stockName]="stock()!.name" [amount]="amount()" />
+        @if (sim.daysHeld > 0) {
+          <app-price-chart
+            [heading]="'Your investment'"
+            [points]="sim.series"
+            [range]="chartRange()"
+            [showRanges]="false"
+            spanLabel="since you bought"
+          />
+        }
+      } @else {
+        <p class="muted">Enter an amount to see the result.</p>
+      }
+    </section>
+  </div>
+
+  <p class="sim-disclaimer muted">
+    This is a simulation, not a real trade. It uses this app's simulated price history, ignores fees, buys
+    fractions of a share and isn't investment advice. It doesn't change your balance or holdings.
+  </p>
+</div>

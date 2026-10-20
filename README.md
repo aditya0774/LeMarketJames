@@ -87,7 +87,7 @@ LeMarketJames/
 │   │   ├── src/app/               # Trading app (:4200)
 │   │   │   ├── core/              # App-wide singletons: auth, interceptors, API clients
 │   │   │   ├── shared/            # Reusable components, layout, models, pipes
-│   │   │   └── features/          # auth, home, dashboard, holdings, orders, trade
+│   │   │   └── features/          # auth, home, dashboard, holdings, orders, learn, trade
 │   │   ├── projects/staff/        # Staff app (:4201): a second Angular app in this workspace, with its own
 │   │   │                          #       nginx.conf and dev proxy (staff-proxy.mjs)
 │   │   ├── nginx.conf             # Trading app's Nginx: serves the app, routes /api to the services
