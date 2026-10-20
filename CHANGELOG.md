@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- LMKT-28: Holdings and buying power on the Overview update live when an order settles, and
+  catch up after the connection drops. trading-service adds `GET /api/v1/portfolio/stream`
+  (SSE, `balance-changed`), sent only after a settlement commits; the trading app's Nginx routes
+  it unbuffered ([C6](contracts/C6-api.md#get-apiv1portfoliostream)). E2E:
+  `apps/e2e/tests/holdings-live.spec.ts`.
 - Seven services instead of thirteen, with every feature kept. The stack is now two web apps,
   four microservices and Kafka:
   - The trading app (4200) and the staff app (4201).

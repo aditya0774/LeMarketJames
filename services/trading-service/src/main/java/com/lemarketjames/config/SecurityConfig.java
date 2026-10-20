@@ -31,7 +31,7 @@ import java.util.List;
  *   <li>{@code /api/market/**} needs no JWT either: orders-service reads prices there without a
  *       cookie, and the quotes carry no user data.</li>
  *   <li>Notifications are about a client's own orders, so only clients may read them (contract
- *       C7). Market activity says how much of each stock traded and never who traded it, so anyone
+ *       C7). So is the live portfolio stream. Market activity says how much of each stock traded and never who traded it, so anyone
  *       signed in may read it.</li>
  * </ul>
  */
@@ -41,6 +41,9 @@ public class SecurityConfig {
 
     /** Every notification endpoint lives under this prefix, so one rule guards them all. */
     public static final String NOTIFICATIONS_PATHS = "/api/v1/notifications/**";
+
+    /** The live portfolio stream: a client's own settlements, so clients only. */
+    public static final String PORTFOLIO_STREAM_PATH = "/api/v1/portfolio/stream";
 
     /** Every activity endpoint lives under this prefix, so one rule guards them all. */
     public static final String ACTIVITY_PATHS = "/api/v1/market-activity/**";
@@ -71,7 +74,7 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/", "/actuator/health", "/internal/**", "/api/market/**").permitAll()
                 // Staff have no trading account, so there is nothing of theirs to read here.
-                .requestMatchers(NOTIFICATIONS_PATHS).hasRole(Role.CLIENT.name())
+                .requestMatchers(NOTIFICATIONS_PATHS, PORTFOLIO_STREAM_PATH).hasRole(Role.CLIENT.name())
                 .requestMatchers(ACTIVITY_PATHS, "/api/sessions/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);

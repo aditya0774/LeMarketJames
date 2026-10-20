@@ -332,7 +332,9 @@ nothing.
 
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
 The dashboard opens `GET /api/v1/orders/stream` for live order-status events and refreshes
-orders, holdings and history whenever a status-change event arrives.
+orders, holdings and history whenever a status-change event arrives. It also opens
+[`GET /api/v1/portfolio/stream`](#get-apiv1portfoliostream) and reloads holdings and the balance
+when a fill settles.
 Holdings (trading-service) reads order history and buying-power data from orders-service.
 
 ## Holdings, balance, profile, trades (trading-service)
@@ -380,6 +382,52 @@ power without another request.
   stores its result; another call with the same ID returns successfully without moving cash again.
 - The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event
   commit in one transaction. The event contains `amount`, `balanceAfter` and `requestId` ([C2](C2-audit.md)).
+
+### GET /api/v1/portfolio/stream
+
+Live settlement events for the signed-in client, delivered as Server-Sent Events (`text/event-stream`),
+so the Overview can re-read holdings and the balance as soon as a fill settles (LMKT-28).
+
+| Method & path | Returns |
+|---|---|
+| `GET /api/v1/portfolio/stream` | SSE stream of the caller's own settlements |
+
+The stream emits a `balance-changed` event each time a settlement of the caller's account commits
+([BalanceChanged](../services/trading-service/src/main/java/com/lemarketjames/holdings/stream/BalanceChanged.java)).
+
+**Event payload:**
+
+```json
+{
+  "accountId": 7,
+  "orderId": 42,
+  "cash": 9823.45,
+  "occurredAt": "2026-10-20T14:30:01.123Z"
+}
+```
+
+`cash` is the account's cash after the settlement. The event is a signal to re-read: clients
+fetch `GET /api/v1/holdings` and `GET /api/balance` rather than compute from it.
+
+Access control and failures:
+
+| HTTP | When | Body |
+|---|---|---|
+| 200 | Stream opened | `text/event-stream` |
+| 401 | Not authenticated | see rules above |
+| 403 | Authenticated but not a client role | see rules above |
+| 404 | A client login without an account | `{ "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` |
+
+- The server infers the account from the authenticated caller; it does not accept an account-id parameter.
+  The stream never includes events for another account.
+- Only a settlement that committed a change is sent. A refused settlement (`INSUFFICIENT_CASH`,
+  `INSUFFICIENT_HOLDINGS`), a repeated request answered from its receipt, and a settlement that rolled
+  back send nothing.
+- On subscribe the server writes an SSE comment (`:connected`) at once, so the browser sees the
+  stream open, reconnects included.
+- There is no replay: events sent while a client was disconnected are lost. A client re-reads
+  holdings and the balance when the stream reopens after an error.
+- The trading app's Nginx routes this path unbuffered, like the order stream.
 
 ## Reports (staff-ops-service)
 
