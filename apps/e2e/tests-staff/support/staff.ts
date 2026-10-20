@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 import { TestUser } from '../../tests/support/users';
 
 /**
@@ -16,7 +16,10 @@ export const CLIENT = seedLogin('seed_active');
 
 /** Signs in through the staff login page, the way staff do. Where it lands is the test's to check. */
 export async function signIn(page: Page, user: TestUser): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  // Checked on its own so a login page that never draws fails after the expect timeout, naming
+  // the missing form, instead of waiting out the whole test inside fill().
+  await expect(page.locator('#username')).toBeVisible();
   await page.locator('#username').fill(user.email);
   await page.locator('#password').fill(user.password);
   const loginResponse = page.waitForResponse(
@@ -27,6 +30,16 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
   if (!response.ok()) {
     throw new Error(`Staff login failed: ${response.status()} ${await response.text()}`);
   }
+}
+
+/**
+ * Waits until the Analyst dashboard has stopped asking for its tiles. Its report queries share the
+ * reporting service's single database connection and keep running after the browser leaves the
+ * page, so a test that times a report right after signing in would be timing that queue as well.
+ */
+export async function waitForAnalystDashboard(page: Page): Promise<void> {
+  await expect(page).toHaveURL(/\/analyst$/);
+  await page.waitForLoadState('networkidle');
 }
 
 /** The heading of the page a refused role is sent to. */

@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { ANALYST, CLIENT, openAnalystTab, signIn } from './support/staff';
+import { ANALYST, CLIENT, openAnalystTab, signIn, waitForAnalystDashboard } from './support/staff';
 
 /**
  * LMKT-42 Staff App: Report trading activity by stock (analyst view)
@@ -42,7 +42,7 @@ async function selectSeedDataRange(page: Page): Promise<void> {
 /** Signs in as the analyst through the staff login, then opens the report. */
 async function openReport(page: Page, includeSeedData = true): Promise<void> {
   await signIn(page, ANALYST);
-  await expect(page).toHaveURL(/\/analyst$/);
+  await waitForAnalystDashboard(page);
   await page.goto(REPORT);
   if (includeSeedData) {
     await selectSeedDataRange(page);
@@ -170,7 +170,7 @@ test.describe('Staff App: Activity By Stock Report (LMKT-42)', () => {
 
   test('AC1: Report loads within 15 seconds', async ({ page }) => {
     await signIn(page, ANALYST);
-    await expect(page).toHaveURL(/\/analyst$/);
+    await waitForAnalystDashboard(page);
     await page.goto(REPORT);
     const startTime = Date.now();
     await selectSeedDataRange(page);
