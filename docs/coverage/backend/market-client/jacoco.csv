@@ -1,7 +1,7 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 LeMarketJames Market Client,com.lemarketjames.market.model,ChartRange,0,82,0,0,0,14,0,7,0,7
 LeMarketJames Market Client,com.lemarketjames.market.model,QuoteFreshness,0,16,0,4,0,2,0,3,0,1
-LeMarketJames Market Client,com.lemarketjames.market.model,MarketHours,0,211,1,25,0,36,1,21,0,9
+LeMarketJames Market Client,com.lemarketjames.market.model,MarketHours,0,220,1,25,0,37,1,22,0,10
 LeMarketJames Market Client,com.lemarketjames.market.model,MarketInstrument,54,0,0,0,2,0,2,0,2,0
 LeMarketJames Market Client,com.lemarketjames.market.model,QuoteSnapshot,75,36,10,0,7,1,10,1,5,1
 LeMarketJames Market Client,com.lemarketjames.market.model,PricePoint,0,9,0,0,0,1,0,1,0,1

@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `af9c7576` on 2026-10-20 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `e4295008` on 2026-10-20 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -9,14 +9,14 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | Area | Line % | Branch % | Lines missed / total |
 |---|---:|---:|---:|
 | [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 54.33 | 76.67 | 216 / 473 |
-| [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 83.70 | 76.00 | 22 / 135 |
+| [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 83.82 | 76.00 | 22 / 136 |
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 97.20 | 76.47 | 9 / 322 |
 | [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 92.53 | 84.59 | 70 / 937 |
 | [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 85.40 | 89.06 | 93 / 637 |
-| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 89.48 | 87.92 | 173 / 1644 |
-| **Back end (all modules)** | 85.95 | 84.71 | 583 / 4148 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.30 | 92.17 | 86 / 3180 |
-| **Everything** | 90.87 | 89.99 | 669 / 7328 |
+| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 90.18 | 88.53 | 170 / 1732 |
+| **Back end (all modules)** | 86.31 | 85.08 | 580 / 4237 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.34 | 92.15 | 86 / 3229 |
+| **Everything** | 91.08 | 90.04 | 666 / 7466 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -54,6 +54,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-20 | `e4295008` | 86.31 | 85.08 | 97.34 | 92.15 |
 | 2026-10-20 | `af9c7576` | 85.95 | 84.71 | 97.30 | 92.17 |
 | 2026-10-20 | `716836b7` | 85.95 | 84.71 | 97.30 | 92.17 |
 | 2026-10-20 | `fec3d368` | 85.75 | 84.57 | 97.28 | 92.15 |

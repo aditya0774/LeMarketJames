@@ -49,111 +49,127 @@ import java.util.stream.Stream;
 <span class="fc" id="L49">    private boolean respectMarketHours = true;</span>
 
     /**
+     * When true, startup simulates the part of today's session the service missed while it was down
+     * (from the open, or from the last stored minute, up to now or the close), so the day's charts
+     * start at the open rather than at boot. Only applies while ticking is enabled and
+     * respectMarketHours is true: without market hours there is no session to fill.
+     */
+<span class="fc" id="L57">    private boolean catchUpOnStart = true;</span>
+
+    /**
      * Exchange holidays: exchange-local dates the market stays closed all day (only applies while
      * respectMarketHours is true). Defaults to the NYSE holidays for 2026 and 2027; override with a
      * comma-separated list of yyyy-MM-dd dates, e.g. {@code SIM_HOLIDAYS=2028-01-03,2028-01-17}.
      */
-<span class="fc" id="L56">    private List&lt;LocalDate&gt; holidays = Stream.of(</span>
+<span class="fc" id="L64">    private List&lt;LocalDate&gt; holidays = Stream.of(</span>
             &quot;2026-01-01&quot;, &quot;2026-01-19&quot;, &quot;2026-02-16&quot;, &quot;2026-04-03&quot;, &quot;2026-05-25&quot;, &quot;2026-06-19&quot;,
             &quot;2026-07-03&quot;, &quot;2026-09-07&quot;, &quot;2026-11-26&quot;, &quot;2026-12-25&quot;,
             &quot;2027-01-01&quot;, &quot;2027-01-18&quot;, &quot;2027-02-15&quot;, &quot;2027-03-26&quot;, &quot;2027-05-31&quot;, &quot;2027-06-18&quot;,
             &quot;2027-07-05&quot;, &quot;2027-09-06&quot;, &quot;2027-11-25&quot;, &quot;2027-12-24&quot;)
-<span class="fc" id="L61">            .map(LocalDate::parse).toList();</span>
+<span class="fc" id="L69">            .map(LocalDate::parse).toList();</span>
 
     /** Test controls for the quote feed (contract C4). */
-<span class="fc" id="L64">    private final Control control = new Control();</span>
+<span class="fc" id="L72">    private final Control control = new Control();</span>
 
     public List&lt;LocalDate&gt; getHolidays() {
-<span class="nc" id="L67">        return holidays;</span>
+<span class="nc" id="L75">        return holidays;</span>
     }
 
     public void setHolidays(List&lt;LocalDate&gt; holidays) {
-<span class="nc" id="L71">        this.holidays = holidays;</span>
-<span class="nc" id="L72">    }</span>
+<span class="nc" id="L79">        this.holidays = holidays;</span>
+<span class="nc" id="L80">    }</span>
 
     /** The holidays as a set, for fast lookup on every tick. */
     public Set&lt;LocalDate&gt; holidaySet() {
-<span class="fc" id="L76">        return Set.copyOf(holidays);</span>
+<span class="fc" id="L84">        return Set.copyOf(holidays);</span>
     }
 
     public Control getControl() {
-<span class="fc" id="L80">        return control;</span>
+<span class="fc" id="L88">        return control;</span>
     }
 
     /**
      * Lets tests and demos steer the feed: set a stock's price, or make quotes stale or
      * unavailable. Exposed only at /internal/market/control, which no web app routes.
      */
-<span class="fc" id="L87">    public static class Control {</span>
+<span class="fc" id="L95">    public static class Control {</span>
         /** Whether the control endpoints exist at all. Off unless an environment turns it on. */
-<span class="fc" id="L89">        private boolean enabled = false;</span>
+<span class="fc" id="L97">        private boolean enabled = false;</span>
 
         /** How far in the past quotes claim to be while the feed is STALE. */
-<span class="fc" id="L92">        private Duration staleAge = Duration.ofMinutes(10);</span>
+<span class="fc" id="L100">        private Duration staleAge = Duration.ofMinutes(10);</span>
 
         public boolean isEnabled() {
-<span class="nc" id="L95">            return enabled;</span>
+<span class="nc" id="L103">            return enabled;</span>
         }
 
         public void setEnabled(boolean enabled) {
-<span class="nc" id="L99">            this.enabled = enabled;</span>
-<span class="nc" id="L100">        }</span>
+<span class="nc" id="L107">            this.enabled = enabled;</span>
+<span class="nc" id="L108">        }</span>
 
         public Duration getStaleAge() {
-<span class="fc" id="L103">            return staleAge;</span>
+<span class="fc" id="L111">            return staleAge;</span>
         }
 
         public void setStaleAge(Duration staleAge) {
-<span class="nc" id="L107">            this.staleAge = staleAge;</span>
-<span class="nc" id="L108">        }</span>
+<span class="nc" id="L115">            this.staleAge = staleAge;</span>
+<span class="nc" id="L116">        }</span>
     }
 
     public boolean isEnabled() {
-<span class="nc" id="L112">        return enabled;</span>
+<span class="fc" id="L120">        return enabled;</span>
     }
 
     public void setEnabled(boolean enabled) {
-<span class="fc" id="L116">        this.enabled = enabled;</span>
-<span class="fc" id="L117">    }</span>
+<span class="fc" id="L124">        this.enabled = enabled;</span>
+<span class="fc" id="L125">    }</span>
 
     public long getTickMs() {
-<span class="fc" id="L120">        return tickMs;</span>
+<span class="fc" id="L128">        return tickMs;</span>
     }
 
     public void setTickMs(long tickMs) {
-<span class="nc" id="L124">        this.tickMs = tickMs;</span>
-<span class="nc" id="L125">    }</span>
+<span class="nc" id="L132">        this.tickMs = tickMs;</span>
+<span class="nc" id="L133">    }</span>
 
     public Long getSeed() {
-<span class="fc" id="L128">        return seed;</span>
+<span class="fc" id="L136">        return seed;</span>
     }
 
     public void setSeed(Long seed) {
-<span class="fc" id="L132">        this.seed = seed;</span>
-<span class="fc" id="L133">    }</span>
+<span class="fc" id="L140">        this.seed = seed;</span>
+<span class="fc" id="L141">    }</span>
 
     public double getSpeedMultiplier() {
-<span class="fc" id="L136">        return speedMultiplier;</span>
+<span class="fc" id="L144">        return speedMultiplier;</span>
     }
 
     public void setSpeedMultiplier(double speedMultiplier) {
-<span class="nc" id="L140">        this.speedMultiplier = speedMultiplier;</span>
-<span class="nc" id="L141">    }</span>
+<span class="nc" id="L148">        this.speedMultiplier = speedMultiplier;</span>
+<span class="nc" id="L149">    }</span>
 
     public long getSnapshotIntervalMs() {
-<span class="nc" id="L144">        return snapshotIntervalMs;</span>
+<span class="nc" id="L152">        return snapshotIntervalMs;</span>
     }
 
     public void setSnapshotIntervalMs(long snapshotIntervalMs) {
-<span class="nc" id="L148">        this.snapshotIntervalMs = snapshotIntervalMs;</span>
-<span class="nc" id="L149">    }</span>
+<span class="nc" id="L156">        this.snapshotIntervalMs = snapshotIntervalMs;</span>
+<span class="nc" id="L157">    }</span>
 
     public boolean isRespectMarketHours() {
-<span class="fc" id="L152">        return respectMarketHours;</span>
+<span class="fc" id="L160">        return respectMarketHours;</span>
     }
 
     public void setRespectMarketHours(boolean respectMarketHours) {
-<span class="fc" id="L156">        this.respectMarketHours = respectMarketHours;</span>
-<span class="fc" id="L157">    }</span>
+<span class="fc" id="L164">        this.respectMarketHours = respectMarketHours;</span>
+<span class="fc" id="L165">    }</span>
+
+    public boolean isCatchUpOnStart() {
+<span class="fc" id="L168">        return catchUpOnStart;</span>
+    }
+
+    public void setCatchUpOnStart(boolean catchUpOnStart) {
+<span class="fc" id="L172">        this.catchUpOnStart = catchUpOnStart;</span>
+<span class="fc" id="L173">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

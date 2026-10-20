@@ -81,31 +81,44 @@ public class MarketPersistenceService {
     }
 
     /**
+     * @return per instrument id, the start of its latest stored candle at or after {@code since};
+     *         instruments with none are absent
+     */
+    @Transactional(readOnly = true)
+    public Map&lt;Integer, Instant&gt; latestCandleStarts(Instant since) {
+<span class="fc" id="L89">        Map&lt;Integer, Instant&gt; latest = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (Object[] row : candleRepository.findLatestIntervalStarts(utc(since))) {</span>
+<span class="fc" id="L91">            latest.put(((Number) row[0]).intValue(), ((LocalDateTime) row[1]).toInstant(ZoneOffset.UTC));</span>
+<span class="fc" id="L92">        }</span>
+<span class="fc" id="L93">        return latest;</span>
+    }
+
+    /**
      * Upserts the latest price of every instrument into {@code market_quotes} (one row each) and its
      * bar for the current trading day into {@code price_history}, and appends completed candles to
      * {@code price_candles}, in a single transaction.
      */
     @Transactional
     public void save(Collection&lt;QuoteSnapshot&gt; snapshots, List&lt;PriceCandle&gt; candles) {
-<span class="fc" id="L90">        Map&lt;Integer, MarketQuoteEntity&gt; existing = quoteRepository.findAll().stream()</span>
-<span class="fc" id="L91">                .collect(Collectors.toMap(MarketQuoteEntity::getInstrumentId, Function.identity()));</span>
+<span class="fc" id="L103">        Map&lt;Integer, MarketQuoteEntity&gt; existing = quoteRepository.findAll().stream()</span>
+<span class="fc" id="L104">                .collect(Collectors.toMap(MarketQuoteEntity::getInstrumentId, Function.identity()));</span>
 
-<span class="fc" id="L93">        List&lt;MarketQuoteEntity&gt; quotes = snapshots.stream()</span>
-<span class="fc" id="L94">                .map(snapshot -&gt; applySnapshot(</span>
-<span class="fc" id="L95">                        existing.computeIfAbsent(snapshot.instrument().instrumentId(), id -&gt; new MarketQuoteEntity()),</span>
+<span class="fc" id="L106">        List&lt;MarketQuoteEntity&gt; quotes = snapshots.stream()</span>
+<span class="fc" id="L107">                .map(snapshot -&gt; applySnapshot(</span>
+<span class="fc" id="L108">                        existing.computeIfAbsent(snapshot.instrument().instrumentId(), id -&gt; new MarketQuoteEntity()),</span>
                         snapshot))
-<span class="fc" id="L97">                .toList();</span>
-<span class="fc" id="L98">        quoteRepository.saveAll(quotes);</span>
+<span class="fc" id="L110">                .toList();</span>
+<span class="fc" id="L111">        quoteRepository.saveAll(quotes);</span>
 
-<span class="fc" id="L100">        candleRepository.saveAll(candles.stream().map(MarketPersistenceService::toEntity).toList());</span>
+<span class="fc" id="L113">        candleRepository.insertNew(candles.stream().map(MarketPersistenceService::toEntity).toList());</span>
 
         // Today's bar so far: saving it on every snapshot means the day's final values are what
         // remains once the market closes. A snapshot without a trading date has nothing to file under.
-<span class="fc" id="L104">        historyRepository.saveAll(snapshots.stream()</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">                .filter(snapshot -&gt; snapshot.tradingDate() != null)</span>
-<span class="fc" id="L106">                .map(MarketPersistenceService::toDailyBar)</span>
-<span class="fc" id="L107">                .toList());</span>
-<span class="fc" id="L108">    }</span>
+<span class="fc" id="L117">        historyRepository.saveAll(snapshots.stream()</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                .filter(snapshot -&gt; snapshot.tradingDate() != null)</span>
+<span class="fc" id="L119">                .map(MarketPersistenceService::toDailyBar)</span>
+<span class="fc" id="L120">                .toList());</span>
+<span class="fc" id="L121">    }</span>
 
     /**
      * Maps one row of {@link InstrumentMarketParamsRepository#findAllSimulatedInstruments()}.
@@ -113,56 +126,56 @@ public class MarketPersistenceService {
      * boxed type they return (e.g. BigDecimal vs Long).
      */
     static MarketInstrument toMarketInstrument(Object[] row) {
-<span class="fc" id="L116">        return new MarketInstrument(</span>
-<span class="fc" id="L117">                ((Number) row[0]).intValue(),</span>
+<span class="fc" id="L129">        return new MarketInstrument(</span>
+<span class="fc" id="L130">                ((Number) row[0]).intValue(),</span>
                 (String) row[1],
                 (String) row[2],
                 (String) row[3],
                 (String) row[4],
                 (String) row[5],
-<span class="fc" id="L123">                ((Number) row[6]).doubleValue(),</span>
-<span class="fc" id="L124">                ((Number) row[7]).doubleValue(),</span>
-<span class="fc" id="L125">                ((Number) row[8]).doubleValue(),</span>
-<span class="fc" id="L126">                ((Number) row[9]).doubleValue(),</span>
-<span class="fc" id="L127">                ((Number) row[10]).doubleValue(),</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">                row[11] == null ? null : ((Number) row[11]).longValue(),</span>
-<span class="fc" id="L129">                ((Number) row[12]).longValue(),</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">                row[13] == null ? null : ((Number) row[13]).doubleValue(),</span>
-<span class="fc" id="L131">                ((Number) row[14]).doubleValue());</span>
+<span class="fc" id="L136">                ((Number) row[6]).doubleValue(),</span>
+<span class="fc" id="L137">                ((Number) row[7]).doubleValue(),</span>
+<span class="fc" id="L138">                ((Number) row[8]).doubleValue(),</span>
+<span class="fc" id="L139">                ((Number) row[9]).doubleValue(),</span>
+<span class="fc" id="L140">                ((Number) row[10]).doubleValue(),</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                row[11] == null ? null : ((Number) row[11]).longValue(),</span>
+<span class="fc" id="L142">                ((Number) row[12]).longValue(),</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                row[13] == null ? null : ((Number) row[13]).doubleValue(),</span>
+<span class="fc" id="L144">                ((Number) row[14]).doubleValue());</span>
     }
 
     private static MarketQuoteEntity applySnapshot(MarketQuoteEntity entity, QuoteSnapshot snapshot) {
-<span class="fc" id="L135">        entity.setInstrumentId(snapshot.instrument().instrumentId());</span>
-<span class="fc" id="L136">        entity.setBidPrice(price(snapshot.bidPrice()));</span>
-<span class="fc" id="L137">        entity.setAskPrice(price(snapshot.askPrice()));</span>
-<span class="fc" id="L138">        entity.setLastPrice(price(snapshot.lastPrice()));</span>
-<span class="fc" id="L139">        entity.setOpenPrice(price(snapshot.openPrice()));</span>
-<span class="fc" id="L140">        entity.setHighPrice(price(snapshot.highPrice()));</span>
-<span class="fc" id="L141">        entity.setLowPrice(price(snapshot.lowPrice()));</span>
-<span class="fc" id="L142">        entity.setPreviousClose(price(snapshot.previousClose()));</span>
-<span class="fc" id="L143">        entity.setVolume(snapshot.volume());</span>
-<span class="fc" id="L144">        entity.setLastUpdated(utc(snapshot.lastUpdated()));</span>
-<span class="fc" id="L145">        return entity;</span>
+<span class="fc" id="L148">        entity.setInstrumentId(snapshot.instrument().instrumentId());</span>
+<span class="fc" id="L149">        entity.setBidPrice(price(snapshot.bidPrice()));</span>
+<span class="fc" id="L150">        entity.setAskPrice(price(snapshot.askPrice()));</span>
+<span class="fc" id="L151">        entity.setLastPrice(price(snapshot.lastPrice()));</span>
+<span class="fc" id="L152">        entity.setOpenPrice(price(snapshot.openPrice()));</span>
+<span class="fc" id="L153">        entity.setHighPrice(price(snapshot.highPrice()));</span>
+<span class="fc" id="L154">        entity.setLowPrice(price(snapshot.lowPrice()));</span>
+<span class="fc" id="L155">        entity.setPreviousClose(price(snapshot.previousClose()));</span>
+<span class="fc" id="L156">        entity.setVolume(snapshot.volume());</span>
+<span class="fc" id="L157">        entity.setLastUpdated(utc(snapshot.lastUpdated()));</span>
+<span class="fc" id="L158">        return entity;</span>
     }
 
     private static PriceHistoryEntity toDailyBar(QuoteSnapshot snapshot) {
-<span class="fc" id="L149">        return new PriceHistoryEntity(snapshot.instrument().instrumentId(), snapshot.tradingDate(),</span>
-<span class="fc" id="L150">                price(snapshot.openPrice()), price(snapshot.highPrice()), price(snapshot.lowPrice()),</span>
-<span class="fc" id="L151">                price(snapshot.lastPrice()), snapshot.volume());</span>
+<span class="fc" id="L162">        return new PriceHistoryEntity(snapshot.instrument().instrumentId(), snapshot.tradingDate(),</span>
+<span class="fc" id="L163">                price(snapshot.openPrice()), price(snapshot.highPrice()), price(snapshot.lowPrice()),</span>
+<span class="fc" id="L164">                price(snapshot.lastPrice()), snapshot.volume());</span>
     }
 
     private static PriceCandleEntity toEntity(PriceCandle candle) {
-<span class="fc" id="L155">        return new PriceCandleEntity(candle.instrumentId(), utc(candle.intervalStart()),</span>
-<span class="fc" id="L156">                price(candle.openPrice()), price(candle.highPrice()), price(candle.lowPrice()),</span>
-<span class="fc" id="L157">                price(candle.closePrice()), candle.volume());</span>
+<span class="fc" id="L168">        return new PriceCandleEntity(candle.instrumentId(), utc(candle.intervalStart()),</span>
+<span class="fc" id="L169">                price(candle.openPrice()), price(candle.highPrice()), price(candle.lowPrice()),</span>
+<span class="fc" id="L170">                price(candle.closePrice()), candle.volume());</span>
     }
 
     private static BigDecimal price(double value) {
-<span class="fc" id="L161">        return BigDecimal.valueOf(value).setScale(PRICE_SCALE, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L174">        return BigDecimal.valueOf(value).setScale(PRICE_SCALE, RoundingMode.HALF_UP);</span>
     }
 
     private static LocalDateTime utc(Instant instant) {
-<span class="fc" id="L165">        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);</span>
+<span class="fc" id="L178">        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

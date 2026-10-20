@@ -97,23 +97,31 @@ import java.util.Set;
     }
 
     /**
+     * @return when the session of {@code day} opens, used to fill in the part of today's session the
+     *         simulator missed while it was down; a market open all day opens at local midnight
+     */
+    public Instant openingTime(LocalDate day) {
+<span class="fc" id="L104">        return day.atTime(open).atZone(zone).toInstant();</span>
+    }
+
+    /**
      * @return when the session of {@code day} closes, used to stamp a daily close on a chart; a market
      *         open all day closes at the following midnight
      */
     public Instant closingTime(LocalDate day) {
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (close.equals(LocalTime.MAX)) {</span>
-<span class="fc" id="L105">            return day.plusDays(1).atStartOfDay(zone).toInstant();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (close.equals(LocalTime.MAX)) {</span>
+<span class="fc" id="L113">            return day.plusDays(1).atStartOfDay(zone).toInstant();</span>
         }
-<span class="fc" id="L107">        return day.atTime(close).atZone(zone).toInstant();</span>
+<span class="fc" id="L115">        return day.atTime(close).atZone(zone).toInstant();</span>
     }
 
     /** @return length of one trading session in seconds */
     public double sessionSeconds() {
         // LocalTime.MAX is 23:59:59.999..., so treat &quot;open all day&quot; as a full 24 hours.
-<span class="pc bpc" id="L113" title="1 of 4 branches missed.">        if (open.equals(LocalTime.MIN) &amp;&amp; close.equals(LocalTime.MAX)) {</span>
-<span class="fc" id="L114">            return 24 * 3600;</span>
+<span class="pc bpc" id="L121" title="1 of 4 branches missed.">        if (open.equals(LocalTime.MIN) &amp;&amp; close.equals(LocalTime.MAX)) {</span>
+<span class="fc" id="L122">            return 24 * 3600;</span>
         }
-<span class="fc" id="L116">        return close.toSecondOfDay() - open.toSecondOfDay();</span>
+<span class="fc" id="L124">        return close.toSecondOfDay() - open.toSecondOfDay();</span>
     }
 
     /**
@@ -121,7 +129,7 @@ import java.util.Set;
      * {@code n} seconds is {@code n / tradingSecondsPerYear()} years of GBM time.
      */
     public double tradingSecondsPerYear() {
-<span class="fc" id="L124">        return tradingDaysPerYear * sessionSeconds();</span>
+<span class="fc" id="L132">        return tradingDaysPerYear * sessionSeconds();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

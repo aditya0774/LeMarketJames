@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceCandleBatchInsertImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.repository</a> &gt; <span class="el_source">PriceCandleBatchInsertImpl.java</span></div><h1>PriceCandleBatchInsertImpl.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.repository;
+
+import com.lemarketjames.market.entity.PriceCandleEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.List;
+
+/** {@link PriceCandleBatchInsert} on JDBC; Spring Data finds it by the {@code Impl} suffix. */
+class PriceCandleBatchInsertImpl implements PriceCandleBatchInsert {
+
+    // ON CONFLICT DO NOTHING without a target works in Postgres and in H2's PostgreSQL mode (tests).
+    private static final String INSERT = &quot;INSERT INTO price_candles &quot;
+            + &quot;(instrument_id, interval_start, open_price, high_price, low_price, close_price, volume) &quot;
+            + &quot;VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING&quot;;
+
+    private final JdbcTemplate jdbc;
+
+<span class="fc" id="L18">    PriceCandleBatchInsertImpl(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L19">        this.jdbc = jdbc;</span>
+<span class="fc" id="L20">    }</span>
+
+    @Override
+    public void insertNew(List&lt;PriceCandleEntity&gt; candles) {
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (candles.isEmpty()) {</span>
+<span class="nc" id="L25">            return;</span>
+        }
+<span class="fc" id="L27">        jdbc.batchUpdate(INSERT, candles, candles.size(), (statement, candle) -&gt; {</span>
+<span class="fc" id="L28">            statement.setInt(1, candle.getInstrumentId());</span>
+<span class="fc" id="L29">            statement.setObject(2, candle.getIntervalStart());</span>
+<span class="fc" id="L30">            statement.setBigDecimal(3, candle.getOpenPrice());</span>
+<span class="fc" id="L31">            statement.setBigDecimal(4, candle.getHighPrice());</span>
+<span class="fc" id="L32">            statement.setBigDecimal(5, candle.getLowPrice());</span>
+<span class="fc" id="L33">            statement.setBigDecimal(6, candle.getClosePrice());</span>
+<span class="fc" id="L34">            statement.setLong(7, candle.getVolume());</span>
+<span class="fc" id="L35">        });</span>
+<span class="fc" id="L36">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
