@@ -341,6 +341,8 @@ Holdings (trading-service) reads order history and buying-power data from orders
 | `GET /api/v1/holdings` (alias `/api/holdings`) | `{ success, holdings: [{ symbol, quantity, averageCost, currentPrice, totalCost, currentValue, gainLoss, gainLossPercent }] }` for the caller. An empty portfolio is `200` with `holdings: []`, never a 404. |
 | `POST /api/v1/holdings/validate` | Body `{ accountId, instrumentId, sellQuantity }` → `200 { success: true, message }`, or `400 { success: false, error }` when there aren't enough shares |
 | `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }` for the caller |
+| `POST /api/v1/portfolio/deposits` | Body `{ amount, requestId }` → `200 { success: true, balance }` after adding cash |
+| `POST /api/v1/portfolio/withdrawals` | Body `{ amount, requestId }` → `200 { success: true, balance }` after removing available cash |
 | `GET /api/v1/profile` | `{ username, fullName, email, phone, accountId, cashBalance, currency, tradingEnabled, openedDate }` for the caller |
 | `GET /api/v1/trades?accountId=…` | the account's filled orders: `[{ symbol, side, quantity, pricePerUnit, filledAt }]` |
 | `GET /api/v1/portfolio/history?range=1D` | `{ success: true, range, points: [{ time, value }] }`: what the caller's stocks were worth over the [chart range](#chart-ranges), oldest first; `400 { success: false, error: "Unknown range" }` for any other range |
@@ -359,6 +361,24 @@ How the balance fields are computed:
 | `totalValue` | `cash + invested` |
 | `dayGainLoss(%)` | Σ quantity × (price − today's open); % relative to Σ quantity × open |
 | `totalGainLoss(%)` | the holdings totals, relative to total cost |
+
+### Deposit and withdraw cash
+
+Both endpoints are scoped to the account resolved from the caller's JWT. A staff login has no
+account and gets `404 { success: false, code: "ACCOUNT_NOT_FOUND", error: "Account not found" }`.
+The success `balance` has exactly the `GET /api/balance` shape, so the app can show the new buying
+power without another request.
+
+- `amount` is USD, above zero with at most two decimals and no more than the
+  [C5](C5-config.md) per-movement limit. A refusal is
+  `400 { success: false, code: "INVALID_AMOUNT", error }`.
+- A withdrawal may take at most `buyingPower`, leaving the cash reserved by open BUY orders in the
+  account. A refusal is `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`. If open orders
+  cannot be read, the withdrawal fails without changing cash; an outage never counts as no orders.
+- `requestId` is a UUID made by the app for an attempt and retained for its retries. The first call
+  stores its result; another call with the same ID returns successfully without moving cash again.
+- The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event
+  commit in one transaction. The event contains `amount`, `balanceAfter` and `requestId` ([C2](C2-audit.md)).
 
 ## Reports (staff-ops-service)
 
@@ -870,13 +890,6 @@ These are contracts for upcoming stories. Build them as written, or update this 
   - `DELETE /api/v1/watchlist/{symbol}` → `204`, also when the stock was not on the list, so a repeated remove is harmless.
   - Prices are not part of the watchlist: the trading app shows each watched stock's live quote from `GET /api/quotes`, which it already polls.
   - Until the back end exists `GET /api/v1/watchlist` answers `404`, which the trading app reports as the watchlist not being available yet, without stars on the stock list.
-- **Deposit and withdraw cash (S42, LMKT-149; stories LMKT-150/151/152):** trading-service, which already owns `accounts.cash_balance` (the trading app routes `/api/v1/portfolio/**` there). Scoped to the caller's account from the JWT; staff get `404 ACCOUNT_NOT_FOUND`.
-  - `POST /api/v1/portfolio/deposits { amount, requestId }` and `POST /api/v1/portfolio/withdrawals { amount, requestId }` → `200 { success: true, balance }`, where `balance` has exactly the shape of `GET /api/balance`, so the caller shows the new buying power without another call.
-  - `amount` is USD, above zero with at most 2 decimals, and at most the per-movement limit, a business setting added to [C5](C5-config.md) by the back-end story; otherwise `400 { success: false, code: "INVALID_AMOUNT", error }`, with `error` a sentence the app shows as is.
-  - A withdrawal may take out at most `buyingPower`, so cash promised to open BUY orders stays put; otherwise `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`.
-  - `requestId` is a UUID the app makes for each attempt and keeps for its retries: a second request with the same `requestId` returns the first one's result without moving the money again.
-  - Each movement changes the cash and records an audit event (new `AuditEventType`s `CASH_DEPOSITED` and `CASH_WITHDRAWN`, with the amount, the balance after and the `requestId`; [C2](C2-audit.md)) in one transaction.
-  - Until the back end exists these paths answer `404`, which the trading app reports as deposits and withdrawals not being available yet.
 
 ## Changing a contract
 

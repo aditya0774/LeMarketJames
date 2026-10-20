@@ -6,6 +6,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClientException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +45,7 @@ class OrdersClientPagingTest {
 
         assertEquals(List.of(), client.getOrdersForAccount(7));
         assertEquals(List.of(), client.getOrdersForAccount(8));
+        assertThrows(RestClientException.class, () -> client.getOrdersForAccountRequired(8));
     }
 
     private static HttpServletRequest signedIn() {
