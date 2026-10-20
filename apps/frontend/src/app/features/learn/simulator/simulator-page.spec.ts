@@ -95,10 +95,9 @@ describe('SimulatorPage', () => {
 
     const date = el().querySelector<HTMLInputElement>('input[type="date"]')!;
     expect(date.value).toBe('2026-02-11');
-    expect(text()).toContain('into BronApple on Feb 11, 2026 at $107.00');
-    expect(text()).toContain('you would own 9.3458 shares');
-    expect(text()).toContain('now worth $1,588.79');
-    expect(text()).toContain('A theoretical gain of $588.79 (+58.88%)');
+    expect(text()).toContain('9.3458 shares of BronApple at $107.00 on Feb 11, 2026');
+    expect(text()).toContain('Worth today$1,588.79');
+    expect(text()).toContain('Theoretical gain+$588.79▲ +58.88%');
   });
 
   it('limits the date box to the days the prices cover', async () => {
@@ -117,7 +116,7 @@ describe('SimulatorPage', () => {
 
     type('input[type="number"]', '2000');
 
-    expect(text()).toContain('A theoretical gain of $1,177.57 (+58.88%)');
+    expect(text()).toContain('Theoretical gain+$1,177.57▲ +58.88%');
   });
 
   it('updates the result when the day changes', async () => {
@@ -127,8 +126,8 @@ describe('SimulatorPage', () => {
     type('input[type="date"]', '2026-04-13', 'change');
 
     expect(text()).toContain('at $150.00');
-    expect(text()).toContain('now worth $1,133.33');
-    expect(text()).toContain('A theoretical gain of $133.33 (+13.33%)');
+    expect(text()).toContain('Worth today$1,133.33');
+    expect(text()).toContain('Theoretical gain+$133.33▲ +13.33%');
   });
 
   it('buys on the next trading day when the day picked was a weekend, and says so', async () => {
@@ -163,7 +162,7 @@ describe('SimulatorPage', () => {
     harness.detectChanges();
 
     expect(el().querySelector<HTMLInputElement>('input[type="date"]')!.value).toBe('2026-04-11');
-    expect(text()).toContain('A theoretical gain of $133.33 (+13.33%)');
+    expect(text()).toContain('Theoretical gain+$133.33▲ +13.33%');
   });
 
   it('shows no change, and no chart, for a purchase on the latest day', async () => {
@@ -172,7 +171,7 @@ describe('SimulatorPage', () => {
 
     type('input[type="date"]', '2026-05-11', 'change');
 
-    expect(text()).toContain('A theoretical gain of $0.00 (+0.00%)');
+    expect(text()).toContain('Theoretical gain+$0.00▲ +0.00%');
     expect(text()).toContain('No time has passed');
     expect(el().querySelector('app-price-chart')).toBeNull();
   });
@@ -195,7 +194,7 @@ describe('SimulatorPage', () => {
 
       expect(text(), `amount "${bad}"`).toContain('Enter an amount above $0.');
       expect(text()).toContain('Enter an amount to see the result.');
-      expect(text()).not.toContain('theoretical');
+      expect(text()).not.toContain('Theoretical');
     }
   });
 
@@ -208,7 +207,7 @@ describe('SimulatorPage', () => {
     harness.detectChanges();
 
     answer('TSLA');
-    expect(text()).toContain('into TesLe on');
+    expect(text()).toContain('shares of TesLe at');
   });
 
   it('says prices are unavailable, and tries again when asked', async () => {
@@ -222,7 +221,7 @@ describe('SimulatorPage', () => {
     harness.detectChanges();
     answer('AAPL');
 
-    expect(text()).toContain('A theoretical gain');
+    expect(text()).toContain('Theoretical gain');
     expect(text()).not.toContain('temporarily unavailable');
   });
 

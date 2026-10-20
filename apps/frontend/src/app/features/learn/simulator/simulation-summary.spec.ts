@@ -29,29 +29,29 @@ describe('SimulationSummary', () => {
   it('tells what was put in, what it bought and what it is worth now', () => {
     const result = text(render(GAIN));
 
-    expect(result).toContain('If you had put $1,000.00 into BronApple on May 8, 2026 at $50.00');
-    expect(result).toContain('you would own 20.1235 shares');
-    expect(result).toContain('now worth $1,234.50');
+    expect(result).toContain('Invested$1,000.00');
+    expect(result).toContain('20.1235 shares of BronApple at $50.00 on May 8, 2026');
+    expect(result).toContain('Worth today$1,234.50');
   });
 
   it('shows a gain with the word, an up arrow, a plus sign and the up class', () => {
     const el = render(GAIN);
 
-    expect(text(el)).toContain('A theoretical gain of $234.50 (+23.45%)');
-    expect(el.querySelector('.sim-arrow')?.textContent).toBe('▲');
-    expect(el.querySelector('.sim-result')?.classList).toContain('up');
+    expect(text(el)).toContain('Theoretical gain+$234.50▲ +23.45%');
+    expect(el.querySelectorAll('.up').length).toBe(2);
+    expect(el.querySelector('.down')).toBeNull();
   });
 
   it('shows a loss with the word, a down arrow, a minus sign and the down class', () => {
     const el = render({ ...GAIN, gain: -250, gainPercent: -25, currentValue: 750 });
 
-    expect(text(el)).toContain('A theoretical loss of $250.00 (−25.00%)');
-    expect(el.querySelector('.sim-arrow')?.textContent).toBe('▼');
-    expect(el.querySelector('.sim-result')?.classList).toContain('down');
+    expect(text(el)).toContain('Theoretical loss−$250.00▼ −25.00%');
+    expect(el.querySelectorAll('.down').length).toBe(2);
+    expect(el.querySelector('.up')).toBeNull();
   });
 
   it('counts no change as a gain of nothing', () => {
-    expect(text(render({ ...GAIN, gain: 0, gainPercent: 0, daysHeld: 0 }))).toContain('A theoretical gain of $0.00 (+0.00%)');
+    expect(text(render({ ...GAIN, gain: 0, gainPercent: 0, daysHeld: 0 }))).toContain('Theoretical gain+$0.00▲ +0.00%');
   });
 
   it('explains a purchase made today', () => {

@@ -1,16 +1,28 @@
-<section class="sim-result" [class.up]="isGain()" [class.down]="!isGain()" aria-label="Simulation result">
-  <p class="sim-lead">
-    If you had put <strong>{{ amount() | currency: 'USD' }}</strong> into <strong>{{ stockName() }}</strong> on
-    <strong>{{ simulation().buyDate | date: 'mediumDate' }}</strong> at
-    <span class="mono">{{ simulation().buyPrice | currency: 'USD' }}</span>, you would own
-    <strong class="mono">{{ simulation().shares | number: '1.0-4' }} shares</strong>, now worth
-    <strong class="mono">{{ simulation().currentValue | currency: 'USD' }}</strong>.
-  </p>
-  <p class="sim-gain">
-    <span class="sim-arrow" aria-hidden="true">{{ arrow() }}</span>
-    A theoretical {{ word() }} of
-    <strong class="mono">{{ gainAbs() | currency: 'USD' }}</strong>&ngsp;<span class="mono">({{ sign() }}{{ percentAbs() | number: '1.2-2' }}%)</span>
-  </p>
+<section class="sim-result" aria-label="Simulation result">
+  <div class="stat-card">
+    <span class="lbl">Invested</span>
+    <span class="val mono">{{ amount() | currency: 'USD' }}</span>
+    <span class="note">
+      <span class="mono">{{ simulation().shares | number: '1.0-4' }} shares</span> of {{ stockName() }} at
+      <span class="mono">{{ simulation().buyPrice | currency: 'USD' }}</span> on
+      {{ simulation().buyDate | date: 'mediumDate' }}
+    </span>
+  </div>
+  <div class="stat-card">
+    <span class="lbl">Worth today</span>
+    <span class="val mono">{{ simulation().currentValue | currency: 'USD' }}</span>
+    <span class="note">At today's price of <span class="mono">{{ simulation().currentPrice | currency: 'USD' }}</span></span>
+  </div>
+  <div class="stat-card">
+    <span class="lbl">Theoretical {{ word() }}</span>
+    <span class="val mono" [class.up]="isGain()" [class.down]="!isGain()">{{ simulation().gain | signedCurrency }}</span>
+    <span class="note">
+      <span class="mono" [class.up]="isGain()" [class.down]="!isGain()">
+        <span aria-hidden="true">{{ arrow() }}</span> {{ sign() }}{{ percentAbs() | number: '1.2-2' }}%
+      </span>
+      · locked in only when you sell
+    </span>
+  </div>
   @if (simulation().daysHeld === 0) {
     <p class="sim-note">No time has passed since that price, so nothing has changed yet.</p>
   }

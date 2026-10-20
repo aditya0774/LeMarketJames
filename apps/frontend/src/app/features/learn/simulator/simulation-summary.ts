@@ -1,18 +1,19 @@
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
+import { SignedCurrencyPipe } from '../../../shared/pipes/signed-currency.pipe';
 import { Simulation } from './simulator-math';
 
 /**
- * The result of a simulation in a sentence a beginner can read: what was put in, what it bought,
- * what it is worth now, and the gain or loss. Presentational: the page runs the simulation and
+ * The result of a simulation as three stat cards: what was put in (and what it bought), what it is
+ * worth now, and the gain or loss. Presentational: the page runs the simulation and
  * passes it in.
  *
- * A gain or loss is shown with the up/down colours, an arrow and a word, so it never depends on
+ * A gain or loss is shown with the up/down colours, an arrow, a sign and a word, so it never depends on
  * colour alone.
  */
 @Component({
   selector: 'app-simulation-summary',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, SignedCurrencyPipe],
   templateUrl: './simulation-summary.html',
   styleUrl: './simulation-summary.css',
 })
