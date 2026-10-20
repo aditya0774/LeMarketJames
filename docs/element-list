@@ -19,6 +19,7 @@ com.lemarketjames.holdings.entity
 com.lemarketjames.holdings.exception
 com.lemarketjames.holdings.repository
 com.lemarketjames.holdings.service
+com.lemarketjames.holdings.stream
 com.lemarketjames.instruments
 com.lemarketjames.market
 com.lemarketjames.market.client

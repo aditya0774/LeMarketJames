@@ -62,22 +62,24 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><a href="#com.lemarketjames.holdings.service">com.lemarketjames.holdings.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.notifications">com.lemarketjames.notifications</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.holdings.stream">com.lemarketjames.holdings.stream</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.notifications">com.lemarketjames.notifications</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.sessions.service">com.lemarketjames.sessions.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.sessions.service">com.lemarketjames.sessions.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
@@ -149,12 +151,28 @@ loadScripts(document, 'script');</script>
  <a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><code>&nbsp;</code></div>
-<div class="col-second odd-row-color"><code><a href="../../../holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint)" class="member-name-link">HoldingsSettlementService</a><wbr>(<a href="../../../holdings/repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
+<div class="col-second odd-row-color"><code><a href="../../../holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint,org.springframework.context.ApplicationEventPublisher)" class="member-name-link">HoldingsSettlementService</a><wbr>(<a href="../../../holdings/repository/HoldingsRepository.html" title="interface in com.lemarketjames.holdings.repository">HoldingsRepository</a>&nbsp;holdingsRepository,
  <a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../../audit/AuditRecorder.html" title="class in com.lemarketjames.common.audit">AuditRecorder</a>&nbsp;auditRecorder,
  <a href="../../../holdings/repository/SettlementReceiptRepository.html" title="interface in com.lemarketjames.holdings.repository">SettlementReceiptRepository</a>&nbsp;receipts,
- <a href="../../../holdings/service/SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint)</code></div>
+ <a href="../../../holdings/service/SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a>&nbsp;checkpoint,
+ org.springframework.context.ApplicationEventPublisher&nbsp;events)</code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.holdings.stream">
+<h2>Uses of <a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a> in <a href="../../../holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a></h2>
+<div class="caption"><span>Constructors in <a href="../../../holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a> with parameters of type <a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../holdings/stream/PortfolioStreamController.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.holdings.stream.PortfolioStreamService)" class="member-name-link">PortfolioStreamController</a><wbr>(<a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accounts,
+ <a href="../../../holdings/stream/PortfolioStreamService.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamService</a>&nbsp;streams)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
 </li>

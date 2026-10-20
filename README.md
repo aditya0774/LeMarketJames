@@ -676,6 +676,8 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 - The same database access as the order-history suite, to read the audit trail, which has no API yet.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
 
+`holdings-live.spec.ts` (LMKT-28) checks that a fill updates holdings and buying power on the Overview within 2 seconds, and that the page catches up after the portfolio stream drops. It needs what the execution suites need for an order to fill (`SIM_RESPECT_MARKET_HOURS=false`).
+
 `reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls staff-ops-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
 
 `staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.

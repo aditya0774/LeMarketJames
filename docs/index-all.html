@@ -140,6 +140,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/SettlementControlController.FaultState.html#param-accountId"><code>accountId</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#accountId()" class="member-name-link">accountId()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/stream/BalanceChanged.html#param-accountId"><code>accountId</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/notifications/OrderStatusChangedMessage.html#accountId()" class="member-name-link">accountId()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/OrderStatusChangedMessage.html" title="class in com.lemarketjames.notifications">OrderStatusChangedMessage</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/notifications/OrderStatusChangedMessage.html#param-accountId"><code>accountId</code></a> record component.</div>
@@ -451,6 +455,14 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/ExecutionControlController.html#badRequest(java.lang.IllegalArgumentException)" class="member-name-link">badRequest(IllegalArgumentException)</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/ExecutionControlController.html" title="class in com.lemarketjames.orders.execution">ExecutionControlController</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html" class="type-name-link" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a> - Record Class in <a href="com/lemarketjames/holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a></dt>
+<dd>
+<div class="block">A settlement changed an account's cash and holdings.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.math.BigDecimal,java.time.Instant)" class="member-name-link">BalanceChanged(Integer, Integer, BigDecimal, Instant)</a> - Constructor for record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Creates an instance of a <code>BalanceChanged</code> record class.</div>
+</dd>
 <dt><a href="com/lemarketjames/holdings/service/SettlementCheckpoint.html#beforeCommit(com.lemarketjames.holdings.dto.SettlementRequest)" class="member-name-link">beforeCommit(SettlementRequest)</a> - Method in interface com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/SettlementCheckpoint.html" title="interface in com.lemarketjames.holdings.service">SettlementCheckpoint</a></dt>
 <dd>
 <div class="block">Called once for every settlement that is applied, never for one that is refused.</div>
@@ -521,6 +533,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/common/domain/AccountStatus.html#canTrade()" class="member-name-link">canTrade()</a> - Method in enum class com.lemarketjames.common.domain.<a href="com/lemarketjames/common/domain/AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></dt>
 <dd>
 <div class="block">Whether a client in this status may place orders (the account must also have trading enabled).</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#cash()" class="member-name-link">cash()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/stream/BalanceChanged.html#param-cash"><code>cash</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/common/config/PlatformSettings.Cash.html#%3Cinit%3E()" class="member-name-link">Cash()</a> - Constructor for class com.lemarketjames.common.config.<a href="com/lemarketjames/common/config/PlatformSettings.Cash.html" title="class in com.lemarketjames.common.config">PlatformSettings.Cash</a></dt>
 <dd>&nbsp;</dd>
@@ -766,6 +782,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/holdings/repository/package-summary.html">com.lemarketjames.holdings.repository</a> - package com.lemarketjames.holdings.repository</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/service/package-summary.html">com.lemarketjames.holdings.service</a> - package com.lemarketjames.holdings.service</dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a> - package com.lemarketjames.holdings.stream</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/instruments/package-summary.html">com.lemarketjames.instruments</a> - package com.lemarketjames.instruments</dt>
 <dd>&nbsp;</dd>
@@ -1207,6 +1225,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Indicates whether some other object is "equal to" this one.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
 <dd>
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </dd>
@@ -2833,6 +2855,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Returns a hash code value for this object.</div>
+</dd>
 <dt><a href="com/lemarketjames/instruments/InstrumentDto.html#hashCode()" class="member-name-link">hashCode()</a> - Method in record class com.lemarketjames.instruments.<a href="com/lemarketjames/instruments/InstrumentDto.html" title="class in com.lemarketjames.instruments">InstrumentDto</a></dt>
 <dd>
 <div class="block">Returns a hash code value for this object.</div>
@@ -3150,7 +3176,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Applies the cash and holdings side effects of a fill.</div>
 </dd>
-<dt><a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint)" class="member-name-link">HoldingsSettlementService(HoldingsRepository, AccountRepository, AuditRecorder, SettlementReceiptRepository, SettlementCheckpoint)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html" title="class in com.lemarketjames.holdings.service">HoldingsSettlementService</a></dt>
+<dt><a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html#%3Cinit%3E(com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.audit.AuditRecorder,com.lemarketjames.holdings.repository.SettlementReceiptRepository,com.lemarketjames.holdings.service.SettlementCheckpoint,org.springframework.context.ApplicationEventPublisher)" class="member-name-link">HoldingsSettlementService(HoldingsRepository, AccountRepository, AuditRecorder, SettlementReceiptRepository, SettlementCheckpoint, ApplicationEventPublisher)</a> - Constructor for class com.lemarketjames.holdings.service.<a href="com/lemarketjames/holdings/service/HoldingsSettlementService.html" title="class in com.lemarketjames.holdings.service">HoldingsSettlementService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/holdings/client/HoldingsValidationClient.html" class="type-name-link" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a> - Class in <a href="com/lemarketjames/holdings/client/package-summary.html">com.lemarketjames.holdings.client</a></dt>
 <dd>
@@ -3964,6 +3990,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:O">O</h2>
 <dl class="index">
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#occurredAt()" class="member-name-link">occurredAt()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/stream/BalanceChanged.html#param-occurredAt"><code>occurredAt</code></a> record component.</div>
+</dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.NotificationView.html#occurredAt()" class="member-name-link">occurredAt()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.NotificationView.html" title="class in com.lemarketjames.notifications">NotificationController.NotificationView</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/notifications/NotificationController.NotificationView.html#param-occurredAt"><code>occurredAt</code></a> record component.</div>
@@ -3996,6 +4026,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/market/entity/OhlcBar.html#%3Cinit%3E()" class="member-name-link">OhlcBar()</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/entity/OhlcBar.html#%3Cinit%3E(java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.math.BigDecimal,java.lang.Long)" class="member-name-link">OhlcBar(BigDecimal, BigDecimal, BigDecimal, BigDecimal, Long)</a> - Constructor for class com.lemarketjames.market.entity.<a href="com/lemarketjames/market/entity/OhlcBar.html" title="class in com.lemarketjames.market.entity">OhlcBar</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamListener.html#onBalanceChanged(com.lemarketjames.holdings.stream.BalanceChanged)" class="member-name-link">onBalanceChanged(BalanceChanged)</a> - Method in class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamListener.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamListener</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/entity/Order.html#onCreate()" class="member-name-link">onCreate()</a> - Method in class com.lemarketjames.orders.entity.<a href="com/lemarketjames/orders/entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a></dt>
 <dd>&nbsp;</dd>
@@ -4197,6 +4229,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/lemarketjames/holdings/client/SettlementRequest.html#orderId()" class="member-name-link">orderId()</a> - Method in record class com.lemarketjames.holdings.client.<a href="com/lemarketjames/holdings/client/SettlementRequest.html" title="class in com.lemarketjames.holdings.client">SettlementRequest</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>orderId</code> record component.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#orderId()" class="member-name-link">orderId()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
+<dd>
+<div class="block">Returns the value of the <a href="./com/lemarketjames/holdings/stream/BalanceChanged.html#param-orderId"><code>orderId</code></a> record component.</div>
 </dd>
 <dt><a href="com/lemarketjames/notifications/NotificationController.NotificationView.html#orderId()" class="member-name-link">orderId()</a> - Method in record class com.lemarketjames.notifications.<a href="com/lemarketjames/notifications/NotificationController.NotificationView.html" title="class in com.lemarketjames.notifications">NotificationController.NotificationView</a></dt>
 <dd>
@@ -4579,6 +4615,25 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/portfolio/PortfolioService.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.holdings.repository.HoldingsRepository,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.client.OrdersClient)" class="member-name-link">PortfolioService(AccountRepository, HoldingsRepository, MarketDataService, OrdersClient)</a> - Constructor for class com.lemarketjames.portfolio.<a href="com/lemarketjames/portfolio/PortfolioService.html" title="class in com.lemarketjames.portfolio">PortfolioService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamController.html" class="type-name-link" title="class in com.lemarketjames.holdings.stream">PortfolioStreamController</a> - Class in <a href="com/lemarketjames/holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a></dt>
+<dd>
+<div class="block">The signed-in client's live portfolio stream (contract C6).</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamController.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.holdings.stream.PortfolioStreamService)" class="member-name-link">PortfolioStreamController(AccountRepository, PortfolioStreamService)</a> - Constructor for class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamController.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamController</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamListener.html" class="type-name-link" title="class in com.lemarketjames.holdings.stream">PortfolioStreamListener</a> - Class in <a href="com/lemarketjames/holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a></dt>
+<dd>
+<div class="block">Forwards a settlement to the account's portfolio streams only after it has committed, so a
+ settlement that rolls back never tells the browser about cash it doesn't have.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamListener.html#%3Cinit%3E(com.lemarketjames.holdings.stream.PortfolioStreamService)" class="member-name-link">PortfolioStreamListener(PortfolioStreamService)</a> - Constructor for class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamListener.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamListener</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html" class="type-name-link" title="class in com.lemarketjames.holdings.stream">PortfolioStreamService</a> - Class in <a href="com/lemarketjames/holdings/stream/package-summary.html">com.lemarketjames.holdings.stream</a></dt>
+<dd>
+<div class="block">In-memory subscriber registry for account-scoped portfolio streams.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html#%3Cinit%3E()" class="member-name-link">PortfolioStreamService()</a> - Constructor for class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/execution/OrderExecutionTransactions.html#prepare(int,boolean)" class="member-name-link">prepare(int, boolean)</a> - Method in class com.lemarketjames.orders.execution.<a href="com/lemarketjames/orders/execution/OrderExecutionTransactions.html" title="class in com.lemarketjames.orders.execution">OrderExecutionTransactions</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.Row.html#previous()" class="member-name-link">previous()</a> - Method in record class com.lemarketjames.reports.dto.<a href="com/lemarketjames/reports/dto/SegmentComparisonResponse.Row.html" title="class in com.lemarketjames.reports.dto">SegmentComparisonResponse.Row</a></dt>
@@ -4776,6 +4831,8 @@ loadScripts(document, 'script');</script>
  as every other own-data endpoint in this app (holdings, orders).</div>
 </dd>
 <dt><a href="com/lemarketjames/profile/ProfileService.html#%3Cinit%3E(com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.domain.AccountRepository)" class="member-name-link">ProfileService(ClientRepository, AccountRepository)</a> - Constructor for class com.lemarketjames.profile.<a href="com/lemarketjames/profile/ProfileService.html" title="class in com.lemarketjames.profile">ProfileService</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html#publish(com.lemarketjames.holdings.stream.BalanceChanged)" class="member-name-link">publish(BalanceChanged)</a> - Method in class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/stream/OrderStatusStreamService.html#publish(com.lemarketjames.orders.events.OrderStatusChanged)" class="member-name-link">publish(OrderStatusChanged)</a> - Method in class com.lemarketjames.orders.stream.<a href="com/lemarketjames/orders/stream/OrderStatusStreamService.html" title="class in com.lemarketjames.orders.stream">OrderStatusStreamService</a></dt>
 <dd>&nbsp;</dd>
@@ -6132,6 +6189,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an instance of a <code>StoredQuote</code> record class.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamController.html#stream(org.springframework.security.core.Authentication)" class="member-name-link">stream(Authentication)</a> - Method in class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamController.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamController</a></dt>
+<dd>
+<div class="block">Opens a <code>balance-changed</code> stream for the caller's own account.</div>
+</dd>
 <dt><a href="com/lemarketjames/orders/OrderController.html#streamOrderStatus()" class="member-name-link">streamOrderStatus()</a> - Method in class com.lemarketjames.orders.<a href="com/lemarketjames/orders/OrderController.html" title="class in com.lemarketjames.orders">OrderController</a></dt>
 <dd>
 <div class="block">Opens a live order-status stream for the signed-in client's own account.</div>
@@ -6223,6 +6284,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/surveillance/OrderSubmittedMessage.html#param-submittedAt"><code>submittedAt</code></a> record component.</div>
 </dd>
+<dt><a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html#subscribe(java.lang.Integer)" class="member-name-link">subscribe(Integer)</a> - Method in class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/PortfolioStreamService.html" title="class in com.lemarketjames.holdings.stream">PortfolioStreamService</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/orders/stream/OrderStatusStreamService.html#subscribe(java.lang.Integer)" class="member-name-link">subscribe(Integer)</a> - Method in class com.lemarketjames.orders.stream.<a href="com/lemarketjames/orders/stream/OrderStatusStreamService.html" title="class in com.lemarketjames.orders.stream">OrderStatusStreamService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/activity/MarketActivityController.MarketActivity.html#success()" class="member-name-link">success()</a> - Method in record class com.lemarketjames.activity.<a href="com/lemarketjames/activity/MarketActivityController.MarketActivity.html" title="class in com.lemarketjames.activity">MarketActivityController.MarketActivity</a></dt>
@@ -6419,6 +6482,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
 <dt><a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.holdings.<a href="com/lemarketjames/holdings/SettlementControlController.FaultState.html" title="class in com.lemarketjames.holdings">SettlementControlController.FaultState</a></dt>
+<dd>
+<div class="block">Returns a string representation of this record class.</div>
+</dd>
+<dt><a href="com/lemarketjames/holdings/stream/BalanceChanged.html#toString()" class="member-name-link">toString()</a> - Method in record class com.lemarketjames.holdings.stream.<a href="com/lemarketjames/holdings/stream/BalanceChanged.html" title="class in com.lemarketjames.holdings.stream">BalanceChanged</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>

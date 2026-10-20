@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { HoldingsService } from '../../core/holdings/holdings.service';
+import { PortfolioStream } from '../../core/holdings/portfolio-stream';
 import { OrderResponse, OrdersStreamSnapshot, OrderService } from '../../core/orders/order.service';
 import { BalanceService } from '../../core/orders/orders.service';
 import { Quotes } from '../../core/quotes/quotes';
@@ -40,11 +41,15 @@ describe('Dashboard (Overview)', () => {
   let balanceCalls: number;
   let holdingsCalls: number;
   let liveOrders: Subject<OrdersStreamSnapshot>;
+  let portfolioRefreshes: Subject<void>;
+  let balanceResult: unknown;
 
   async function setup(balance: unknown = { success: true, balance: { buyingPower: 10000 } }) {
     balanceCalls = 0;
     holdingsCalls = 0;
     liveOrders = new Subject<OrdersStreamSnapshot>();
+    portfolioRefreshes = new Subject<void>();
+    balanceResult = balance;
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
@@ -71,7 +76,9 @@ describe('Dashboard (Overview)', () => {
           useValue: {
             getBalance: () => {
               balanceCalls++;
-              return balance instanceof Error || balance instanceof HttpErrorResponse ? Promise.reject(balance) : Promise.resolve(balance);
+              return balanceResult instanceof Error || balanceResult instanceof HttpErrorResponse
+                ? Promise.reject(balanceResult)
+                : Promise.resolve(balanceResult);
             },
           },
         },
@@ -79,6 +86,7 @@ describe('Dashboard (Overview)', () => {
           provide: OrderService,
           useValue: { getAllOrdersByAccountId: () => allOrdersResult, watchOrderStatusStream: () => liveOrders.asObservable() },
         },
+        { provide: PortfolioStream, useValue: { refreshes: () => portfolioRefreshes.asObservable() } },
         {
           provide: Quotes,
           useValue: {
@@ -178,6 +186,20 @@ describe('Dashboard (Overview)', () => {
 
     expect(holdingsCalls).toBeGreaterThan(before.holdings);
     expect(balanceCalls).toBeGreaterThan(before.balance);
+  });
+
+  it('shows the new holdings and buying power when the portfolio stream says a fill settled', async () => {
+    await setup();
+    const nvda = { symbol: 'NVDA', quantity: 1, averageCost: 176, currentPrice: 176, totalCost: 176, currentValue: 176, gainLoss: 0, gainLossPercent: 0 };
+    holdingsResult = of({ success: true, holdings: [...holdings, nvda] });
+    balanceResult = { success: true, balance: { buyingPower: 9824 } };
+
+    portfolioRefreshes.next();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el().querySelectorAll('.stat-card .val')[2].textContent?.trim()).toBe('$9,824.00');
+    expect(el().querySelector('app-holdings-split')?.textContent).toContain('NVDA');
   });
 
   it('says so when there is nothing owned yet', async () => {
