@@ -45,27 +45,39 @@ public class OrdersClient {
      */
     public List<OrderSummary> getOrdersForAccount(int accountId) {
         try {
-            String cookie = relayedJwtCookieHeader();
-            List<OrderSummary> all = new ArrayList<>();
-            for (int page = 0; page < MAX_PAGES; page++) {
-                OrderSummary[] orders = restClient.get()
-                        .uri("/api/v1/orders/account/{accountId}?page={page}&size={size}", accountId, page, PAGE_SIZE)
-                        .header(HttpHeaders.COOKIE, cookie)
-                        .retrieve()
-                        .body(OrderSummary[].class);
-                if (orders == null) {
-                    break;
-                }
-                all.addAll(Arrays.asList(orders));
-                if (orders.length < PAGE_SIZE) {
-                    break;
-                }
-            }
-            return List.copyOf(all);
+            return readOrdersForAccount(accountId);
         } catch (RestClientException e) {
             log.warn("orders-service call failed for account {} orders: {}", accountId, e.getMessage());
             return List.of();
         }
+    }
+
+    /**
+     * Reads every order or fails. Money movement uses this fail-closed variant: treating an outage
+     * as no open orders could let a withdrawal spend cash already promised to a BUY order.
+     */
+    public List<OrderSummary> getOrdersForAccountRequired(int accountId) {
+        return readOrdersForAccount(accountId);
+    }
+
+    private List<OrderSummary> readOrdersForAccount(int accountId) {
+        String cookie = relayedJwtCookieHeader();
+        List<OrderSummary> all = new ArrayList<>();
+        for (int page = 0; page < MAX_PAGES; page++) {
+            OrderSummary[] orders = restClient.get()
+                    .uri("/api/v1/orders/account/{accountId}?page={page}&size={size}", accountId, page, PAGE_SIZE)
+                    .header(HttpHeaders.COOKIE, cookie)
+                    .retrieve()
+                    .body(OrderSummary[].class);
+            if (orders == null) {
+                break;
+            }
+            all.addAll(Arrays.asList(orders));
+            if (orders.length < PAGE_SIZE) {
+                break;
+            }
+        }
+        return List.copyOf(all);
     }
 
     private String relayedJwtCookieHeader() {

@@ -54,21 +54,36 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.common.audit">com.lemarketjames.common.audit</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.cash">com.lemarketjames.cash</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.holdings.service">com.lemarketjames.holdings.service</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.audit">com.lemarketjames.common.audit</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.dto">com.lemarketjames.orders.dto</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.holdings.service">com.lemarketjames.holdings.service</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.dto">com.lemarketjames.orders.dto</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="package-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.cash">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.common.audit</a> used by <a href="../../cash/package-summary.html">com.lemarketjames.cash</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/AuditRecorder.html#com.lemarketjames.cash">AuditRecorder</a></div>
+<div class="col-last even-row-color">
+<div class="block">The only way to write the audit trail (contract C2).</div>
+</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.common.audit">
 <div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.common.audit</a> used by <a href="package-summary.html">com.lemarketjames.common.audit</a></span></div>
@@ -87,8 +102,12 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">The steps of an order's life that are written to the audit trail (contract C2).</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/SubmissionAuditEvent.html#com.lemarketjames.common.audit">SubmissionAuditEvent</a></div>
+<div class="col-first odd-row-color"><a href="class-use/CashAuditEvent.html#com.lemarketjames.common.audit">CashAuditEvent</a></div>
 <div class="col-last odd-row-color">
+<div class="block">One deposit or withdrawal audit event, identified by its idempotency request ID.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/SubmissionAuditEvent.html#com.lemarketjames.common.audit">SubmissionAuditEvent</a></div>
+<div class="col-last even-row-color">
 <div class="block">One event of an order submission's audit trail (contract C2).</div>
 </div>
 </div>

@@ -491,3 +491,17 @@ default, and only their run writer opens a read-write transaction for this table
 `UNIQUE (report_name, run_date)` is what stops a report running twice in one night, however often
 the scheduler is triggered or the service restarted. The table has no foreign keys and no client
 data.
+
+## 024 — Cash movement receipts
+
+`schema/024_cash_movements.sql` adds `cash_movement_receipts`, the idempotency record for deposits
+and withdrawals ([C6](../contracts/C6-api.md#deposit-and-withdraw-cash)). A request
+ID is stored once with its account, movement, amount and resulting cash balance, so retrying it
+cannot move cash twice. The migration also adds `CASH_DEPOSITED` and `CASH_WITHDRAWN` to the audit
+action constraint for databases that already applied 010 and 014.
+
+```powershell
+Get-Content database/schema/024_cash_movements.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The receipt, cash balance change and audit event are committed in one trading-service transaction.

@@ -93,4 +93,35 @@ class AuditRecorderTest {
 
         assertEquals(Propagation.MANDATORY, transactional.propagation());
     }
+
+    @Test
+    void recordsCashAgainstItsRequestAndAccount() {
+        AuditEventRepository events = mock(AuditEventRepository.class);
+        AccountRepository accounts = mock(AccountRepository.class);
+        Instant now = Instant.parse("2026-10-19T12:00:00Z");
+
+        new AuditRecorder(events, accounts, Clock.fixed(now, ZoneOffset.UTC)).recordCashMovement(
+                new CashAuditEvent("request-1", 7, 42, AuditEventType.CASH_DEPOSITED,
+                        Map.of("amount", 10, "balanceAfter", 110, "requestId", "request-1")));
+
+        ArgumentCaptor<AuditEventEntity> saved = ArgumentCaptor.forClass(AuditEventEntity.class);
+        verify(events).save(saved.capture());
+        assertNull(saved.getValue().getOrderId());
+        assertEquals(7, saved.getValue().getAccountId());
+        assertEquals(42, saved.getValue().getClientId());
+        assertEquals("request-1", saved.getValue().getRequestId());
+        assertEquals("cash:request-1", saved.getValue().getEventKey());
+        assertEquals(AuditEventType.CASH_DEPOSITED, saved.getValue().getEventType());
+        assertEquals(now, saved.getValue().getOccurredAt());
+        verifyNoInteractions(accounts);
+    }
+
+    @Test
+    void recordCashMovementRequiresAnExistingTransaction() throws NoSuchMethodException {
+        Transactional transactional = AuditRecorder.class
+                .getMethod("recordCashMovement", CashAuditEvent.class)
+                .getAnnotation(Transactional.class);
+
+        assertEquals(Propagation.MANDATORY, transactional.propagation());
+    }
 }

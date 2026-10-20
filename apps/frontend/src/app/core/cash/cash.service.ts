@@ -7,7 +7,7 @@ import { BalanceResponse } from '../../shared/models/order.model';
 export type CashMovement = 'DEPOSIT' | 'WITHDRAW';
 
 /**
- * Moves money in and out of the signed-in client's account (S42, C6 Planned). Each answer carries
+ * Moves money in and out of the signed-in client's account (S42, C6). Each answer carries
  * the new balance in the `GET /api/balance` shape, so the page shows the new buying power at once.
  *
  * `requestId` makes a retry safe: the server applies a given id once, so a request that timed out

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashMovementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.cash</a> &gt; <span class="el_source">CashMovementService.java</span></div><h1>CashMovementService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.cash;
+
+import com.lemarketjames.common.audit.AuditRecorder;
+import com.lemarketjames.common.audit.CashAuditEvent;
+import com.lemarketjames.common.config.PlatformSettings;
+import com.lemarketjames.common.domain.AccountEntity;
+import com.lemarketjames.common.domain.AccountRepository;
+import com.lemarketjames.orders.client.OrderSummary;
+import com.lemarketjames.orders.client.OrdersClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.util.Map;
+import java.util.UUID;
+
+/** Applies one idempotent deposit or withdrawal to the authenticated client's account. */
+@Service
+public class CashMovementService {
+
+    public static final String ACCOUNT_NOT_FOUND = &quot;ACCOUNT_NOT_FOUND&quot;;
+    public static final String INVALID_AMOUNT = &quot;INVALID_AMOUNT&quot;;
+    public static final String INSUFFICIENT_FUNDS = &quot;INSUFFICIENT_FUNDS&quot;;
+
+    private final AccountRepository accounts;
+    private final CashMovementReceiptRepository receipts;
+    private final OrdersClient orders;
+    private final AuditRecorder audit;
+    private final PlatformSettings settings;
+    private final Clock clock;
+
+    @Autowired
+    public CashMovementService(AccountRepository accounts, CashMovementReceiptRepository receipts,
+                               OrdersClient orders, AuditRecorder audit, PlatformSettings settings) {
+<span class="fc" id="L38">        this(accounts, receipts, orders, audit, settings, Clock.systemUTC());</span>
+<span class="fc" id="L39">    }</span>
+
+    CashMovementService(AccountRepository accounts, CashMovementReceiptRepository receipts,
+<span class="fc" id="L42">                        OrdersClient orders, AuditRecorder audit, PlatformSettings settings, Clock clock) {</span>
+<span class="fc" id="L43">        this.accounts = accounts;</span>
+<span class="fc" id="L44">        this.receipts = receipts;</span>
+<span class="fc" id="L45">        this.orders = orders;</span>
+<span class="fc" id="L46">        this.audit = audit;</span>
+<span class="fc" id="L47">        this.settings = settings;</span>
+<span class="fc" id="L48">        this.clock = clock;</span>
+<span class="fc" id="L49">    }</span>
+
+    @Transactional
+    public CashMovementResult move(String username, CashMovementType type, BigDecimal amount, UUID requestId) {
+<span class="fc" id="L53">        Integer accountId = accounts.findAccountIdByUsername(username)</span>
+<span class="fc" id="L54">                .orElseThrow(() -&gt; new CashMovementException(ACCOUNT_NOT_FOUND, &quot;Account not found&quot;));</span>
+<span class="fc" id="L55">        AccountEntity account = accounts.findLockedById(accountId)</span>
+<span class="pc" id="L56">                .orElseThrow(() -&gt; new CashMovementException(ACCOUNT_NOT_FOUND, &quot;Account not found&quot;));</span>
+
+<span class="fc" id="L58">        CashMovementReceipt existing = receipts.findById(requestId).orElse(null);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (existing != null) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (!accountId.equals(existing.getAccountId())) {</span>
+<span class="fc" id="L61">                throw new CashMovementException(INVALID_AMOUNT, &quot;Request ID has already been used&quot;);</span>
+            }
+<span class="fc" id="L63">            return new CashMovementResult(existing.getCashBalanceAfter(), true);</span>
+        }
+
+<span class="fc" id="L66">        BigDecimal normalized = validate(amount);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        BigDecimal balanceAfter = type == CashMovementType.DEPOSIT</span>
+<span class="fc" id="L68">                ? account.getCashBalance().add(normalized)</span>
+<span class="fc" id="L69">                : withdraw(account, normalized);</span>
+<span class="fc" id="L70">        balanceAfter = balanceAfter.setScale(2, RoundingMode.UNNECESSARY);</span>
+<span class="fc" id="L71">        account.setCashBalance(balanceAfter);</span>
+
+<span class="fc" id="L73">        receipts.save(new CashMovementReceipt(</span>
+<span class="fc" id="L74">                requestId, accountId, type, normalized, balanceAfter, clock.instant()));</span>
+<span class="fc" id="L75">        audit.recordCashMovement(new CashAuditEvent(</span>
+<span class="fc" id="L76">                requestId.toString(), accountId, account.getClientId(), type.auditType(),</span>
+<span class="fc" id="L77">                Map.of(&quot;amount&quot;, normalized, &quot;balanceAfter&quot;, balanceAfter, &quot;requestId&quot;, requestId.toString())));</span>
+<span class="fc" id="L78">        return new CashMovementResult(balanceAfter, false);</span>
+    }
+
+    private BigDecimal validate(BigDecimal amount) {
+<span class="pc bpc" id="L82" title="1 of 6 branches missed.">        if (amount == null || amount.signum() &lt;= 0 || amount.scale() &gt; 2</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                || amount.compareTo(settings.getCash().getMovementLimit()) &gt; 0) {</span>
+<span class="fc" id="L84">            throw new CashMovementException(INVALID_AMOUNT,</span>
+                    &quot;Enter an amount above $0 with no more than two decimal places, up to $&quot;
+<span class="fc" id="L86">                            + settings.getCash().getMovementLimit().setScale(2, RoundingMode.HALF_UP) + &quot;.&quot;);</span>
+        }
+<span class="fc" id="L88">        return amount.setScale(2, RoundingMode.UNNECESSARY);</span>
+    }
+
+    private BigDecimal withdraw(AccountEntity account, BigDecimal amount) {
+<span class="fc" id="L92">        BigDecimal reserved = orders.getOrdersForAccountRequired(account.getAccountId()).stream()</span>
+<span class="fc" id="L93">                .filter(OrderSummary::isOpen)</span>
+<span class="fc" id="L94">                .filter(OrderSummary::isBuy)</span>
+<span class="fc" id="L95">                .map(order -&gt; order.quantity().multiply(</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">                        order.pricePerUnit() == null ? BigDecimal.ZERO : order.pricePerUnit()))</span>
+<span class="fc" id="L97">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+<span class="fc" id="L98">        BigDecimal buyingPower = account.getCashBalance().subtract(reserved);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (amount.compareTo(buyingPower) &gt; 0) {</span>
+<span class="fc" id="L100">            throw new CashMovementException(INSUFFICIENT_FUNDS,</span>
+<span class="fc" id="L101">                    &quot;You can withdraw up to $&quot; + buyingPower.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP) + &quot;.&quot;);</span>
+        }
+<span class="fc" id="L103">        return account.getCashBalance().subtract(amount);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -67,12 +67,17 @@ A BUY refused for lack of cash:
   | orders-service, order placement | `SUBMITTED`, then `RULE_CHECKED` for each rule that runs, then `VALIDATED` if the order is saved |
   | orders-service, status changes | `ACCEPTED`, `FILLED`, `REJECTED` |
   | trading-service, settlement | `SETTLED` |
+  | trading-service, cash movements | `CASH_DEPOSITED`, `CASH_WITHDRAWN` |
 
-  Holdings commits `SETTLED` with the cash/share changes and its idempotency receipt. Buy-sell
+  Trading-service commits `SETTLED` with the cash/share changes and its idempotency receipt. Orders-service
   then commits `FILLED` and the final order status. These are separate transactions: after a lost
   response, `SETTLED` can temporarily exist without `FILLED`. The persisted execution intent is
-  retried with the same price; holdings returns its original receipt without moving funds again,
+  retried with the same price; trading-service returns its original receipt without moving funds again,
   and orders-service records `FILLED` once. Thus `SETTLED` precedes `FILLED` in the completed audit trail.
+
+  A cash movement event has no order. Its `request_id` is the caller-supplied idempotency key, and
+  its details contain `amount`, `balanceAfter` and `requestId`. The account balance, movement
+  receipt and event commit or roll back together.
 - **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. If archival ever needs to record more than that, it goes in a table of its own. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
 
 ## The lockdown

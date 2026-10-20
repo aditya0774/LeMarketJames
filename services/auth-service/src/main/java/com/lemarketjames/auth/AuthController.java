@@ -4,6 +4,7 @@ import com.lemarketjames.auth.dto.LoginRequest;
 import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.Role;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -82,7 +83,11 @@ public class AuthController {
      * @return a response entity with a logout confirmation message
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
+    public ResponseEntity<?> logout(
+            @CookieValue(name = JwtAuthenticationFilter.COOKIE_NAME, required = false) String token) {
+        if (token != null) {
+            authService.logout(token);
+        }
         ResponseCookie cookie = buildAuthCookie("", 0);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())

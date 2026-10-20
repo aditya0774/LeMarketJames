@@ -1,8 +1,8 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 LeMarketJames Trading Service,com.lemarketjames.market.inprocess,InProcessMarketData,0,66,0,2,0,13,0,8,0,7
 LeMarketJames Trading Service,com.lemarketjames.market.inprocess,InProcessPriceHistory,0,34,0,4,0,6,0,5,0,3
-LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuotesListResponse,0,15,0,0,0,6,0,3,0,3
+LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteHistoryResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteSuccessResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,ChartPointDto,0,9,0,0,0,1,0,1,0,1
@@ -85,6 +85,14 @@ LeMarketJames Trading Service,com.lemarketjames.market,MarketControlController.F
 LeMarketJames Trading Service,com.lemarketjames.holdings.service,HoldingsSettlementService,32,352,2,26,6,67,5,19,3,7
 LeMarketJames Trading Service,com.lemarketjames.holdings.service,SettlementFaults,0,71,0,4,0,17,0,8,0,6
 LeMarketJames Trading Service,com.lemarketjames.holdings.service,HoldingsService,11,190,1,5,2,41,1,12,0,10
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementService,8,236,2,16,0,47,3,14,1,7
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementReceipt,0,30,0,0,0,12,0,4,0,4
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementResult,0,9,0,0,0,1,0,1,0,1
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementRequest,0,9,0,0,0,1,0,1,0,1
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementExceptionHandler,0,26,0,2,0,8,0,3,0,2
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementController,0,52,0,0,0,12,0,5,0,5
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementType,0,22,0,2,0,4,0,3,0,2
+LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementException,0,10,0,0,0,4,0,2,0,2
 LeMarketJames Trading Service,com.lemarketjames.market.service,MarketPersistenceService,4,334,2,6,0,64,2,15,0,13
 LeMarketJames Trading Service,com.lemarketjames.market.service,SimulatedInstrument,0,364,0,16,0,72,0,20,0,12
 LeMarketJames Trading Service,com.lemarketjames.market.service,MarketScheduler,0,33,0,0,0,12,0,4,0,4
@@ -104,5 +112,5 @@ LeMarketJames Trading Service,com.lemarketjames.market.entity,InstrumentMarketPa
 LeMarketJames Trading Service,com.lemarketjames.market.entity,OhlcBar,3,33,0,0,2,12,1,6,1,6
 LeMarketJames Trading Service,com.lemarketjames.market.entity,PriceCandleEntity.Key,0,56,0,8,0,12,0,8,0,4
 LeMarketJames Trading Service,com.lemarketjames.market.entity,PriceHistoryEntity,3,20,0,0,2,6,1,3,1,3
-LeMarketJames Trading Service,com.lemarketjames.orders.client,OrdersClient,0,125,1,9,0,31,1,9,0,5
-LeMarketJames Trading Service,com.lemarketjames.orders.client,OrderSummary,1,43,1,1,1,5,1,4,0,4
+LeMarketJames Trading Service,com.lemarketjames.orders.client,OrdersClient,4,129,1,9,1,32,2,10,1,6
+LeMarketJames Trading Service,com.lemarketjames.orders.client,OrderSummary,0,44,0,2,0,6,0,5,0,4

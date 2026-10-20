@@ -59,9 +59,9 @@ describe('StaffShell', () => {
     const fixture = TestBed.createComponent(StaffShell);
     await fixture.whenStable();
     // Resolves when the shell navigates, which it does only once the API has answered.
-    const navigatedTo = new Promise<unknown>((resolve) => {
-      TestBed.inject(Router).navigate = async (commands) => {
-        resolve(commands);
+    const navigation = new Promise<{ commands: unknown; extras: unknown }>((resolve) => {
+      TestBed.inject(Router).navigate = async (commands, extras) => {
+        resolve({ commands, extras });
         return true;
       };
     });
@@ -71,7 +71,7 @@ describe('StaffShell', () => {
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.logout-btn')!.click();
     TestBed.inject(HttpTestingController).expectOne('/api/auth/logout').flush({ message: 'Logged out' });
 
-    expect(await navigatedTo).toEqual(['/login']);
+    expect(await navigation).toEqual({ commands: ['/login'], extras: { replaceUrl: true } });
     expect(auth.currentUser()).toBeNull();
   });
 });

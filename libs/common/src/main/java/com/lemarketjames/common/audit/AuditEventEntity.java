@@ -91,6 +91,13 @@ public class AuditEventEntity {
         this.eventKey = event.eventKey();
     }
 
+    /** A cash movement event, identified by the caller's idempotency key rather than an order. */
+    public AuditEventEntity(CashAuditEvent event, Instant occurredAt) {
+        this(null, event.accountId(), event.clientId(), event.type(), event.details(), occurredAt);
+        this.requestId = event.requestId();
+        this.eventKey = "cash:" + event.requestId();
+    }
+
     public Long getAuditId() {
         return auditId;
     }

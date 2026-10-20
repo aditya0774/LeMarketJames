@@ -242,9 +242,47 @@ public class AuthService {
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
         String username = account.getUsername();
         Set<Role> roles = account.roles();
-        String token = jwtService.generateToken(username, roles);
+        Instant issuedAt = loginIssuedAt(account);
+        String token = issuedAt == null
+            ? jwtService.generateToken(username, roles)
+            : jwtService.generateToken(username, roles, issuedAt);
         log.info("Login succeeded for username={} roles={}", username, roles);
         return new LoginResult(username, "Login successful", token, roles);
+    }
+
+        private Instant loginIssuedAt(LoginAccount account) {
+        Instant now = clock.instant();
+        Instant invalidatedAt = account instanceof ClientEntity client
+            ? client.getSessionInvalidatedAt()
+            : ((StaffUserEntity) account).getSessionInvalidatedAt();
+        // JWT timestamps have second precision, so compare at that precision too. A login a few
+        // milliseconds after logout can otherwise receive the same iat and be rejected again.
+        return invalidatedAt != null && now.getEpochSecond() <= invalidatedAt.getEpochSecond()
+            ? invalidatedAt.plusSeconds(1)
+            : null;
+        }
+
+    /** Invalidates all tokens issued for the account at or before the logout time. */
+    @Transactional
+    public void logout(String token) {
+        jwtService.extractClaims(token).ifPresent(claims -> {
+            if (claims.roles().contains(Role.CLIENT)) {
+                clientRepository.findByUsername(claims.username()).ifPresent(client -> {
+                    client.setSessionInvalidatedAt(latestInvalidation(client.getSessionInvalidatedAt()));
+                    clientRepository.save(client);
+                });
+            } else {
+                staffUserRepository.findByUsername(claims.username()).ifPresent(staff -> {
+                    staff.setSessionInvalidatedAt(latestInvalidation(staff.getSessionInvalidatedAt()));
+                    staffUserRepository.save(staff);
+                });
+            }
+        });
+    }
+
+    private Instant latestInvalidation(Instant previousInvalidation) {
+        Instant now = clock.instant();
+        return previousInvalidation == null || previousInvalidation.isBefore(now) ? now : previousInvalidation;
     }
 
     // Counts a wrong password; reaching the limit locks the login and starts a fresh count for afterwards.

@@ -51,6 +51,9 @@ public class StaffUserEntity implements LoginAccount {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
+    @Column(name = "session_invalidated_at")
+    private Instant sessionInvalidatedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -141,6 +144,14 @@ public class StaffUserEntity implements LoginAccount {
     @Override
     public void setLockedUntil(Instant lockedUntil) {
         this.lockedUntil = lockedUntil;
+    }
+
+    public Instant getSessionInvalidatedAt() {
+        return sessionInvalidatedAt;
+    }
+
+    public void setSessionInvalidatedAt(Instant sessionInvalidatedAt) {
+        this.sessionInvalidatedAt = sessionInvalidatedAt;
     }
 
     public Instant getCreatedAt() {

@@ -45,40 +45,52 @@ public class OrdersClient {
      */
     public List&lt;OrderSummary&gt; getOrdersForAccount(int accountId) {
         try {
-<span class="fc" id="L48">            String cookie = relayedJwtCookieHeader();</span>
-<span class="fc" id="L49">            List&lt;OrderSummary&gt; all = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">            for (int page = 0; page &lt; MAX_PAGES; page++) {</span>
-<span class="fc" id="L51">                OrderSummary[] orders = restClient.get()</span>
-<span class="fc" id="L52">                        .uri(&quot;/api/v1/orders/account/{accountId}?page={page}&amp;size={size}&quot;, accountId, page, PAGE_SIZE)</span>
-<span class="fc" id="L53">                        .header(HttpHeaders.COOKIE, cookie)</span>
-<span class="fc" id="L54">                        .retrieve()</span>
-<span class="fc" id="L55">                        .body(OrderSummary[].class);</span>
-<span class="fc bfc" id="L56" title="All 2 branches covered.">                if (orders == null) {</span>
-<span class="fc" id="L57">                    break;</span>
-                }
-<span class="fc" id="L59">                all.addAll(Arrays.asList(orders));</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (orders.length &lt; PAGE_SIZE) {</span>
-<span class="fc" id="L61">                    break;</span>
-                }
-            }
-<span class="fc" id="L64">            return List.copyOf(all);</span>
-<span class="fc" id="L65">        } catch (RestClientException e) {</span>
-<span class="fc" id="L66">            log.warn(&quot;orders-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
-<span class="fc" id="L67">            return List.of();</span>
+<span class="fc" id="L48">            return readOrdersForAccount(accountId);</span>
+<span class="fc" id="L49">        } catch (RestClientException e) {</span>
+<span class="fc" id="L50">            log.warn(&quot;orders-service call failed for account {} orders: {}&quot;, accountId, e.getMessage());</span>
+<span class="fc" id="L51">            return List.of();</span>
         }
     }
 
-    private String relayedJwtCookieHeader() {
-<span class="fc" id="L72">        Cookie[] cookies = currentRequest.getCookies();</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
-<span class="fc" id="L74">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
-<span class="fc" id="L75">                .findFirst()</span>
-<span class="fc" id="L76">                .map(Cookie::getValue)</span>
-<span class="fc" id="L77">                .orElse(null);</span>
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (token == null) {</span>
-<span class="fc" id="L79">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to orders-service&quot;);</span>
+    /**
+     * Reads every order or fails. Money movement uses this fail-closed variant: treating an outage
+     * as no open orders could let a withdrawal spend cash already promised to a BUY order.
+     */
+    public List&lt;OrderSummary&gt; getOrdersForAccountRequired(int accountId) {
+<span class="nc" id="L60">        return readOrdersForAccount(accountId);</span>
+    }
+
+    private List&lt;OrderSummary&gt; readOrdersForAccount(int accountId) {
+<span class="fc" id="L64">        String cookie = relayedJwtCookieHeader();</span>
+<span class="fc" id="L65">        List&lt;OrderSummary&gt; all = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        for (int page = 0; page &lt; MAX_PAGES; page++) {</span>
+<span class="fc" id="L67">            OrderSummary[] orders = restClient.get()</span>
+<span class="fc" id="L68">                    .uri(&quot;/api/v1/orders/account/{accountId}?page={page}&amp;size={size}&quot;, accountId, page, PAGE_SIZE)</span>
+<span class="fc" id="L69">                    .header(HttpHeaders.COOKIE, cookie)</span>
+<span class="fc" id="L70">                    .retrieve()</span>
+<span class="fc" id="L71">                    .body(OrderSummary[].class);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (orders == null) {</span>
+<span class="fc" id="L73">                break;</span>
+            }
+<span class="fc" id="L75">            all.addAll(Arrays.asList(orders));</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (orders.length &lt; PAGE_SIZE) {</span>
+<span class="fc" id="L77">                break;</span>
+            }
         }
-<span class="fc" id="L81">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
+<span class="fc" id="L80">        return List.copyOf(all);</span>
+    }
+
+    private String relayedJwtCookieHeader() {
+<span class="fc" id="L84">        Cookie[] cookies = currentRequest.getCookies();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        String token = cookies == null ? null : Arrays.stream(cookies)</span>
+<span class="fc" id="L86">                .filter(c -&gt; JwtAuthenticationFilter.COOKIE_NAME.equals(c.getName()))</span>
+<span class="fc" id="L87">                .findFirst()</span>
+<span class="fc" id="L88">                .map(Cookie::getValue)</span>
+<span class="fc" id="L89">                .orElse(null);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (token == null) {</span>
+<span class="fc" id="L91">            throw new IllegalStateException(&quot;No jwt cookie on the current request to relay to orders-service&quot;);</span>
+        }
+<span class="fc" id="L93">        return JwtAuthenticationFilter.COOKIE_NAME + &quot;=&quot; + token;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

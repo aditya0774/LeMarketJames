@@ -79,158 +79,169 @@ import java.util.Set;
     @Column(name = &quot;locked_until&quot;)
     private Instant lockedUntil;
 
+    @Column(name = &quot;session_invalidated_at&quot;)
+    private Instant sessionInvalidatedAt;
+
     @Override
     public Set&lt;Role&gt; roles() {
-<span class="nc" id="L84">        return Set.of(Role.CLIENT);</span>
+<span class="nc" id="L87">        return Set.of(Role.CLIENT);</span>
     }
 
     @Override
     public boolean canLogIn() {
-<span class="nc bnc" id="L89" title="All 4 branches missed.">        return accountStatus == null || accountStatus.canLogIn();</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        return accountStatus == null || accountStatus.canLogIn();</span>
     }
 
     public ClientSegment getSegment() {
-<span class="nc" id="L93">        return segment;</span>
+<span class="nc" id="L96">        return segment;</span>
     }
 
     public void setSegment(ClientSegment segment) {
-<span class="nc" id="L97">        this.segment = segment;</span>
-<span class="nc" id="L98">    }</span>
+<span class="nc" id="L100">        this.segment = segment;</span>
+<span class="nc" id="L101">    }</span>
 
     @Override
     public int getFailedLoginAttempts() {
-<span class="nc" id="L102">        return failedLoginAttempts;</span>
+<span class="nc" id="L105">        return failedLoginAttempts;</span>
     }
 
     @Override
     public void setFailedLoginAttempts(int failedLoginAttempts) {
-<span class="nc" id="L107">        this.failedLoginAttempts = failedLoginAttempts;</span>
-<span class="nc" id="L108">    }</span>
+<span class="nc" id="L110">        this.failedLoginAttempts = failedLoginAttempts;</span>
+<span class="nc" id="L111">    }</span>
 
     @Override
     public Instant getLockedUntil() {
-<span class="nc" id="L112">        return lockedUntil;</span>
+<span class="nc" id="L115">        return lockedUntil;</span>
     }
 
     @Override
     public void setLockedUntil(Instant lockedUntil) {
-<span class="nc" id="L117">        this.lockedUntil = lockedUntil;</span>
-<span class="nc" id="L118">    }</span>
+<span class="nc" id="L120">        this.lockedUntil = lockedUntil;</span>
+<span class="nc" id="L121">    }</span>
+
+    public Instant getSessionInvalidatedAt() {
+<span class="nc" id="L124">        return sessionInvalidatedAt;</span>
+    }
+
+    public void setSessionInvalidatedAt(Instant sessionInvalidatedAt) {
+<span class="nc" id="L128">        this.sessionInvalidatedAt = sessionInvalidatedAt;</span>
+<span class="nc" id="L129">    }</span>
 
     public Integer getClientId() {
-<span class="nc" id="L121">        return clientId;</span>
+<span class="nc" id="L132">        return clientId;</span>
     }
 
     public String getUsername() {
-<span class="nc" id="L125">        return username;</span>
+<span class="nc" id="L136">        return username;</span>
     }
 
     public void setUsername(String username) {
-<span class="nc" id="L129">        this.username = username;</span>
-<span class="nc" id="L130">    }</span>
+<span class="nc" id="L140">        this.username = username;</span>
+<span class="nc" id="L141">    }</span>
 
     public String getPassword() {
-<span class="nc" id="L133">        return password;</span>
+<span class="nc" id="L144">        return password;</span>
     }
 
     public void setPassword(String password) {
-<span class="nc" id="L137">        this.password = password;</span>
-<span class="nc" id="L138">    }</span>
+<span class="nc" id="L148">        this.password = password;</span>
+<span class="nc" id="L149">    }</span>
 
     public String getEmail() {
-<span class="nc" id="L141">        return email;</span>
+<span class="nc" id="L152">        return email;</span>
     }
 
     public void setEmail(String email) {
-<span class="nc" id="L145">        this.email = email;</span>
-<span class="nc" id="L146">    }</span>
+<span class="nc" id="L156">        this.email = email;</span>
+<span class="nc" id="L157">    }</span>
 
     public String getFullName() {
-<span class="nc" id="L149">        return fullName;</span>
+<span class="nc" id="L160">        return fullName;</span>
     }
 
     public void setFullName(String fullName) {
-<span class="nc" id="L153">        this.fullName = fullName;</span>
-<span class="nc" id="L154">    }</span>
+<span class="nc" id="L164">        this.fullName = fullName;</span>
+<span class="nc" id="L165">    }</span>
 
     public LocalDate getDateOfBirth() {
-<span class="nc" id="L157">        return dateOfBirth;</span>
+<span class="nc" id="L168">        return dateOfBirth;</span>
     }
 
     public void setDateOfBirth(LocalDate dateOfBirth) {
-<span class="nc" id="L161">        this.dateOfBirth = dateOfBirth;</span>
-<span class="nc" id="L162">    }</span>
+<span class="nc" id="L172">        this.dateOfBirth = dateOfBirth;</span>
+<span class="nc" id="L173">    }</span>
 
     public String getPhone() {
-<span class="nc" id="L165">        return phone;</span>
+<span class="nc" id="L176">        return phone;</span>
     }
 
     public void setPhone(String phone) {
-<span class="nc" id="L169">        this.phone = phone;</span>
-<span class="nc" id="L170">    }</span>
+<span class="nc" id="L180">        this.phone = phone;</span>
+<span class="nc" id="L181">    }</span>
 
     public LocalDateTime getRegisteredDate() {
-<span class="nc" id="L173">        return registeredDate;</span>
+<span class="nc" id="L184">        return registeredDate;</span>
     }
 
     public void setRegisteredDate(LocalDateTime registeredDate) {
-<span class="nc" id="L177">        this.registeredDate = registeredDate;</span>
-<span class="nc" id="L178">    }</span>
+<span class="nc" id="L188">        this.registeredDate = registeredDate;</span>
+<span class="nc" id="L189">    }</span>
 
     public LocalDateTime getLastLogin() {
-<span class="nc" id="L181">        return lastLogin;</span>
+<span class="nc" id="L192">        return lastLogin;</span>
     }
 
     public void setLastLogin(LocalDateTime lastLogin) {
-<span class="nc" id="L185">        this.lastLogin = lastLogin;</span>
-<span class="nc" id="L186">    }</span>
+<span class="nc" id="L196">        this.lastLogin = lastLogin;</span>
+<span class="nc" id="L197">    }</span>
 
     public String getSsn() {
-<span class="nc" id="L189">        return ssn;</span>
+<span class="nc" id="L200">        return ssn;</span>
     }
 
     public void setSsn(String ssn) {
-<span class="nc" id="L193">        this.ssn = ssn;</span>
-<span class="nc" id="L194">    }</span>
+<span class="nc" id="L204">        this.ssn = ssn;</span>
+<span class="nc" id="L205">    }</span>
 
     public String getEmploymentStatus() {
-<span class="nc" id="L197">        return employmentStatus;</span>
+<span class="nc" id="L208">        return employmentStatus;</span>
     }
 
     public void setEmploymentStatus(String employmentStatus) {
-<span class="nc" id="L201">        this.employmentStatus = employmentStatus;</span>
-<span class="nc" id="L202">    }</span>
+<span class="nc" id="L212">        this.employmentStatus = employmentStatus;</span>
+<span class="nc" id="L213">    }</span>
 
     public String getEmployerName() {
-<span class="nc" id="L205">        return employerName;</span>
+<span class="nc" id="L216">        return employerName;</span>
     }
 
     public void setEmployerName(String employerName) {
-<span class="nc" id="L209">        this.employerName = employerName;</span>
-<span class="nc" id="L210">    }</span>
+<span class="nc" id="L220">        this.employerName = employerName;</span>
+<span class="nc" id="L221">    }</span>
 
     public String getOccupation() {
-<span class="nc" id="L213">        return occupation;</span>
+<span class="nc" id="L224">        return occupation;</span>
     }
 
     public void setOccupation(String occupation) {
-<span class="nc" id="L217">        this.occupation = occupation;</span>
-<span class="nc" id="L218">    }</span>
+<span class="nc" id="L228">        this.occupation = occupation;</span>
+<span class="nc" id="L229">    }</span>
 
     public AccountStatus getAccountStatus() {
-<span class="nc" id="L221">        return accountStatus;</span>
+<span class="nc" id="L232">        return accountStatus;</span>
     }
 
     public void setAccountStatus(AccountStatus accountStatus) {
-<span class="nc" id="L225">        this.accountStatus = accountStatus;</span>
-<span class="nc" id="L226">    }</span>
+<span class="nc" id="L236">        this.accountStatus = accountStatus;</span>
+<span class="nc" id="L237">    }</span>
 
     public String getInvestmentExperience() {
-<span class="nc" id="L229">        return investmentExperience;</span>
+<span class="nc" id="L240">        return investmentExperience;</span>
     }
 
     public void setInvestmentExperience(String investmentExperience) {
-<span class="nc" id="L233">        this.investmentExperience = investmentExperience;</span>
-<span class="nc" id="L234">    }</span>
+<span class="nc" id="L244">        this.investmentExperience = investmentExperience;</span>
+<span class="nc" id="L245">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

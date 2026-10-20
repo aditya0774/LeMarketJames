@@ -34,6 +34,7 @@ public class PlatformSettings {
     private final Audit audit = new Audit();
     private final Reports reports = new Reports();
     private final Surveillance surveillance = new Surveillance();
+    private final Cash cash = new Cash();
 
     public Session getSession() {
         return session;
@@ -61,6 +62,10 @@ public class PlatformSettings {
 
     public Surveillance getSurveillance() {
         return surveillance;
+    }
+
+    public Cash getCash() {
+        return cash;
     }
 
     /** Logged-in sessions. */
@@ -214,6 +219,20 @@ public class PlatformSettings {
 
         public void setLargeOrderQuantity(BigDecimal largeOrderQuantity) {
             this.largeOrderQuantity = largeOrderQuantity;
+        }
+    }
+
+    /** Deposits and withdrawals made after an account has been opened. */
+    public static class Cash {
+        /** Largest amount a client may deposit or withdraw in one movement. */
+        private BigDecimal movementLimit = new BigDecimal("50000.00");
+
+        public BigDecimal getMovementLimit() {
+            return movementLimit;
+        }
+
+        public void setMovementLimit(BigDecimal movementLimit) {
+            this.movementLimit = movementLimit;
         }
     }
 }

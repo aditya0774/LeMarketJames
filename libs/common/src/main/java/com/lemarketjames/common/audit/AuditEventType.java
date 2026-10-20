@@ -32,5 +32,9 @@ public enum AuditEventType {
     /** The order was refused. Details: {@code reason} (an order RejectionReason code). */
     REJECTED,
     /** Cash and holdings were updated for a fill. Details: {@code cashDelta}, {@code quantityDelta}. */
-    SETTLED
+    SETTLED,
+    /** Cash was deposited. Details: {@code amount}, {@code balanceAfter}, {@code requestId}. */
+    CASH_DEPOSITED,
+    /** Cash was withdrawn. Details: {@code amount}, {@code balanceAfter}, {@code requestId}. */
+    CASH_WITHDRAWN
 }

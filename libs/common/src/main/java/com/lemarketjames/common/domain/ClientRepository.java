@@ -13,7 +13,11 @@ public interface ClientRepository extends JpaRepository<ClientEntity, Integer> {
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 
-    /** Only the status, for the per-request access check (LMKT-57); empty when the client no longer exists. */
+    /** Account state for the per-request access check; empty when the client no longer exists. */
     @Query("select c.accountStatus from ClientEntity c where c.username = :username")
     Optional<AccountStatus> findAccountStatusByUsername(@Param("username") String username);
+
+    @Query("select new com.lemarketjames.common.domain.AccountAccessState(c.accountStatus, null, c.sessionInvalidatedAt) "
+            + "from ClientEntity c where c.username = :username")
+    Optional<AccountAccessState> findAccessStateByUsername(@Param("username") String username);
 }

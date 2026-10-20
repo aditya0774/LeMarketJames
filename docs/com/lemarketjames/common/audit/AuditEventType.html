@@ -127,6 +127,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">The order was accepted for execution.</div>
 </div>
+<div class="col-first odd-row-color"><code><a href="#CASH_DEPOSITED" class="member-name-link">CASH_DEPOSITED</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">Cash was deposited.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="#CASH_WITHDRAWN" class="member-name-link">CASH_WITHDRAWN</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Cash was withdrawn.</div>
+</div>
 <div class="col-first odd-row-color"><code><a href="#FILLED" class="member-name-link">FILLED</a></code></div>
 <div class="col-last odd-row-color">
 <div class="block">The order executed.</div>
@@ -248,6 +256,20 @@ the order they are declared.</div>
 <h3>SETTLED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">SETTLED</span></div>
 <div class="block">Cash and holdings were updated for a fill. Details: <code>cashDelta</code>, <code>quantityDelta</code>.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="CASH_DEPOSITED">
+<h3>CASH_DEPOSITED</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">CASH_DEPOSITED</span></div>
+<div class="block">Cash was deposited. Details: <code>amount</code>, <code>balanceAfter</code>, <code>requestId</code>.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="CASH_WITHDRAWN">
+<h3>CASH_WITHDRAWN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">CASH_WITHDRAWN</span></div>
+<div class="block">Cash was withdrawn. Details: <code>amount</code>, <code>balanceAfter</code>, <code>requestId</code>.</div>
 </section>
 </li>
 </ul>
