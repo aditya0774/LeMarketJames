@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RunStatus.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">RunStatus.java</span></div><h1>RunStatus.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+/**
+ * Where one overnight run of one report is (contract C6, {@code GET /api/v1/reports/overnight}).
+ * This is the list C6 links to; {@code report_runs.status} stores these names as text.
+ */
+<span class="fc" id="L7">public enum RunStatus {</span>
+    /** Created for the night, not started yet. */
+<span class="fc" id="L9">    SCHEDULED,</span>
+    /** The report job is running. */
+<span class="fc" id="L11">    RUNNING,</span>
+    /** Finished by the ready-by time; {@code ready_at} says when. */
+<span class="fc" id="L13">    READY,</span>
+    /**
+     * Missed the ready-by time. While {@code ready_at} is empty it is still waiting or running;
+     * once set, it finished, that late. A late run that then fails becomes {@link #FAILED}.
+     */
+<span class="fc" id="L18">    LATE,</span>
+    /** The report threw; {@code failure_reason} says why. */
+<span class="fc" id="L20">    FAILED</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

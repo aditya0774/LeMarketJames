@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
@@ -62,6 +63,10 @@ class AuthServiceTest {
         staffByEmail = new ConcurrentHashMap<>();
         when(staffUserRepository.findByEmail(anyString())).thenAnswer(invocation ->
                 Optional.ofNullable(staffByEmail.get(invocation.<String>getArgument(0))));
+        when(staffUserRepository.findByUsername(anyString())).thenAnswer(invocation ->
+            staffByEmail.values().stream()
+                .filter(staff -> staff.getUsername().equals(invocation.<String>getArgument(0)))
+                .findFirst());
         when(staffUserRepository.save(any(StaffUserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         when(clientRepository.existsByUsername(anyString())).thenAnswer(invocation ->
@@ -70,6 +75,10 @@ class AuthServiceTest {
                 clientsByEmail.containsKey(invocation.<String>getArgument(0)));
         when(clientRepository.findByEmail(anyString())).thenAnswer(invocation ->
                 Optional.ofNullable(clientsByEmail.get(invocation.<String>getArgument(0))));
+        when(clientRepository.findByUsername(anyString())).thenAnswer(invocation ->
+            clientsByEmail.values().stream()
+                .filter(client -> client.getUsername().equals(invocation.<String>getArgument(0)))
+                .findFirst());
         when(clientRepository.save(any(ClientEntity.class))).thenAnswer(invocation -> {
             ClientEntity client = invocation.getArgument(0);
             clientsByEmail.put(client.getEmail(), client);
@@ -307,6 +316,42 @@ class AuthServiceTest {
 
         assertEquals(Set.of(Role.CLIENT), result.getRoles());
         assertEquals(Set.of(Role.CLIENT), new JwtService(JWT_KEY, 3600000).extractClaims(result.getToken()).orElseThrow().roles());
+    }
+
+    @Test
+    void logoutInvalidatesAClientToken() {
+        authService.register(validRegisterRequest("alice"));
+        String token = authService.login(new LoginRequest("alice@example.com", "Pass123!")).getToken();
+
+        authService.logout(token);
+
+        assertEquals(clock.instant(), clientsByEmail.get("alice@example.com").getSessionInvalidatedAt());
+        verify(clientRepository, org.mockito.Mockito.atLeastOnce()).save(clientsByEmail.get("alice@example.com"));
+    }
+
+    @Test
+    void logoutInvalidatesAStaffToken() {
+        StaffUserEntity ops = new StaffUserEntity();
+        ops.setUsername("olivia_ops");
+        ops.setEmail("ops@example.com");
+        ops.setPassword(authService.encodePassword("Pass123!"));
+        ops.setFullName("Olivia Ops");
+        ops.setRole(Role.TRADING_OPS);
+        staffByEmail.put(ops.getEmail(), ops);
+        String token = authService.login(new LoginRequest("ops@example.com", "Pass123!")).getToken();
+
+        authService.logout(token);
+
+        assertEquals(clock.instant(), ops.getSessionInvalidatedAt());
+        verify(staffUserRepository, org.mockito.Mockito.atLeastOnce()).save(ops);
+    }
+
+    @Test
+    void logoutIgnoresAnInvalidToken() {
+        authService.logout("not-a-valid-token");
+
+        verify(clientRepository, org.mockito.Mockito.never()).save(any(ClientEntity.class));
+        verify(staffUserRepository, org.mockito.Mockito.never()).save(any(StaffUserEntity.class));
     }
 
     // Staff log in through the same endpoint and get their staff role instead of CLIENT.

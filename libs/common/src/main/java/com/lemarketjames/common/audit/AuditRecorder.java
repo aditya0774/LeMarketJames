@@ -59,4 +59,10 @@ public class AuditRecorder {
     public void recordSubmission(SubmissionAuditEvent event) {
         events.save(new AuditEventEntity(event, clock.instant()));
     }
+
+    /** Records a deposit or withdrawal in the transaction that changes the cash balance. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordCashMovement(CashAuditEvent event) {
+        events.save(new AuditEventEntity(event, clock.instant()));
+    }
 }

@@ -1,5 +1,6 @@
 package com.lemarketjames.common.security;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -16,5 +17,9 @@ public interface AccountAccessCheck {
      * @return empty if the account may carry on, otherwise why not: a client's status name,
      *         {@link SecurityEventLog#REASON_DEACTIVATED} or {@link SecurityEventLog#REASON_NOT_FOUND}
      */
-    Optional<String> revokedReason(String username, Set<Role> roles);
+    default Optional<String> revokedReason(String username, Set<Role> roles) {
+        return revokedReason(username, roles, Instant.MIN);
+    }
+
+    Optional<String> revokedReason(String username, Set<Role> roles, Instant issuedAt);
 }

@@ -119,7 +119,7 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": { "port": 4201, "proxyConfig": "projects/staff/proxy.conf.json" },
+          "options": { "port": 4201, "proxyConfig": "projects/staff/proxy.conf.mjs" },
           "configurations": {
             "production": {
               "buildTarget": "staff:build:production"

@@ -3,8 +3,8 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, openAnalystTab, signIn, signOut
 
 /**
  * LMKT-139: staff sign in on the staff app and each role gets its own pages
- * (contracts/C7-roles.md). Everything goes through the real staff app, staff gateway and
- * auth-service, without mocks. The tests only sign in and read, so they share the seed logins.
+ * (contracts/C7-roles.md). Everything goes through the real staff app and auth-service, without
+ * mocks. The tests only sign in and read, so they share the seed logins.
  */
 const TABS = ['Volume', 'By period', 'By stock', 'By segment', 'Overnight'];
 
@@ -76,8 +76,8 @@ test.describe('Staff login', () => {
 
     await expect(page.getByRole('alert')).toContainText('This login is for staff only');
     await expect(page).toHaveURL(/\/login$/);
-    // The gateway gave the client a staff session cookie on sign-in; it must be gone again,
-    // so the gateway no longer knows this browser.
+    // The staff app gave the client a staff session cookie on sign-in; it must be gone again,
+    // so the staff app no longer knows this browser.
     await expect.poll(async () => (await context.cookies()).map(cookie => cookie.name)).not.toContain('staff_jwt');
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
 
@@ -87,14 +87,26 @@ test.describe('Staff login', () => {
     }
   });
 
-  test('signing out returns to the staff login and ends the session', async ({ page }) => {
+  test('signing out invalidates the session and blocks Back navigation', async ({ page, context }) => {
     await signIn(page, TRADING_OPS);
     await expect(page).toHaveURL(/\/trade-search$/);
+
+    const oldStaffJwt = (await context.cookies()).find(cookie => cookie.name === 'staff_jwt')?.value;
+    if (!oldStaffJwt) {
+      throw new Error('Expected a staff session cookie before signing out');
+    }
 
     await signOut(page);
     await expect(page).toHaveURL(/\/login$/);
 
-    await page.goto('/trade-search');
+    const oldSession = await page.request.get('/api/auth/me', {
+      headers: { Cookie: `staff_jwt=${oldStaffJwt}` },
+    });
+    expect(oldSession.status(), await oldSession.text()).toBe(401);
+
+    await page.goBack();
     await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Account menu' })).toHaveCount(0);
   });
 });

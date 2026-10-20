@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OvernightScheduleConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">OvernightScheduleConfig.java</span></div><h1>OvernightScheduleConfig.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.common.config.PlatformSettings;
+import com.lemarketjames.reports.period.ReportCalendar;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+
+import java.time.Duration;
+
+/**
+ * When the overnight reports run (LMKT-45). Two triggers a night, both in the reports time zone
+ * and both from {@code PlatformSettings.Reports} (contract C5): the run time starts the night's
+ * runs, outside trading hours, and the ready-by time fails any run not finished by then.
+ *
+ * &lt;p&gt;{@code reporting.overnight.enabled=false} switches both off, e.g. for a second instance that
+ * should only serve reports.
+ */
+@Configuration
+@EnableScheduling
+@ConditionalOnProperty(name = &quot;reporting.overnight.enabled&quot;, havingValue = &quot;true&quot;, matchIfMissing = true)
+public class OvernightScheduleConfig implements SchedulingConfigurer {
+
+    private final OvernightRunner runner;
+    private final PlatformSettings.Reports settings;
+    private final ReportCalendar calendar;
+
+<span class="fc" id="L30">    public OvernightScheduleConfig(OvernightRunner runner, PlatformSettings platformSettings, ReportCalendar calendar) {</span>
+<span class="fc" id="L31">        this.runner = runner;</span>
+<span class="fc" id="L32">        this.settings = platformSettings.getReports();</span>
+<span class="fc" id="L33">        this.calendar = calendar;</span>
+        // Checked here so a wrong pair of settings stops the service at startup, not at 2 a.m.
+<span class="fc" id="L35">        requireRunBeforeReadyBy(settings);</span>
+<span class="fc" id="L36">    }</span>
+
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar registrar) {
+<span class="fc" id="L40">        registrar.addTriggerTask(runner::runNight, runTrigger());</span>
+<span class="fc" id="L41">        registrar.addTriggerTask(runner::enforceDeadline, deadlineTrigger());</span>
+        // Once, as soon as the scheduler starts: a night the service was down for still shows in the list.
+<span class="fc" id="L43">        registrar.addOneTimeTask(runner::catchUp, Duration.ZERO);</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Starts each night's runs. */
+    DailyTrigger runTrigger() {
+<span class="fc" id="L48">        return new DailyTrigger(settings.getOvernightRunTime(), calendar);</span>
+    }
+
+    /** Fails each night's unfinished runs. */
+    DailyTrigger deadlineTrigger() {
+<span class="fc" id="L53">        return new DailyTrigger(settings.getReadyBy(), calendar);</span>
+    }
+
+    /** Runs and their deadline are the same night, so the deadline must come after the start. */
+    static void requireRunBeforeReadyBy(PlatformSettings.Reports settings) {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (!settings.getOvernightRunTime().isBefore(settings.getReadyBy())) {</span>
+<span class="fc" id="L59">            throw new IllegalStateException(&quot;lmj.reports.overnight-run-time (&quot; + settings.getOvernightRunTime()</span>
+<span class="fc" id="L60">                    + &quot;) must be before lmj.reports.ready-by (&quot; + settings.getReadyBy() + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L62">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

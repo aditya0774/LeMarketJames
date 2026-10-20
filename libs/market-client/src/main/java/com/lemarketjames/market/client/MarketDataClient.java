@@ -18,20 +18,20 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * {@link MarketDataService} over HTTP, reached at market-service's {@code /api/market/**}.
+ * {@link MarketDataService} over HTTP, reached at trading-service's {@code /api/market/**}.
  * Since market prices are non-critical read data, a failed or slow call degrades to "no quote"
  * (empty/404) rather than throwing, matching how callers already treated an unsimulated instrument
  * before this feature was ever a separate service (see HoldingsService's zero-valued fallback).
  *
  * <p>Every call reports its outcome to {@link MarketFeedStatus}, so a caller that needs to tell
  * "the feed is down" apart from an ordinary empty result (an unsimulated instrument) can check
- * {@link MarketFeedStatus#isAvailable()}. The connect/read timeouts below mean a hung market-service
+ * {@link MarketFeedStatus#isAvailable()}. The connect/read timeouts below mean a hung trading-service
  * surfaces as a failure instead of blocking the caller forever.
  *
- * <p>Only created in services that set {@code market.service.url} (core-service, holdings-service).
- * market-service component-scans this library too (it needs the shared model and interface), and
- * without this condition it would get a second {@link MarketDataService} bean next to its own
- * {@code MarketSimulator} and fail to start.
+ * <p>Only created in services that set {@code market.service.url} (orders-service).
+ * trading-service component-scans this library too (it needs the shared model and interface, and
+ * {@link MarketFeedStatus}), and without this condition it would get another
+ * {@link MarketDataService} bean next to its own in-process ones.
  */
 @Service
 @ConditionalOnProperty(name = "market.service.url")
@@ -74,7 +74,7 @@ public class MarketDataClient implements MarketDataService {
             feedStatus.recordSuccess();
             return quotes == null ? List.of() : List.of(quotes);
         } catch (RestClientException e) {
-            log.warn("market-service call failed for findAll(): {}", e.getMessage());
+            log.warn("trading-service call failed for findAll(): {}", e.getMessage());
             feedStatus.recordFailure();
             return List.of();
         }
@@ -90,7 +90,7 @@ public class MarketDataClient implements MarketDataService {
             feedStatus.recordSuccess();
             return result;
         } catch (RestClientException e) {
-            log.warn("market-service call failed for {}: {}", uriTemplate, e.getMessage());
+            log.warn("trading-service call failed for {}: {}", uriTemplate, e.getMessage());
             feedStatus.recordFailure();
             return Optional.empty();
         }

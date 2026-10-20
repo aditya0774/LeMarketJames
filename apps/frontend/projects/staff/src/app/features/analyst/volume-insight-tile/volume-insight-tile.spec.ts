@@ -37,7 +37,7 @@ describe('VolumeInsightTile', () => {
     fixture = TestBed.createComponent(VolumeInsightTile);
     fixture.detectChanges();
     // The tile asks for the reports time zone first; the cards load once it has it.
-    httpMock.expectOne(PING).flush({ success: true, service: 'reporting-service', timeZone: 'America/New_York' });
+    httpMock.expectOne(PING).flush({ success: true, service: 'staff-ops-service', timeZone: 'America/New_York' });
     fixture.detectChanges();
   });
 

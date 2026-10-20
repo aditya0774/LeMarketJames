@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Disposable Jenkins stack only. The HTTP requests traverse frontend -> gateway -> services.
+# Disposable Jenkins stack only. The HTTP requests traverse the frontend's Nginx -> services.
 set -euo pipefail
 if docker compose version >/dev/null 2>&1; then
     compose() { docker compose "$@"; }
@@ -45,7 +45,7 @@ cash_before=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cas
 count=$(compose exec -T db psql -At -U lemarket -d lemarket \
     -c "SELECT count(*) FROM orders WHERE order_id=$order_id AND account_id=$account_id AND instrument_id=$instrument_id AND order_type='SELL' AND quantity=1 AND order_status='FILLED';")
 test "$count" = 1
-compose restart buy-sell-service
+compose restart orders-service
 ready=0
 for attempt in $(seq 1 60); do
     if curl --fail --silent http://localhost:8085/actuator/health >/dev/null; then
@@ -57,7 +57,7 @@ done
 test "$ready" = 1
 curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/readback.json"
 node -e 'const fs=require("fs"), a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")), b=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); for(const key of ["orderId","accountId","instrumentId","orderType","quantity","orderStatus"]) if(a[key]!==b[key]) throw Error("Restart readback mismatch: "+key);' "$scratch/order.json" "$scratch/readback.json"
-echo "SELL order persisted and remained readable after buy-sell-service restart."
+echo "SELL order persisted and remained readable after orders-service restart."
 
 cash_after=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cash_balance FROM accounts WHERE account_id=$account_id;")
 test "$cash_before" = "$cash_after"

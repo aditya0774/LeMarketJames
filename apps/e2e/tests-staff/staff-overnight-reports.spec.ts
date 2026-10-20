@@ -4,8 +4,8 @@ import { connectDatabase } from '../tests/support/database';
 import { ANALYST, openAnalystTab, signIn, TRADING_OPS } from './support/staff';
 
 /**
- * LMKT-45 end to end: the overnight reports list through the real staff app, staff gateway and
- * reporting-service. The scheduler only runs at night, so the runs are written straight into
+ * LMKT-45 end to end: the overnight reports list through the real staff app and
+ * staff-ops-service. The scheduler only runs at night, so the runs are written straight into
  * report_runs, one per status the list must show; the page and the API must show exactly them.
  */
 const REPORT = '/analyst/reports/overnight-reports';
@@ -76,7 +76,7 @@ async function openList(page: Page) {
   await openAnalystTab(page, 'Overnight');
   const answer = await response;
   expect(answer.status(), await answer.text()).toBe(200);
-  // Through the staff app's own origin, i.e. the staff gateway, never reporting-service directly.
+  // Through the staff app's own origin, never staff-ops-service directly.
   expect(new URL(answer.url()).origin).toBe(new URL(page.url()).origin);
   await expect(page).toHaveURL(new RegExp(`${REPORT}$`));
   return answer.json();

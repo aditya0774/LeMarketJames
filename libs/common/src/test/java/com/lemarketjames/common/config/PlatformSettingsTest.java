@@ -28,6 +28,7 @@ class PlatformSettingsTest {
         assertEquals(LocalTime.of(2, 0), settings.getReports().getOvernightRunTime());
         assertEquals(LocalTime.of(7, 0), settings.getReports().getReadyBy());
         assertEquals(new BigDecimal("100"), settings.getSurveillance().getLargeOrderQuantity());
+        assertEquals(new BigDecimal("50000.00"), settings.getCash().getMovementLimit());
     }
 
     @Test
@@ -37,6 +38,7 @@ class PlatformSettingsTest {
                 "lmj.market.staleness-limit", "15s",
                 "lmj.orders.restricted-locations", "New York,Texas",
                 "lmj.surveillance.large-order-quantity", "250",
+                "lmj.cash.movement-limit", "75000.00",
                 "lmj.reports.overnight-run-time", "01:30",
                 "lmj.reports.ready-by", "06:00"));
 
@@ -44,6 +46,7 @@ class PlatformSettingsTest {
         assertEquals(Duration.ofSeconds(15), settings.getMarket().getStalenessLimit());
         assertEquals(List.of("New York", "Texas"), settings.getOrders().getRestrictedLocations());
         assertEquals(new BigDecimal("250"), settings.getSurveillance().getLargeOrderQuantity());
+        assertEquals(new BigDecimal("75000.00"), settings.getCash().getMovementLimit());
         assertEquals(LocalTime.of(1, 30), settings.getReports().getOvernightRunTime());
         assertEquals(LocalTime.of(6, 0), settings.getReports().getReadyBy());
     }

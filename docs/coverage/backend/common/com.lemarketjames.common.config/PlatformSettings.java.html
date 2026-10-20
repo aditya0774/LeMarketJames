@@ -21,7 +21,7 @@ import java.util.List;
  * application.properties just to restate a default.
  *
  * &lt;p&gt;Available in every servlet service that depends on libs/common (auth, core, holdings).
- * Market hours and holidays belong to market-service instead: see its MarketSimulationProperties.
+ * Market hours and holidays belong to trading-service instead: see its MarketSimulationProperties.
  */
 @Component
 @ConfigurationProperties(prefix = &quot;lmj&quot;)
@@ -34,187 +34,206 @@ import java.util.List;
 <span class="fc" id="L34">    private final Audit audit = new Audit();</span>
 <span class="fc" id="L35">    private final Reports reports = new Reports();</span>
 <span class="fc" id="L36">    private final Surveillance surveillance = new Surveillance();</span>
+<span class="fc" id="L37">    private final Cash cash = new Cash();</span>
 
     public Session getSession() {
-<span class="fc" id="L39">        return session;</span>
+<span class="fc" id="L40">        return session;</span>
     }
 
     public Auth getAuth() {
-<span class="fc" id="L43">        return auth;</span>
+<span class="fc" id="L44">        return auth;</span>
     }
 
     public Market getMarket() {
-<span class="fc" id="L47">        return market;</span>
+<span class="fc" id="L48">        return market;</span>
     }
 
     public Orders getOrders() {
-<span class="fc" id="L51">        return orders;</span>
+<span class="fc" id="L52">        return orders;</span>
     }
 
     public Audit getAudit() {
-<span class="fc" id="L55">        return audit;</span>
+<span class="fc" id="L56">        return audit;</span>
     }
 
     public Reports getReports() {
-<span class="fc" id="L59">        return reports;</span>
+<span class="fc" id="L60">        return reports;</span>
     }
 
     public Surveillance getSurveillance() {
-<span class="fc" id="L63">        return surveillance;</span>
+<span class="fc" id="L64">        return surveillance;</span>
+    }
+
+    public Cash getCash() {
+<span class="fc" id="L68">        return cash;</span>
     }
 
     /** Logged-in sessions. */
-<span class="fc" id="L67">    public static class Session {</span>
+<span class="fc" id="L72">    public static class Session {</span>
         /** How long a session may sit idle before the user must log in again. */
-<span class="fc" id="L69">        private Duration inactivityTimeout = Duration.ofMinutes(30);</span>
+<span class="fc" id="L74">        private Duration inactivityTimeout = Duration.ofMinutes(30);</span>
 
         public Duration getInactivityTimeout() {
-<span class="fc" id="L72">            return inactivityTimeout;</span>
+<span class="fc" id="L77">            return inactivityTimeout;</span>
         }
 
         public void setInactivityTimeout(Duration inactivityTimeout) {
-<span class="nc" id="L76">            this.inactivityTimeout = inactivityTimeout;</span>
-<span class="nc" id="L77">        }</span>
+<span class="nc" id="L81">            this.inactivityTimeout = inactivityTimeout;</span>
+<span class="nc" id="L82">        }</span>
     }
 
     /** Login protection. */
-<span class="fc" id="L81">    public static class Auth {</span>
-<span class="fc" id="L82">        private final Lockout lockout = new Lockout();</span>
+<span class="fc" id="L86">    public static class Auth {</span>
+<span class="fc" id="L87">        private final Lockout lockout = new Lockout();</span>
 
         public Lockout getLockout() {
-<span class="fc" id="L85">            return lockout;</span>
+<span class="fc" id="L90">            return lockout;</span>
         }
 
         /** Locks a login after repeated wrong passwords; applies to clients and staff alike. */
-<span class="fc" id="L89">        public static class Lockout {</span>
+<span class="fc" id="L94">        public static class Lockout {</span>
             /** Consecutive failed logins that lock the account. */
-<span class="fc" id="L91">            private int maxAttempts = 3;</span>
+<span class="fc" id="L96">            private int maxAttempts = 3;</span>
             /** How long a locked account stays locked. */
-<span class="fc" id="L93">            private Duration duration = Duration.ofMinutes(15);</span>
+<span class="fc" id="L98">            private Duration duration = Duration.ofMinutes(15);</span>
 
             public int getMaxAttempts() {
-<span class="fc" id="L96">                return maxAttempts;</span>
+<span class="fc" id="L101">                return maxAttempts;</span>
             }
 
             public void setMaxAttempts(int maxAttempts) {
-<span class="fc" id="L100">                this.maxAttempts = maxAttempts;</span>
-<span class="fc" id="L101">            }</span>
+<span class="fc" id="L105">                this.maxAttempts = maxAttempts;</span>
+<span class="fc" id="L106">            }</span>
 
             public Duration getDuration() {
-<span class="fc" id="L104">                return duration;</span>
+<span class="fc" id="L109">                return duration;</span>
             }
 
             public void setDuration(Duration duration) {
-<span class="nc" id="L108">                this.duration = duration;</span>
-<span class="nc" id="L109">            }</span>
+<span class="nc" id="L113">                this.duration = duration;</span>
+<span class="nc" id="L114">            }</span>
         }
     }
 
-    /** How quotes are consumed (the feed itself is market-service's). */
-<span class="fc" id="L114">    public static class Market {</span>
+    /** How quotes are consumed (the feed itself is trading-service's). */
+<span class="fc" id="L119">    public static class Market {</span>
         /**
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
          * Check with QuoteFreshness in libs/market-client.
          */
-<span class="fc" id="L119">        private Duration stalenessLimit = Duration.ofSeconds(5);</span>
+<span class="fc" id="L124">        private Duration stalenessLimit = Duration.ofSeconds(5);</span>
 
         public Duration getStalenessLimit() {
-<span class="fc" id="L122">            return stalenessLimit;</span>
+<span class="fc" id="L127">            return stalenessLimit;</span>
         }
 
         public void setStalenessLimit(Duration stalenessLimit) {
-<span class="fc" id="L126">            this.stalenessLimit = stalenessLimit;</span>
-<span class="fc" id="L127">        }</span>
+<span class="fc" id="L131">            this.stalenessLimit = stalenessLimit;</span>
+<span class="fc" id="L132">        }</span>
     }
 
     /** Order placement rules. */
-<span class="fc" id="L131">    public static class Orders {</span>
+<span class="fc" id="L136">    public static class Orders {</span>
         /**
          * Client residence locations (US state names as stored in addresses.state, or ISO country
          * codes) that may not place orders. Empty means no restriction.
          */
-<span class="fc" id="L136">        private List&lt;String&gt; restrictedLocations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L141">        private List&lt;String&gt; restrictedLocations = new ArrayList&lt;&gt;();</span>
 
         public List&lt;String&gt; getRestrictedLocations() {
-<span class="fc" id="L139">            return restrictedLocations;</span>
+<span class="fc" id="L144">            return restrictedLocations;</span>
         }
 
         public void setRestrictedLocations(List&lt;String&gt; restrictedLocations) {
-<span class="fc" id="L143">            this.restrictedLocations = restrictedLocations;</span>
-<span class="fc" id="L144">        }</span>
+<span class="fc" id="L148">            this.restrictedLocations = restrictedLocations;</span>
+<span class="fc" id="L149">        }</span>
     }
 
     /** The audit trail (audit_log). */
-<span class="fc" id="L148">    public static class Audit {</span>
+<span class="fc" id="L153">    public static class Audit {</span>
         /**
          * How long audit events stay online (queryable in the app) before they count as
          * archived. Archived events are kept, not deleted, and their rows are not changed: an
          * event's age is what makes it archived (contract C2).
          */
-<span class="fc" id="L154">        private Duration onlineRetention = Duration.ofDays(365);</span>
+<span class="fc" id="L159">        private Duration onlineRetention = Duration.ofDays(365);</span>
 
         public Duration getOnlineRetention() {
-<span class="fc" id="L157">            return onlineRetention;</span>
+<span class="fc" id="L162">            return onlineRetention;</span>
         }
 
         public void setOnlineRetention(Duration onlineRetention) {
-<span class="nc" id="L161">            this.onlineRetention = onlineRetention;</span>
-<span class="nc" id="L162">        }</span>
+<span class="nc" id="L166">            this.onlineRetention = onlineRetention;</span>
+<span class="nc" id="L167">        }</span>
     }
 
     /** Scheduled reporting. */
-<span class="fc" id="L166">    public static class Reports {</span>
+<span class="fc" id="L171">    public static class Reports {</span>
         /** Local time of day the overnight reports run: after the market closes and before it opens. */
-<span class="fc" id="L168">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
+<span class="fc" id="L173">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
         /**
          * Local time of day a successful overnight run must be ready by, the same night. A run not
          * finished by then is marked late, so the Analyst dashboard shows it is missing.
          * Must be after overnightRunTime.
          */
-<span class="fc" id="L174">        private LocalTime readyBy = LocalTime.of(7, 0);</span>
+<span class="fc" id="L179">        private LocalTime readyBy = LocalTime.of(7, 0);</span>
         /** Time zone overnightRunTime and readyBy are in. */
-<span class="fc" id="L176">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
+<span class="fc" id="L181">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
 
         public LocalTime getOvernightRunTime() {
-<span class="fc" id="L179">            return overnightRunTime;</span>
+<span class="fc" id="L184">            return overnightRunTime;</span>
         }
 
         public void setOvernightRunTime(LocalTime overnightRunTime) {
-<span class="fc" id="L183">            this.overnightRunTime = overnightRunTime;</span>
-<span class="fc" id="L184">        }</span>
+<span class="fc" id="L188">            this.overnightRunTime = overnightRunTime;</span>
+<span class="fc" id="L189">        }</span>
 
         public LocalTime getReadyBy() {
-<span class="fc" id="L187">            return readyBy;</span>
+<span class="fc" id="L192">            return readyBy;</span>
         }
 
         public void setReadyBy(LocalTime readyBy) {
-<span class="fc" id="L191">            this.readyBy = readyBy;</span>
-<span class="fc" id="L192">        }</span>
+<span class="fc" id="L196">            this.readyBy = readyBy;</span>
+<span class="fc" id="L197">        }</span>
 
         public ZoneId getTimeZone() {
-<span class="nc" id="L195">            return timeZone;</span>
+<span class="nc" id="L200">            return timeZone;</span>
         }
 
         public void setTimeZone(ZoneId timeZone) {
-<span class="nc" id="L199">            this.timeZone = timeZone;</span>
-<span class="nc" id="L200">        }</span>
+<span class="nc" id="L204">            this.timeZone = timeZone;</span>
+<span class="nc" id="L205">        }</span>
     }
 
     /** Order surveillance: which new orders Trading Operations are alerted to. */
-<span class="fc" id="L204">    public static class Surveillance {</span>
+<span class="fc" id="L209">    public static class Surveillance {</span>
         /**
          * Shares in one order at which it counts as large. An order of this many shares or more
          * raises an alert for Trading Operations when it is placed; a smaller one raises none.
          */
-<span class="fc" id="L209">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
+<span class="fc" id="L214">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
 
         public BigDecimal getLargeOrderQuantity() {
-<span class="fc" id="L212">            return largeOrderQuantity;</span>
+<span class="fc" id="L217">            return largeOrderQuantity;</span>
         }
 
         public void setLargeOrderQuantity(BigDecimal largeOrderQuantity) {
-<span class="fc" id="L216">            this.largeOrderQuantity = largeOrderQuantity;</span>
-<span class="fc" id="L217">        }</span>
+<span class="fc" id="L221">            this.largeOrderQuantity = largeOrderQuantity;</span>
+<span class="fc" id="L222">        }</span>
+    }
+
+    /** Deposits and withdrawals made after an account has been opened. */
+<span class="fc" id="L226">    public static class Cash {</span>
+        /** Largest amount a client may deposit or withdraw in one movement. */
+<span class="fc" id="L228">        private BigDecimal movementLimit = new BigDecimal(&quot;50000.00&quot;);</span>
+
+        public BigDecimal getMovementLimit() {
+<span class="fc" id="L231">            return movementLimit;</span>
+        }
+
+        public void setMovementLimit(BigDecimal movementLimit) {
+<span class="fc" id="L235">            this.movementLimit = movementLimit;</span>
+<span class="fc" id="L236">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

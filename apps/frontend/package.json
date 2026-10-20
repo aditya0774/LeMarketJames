@@ -9,7 +9,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "start:staff": "ng serve staff",
-    "start:staff:vm": "ng serve staff --proxy-config projects/staff/proxy.vm.json",
+    "start:staff:vm": "ng serve staff --proxy-config projects/staff/proxy.vm.mjs",
     "build:staff": "ng build staff",
     "test:staff": "ng test staff"
   },

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderExecutionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.execution</a> &gt; <span class="el_source">OrderExecutionService.java</span></div><h1>OrderExecutionService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.execution;
+
+import com.lemarketjames.holdings.client.HoldingsSettlementClient;
+import com.lemarketjames.holdings.client.SettlementRejectedException;
+import org.springframework.stereotype.Service;
+
+/**
+ * Coordinates execution in two phases: persist intent first, then call holdings.
+ * No local transaction spans HTTP: holdings' audit foreign keys must not wait on our order lock.
+ */
+@Service
+public class OrderExecutionService {
+    private final OrderExecutionTransactions transactions;
+    private final HoldingsSettlementClient settlement;
+<span class="fc" id="L15">    public OrderExecutionService(OrderExecutionTransactions transactions, HoldingsSettlementClient settlement) {</span>
+<span class="fc" id="L16">        this.transactions = transactions; this.settlement = settlement;</span>
+<span class="fc" id="L17">    }</span>
+
+    /**
+     * Runs one execution attempt.
+     *
+     * &lt;p&gt;Definite settlement refusals are finalized immediately. Unknown failures are intentionally
+     * left unresolved so the persisted intent is retried by the scheduler or after restart.
+     */
+    public void execute(int id, boolean manual) {
+<span class="fc" id="L26">        var intent = transactions.prepare(id, manual);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (intent == null) return;</span>
+        try {
+<span class="fc" id="L29">            settlement.settle(intent);</span>
+<span class="fc" id="L30">        } catch (SettlementRejectedException rejected) {</span>
+<span class="fc" id="L31">            transactions.finish(id, rejected.getReason());</span>
+<span class="fc" id="L32">            return;</span>
+<span class="fc" id="L33">        }</span>
+        // A successful settle response can now finalize the persisted intent.
+<span class="fc" id="L35">        transactions.finish(id, null);</span>
+<span class="fc" id="L36">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

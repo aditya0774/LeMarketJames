@@ -1,6 +1,6 @@
 # LeMarketJames
 
-A full-stack trading application: two **Angular 21** frontends (a trading app for clients and a staff app), **Spring Boot 3.5** microservices (Java 21) behind two gateways, one shared **PostgreSQL 16** database, and **Apache Kafka** for order events. Runs natively on Windows or in Docker Compose on Linux/Jenkins.
+A full-stack trading application of seven services: two **Angular 21** web apps (a trading app for clients and a staff app), four **Spring Boot 3.5** microservices (Java 21) and an **Apache Kafka** broker for order events, with one shared **PostgreSQL 16** database. Runs natively on Windows or in Docker Compose on Linux/Jenkins.
 
 ## 🔗 Important Documents for Developers
 
@@ -57,8 +57,8 @@ A full-stack trading application: two **Angular 21** frontends (a trading app fo
     - [Sequence Diagram: Backend Order Execution and Settlement Flow](#sequence-diagram-backend-order-execution-and-settlement-flow)
 13. [Code Coverage](#code-coverage)
 14. [Service Notes](#service-notes)
-    - [Buy-sell service](#buy-sell-service)
-    - [Reporting service](#reporting-service)
+    - [Orders service](#orders-service)
+    - [Staff ops service](#staff-ops-service)
 
 ---
 
@@ -72,30 +72,26 @@ LeMarketJames/
 ├── libs/
 │   ├── common/                    # Shared jar: JWT security, roles, account/instrument entities, audit recorder,
 │   │                              #       order event topic names, settings, error handling
-│   └── market-client/             # MarketDataService interface, its quote model, and the HTTP client for market-service
+│   └── market-client/             # MarketDataService interface, its quote model, and the HTTP client for the market
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
-│   ├── gateway-service/           # :8080 Spring Cloud Gateway, the trading app's only backend entry point
-│   │                              #       (published on host port 8089); with the "staff" profile, :8090,
-│   │                              #       the staff app's (the staff gateway)
 │   ├── auth-service/              # :8082 register, login, logout, /api/auth/me (clients and staff)
-│   ├── core-service/              # :8081 instruments, quotes, sessions; also the trading gateway's catch-all
-│   ├── market-service/            # :8083 simulated price feed (GBM) and its test controls; server-to-server only
-│   ├── holdings-service/          # :8084 profile, holdings, portfolio/balance, trade history; settles fills
-│   ├── buy-sell-service/          # :8085 order placement, lifecycle, automatic execution, order events,
+│   ├── orders-service/            # :8085 order placement, lifecycle, automatic execution, order events,
 │   │                              #       trade search and order timeline for Trading Ops
-│   ├── reporting-service/         # :8086 analyst reports (/api/v1/reports/**); behind the staff gateway only
-│   ├── notification-service/      # :8087 Kafka consumer: tells clients what happened to their orders
-│   ├── surveillance-service/      # :8088 Kafka consumer: alerts Trading Ops to large orders and refused settlements; staff gateway only
-│   ├── activity-service/          # :8091 Kafka consumer: traded volume per stock
-│   └── staff-gateway-service/     # Earlier stand-alone staff gateway. Maven still builds and tests it, but nothing
-│                                  #       runs it: the staff gateway is gateway-service with the "staff" profile
+│   ├── trading-service/           # :8084 simulated market (GBM) and its test controls, instruments, quotes,
+│   │                              #       sessions, profile, holdings, portfolio/balance, trade history; settles
+│   │                              #       fills; Kafka consumers: client notifications, traded volume per stock
+│   └── staff-ops-service/         # :8086 analyst reports (/api/v1/reports/**) and the Kafka consumer that alerts
+│                                  #       Trading Ops to large orders and refused settlements; staff app only
 ├── apps/
 │   ├── frontend/                  # Angular 21 workspace: both frontends
 │   │   ├── src/app/               # Trading app (:4200)
 │   │   │   ├── core/              # App-wide singletons: auth, interceptors, API clients
 │   │   │   ├── shared/            # Reusable components, layout, models, pipes
 │   │   │   └── features/          # auth, home, dashboard, holdings, orders, learn, trade
-│   │   ├── projects/staff/        # Staff app (:4201): a second Angular app in this workspace
+│   │   ├── projects/staff/        # Staff app (:4201): a second Angular app in this workspace, with its own
+│   │   │                          #       nginx.conf and dev proxy (staff-proxy.mjs)
+│   │   ├── nginx.conf             # Trading app's Nginx: serves the app, routes /api to the services
+│   │   ├── proxy.conf.json        # The same routing for `ng serve`
 │   │   ├── package.json           # npm dependencies (shared by both apps)
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
 │   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
@@ -124,48 +120,42 @@ This section describes the current system architecture. As new features are adde
 
 ### System Topology
 
-LeMarketJames is a **monorepo**: one repository holding two Angular frontends and the Spring Boot microservices behind them, which all share one PostgreSQL database. Each feature has its own service; `core-service` keeps instruments, quotes and sessions and is the trading gateway's catch-all for any `/api` path no other route claims.
+LeMarketJames is a **monorepo**: one repository holding seven services, which share one PostgreSQL database:
+
+| | Service | Port | What it does |
+|---|---|---|---|
+| 1 | Trading app | 4200 | Angular app for clients; its Nginx routes `/api` to auth-, orders- and trading-service |
+| 2 | Staff app | 4201 | Angular app for Trading Ops and Analysts; its Nginx routes only the staff paths, to auth-, orders- and staff-ops-service |
+| 3 | auth-service | 8082 | Registration, sign-in and sign-out for clients and staff |
+| 4 | orders-service | 8085 | Orders: placement, execution, history, Trading Ops' trade search and timeline; publishes order events |
+| 5 | trading-service | 8084 | Trading/Holdings: the simulated market, instruments, quotes, sessions, profile, holdings, portfolio, trade history, notifications and market activity |
+| 6 | staff-ops-service | 8086 | Analyst/Trading Ops: reports and surveillance alerts |
+| 7 | Kafka | 9092 | The broker for order events |
+
+There is no gateway: each web app calls `/api` on its own origin, and its Nginx (or dev-server proxy) forwards each path straight to the service that serves it.
 
 ```mermaid
 flowchart LR
-    A["🌐 Trading App<br/>(port 4200)"] -->|"REST + JSON<br/>jwt cookie"| G["🚪 Gateway<br/>(port 8080, host 8089)"]
-    S["🌐 Staff App<br/>(port 4201)"] -->|"REST + JSON<br/>staff_jwt cookie"| SG["🚪 Staff Gateway<br/>(port 8090)"]
+    A["🌐 Trading App<br/>(port 4200)"] -->|"REST + JSON<br/>jwt cookie"| AU
+    A -->|"/api/v1/orders/**<br/>/api/v1/buy-orders/**"| OR
+    A -->|"/api/** (everything else)"| TR
+    S["🌐 Staff App<br/>(port 4201)"] -->|"sign-in, sign-out, /me<br/>staff_jwt cookie"| AU
+    S -->|"trade search, order timeline"| OR
+    S -->|"/api/v1/reports/**<br/>/api/v1/surveillance/**"| SO
 
     subgraph SV["Services"]
         AU["🔐 Auth Service<br/>(port 8082)"]
-        CO["🔧 Core Service<br/>(port 8081)"]
-        MK["💹 Market Service<br/>(port 8083)"]
-        HO["💼 Holdings Service<br/>(port 8084)"]
-        BS["🔁 Buy-sell Service<br/>(port 8085)"]
-        RE["📊 Reporting Service<br/>(port 8086)"]
-        NO["🔔 Notification Service<br/>(port 8087)"]
-        SU["🚨 Surveillance Service<br/>(port 8088)"]
-        AC["📈 Activity Service<br/>(port 8091)"]
+        OR["🔁 Orders Service<br/>(port 8085)"]
+        TR["💼 Trading Service<br/>(port 8084)"]
+        SO["📊 Staff Ops Service<br/>(port 8086)"]
     end
 
-    G -->|"/api/auth/**"| AU
-    G -->|"/api/market/**"| MK
-    G -->|"holdings, profile,<br/>portfolio, trades"| HO
-    G -->|"/api/v1/orders/**<br/>/api/v1/buy-orders/**"| BS
-    G -->|"/api/v1/notifications"| NO
-    G -->|"/api/v1/market-activity"| AC
-    G -->|"/api/** (everything else)"| CO
+    OR -.->|"prices, validate holdings,<br/>settle fills"| TR
+    TR -.->|"order reads"| OR
 
-    SG -->|"sign-in, sign-out, /me"| AU
-    SG -->|"/api/v1/reports/**"| RE
-    SG -->|"trade search, order timeline"| BS
-    SG -->|"/api/v1/surveillance/**"| SU
-
-    CO -.->|"prices"| MK
-    HO -.->|"prices"| MK
-    BS -.->|"prices"| MK
-    BS -.->|"validate holdings,<br/>settle fills"| HO
-    HO -.->|"order reads"| BS
-
-    BS -->|"order events"| K["📨 Kafka<br/>(port 9092)"]
-    K -->|"status changes"| NO
-    K -->|"new orders"| SU
-    K -->|"fills"| AC
+    OR -->|"order events"| K["📨 Kafka<br/>(port 9092)"]
+    K -->|"status changes, fills"| TR
+    K -->|"new orders, status changes"| SO
 
     SV -->|"JDBC"| C["🗄️ PostgreSQL Database<br/>(port 5432, shared)"]
 
@@ -175,24 +165,22 @@ flowchart LR
     classDef broker fill:#F5A623,stroke:#B9770E,color:#fff
 
     class A,S frontend
-    class G,SG,AU,CO,MK,HO,BS,RE,NO,SU,AC backend
+    class AU,OR,TR,SO backend
     class C database
     class K broker
 ```
 
-Solid arrows are requests routed by a gateway and the Kafka event flow; dotted arrows are direct server-to-server calls that never pass through a gateway. Every service in the box connects to the shared database; the gateways don't.
+Solid arrows are requests a web app forwards and the Kafka event flow; dotted arrows are direct server-to-server calls that never pass through a web app. Every service in the box connects to the shared database; the web apps don't. Which app routes which paths is in [C6](contracts/C6-api.md#which-web-app-routes-which-paths).
 
-The staff gateway is the same `gateway-service` module started with the `staff` profile: one codebase and one image, two entry points with separate route lists. Which gateway serves which paths is in [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
-
-buy-sell-service publishes every new order, order status change and fill to Kafka, and three small services consume them: notification-service tells a client what happened to their orders, surveillance-service alerts Trading Ops to large orders and to refused settlements, and activity-service keeps the traded volume per stock. See [Kafka (order events)](#kafka-order-events).
+orders-service publishes every new order, order status change and fill to Kafka, and three consumers read them: in trading-service, one tells a client what happened to their orders and one keeps the traded volume per stock; in staff-ops-service, one alerts Trading Ops to large orders and to refused settlements. See [Kafka (order events)](#kafka-order-events).
 
 **Key Characteristics:**
 - **Stateless backend:** No session state; authentication via JWT tokens
-- **Unidirectional data flow:** Browser → Gateway → Service → Database (only services talk to the database; a gateway only routes)
-- **Server-to-server calls:** core-service, holdings-service and buy-sell-service fetch prices from market-service through the shared `libs/market-client`; buy-sell-service calls holdings-service to validate a sell and to settle a fill, and holdings-service reads orders back from buy-sell-service for trade history and buying power
+- **Unidirectional data flow:** Browser → web app (Nginx) → Service → Database (only services talk to the database; a web app only routes)
+- **Server-to-server calls:** orders-service fetches prices from trading-service through the shared `libs/market-client`, and calls it to validate a sell and to settle a fill; trading-service reads orders back from orders-service for trade history and buying power. Inside trading-service, quotes, holdings and charts read the market simulator in-process
 - **Events are one-way:** an order event is published to Kafka after its transaction commits, and no request waits for it
 - **Shared JWT secret:** auth-service issues the `jwt` cookie; every service validates it with the same `JWT_SECRET` (`libs/common`) and enforces roles in its own `SecurityConfig` ([C7](contracts/C7-roles.md))
-- **Separate staff session:** in the staff app's browser the same cookie is named `staff_jwt`; the staff gateway renames it both ways, so a staff session and a customer session can share a browser ([C7](contracts/C7-roles.md#the-staff-session-cookie))
+- **Separate staff session:** in the staff app's browser the same cookie is named `staff_jwt`; the staff app's Nginx renames it both ways, so a staff session and a customer session can share a browser ([C7](contracts/C7-roles.md#the-staff-session-cookie))
 - **Containerized:** Each service can run independently or together via Docker Compose
 - **Separation of concerns:** Frontend handles UI/UX; backend handles business logic and security; database stores persistent state
 
@@ -211,7 +199,7 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
    - The token carries the username as subject, the roles, the issued-at time and the expiration time
 
 3. **Authenticated Requests:** Subsequent requests include the cookie automatically
-   - The gateway forwards it; each service's `JwtAuthenticationFilter` extracts the token
+   - The web app's Nginx forwards it; each service's `JwtAuthenticationFilter` extracts the token
    - `JwtService` validates the signature and expiration and reads the roles
    - A missing or invalid token gets `401`; a valid token without the role an endpoint needs gets `403`
 
@@ -229,14 +217,14 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 | | Zod | Schema validation (client-side) | 4 |
 | | Vitest | Unit tests for both apps | 4 |
 | **Backend** | Spring Boot | Web framework and server | 3.5 |
-| | Spring Cloud Gateway | The trading gateway and the staff gateway | 2025.0 |
+| | Nginx | Serves each web app and routes its `/api` calls to the services | 1.27 |
 | | Spring Security | Authentication and authorization | 6 |
 | | JWT (io.jsonwebtoken) | Token generation and validation | 0.12 |
 | | Maven | Dependency management and build | 3.9.9+ |
 | | JUnit 5 | Unit and integration testing | 5 |
 | **Database** | PostgreSQL | Relational database | 16 |
 | | Raw SQL | Schema definition (no migration tool) | SQL |
-| **Messaging** | Apache Kafka | Order events from buy-sell-service to three consumer services (single node, KRaft mode, no ZooKeeper) | 4.3 |
+| **Messaging** | Apache Kafka | Order events from orders-service to the consumers in trading- and staff-ops-service (single node, KRaft mode, no ZooKeeper) | 4.3 |
 | **Quality** | Playwright | End-to-end tests against a running stack | 1.63 |
 | | JaCoCo | Back-end coverage | 0.8 |
 | | SonarQube | Static analysis and quality gate | server |
@@ -250,18 +238,18 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 
 **Key Features:**
 - **Authentication and roles** (auth-service): client registration, login for clients and staff, lockout after repeated failures, JWT-based stateless sessions in HTTP-only cookies. Three roles, `CLIENT`, `TRADING_OPS` and `ANALYST`, travel in the token ([C7](contracts/C7-roles.md))
-- **Market simulation** (market-service): live price ticks using Geometric Brownian Motion (GBM); per-instrument drift and volatility; market hours and holidays; test controls that set a price or make the feed stale or unavailable ([C4](contracts/C4-quote-feed.md))
-- **Instruments and quotes** (core-service): the supported stock list and its quotes from the simulated market
-- **Orders** (buy-sell-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-buy-sell-service))
-- **Holdings and portfolio** (holdings-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
+- **Market simulation** (trading-service): live price ticks using Geometric Brownian Motion (GBM); per-instrument drift and volatility; market hours and holidays; test controls that set a price or make the feed stale or unavailable ([C4](contracts/C4-quote-feed.md))
+- **Instruments and quotes** (trading-service): the supported stock list and its quotes from the simulated market
+- **Orders** (orders-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
+- **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
-- **Staff app**: trade search and order timeline for Trading Ops; aggregate, read-only trade reports for Analysts (reporting-service)
+- **Staff app**: trade search and order timeline for Trading Ops; aggregate, read-only trade reports for Analysts and surveillance alerts for Trading Ops (staff-ops-service)
 
 **Architecture Notes:**
-- Feature-based organization: one service per feature, and inside a service one package per feature (`orders/`, `holdings/`, `portfolio/`, `quotes/`, ...)
+- Feature-based organization: a service per area (auth, orders, trading, staff ops), and inside a service one package per feature (`orders/`, `holdings/`, `portfolio/`, `quotes/`, `market/`, ...)
 - Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
-- Data persisted in PostgreSQL; market prices are simulated in memory by market-service and saved as quotes and candles
+- Data persisted in PostgreSQL; market prices are simulated in memory by trading-service and saved as quotes and candles
 - Quote-feed design, settings and test controls: **[contracts/C4-quote-feed.md](contracts/C4-quote-feed.md)**
 
 ### Design Principles
@@ -299,7 +287,7 @@ Either way, everything runs on your own machine; nothing depends on a shared hos
 
 ### Method 1: Local Development (Maven + npm)
 
-Runs the database, every backend service, both gateways and both Angular dev servers directly on your machine, with no Docker. This is the Windows setup, and it gives hot reload for the frontend.
+Runs the database, the four backend services and both Angular dev servers directly on your machine, with no Docker. This is the Windows setup, and it gives hot reload for the frontend.
 
 **Prerequisites:** JDK 21 or newer, Maven 3.9+, Node.js, and PostgreSQL 16+ installed as a local service on port 5432. On Windows, use the EnterpriseDB installer and remember the `postgres` superuser password you choose.
 
@@ -319,28 +307,23 @@ On Windows, from the repo root:
 ```
 It runs `mvn install -DskipTests` once, then opens one PowerShell window per process. Close a window to stop that process, or run `.\scripts\windows\stop-all.ps1` to stop them all (it also stops services started by hand on the usual ports). To do the same by hand, run each of these in its own terminal from the repo root, after `mvn install -DskipTests`:
 ```bash
-mvn -pl services/market-service spring-boot:run     # http://localhost:8083
+mvn -pl services/trading-service spring-boot:run    # http://localhost:8084 (market, quotes, holdings, ...)
 mvn -pl services/auth-service spring-boot:run       # http://localhost:8082
-mvn -pl services/core-service spring-boot:run       # http://localhost:8081
-mvn -pl services/buy-sell-service spring-boot:run   # http://localhost:8085
-mvn -pl services/holdings-service spring-boot:run   # http://localhost:8084
-mvn -pl services/reporting-service spring-boot:run  # http://localhost:8086 (staff reports; behind the staff gateway only)
-mvn -pl services/notification-service spring-boot:run   # http://localhost:8087 (Kafka consumer: order notifications)
-mvn -pl services/surveillance-service spring-boot:run   # http://localhost:8088 (Kafka consumer: large-order and refused-settlement alerts; behind the staff gateway only)
-mvn -pl services/activity-service spring-boot:run       # http://localhost:8091 (Kafka consumer: traded volume per stock)
-mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.arguments=--server.port=8089"   # the frontend talks to this one
-mvn -pl services/gateway-service spring-boot:run "-Dspring-boot.run.profiles=staff"                 # staff gateway, http://localhost:8090; the staff app talks to this one
+mvn -pl services/orders-service spring-boot:run     # http://localhost:8085
+mvn -pl services/staff-ops-service spring-boot:run  # http://localhost:8086 (reports and alerts; staff app only)
 cd apps/frontend && npm install && npm start        # http://localhost:4200
 cd apps/frontend && npm run start:staff             # staff app, http://localhost:4201
 ```
-The gateway runs on 8089, the same port Docker Compose publishes it on, because the frontend's [proxy.conf.json](apps/frontend/proxy.conf.json) forwards `/api/**` there. The staff gateway is the same module with the `staff` profile, which sets its port (8090) and its routes. Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
+There is no gateway: each app's dev server forwards `/api` straight to the services, the trading app through [proxy.conf.json](apps/frontend/proxy.conf.json) and the staff app through [staff-proxy.mjs](apps/frontend/projects/staff/staff-proxy.mjs). Every service's defaults (`src/main/resources/application.properties`) already point at `localhost`, so no environment variables are needed.
 
-No Kafka broker is needed for this method: buy-sell-service logs its order events instead of publishing them, and the three consumer services start without a listener. To publish and consume them through a broker you run yourself, see [Kafka (order events)](#kafka-order-events).
+No Kafka broker is needed for this method: orders-service logs its order events instead of publishing them, and the consumers in trading- and staff-ops-service start without a listener. To publish and consume them through a broker you run yourself, see [Kafka (order events)](#kafka-order-events).
 
 **Confirm it's up** (services take about 30 seconds):
 ```bash
-curl http://localhost:8089/actuator/health
-curl http://localhost:8090/actuator/health   # staff gateway
+curl http://localhost:8082/actuator/health   # auth
+curl http://localhost:8084/actuator/health   # trading
+curl http://localhost:8085/actuator/health   # orders
+curl http://localhost:8086/actuator/health   # staff ops
 ```
 Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
 
@@ -364,25 +347,14 @@ Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"statu
 
 **Running the Frontend Against a Remote Backend (VM/Linux):**
 
-If the backend is running on a remote machine (e.g., Linux VM, Docker Compose on `PRIVATE_IP:8089`), use the `start:vm` script instead:
+If the backend is running on a remote machine (e.g., a Linux VM running Docker Compose at `PRIVATE_IP`), use the `start:vm` script instead:
 
 ```bash
 cd apps/frontend
 npm run start:vm
 ```
 
-This uses [proxy.vm.json](apps/frontend/proxy.vm.json), which routes all `/api/**` calls to the remote backend instead of `localhost:8089`. Edit `proxy.vm.json` to change the backend host if needed:
-
-```json
-{
-  "/api/**": {
-    "target": "http://PRIVATE_IP:8089",
-    "secure": false
-  }
-}
-```
-
-Replace `PRIVATE_IP` with your backend's IP or hostname. The frontend dev server will still run on your local machine (e.g., Windows), and your browser will proxy API calls to the remote backend.
+This uses [proxy.vm.json](apps/frontend/proxy.vm.json), which routes the `/api` calls to the services' published ports on the remote host (8082, 8084, 8085) instead of `localhost`. Edit the host in `proxy.vm.json` if needed; the staff app's equivalent is `npm run start:staff:vm`, whose host is in [proxy.vm.mjs](apps/frontend/projects/staff/proxy.vm.mjs). The frontend dev server will still run on your local machine (e.g., Windows), and your browser will proxy API calls to the remote backend.
 
 4. Access the application:
    - **Registration Form:** `http://localhost:4200/register`
@@ -404,7 +376,7 @@ Replace `PRIVATE_IP` with your backend's IP or hostname. The frontend dev server
 - **State-based Management:** Using Angular signals for reactive state updates
 - **Responsive Design:** Mobile, tablet, and desktop layouts
 
-**Note:** The frontend itself has no database dependency. But to exercise it end-to-end, the gateway and the services behind it must be running (the dev proxy sends `/api` to the gateway on `http://localhost:8089`) *and* connected to a schema-initialized Postgres instance (see Database setup above).
+**Note:** The frontend itself has no database dependency. But to exercise it end-to-end, the services must be running (the dev proxy sends `/api` straight to them on `localhost`) *and* connected to a schema-initialized Postgres instance (see Database setup above).
 
 ---
 
@@ -412,16 +384,16 @@ Replace `PRIVATE_IP` with your backend's IP or hostname. The frontend dev server
 
 This method builds one service's Docker image and runs it in a container. Backend images build from the repo root so Maven can see the parent pom and `libs/`.
 
-1. Build the Docker image (swap `core-service` for any other folder under `services/`):
+1. Build the Docker image (swap `trading-service` for any other folder under `services/`):
    ```bash
-   docker build -t lemarketjames/core-service:latest -f services/core-service/Dockerfile .
+   docker build -t lemarketjames/trading-service:latest -f services/trading-service/Dockerfile .
    ```
 
 2. Run the container:
    ```bash
-   docker run -p 8081:8081 --rm lemarketjames/core-service:latest
+   docker run -p 8084:8084 --rm lemarketjames/trading-service:latest
    ```
-   The service will be available at `http://localhost:8081`
+   The service will be available at `http://localhost:8084`
 
 3. To stop the container, press `Ctrl+C` in the terminal.
 
@@ -441,20 +413,15 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    ```
    (On older installs with Compose v1, the command is `docker-compose up -d --build`.)
 
-   This starts:
-   - Gateway (backend entry point): `http://localhost:8089` (container port 8080 is published on host port 8089)
-   - Staff gateway (the staff app's backend entry point): `http://localhost:8090` (the gateway image again, with `SPRING_PROFILES_ACTIVE=staff`)
-   - Core service: `http://localhost:8081` (direct access for debugging)
+   This starts the seven services, plus the database:
+   - The trading app (a production nginx build): `http://localhost:4200`; its Nginx forwards `/api` to the services
+   - The staff app (the same, for staff): `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
    - Auth service: `http://localhost:8082` (direct access for debugging)
-   - Market service: `http://localhost:8083` (direct access for debugging)
-   - Holdings service: `http://localhost:8084` (direct access for debugging)
-   - Buy-sell service: `http://localhost:8085` (direct access for debugging)
-   - Reporting service: `http://localhost:8086` (direct access for debugging; only the staff gateway routes to it)
-   - Notification, surveillance and activity services: `http://localhost:8087`, `8088`, `8091` (direct access for debugging; the three [Kafka consumers](#the-three-consumers))
+   - Trading service: `http://localhost:8084` (direct access for debugging and the test controls)
+   - Orders service: `http://localhost:8085` (direct access for debugging)
+   - Staff ops service: `http://localhost:8086` (direct access for debugging; only the staff app routes to it)
    - PostgreSQL database: `localhost:5432`
    - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
-   - A production (nginx) build of the frontend: `http://localhost:4200`
-   - A production (nginx) build of the staff app: `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
 
 2. The schema is applied automatically. On first start, Postgres runs every file in `database/schema/` in numeric order, because that folder is mounted into `docker-entrypoint-initdb.d`. This only happens when the `db_data` volume is empty. To pick up new schema files on an existing database, either apply them with `psql` (see [database/README.md](database/README.md)) or wipe and recreate the database:
    ```bash
@@ -464,17 +431,10 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
 
 3. Confirm the services are up and connected to the database:
    ```bash
-   curl http://localhost:8089/actuator/health
-   curl http://localhost:8081/actuator/health
    curl http://localhost:8082/actuator/health
-   curl http://localhost:8083/actuator/health
    curl http://localhost:8084/actuator/health
    curl http://localhost:8085/actuator/health
    curl http://localhost:8086/actuator/health
-   curl http://localhost:8087/actuator/health
-   curl http://localhost:8088/actuator/health
-   curl http://localhost:8091/actuator/health
-   curl http://localhost:8090/actuator/health
    ```
    Kafka has no HTTP health endpoint; `docker compose ps kafka` shows `healthy` once the broker answers.
 
@@ -482,7 +442,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
 
 5. View logs:
    ```bash
-   docker compose logs -f gateway-service staff-gateway-service auth-service core-service market-service holdings-service buy-sell-service reporting-service notification-service surveillance-service activity-service
+   docker compose logs -f frontend staff-frontend auth-service orders-service trading-service staff-ops-service
    ```
 
 6. Stop all services:
@@ -494,10 +454,10 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
 
 Run the backend in Docker and the Angular dev server on the same machine, so frontend edits reload instantly.
 
-1. Start everything except the frontend container, which would otherwise hold port 4200. Starting the gateway also starts the services and database it depends on:
+1. Start everything except the frontend container, which would otherwise hold port 4200:
    ```bash
    docker compose stop frontend
-   docker compose up -d --build gateway-service
+   docker compose up -d --build auth-service orders-service trading-service
    ```
 
 2. Install dependencies (first time, or after `package.json` changes) and start the dev server:
@@ -506,13 +466,13 @@ Run the backend in Docker and the Angular dev server on the same machine, so fro
    npm install
    npm start
    ```
-   `npm start` uses [apps/frontend/proxy.conf.json](apps/frontend/proxy.conf.json), which forwards every `/api/**` request to the local gateway at `http://localhost:8089`.
+   `npm start` uses [apps/frontend/proxy.conf.json](apps/frontend/proxy.conf.json), which forwards each `/api` path to the service's published port on `localhost`.
 
 3. Open `http://localhost:4200`.
 
 **Opening a Linux/Jenkins host's stack from another machine:**
 
-The gateway and services only accept browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
+The services only accept cross-origin browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
 ```bash
 APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
 ```
@@ -536,12 +496,12 @@ A service refuses to start if its account can change audit records, so don't poi
 
 ### Trading App and Staff App
 
-There are two Angular apps. The staff app is separate from the trading app: its own pages, its own port, and its own backend entry point.
+There are two Angular apps. The staff app is separate from the trading app: its own pages, its own port, and its own routing to the services. Neither has a gateway in front of the services: each app's Nginx (or dev-server proxy) forwards `/api` itself.
 
-| App | For | Source | Port | Backend entry point |
+| App | For | Source | Port | Routes `/api` to |
 |---|---|---|---|---|
-| Trading app | Clients | `apps/frontend/src` | 4200 | Gateway (8089 on the host) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | Staff gateway (8090). It routes `/api/v1/reports/**` to [reporting-service](#reporting-service), sign-in, sign-out and `/me` to auth-service, the Trading Ops trade search and order timeline to buy-sell-service, and `/api/v1/surveillance/**` to surveillance-service; nothing else ([C6](contracts/C6-api.md#which-gateway-serves-which-paths)) |
+| Trading app | Clients | `apps/frontend/src` | 4200 | auth-service (`/api/auth/**`), orders-service (`/api/v1/orders/**`, `/api/v1/buy-orders/**`) and trading-service (everything else) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | auth-service (sign-in, sign-out and `/me`), orders-service (the Trading Ops trade search and order timeline) and [staff-ops-service](#staff-ops-service) (`/api/v1/reports/**`, `/api/v1/surveillance/**`); any other path answers 404 ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -552,14 +512,14 @@ It is set up the same way as the trading app on both platforms, so it builds and
 | | Trading app | Staff app |
 |---|---|---|
 | Windows: dev server | `npm start` | `npm run start:staff` |
-| Windows: `/api` forwarded by | [proxy.conf.json](apps/frontend/proxy.conf.json) to `localhost:8089` | [projects/staff/proxy.conf.json](apps/frontend/projects/staff/proxy.conf.json) to `localhost:8090` |
-| Windows frontend, backend on a Linux VM | `npm run start:vm` ([proxy.vm.json](apps/frontend/proxy.vm.json)) | `npm run start:staff:vm` ([projects/staff/proxy.vm.json](apps/frontend/projects/staff/proxy.vm.json)) |
+| Windows: `/api` forwarded by | [proxy.conf.json](apps/frontend/proxy.conf.json) to the services on `localhost` | [projects/staff/proxy.conf.mjs](apps/frontend/projects/staff/proxy.conf.mjs), built by [staff-proxy.mjs](apps/frontend/projects/staff/staff-proxy.mjs), to the services on `localhost` |
+| Windows frontend, backend on a Linux VM | `npm run start:vm` ([proxy.vm.json](apps/frontend/proxy.vm.json)) | `npm run start:staff:vm` ([projects/staff/proxy.vm.mjs](apps/frontend/projects/staff/proxy.vm.mjs)) |
 | Linux: image | [Dockerfile](apps/frontend/Dockerfile) | [projects/staff/Dockerfile](apps/frontend/projects/staff/Dockerfile), built with `apps/frontend` as its context |
-| Linux: `/api` forwarded by | [nginx.conf](apps/frontend/nginx.conf) to `gateway-service` | [projects/staff/nginx.conf](apps/frontend/projects/staff/nginx.conf) to `staff-gateway-service:8090` |
+| Linux: `/api` forwarded by | [nginx.conf](apps/frontend/nginx.conf) to the services by their Compose names | [projects/staff/nginx.conf](apps/frontend/projects/staff/nginx.conf) to the services by their Compose names |
 
-Like the trading app, the staff app only ever calls `/api` on its own origin (`apiBaseUrl` in [environment.ts](apps/frontend/projects/staff/src/environments/environment.ts) is empty), so the same build works on any host and needs no CORS setup. The staff gateway is `gateway-service` started with the `staff` profile ([application-staff.yml](services/gateway-service/src/main/resources/application-staff.yml)); the staff `nginx.conf` reaches it by its Compose name, `staff-gateway-service`, on 8090.
+Like the trading app, the staff app only ever calls `/api` on its own origin (`apiBaseUrl` in [environment.ts](apps/frontend/projects/staff/src/environments/environment.ts) is empty), so the same build works on any host and needs no CORS setup. The staff app's Nginx also drops the browser's `Origin` header, since the services allow only the trading app's origin.
 
-**Two sessions in one browser.** A browser shares cookies between the ports of one host, so the two apps cannot both keep their session in a cookie named `jwt`: signing in to one would sign the other out. The staff gateway therefore gives the browser `staff_jwt` instead and turns it back into `jwt` for the services, which are unchanged. A customer on 4200 and a staff member on 4201 can be signed in at the same time, and each signs out alone ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
+**Two sessions in one browser.** A browser shares cookies between the ports of one host, so the two apps cannot both keep their session in a cookie named `jwt`: signing in to one would sign the other out. The staff app's Nginx (and its dev proxy) therefore gives the browser `staff_jwt` instead and turns it back into `jwt` for the services, which are unchanged. A customer on 4200 and a staff member on 4201 can be signed in at the same time, and each signs out alone ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
 
 **Run both:**
 
@@ -603,21 +563,21 @@ The guard only decides what the app shows; the endpoint behind the screen still 
 
 ### Market simulation settings
 
-market-service simulates every stock's price. Its settings (tick rate, seed, speed, market hours, holidays) and the test controls, which can set a price or make the feed stale or unavailable, are described in [contracts/C4-quote-feed.md](contracts/C4-quote-feed.md). The business settings every service shares (lockout, staleness limit, ...) are in [contracts/C5-config.md](contracts/C5-config.md).
+trading-service's market simulator prices every stock. Its settings (tick rate, seed, speed, market hours, holidays) and the test controls, which can set a price or make the feed stale or unavailable, are described in [contracts/C4-quote-feed.md](contracts/C4-quote-feed.md). The business settings every service shares (lockout, staleness limit, ...) are in [contracts/C5-config.md](contracts/C5-config.md).
 
 Per-instrument behaviour (drift, volatility, spread, etc.) lives in the `instrument_market_params`
 table — see [database/README.md](database/README.md#tuning-the-market).
 
 ### Kafka (order events)
 
-buy-sell-service announces every new order, every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where [three services consume them](#the-three-consumers). What each event means and carries is in [C6](contracts/C6-api.md#the-order-events), with the topics, the record key (the order id) and the JSON format; the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
+orders-service announces every new order, every order status change and every fill as an event. In Docker Compose and Jenkins it publishes them to a Kafka broker, where [three consumers read them](#the-three-consumers): two in trading-service, one in staff-ops-service. What each event means and carries is in [C6](contracts/C6-api.md#the-order-events), with the topics, the record key (the order id) and the JSON format; the setting that switches publishing on is in [C5](contracts/C5-config.md#order-events).
 
 | Where | What publishes the events | Broker |
 |---|---|---|
 | Docker Compose, Jenkins | Kafka publisher | the `kafka` service in [docker-compose.yml](docker-compose.yml): one node, KRaft mode, no ZooKeeper |
 | Native Windows scripts, unit tests | Stub publisher: logs each event, sends nothing | none needed |
 
-**With Docker Compose** there is nothing to do: `docker compose up -d --build` starts the broker, waits until it is healthy and then starts buy-sell-service, which creates its three topics. The broker listens on `localhost:9092` for programs on your machine and on `kafka:29092` for other containers.
+**With Docker Compose** there is nothing to do: `docker compose up -d --build` starts the broker, waits until it is healthy and then starts orders-service, which creates its three topics. The broker listens on `localhost:9092` for programs on your machine and on `kafka:29092` for other containers.
 
 To watch the events arrive, place an order in the app and read a topic (Ctrl+C to stop):
 ```bash
@@ -626,36 +586,36 @@ docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-s
     --topic lemarket.orders.status-changed --from-beginning
 ```
 
-**Only the broker, with buy-sell-service run from your IDE or Maven** (needs Docker):
+**Only the broker, with orders-service run from your IDE or Maven** (needs Docker):
 ```bash
 docker compose up -d kafka
-LMJ_EVENTS_PUBLISHER=kafka mvn -pl services/buy-sell-service spring-boot:run
+LMJ_EVENTS_PUBLISHER=kafka mvn -pl services/orders-service spring-boot:run
 ```
 In PowerShell, set the variable first: `$env:LMJ_EVENTS_PUBLISHER = 'kafka'`.
 
 **Native Windows, no Docker:** `start-all.ps1` starts no broker and the stub is used, which is enough for everything except consuming the events. If you run a broker yourself on `localhost:9092` (the [Apache Kafka download](https://kafka.apache.org/downloads) runs on Windows with the JDK you already have), start the stack with `.\scripts\windows\start-all.ps1 -Kafka`, which switches on both the publisher and the three consumers. Set `KAFKA_BOOTSTRAP_SERVERS` if the broker is somewhere else. Don't delete a topic on a Windows broker: Kafka can't rename the topic's folder there and shuts down; wipe its data folder and start again instead.
 
-The events are test data: the broker keeps them in its container, so `docker compose down` removes them. Publishing is best effort; an event that can't be sent is logged by buy-sell-service and not sent again.
+The events are test data: the broker keeps them in its container, so `docker compose down` removes them. Publishing is best effort; an event that can't be sent is logged by orders-service and not sent again.
 
 #### The three consumers
 
-Each is a small service in its own container. It listens in a consumer group of its own (to one topic, or two for surveillance-service), stores what it makes of each event in a table of its own, and serves that from one read-only endpoint. The rules they share (reading an event, the same event arriving twice, a bad record) are in [C6](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service).
+Each is a feature of a bigger service: notifications and market activity in trading-service, surveillance in staff-ops-service. It listens in a consumer group of its own (to one topic, or two for surveillance), stores what it makes of each event in a table of its own, and serves that from one read-only endpoint. Each group is named after the service the consumer was before the services were merged. The rules they share (reading an event, the same event arriving twice, a bad record) are in [C6](contracts/C6-api.md#the-consumers-notifications-surveillance-and-market-activity).
 
-| Service | Listens to | Business scenario | Read it with |
+| Consumer (group) | Listens to | Business scenario | Read it with |
 |---|---|---|---|
-| notification-service (8087) | `lemarket.orders.status-changed` | A client is told every status their order reaches, including a fill or a rejection that happened while they were signed out | `GET /api/v1/notifications` as that client, through the trading gateway |
-| surveillance-service (8088) | `lemarket.orders.submitted` | Trading Ops are alerted to an order of at least the large-order quantity, a setting ([C5](contracts/C5-config.md)), the moment it is placed | `GET /api/v1/surveillance/alerts` as Trading Ops, through the staff gateway |
+| Notifications, in trading-service (`notification-service`) | `lemarket.orders.status-changed` | A client is told every status their order reaches, including a fill or a rejection that happened while they were signed out | `GET /api/v1/notifications` as that client, through the trading app |
+| Surveillance, in staff-ops-service (`surveillance-service`) | `lemarket.orders.submitted` | Trading Ops are alerted to an order of at least the large-order quantity, a setting ([C5](contracts/C5-config.md)), the moment it is placed | `GET /api/v1/surveillance/alerts` as Trading Ops, through the staff app |
 | | `lemarket.orders.status-changed` | Trading Ops are alerted when an order's settlement is refused: by the time it executed, the account no longer had the cash or the shares | the same endpoint |
-| activity-service (8091) | `lemarket.orders.filled` | Anyone signed in sees how much of each stock traded in the last 24 hours | `GET /api/v1/market-activity`, through the trading gateway |
+| Market activity, in trading-service (`activity-service`) | `lemarket.orders.filled` | Anyone signed in sees how much of each stock traded in the last 24 hours | `GET /api/v1/market-activity`, through the trading app |
 
 To see them work with Docker Compose, place an order in the trading app (make it at least the large-order quantity, which the alerts endpoint returns, to raise an alert too), then:
 ```bash
-docker compose logs --tail=20 notification-service surveillance-service activity-service
+docker compose logs --tail=20 trading-service staff-ops-service
 docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --all-groups
 ```
-The second command is the broker's own list: each service's group, the topic it reads, and how far behind it is (`LAG`, 0 when it has caught up). Jenkins runs the whole scenario in its **Verify Kafka consumers** stage ([scripts/verify-kafka-consumers.sh](scripts/verify-kafka-consumers.sh)).
+The second command is the broker's own list: each consumer's group, the topic it reads, and how far behind it is (`LAG`, 0 when it has caught up). Jenkins runs the whole scenario in its **Verify Kafka consumers** stage ([scripts/verify-kafka-consumers.sh](scripts/verify-kafka-consumers.sh)).
 
-A consumer listens only where `LMJ_EVENTS_CONSUMER=kafka` is set, which Compose does ([C5](contracts/C5-config.md#order-events)). Started natively without `-Kafka`, the three run without a listener: their endpoints answer, and nothing new arrives.
+A consumer listens only where `LMJ_EVENTS_CONSUMER=kafka` is set, which Compose does ([C5](contracts/C5-config.md#order-events)). Started natively without `-Kafka`, trading- and staff-ops-service run without a listener: their endpoints answer, and nothing new arrives.
 
 ---
 
@@ -675,12 +635,12 @@ Run just one service (plus the `libs/common` it depends on):
 mvn -pl services/auth-service -am test
 ```
 
-Test results are generated in each module's `target/surefire-reports/` (e.g. `services/core-service/target/surefire-reports/`).
+Test results are generated in each module's `target/surefire-reports/` (e.g. `services/trading-service/target/surefire-reports/`).
 
 None of these need a Kafka broker. `OrderEventKafkaIntegrationTest` is the one test that does: it fills an order and reads its events back from the topics. It is skipped unless the `kafka-test` profile is given, which is how Jenkins runs it. To run it yourself, start a broker on `localhost:9092` ([Kafka (order events)](#kafka-order-events)), then:
 
 ```bash
-mvn -pl services/buy-sell-service -am "-Dspring.profiles.active=kafka-test" "-Dtest=OrderEventKafkaIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+mvn -pl services/orders-service -am "-Dspring.profiles.active=kafka-test" "-Dtest=OrderEventKafkaIntegrationTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
 ```
 
 ### Frontend Tests (TypeScript/Vitest)
@@ -710,19 +670,19 @@ To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linu
 
 The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
 
-- The quote-feed test controls ([C4](contracts/C4-quote-feed.md)) on market-service, reached directly at `http://localhost:8083`; set `E2E_MARKET_URL` if it is elsewhere.
+- The quote-feed test controls ([C4](contracts/C4-quote-feed.md)) on trading-service, reached directly at `http://localhost:8084`; set `E2E_MARKET_URL` if it is elsewhere.
 - The same database access as the order-history suite, to read the audit trail, which has no API yet.
 - Orders that execute whatever the time of day: start the stack with `SIM_RESPECT_MARKET_HOURS=false` (on the native Windows stack also `LMJ_EXECUTION_RESPECT_MARKET_HOURS=false`, which Docker Compose derives for you). Otherwise orders placed outside US trading hours wait as `DELAYED` and the tests fail saying so.
 
-`reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls reporting-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
+`reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls staff-ops-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
 
-`staff-gateway.spec.ts` goes through the staff gateway the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
+`staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
 
 `settlement.spec.ts` follows a buy and a sell through settlement (S17, S18), with fills the executor really made: an order the client can no longer pay for, or has no shares left for, by the time it fills is `REJECTED` and Trading Ops are alerted; a settlement that fails part-way changes nothing and settles exactly once afterwards. Besides what the execution suites need, it needs:
 
-- The settlement test control ([C5](contracts/C5-config.md#settlement-test-control)) on holdings-service, reached directly at `http://localhost:8084`; set `E2E_HOLDINGS_URL` if it is elsewhere.
-- The execution control on buy-sell-service, reached directly at `http://localhost:8085` (`E2E_EXECUTION_URL`), to hold an order back until the price or the holding has changed.
-- Kafka, which carries the alert to surveillance-service: Docker Compose has it; on the native Windows stack start with `-Kafka` ([Kafka (order events)](#kafka-order-events)).
+- The settlement test control ([C5](contracts/C5-config.md#settlement-test-control)) on trading-service, reached directly at `http://localhost:8084`; set `E2E_HOLDINGS_URL` if it is elsewhere.
+- The execution control on orders-service, reached directly at `http://localhost:8085` (`E2E_EXECUTION_URL`), to hold an order back until the price or the holding has changed.
+- Kafka, which carries the alert to staff-ops-service: Docker Compose has it; on the native Windows stack start with `-Kafka` ([Kafka (order events)](#kafka-order-events)).
 - The staff app on `http://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
 
 It pauses the execution worker for the whole stack, as `execution-retry.spec.ts` does, so both run one test at a time in the Playwright project `execution-recovery`, after the main tests.
@@ -750,21 +710,21 @@ Once the application is running (via any of the three methods), you can access:
 | **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
 | **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
 | **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
-| **API Gateway** | `http://localhost:8089` | Single entry point for all REST API endpoints (Methods 1 and 3) |
-| **Auth Register API** | `POST http://localhost:8089/api/auth/register` | Register new user (routed to auth-service) |
-| **Auth Login API** | `POST http://localhost:8089/api/auth/login` | User login (routed to auth-service) |
-| **Staff Gateway** | `http://localhost:8090` | Single entry point for the staff app's API calls: reports, staff sign-in, trade search and order timeline |
-| **Staff Login API** | `POST http://localhost:8090/api/auth/login` | Staff sign-in (routed to auth-service); sets the `staff_jwt` cookie |
-| **Health Checks** | `GET http://localhost:{8089,8090,8081,8082,8083,8084,8085,8086,8087,8088,8091}/actuator/health` | Gateway / staff gateway / core / auth / market / holdings / buy-sell / reporting / notification / surveillance / activity liveness (`UP`/`DOWN`) |
-| **Orders** | `POST http://localhost:8089/api/v1/orders` | buy-sell-service: submit a buy or sell order as the signed-in client |
-| **Holdings / Portfolio** | `GET http://localhost:8089/api/v1/holdings`, `/api/v1/portfolio` | holdings-service: the signed-in client's positions and cash balance |
-| **Instruments** | `GET http://localhost:8089/api/v1/instruments` | core-service: the supported stock list |
-| **Notifications** | `GET http://localhost:8089/api/v1/notifications` | notification-service: the signed-in client's order notifications, built from Kafka events |
-| **Market activity** | `GET http://localhost:8089/api/v1/market-activity` | activity-service: traded volume per stock over the last 24 hours, built from Kafka events |
-| **Surveillance alerts (staff)** | `GET http://localhost:8090/api/v1/surveillance/alerts` | surveillance-service, through the staff gateway; `TRADING_OPS` login only, built from Kafka events |
-| **Reports (staff)** | `GET http://localhost:8090/api/v1/reports/trades?periodType=MONTH` | reporting-service, through the staff gateway: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
+| **Trading app API** | `http://localhost:4200/api/...` | The trading app's Nginx (or dev proxy) forwards each `/api` path to auth-, orders- or trading-service; there is no gateway |
+| **Auth Register API** | `POST http://localhost:4200/api/auth/register` | Register new user (forwarded to auth-service) |
+| **Auth Login API** | `POST http://localhost:4200/api/auth/login` | User login (forwarded to auth-service) |
+| **Staff app API** | `http://localhost:4201/api/...` | The staff app forwards only the staff paths: reports, alerts, staff sign-in, trade search and order timeline |
+| **Staff Login API** | `POST http://localhost:4201/api/auth/login` | Staff sign-in (forwarded to auth-service); sets the `staff_jwt` cookie |
+| **Health Checks** | `GET http://localhost:{8082,8084,8085,8086}/actuator/health` | auth / trading / orders / staff ops liveness (`UP`/`DOWN`) |
+| **Orders** | `POST http://localhost:4200/api/v1/orders` | orders-service: submit a buy or sell order as the signed-in client |
+| **Holdings / Portfolio** | `GET http://localhost:4200/api/v1/holdings`, `/api/v1/portfolio` | trading-service: the signed-in client's positions and cash balance |
+| **Instruments** | `GET http://localhost:4200/api/v1/instruments` | trading-service: the supported stock list |
+| **Notifications** | `GET http://localhost:4200/api/v1/notifications` | trading-service: the signed-in client's order notifications, built from Kafka events |
+| **Market activity** | `GET http://localhost:4200/api/v1/market-activity` | trading-service: traded volume per stock over the last 24 hours, built from Kafka events |
+| **Surveillance alerts (staff)** | `GET http://localhost:4201/api/v1/surveillance/alerts` | staff-ops-service, through the staff app; `TRADING_OPS` login only, built from Kafka events |
+| **Reports (staff)** | `GET http://localhost:4201/api/v1/reports/trades?periodType=MONTH` | staff-ops-service, through the staff app: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
-| **Kafka Broker** | `localhost:9092` | Order events from buy-sell-service to the three consumer services (Method 3 only; not HTTP) |
+| **Kafka Broker** | `localhost:9092` | Order events from orders-service to the consumers in trading- and staff-ops-service (Method 3 only; not HTTP) |
 
 **Frontend Routes (trading app):**
 - `/` - Home page
@@ -819,11 +779,11 @@ All form validation is performed client-side using Zod schema validation before 
 
 If you see an error like "Address already in use" or "Port X is already allocated":
 
-- **Ports 8081–8091 (the services and gateways):** Check if another process is using one:
+- **Ports 8082, 8084–8086 (the services):** Check if another process is using one:
   ```bash
-  netstat -ano | findstr :8081
+  netstat -ano | findstr :8084
   ```
-  Kill the process, or on Windows run `.\scripts\windows\stop-all.ps1`, which stops whatever holds the stack's usual ports. To move a service instead, change `server.port` in its `src/main/resources/application.properties` and the matching URL its callers use (for the gateways, `CORE_SERVICE_URL`, `AUTH_SERVICE_URL` and the like; the full list is in [C5](contracts/C5-config.md#gateways-ports-and-urls)).
+  Kill the process, or on Windows run `.\scripts\windows\stop-all.ps1`, which stops whatever holds the stack's usual ports. To move a service instead, change `server.port` in its `src/main/resources/application.properties` and the places that reach it: the web apps' Nginx and dev proxies, and the service URLs other services use (the full list is in [C5](contracts/C5-config.md#web-apps-ports-and-service-urls)).
 
 - **Ports 4200 / 4201 (Angular):** Start the dev server on a different port:
   ```bash
@@ -878,7 +838,7 @@ java -version
 
 ### Database Connection Refused (Docker Compose or Local Dev)
 
-- Check `GET http://localhost:8081/actuator/health` (core) and `GET http://localhost:8082/actuator/health` (auth) first. `{"status":"DOWN"}` means that service can't reach Postgres.
+- Check `GET http://localhost:8084/actuator/health` (trading) and `GET http://localhost:8082/actuator/health` (auth) first. `{"status":"DOWN"}` means that service can't reach Postgres.
 
 - Verify all services are running (Docker Compose):
   ```bash
@@ -918,7 +878,7 @@ java -version
 Check which container stopped and read its logs:
 ```bash
 docker compose ps -a
-docker compose logs core-service     # or any other service name from docker-compose.yml
+docker compose logs trading-service  # or any other service name from docker-compose.yml
 ```
 
 Common causes:
@@ -942,7 +902,7 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 7. Runs the containerized application and prints `docker ps` once every container is up (**Show running containers**), failing if any Compose service is not running
 8. Runs the smoke test, including that a filled order's event is on its Kafka topic
 9. Runs the Playwright end-to-end suites, the trading app's and then the staff app's (see [End-to-End Tests](#end-to-end-tests-playwright))
-10. Places a buy order and a sell order, waits for each to fill, restarts buy-sell-service and checks the order is still there and was settled once ([scripts/verify-buy-order.sh](scripts/verify-buy-order.sh), [scripts/verify-sell-order.sh](scripts/verify-sell-order.sh))
+10. Places a buy order and a sell order, waits for each to fill, restarts orders-service and checks the order is still there and was settled once ([scripts/verify-buy-order.sh](scripts/verify-buy-order.sh), [scripts/verify-sell-order.sh](scripts/verify-sell-order.sh))
 11. Places a large order and checks that each of the three Kafka consumers acted on its events: the client's notification, the Trading Ops alert and the fill in market activity. The stage (**Verify Kafka consumers**) ends by printing the broker's consumer groups
 12. Checks that the services' database account cannot change audit records ([scripts/verify-audit-lockdown.sh](scripts/verify-audit-lockdown.sh)), then smoke-tests the quote and tradability APIs
 13. Cleans up resources
@@ -1260,13 +1220,13 @@ Where each class lives, and the table it maps to:
 | `AccountEntity`, `AddressEntity` | `accounts`, `addresses` | `libs/common` |
 | `Instrument` | `instruments` | `libs/common` |
 | `AuditEventEntity` | `audit_log` (insert-only, [C2](contracts/C2-audit.md)) | `libs/common` |
-| `Order` | `orders` | `buy-sell-service` |
-| `HoldingsEntity`, `SettlementReceipt` | `holdings`, `settlement_receipts` | `holdings-service` |
-| `InstrumentMarketParamsEntity`, `MarketQuoteEntity`, `PriceCandleEntity` | `instrument_market_params`, `market_quotes`, `price_candles` | `market-service` |
-| `Notification` | `notifications` | `notification-service` |
-| `OrderAlert` | `order_alerts` | `surveillance-service` |
-| `RecordedFill` | `trade_activity` | `activity-service` |
-| `ReportingTrade` | `reporting_trades` (view) | `reporting-service` |
+| `Order` | `orders` | `orders-service` |
+| `HoldingsEntity`, `SettlementReceipt` | `holdings`, `settlement_receipts` | `trading-service` |
+| `InstrumentMarketParamsEntity`, `MarketQuoteEntity`, `PriceCandleEntity` | `instrument_market_params`, `market_quotes`, `price_candles` | `trading-service` |
+| `Notification` | `notifications` | `trading-service` |
+| `OrderAlert` | `order_alerts` | `staff-ops-service` |
+| `RecordedFill` | `trade_activity` | `trading-service` |
+| `ReportingTrade` | `reporting_trades` (view) | `staff-ops-service` |
 
 The enum types in the diagram are not drawn with their values, which live once, in code: `OrderStatus`, `OrderType` and `RejectionReason` ([C1](contracts/C1-orders.md)), `AuditEventType` ([C2](contracts/C2-audit.md)), `Role` ([C7](contracts/C7-roles.md)), and `AccountStatus` and `ClientSegment` in `libs/common`.
 
@@ -1274,12 +1234,12 @@ The enum types in the diagram are not drawn with their values, which live once, 
 
 ### Sequence Diagram: Backend Login Flow
 
-This diagram shows the authentication sequence when a client or a staff member logs in. Both use the same endpoint in auth-service; a client reaches it through the trading gateway and staff through the staff gateway.
+This diagram shows the authentication sequence when a client or a staff member logs in. Both use the same endpoint in auth-service; a client reaches it through the trading app and staff through the staff app, whose Nginx forwards it.
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant Gateway
+    participant WebApp as Web app (Nginx)
     participant AuthController
     participant AuthService
     participant Repositories as ClientRepository<br/>StaffUserRepository
@@ -1287,8 +1247,8 @@ sequenceDiagram
     participant JwtService
     participant Database
 
-    User->>Gateway: POST /api/auth/login<br/>{username: email, password}
-    Gateway->>AuthController: forward to auth-service
+    User->>WebApp: POST /api/auth/login<br/>{username: email, password}
+    WebApp->>AuthController: forward to auth-service
     AuthController->>AuthService: login(LoginRequest)
     AuthService->>AuthService: validateLoginRequest()
     AuthService->>Repositories: findByEmail(email)<br/>clients first, then staff
@@ -1321,8 +1281,8 @@ sequenceDiagram
             JwtService-->>AuthService: Signed JWT token
             AuthService-->>AuthController: LoginResult (username, message, token, roles)
             AuthController->>AuthService: getAccountId(username), clients only
-            AuthController-->>Gateway: 200 OK<br/>Set-Cookie: jwt (HTTP-only, SameSite=Lax)<br/>{username, roles, accountId, message}
-            Gateway-->>User: 200 OK<br/>the staff gateway renames the cookie to staff_jwt
+            AuthController-->>WebApp: 200 OK<br/>Set-Cookie: jwt (HTTP-only, SameSite=Lax)<br/>{username, roles, accountId, message}
+            WebApp-->>User: 200 OK<br/>the staff app renames the cookie to staff_jwt
         end
     end
 ```
@@ -1333,23 +1293,23 @@ The exceptions become `400` responses in `GlobalExceptionHandler` (`libs/common`
 
 ### Sequence Diagram: Backend Order Submission Flow
 
-This diagram shows what buy-sell-service does when a client submits an order. Submitting does not execute a trade: an order that passes its checks is saved as `SUBMITTED` and filled later ([next diagram](#sequence-diagram-backend-order-execution-and-settlement-flow)). `POST /api/v1/buy-orders` takes the same path for a buy.
+This diagram shows what orders-service does when a client submits an order. Submitting does not execute a trade: an order that passes its checks is saved as `SUBMITTED` and filled later ([next diagram](#sequence-diagram-backend-order-execution-and-settlement-flow)). `POST /api/v1/buy-orders` takes the same path for a buy.
 
 ```mermaid
 sequenceDiagram
     actor Client
-    participant Gateway
+    participant WebApp as Trading app (Nginx)
     participant OrderController
     participant OrderService
     participant SubmissionValidator
-    participant Holdings as holdings-service
-    participant Market as market-service
+    participant Holdings as trading-service<br/>holdings
+    participant Market as trading-service<br/>market
     participant SubmissionRecorder
     participant Database
     participant Kafka
 
-    Client->>Gateway: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity}
-    Gateway->>OrderController: forward to buy-sell-service with the jwt cookie
+    Client->>WebApp: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity}
+    WebApp->>OrderController: forward to orders-service with the jwt cookie
     Note over OrderController: JwtAuthenticationFilter has validated the token.<br/>SubmissionRequestId sets the X-Request-Id response header.
     OrderController->>OrderService: createOrder(request, requestId)
     OrderService->>SubmissionValidator: validate(request, trail)
@@ -1384,13 +1344,13 @@ sequenceDiagram
     end
 ```
 
-Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; surveillance-service consumes it.
+Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; staff-ops-service's surveillance consumer reads it.
 
 ---
 
 ### Sequence Diagram: Backend Order Execution and Settlement Flow
 
-This diagram shows how a submitted order is filled. No request drives it: a scheduler in buy-sell-service picks up open orders, prices them from the market feed, and has holdings-service settle the cash and shares.
+This diagram shows how a submitted order is filled. No request drives it: a scheduler in orders-service picks up open orders, prices them from the market feed, and has trading-service settle the cash and shares.
 
 ```mermaid
 sequenceDiagram
@@ -1398,8 +1358,8 @@ sequenceDiagram
     participant ExecutionService as OrderExecutionService
     participant Transactions as OrderExecutionTransactions
     participant Executor as MarketOrderExecutor
-    participant Market as market-service
-    participant Settlement as holdings-service<br/>HoldingsSettlementService
+    participant Market as trading-service<br/>market
+    participant Settlement as trading-service<br/>HoldingsSettlementService
     participant Database
     participant Kafka
 
@@ -1436,7 +1396,7 @@ sequenceDiagram
     end
 ```
 
-The order transaction never spans the HTTP call to holdings-service. If that call fails or buy-sell-service restarts in between, `settlement_pending` stays set and the next poll sends the same request again; the settlement receipt makes it safe to repeat, so a fill is settled once. A buy fills at the ask price and a sell at the bid. Each status change also goes to the client's server-sent event stream; notification-service consumes the status changes and activity-service the fills ([C6](contracts/C6-api.md#automatic-execution-and-recovery)).
+The order transaction never spans the HTTP call to trading-service. If that call fails or orders-service restarts in between, `settlement_pending` stays set and the next poll sends the same request again; the settlement receipt makes it safe to repeat, so a fill is settled once. A buy fills at the ask price and a sell at the bid. Each status change also goes to the client's server-sent event stream; trading-service's notification consumer reads the status changes and its market-activity consumer the fills ([C6](contracts/C6-api.md#automatic-execution-and-recovery)).
 
 ---
 
@@ -1477,32 +1437,33 @@ node scripts/coverage/build-coverage-site.mjs target/coverage-site --no-history
 node scripts/coverage/check-coverage-gate.mjs target/coverage-site/summary.json
 ```
 
-Open a back-end module's report in your browser, e.g. core-service, using one of the following commands depending on your OS:
+Open a back-end module's report in your browser, e.g. trading-service, using one of the following commands depending on your OS:
 
 Windows:
 ```bash
-start services/core-service/target/site/jacoco/index.html
+start services/trading-service/target/site/jacoco/index.html
 ```
 
 macOS:
 ```bash
-open services/core-service/target/site/jacoco/index.html
+open services/trading-service/target/site/jacoco/index.html
 ```
 
 Linux:
 ```bash
-xdg-open services/core-service/target/site/jacoco/index.html
+xdg-open services/trading-service/target/site/jacoco/index.html
 ```
 
 ---
 
 ## Service Notes
 
-### Buy-sell service
+### Orders service
 
-`services/buy-sell-service` runs on port 8085 and owns `/api/v1/orders/**` and
-`/api/v1/buy-orders/**`. The gateway routes these paths to it; core no longer handles orders.
-The staff gateway routes the Trading Ops trade search and order timeline to it as well.
+`services/orders-service` runs on port 8085 and owns `/api/v1/orders/**` and
+`/api/v1/buy-orders/**`. The trading app routes these paths to it; the staff app routes the
+Trading Ops trade search and order timeline to it as well. It reads prices from and settles fills
+in trading-service.
 An existing database needs every file in `database/schema/` up to the latest before this
 version starts (see [database/README.md](database/README.md)); new Docker databases apply them
 automatically. Execution respects exchange sessions
@@ -1513,24 +1474,26 @@ It publishes its order events to Kafka when a broker is configured, and logs the
 [Kafka (order events)](#kafka-order-events). How an order is submitted and filled is drawn in the
 [UML diagrams](#sequence-diagram-backend-order-submission-flow).
 
-### Reporting service
+### Staff ops service
 
-`services/reporting-service` runs on port 8086 and owns `/api/v1/reports/**`: aggregate,
-read-only reports for analysts, built on the `reporting_trades` view. The trading gateway does
-not route to it; the staff gateway (8090) does. Sign in there as staff and call it with the
+`services/staff-ops-service` runs on port 8086 and owns `/api/v1/reports/**`, aggregate,
+read-only reports for analysts built on the `reporting_trades` view, and
+`/api/v1/surveillance/**`, the alerts its Kafka consumer raises for Trading Ops. The trading app
+does not route to it; the staff app (4201) does. Sign in there as staff and call it with the
 `staff_jwt` cookie that sign-in sets (seed logins: [C3](contracts/C3-seed-data.md)):
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
      -d '{"username":"analyst@seed.lemarket.com","password":"Pass123!"}' \
-     http://localhost:8090/api/auth/login
-curl -b cookies.txt http://localhost:8090/api/v1/reports/ping
-curl -b cookies.txt "http://localhost:8090/api/v1/reports/trades?periodType=MONTH"
+     http://localhost:4201/api/auth/login
+curl -b cookies.txt http://localhost:4201/api/v1/reports/ping
+curl -b cookies.txt "http://localhost:4201/api/v1/reports/trades?periodType=MONTH"
 ```
 
 The first only checks access; the second is the trade report, counted and totalled per day, week, month or year.
 
-Only `ANALYST` gets `200`; no cookie gets `401` and every other role `403`. It needs no new
-migration. Its connections to the shared database are few, read-only and time-limited so reports
-can't slow down trading. Those limits, and the rules every report endpoint follows, are in its
-[README](services/reporting-service/README.md); the API is in [C6](contracts/C6-api.md#reports-reporting-service).
+Only `ANALYST` gets `200`; no cookie gets `401` and every other role `403`. Reports read through a
+connection pool of their own, small, read-only and time-limited so they can't slow down trading;
+surveillance writes its alerts through the ordinary pool. Those limits, and the rules every report
+endpoint follows, are in its [README](services/staff-ops-service/README.md); the API is in
+[C6](contracts/C6-api.md#reports-staff-ops-service).

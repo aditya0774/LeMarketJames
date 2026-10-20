@@ -62,22 +62,24 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><a href="#com.lemarketjames.market.client">com.lemarketjames.market.client</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
-<div class="col-last odd-row-color">
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.market.inprocess">com.lemarketjames.market.inprocess</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.market.service">com.lemarketjames.market.service</a></div>
+<div class="col-last even-row-color">
 <div class="block">The running market: the simulator that advances prices, the scheduler that drives it, database
  loading/saving, and the read-only <a href="MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a>
  other features depend on.</div>
 </div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
-<div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.quotes">com.lemarketjames.quotes</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.portfolio">com.lemarketjames.portfolio</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.quotes">com.lemarketjames.quotes</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.trades">com.lemarketjames.trades</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 <section class="package-uses">
 <ul class="block-list">
@@ -131,6 +133,36 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="class-use/PriceHistoryService.html#com.lemarketjames.market.client">PriceHistoryService</a></div>
 <div class="col-last odd-row-color">
+<div class="block">Read-only access to past prices, for charts.</div>
+</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.market.inprocess">
+<div class="caption"><span>Classes in <a href="package-summary.html">com.lemarketjames.market.service</a> used by <a href="../inprocess/package-summary.html">com.lemarketjames.market.inprocess</a></span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/MarketDataService.html#com.lemarketjames.market.inprocess">MarketDataService</a></div>
+<div class="col-last even-row-color">
+<div class="block">Read-only access to current simulated market prices.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/MarketFeedControl.html#com.lemarketjames.market.inprocess">MarketFeedControl</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Steering for the simulated feed (contract C4).</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/MarketSimulator.html#com.lemarketjames.market.inprocess">MarketSimulator</a></div>
+<div class="col-last even-row-color">
+<div class="block">In-memory stock market driven by Geometric Brownian Motion.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/PriceHistoryReader.html#com.lemarketjames.market.inprocess">PriceHistoryReader</a></div>
+<div class="col-last odd-row-color">
+<div class="block">trading-service's own <a href="PriceHistoryService.html" title="interface in com.lemarketjames.market.service"><code>PriceHistoryService</code></a>: past days come from <code>price_history</code> and
+ today's minutes from <code>price_candles</code>, and both end with the live quote.</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/PriceHistoryService.html#com.lemarketjames.market.inprocess">PriceHistoryService</a></div>
+<div class="col-last even-row-color">
 <div class="block">Read-only access to past prices, for charts.</div>
 </div>
 </div>

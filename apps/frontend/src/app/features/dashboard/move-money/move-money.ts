@@ -165,10 +165,7 @@ export class MoveMoney {
     if (!(err instanceof HttpErrorResponse)) {
       return 'Something went wrong. Try again in a moment.';
     }
-    if (err.status === 404 || err.status === 405 || err.status === 501) {
-      return "Deposits and withdrawals aren't available yet.";
-    }
-    if (err.status === 400 && typeof err.error?.error === 'string') {
+    if (typeof err.error?.error === 'string') {
       return err.error.error;
     }
     if (err.status === 401) {

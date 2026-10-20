@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">OrderEventConsumerSwitch</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">The setting that decides whether a service listens to the order events on Kafka (contract C5).
- It is the consuming side's counterpart of buy-sell-service's <code>lmj.events.publisher</code>.
+ It is the consuming side's counterpart of orders-service's <code>lmj.events.publisher</code>.
 
  <p>Unset means the service does not listen and contacts no broker, so unit tests and a stack
  started without Kafka (the native Windows scripts) need none; Docker Compose and Jenkins set it

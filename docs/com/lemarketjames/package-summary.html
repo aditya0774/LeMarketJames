@@ -81,11 +81,11 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><a href="auth/package-summary.html">com.lemarketjames.auth</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="common/package-summary.html">com.lemarketjames.common</a></div>
+<div class="col-first even-row-color"><a href="cash/package-summary.html">com.lemarketjames.cash</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="config/package-summary.html">com.lemarketjames.config</a></div>
+<div class="col-first odd-row-color"><a href="common/package-summary.html">com.lemarketjames.common</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="gateway/package-summary.html">com.lemarketjames.gateway</a></div>
+<div class="col-first even-row-color"><a href="config/package-summary.html">com.lemarketjames.config</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><a href="holdings/package-summary.html">com.lemarketjames.holdings</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
@@ -111,12 +111,10 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><a href="sessions/package-summary.html">com.lemarketjames.sessions</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="staffgateway/package-summary.html">com.lemarketjames.staffgateway</a></div>
+<div class="col-first odd-row-color"><a href="surveillance/package-summary.html">com.lemarketjames.surveillance</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="surveillance/package-summary.html">com.lemarketjames.surveillance</a></div>
+<div class="col-first even-row-color"><a href="trades/package-summary.html">com.lemarketjames.trades</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="trades/package-summary.html">com.lemarketjames.trades</a></div>
-<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </div>
 </li>
@@ -126,43 +124,31 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ActivityServiceApplication.html" title="class in com.lemarketjames">ActivityServiceApplication</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="AuthServiceApplication.html" title="class in com.lemarketjames">AuthServiceApplication</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Shows how much of each stock has been trading.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="AuthServiceApplication.html" title="class in com.lemarketjames">AuthServiceApplication</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Entry point for the auth microservice (registration, login, logout, /me).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="BuySellServiceApplication.html" title="class in com.lemarketjames">BuySellServiceApplication</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Greeter.html" title="class in com.lemarketjames">Greeter</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Simple utility class providing greeting functionality.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HoldingsServiceApplication.html" title="class in com.lemarketjames">HoldingsServiceApplication</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HomeController.html" title="class in com.lemarketjames">HomeController</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Entry point for the holdings microservice (client profile, holdings, portfolio, trade history).</div>
+<div class="block">The root greeting, kept from core-service's former main class: CI's smoke test reads it to
+ check that trading-service answers at all, without a session.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Main.html" title="class in com.lemarketjames">Main</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Main application class for the LeMarketJames Spring Boot application.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="MarketServiceApplication.html" title="class in com.lemarketjames">MarketServiceApplication</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrdersServiceApplication.html" title="class in com.lemarketjames">OrdersServiceApplication</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="StaffOpsServiceApplication.html" title="class in com.lemarketjames">StaffOpsServiceApplication</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Entry point for the market microservice (simulated prices, exposed at /api/market/**).</div>
+<div class="block">Entry point for staff-ops-service: aggregate, read-only reports for analysts and the
+ surveillance alerts Trading Ops reads.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NotificationServiceApplication.html" title="class in com.lemarketjames">NotificationServiceApplication</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TradingServiceApplication.html" title="class in com.lemarketjames">TradingServiceApplication</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Tells clients what happened to their orders.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ReportingServiceApplication.html" title="class in com.lemarketjames">ReportingServiceApplication</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Aggregate, read-only reports for analysts.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SurveillanceServiceApplication.html" title="class in com.lemarketjames">SurveillanceServiceApplication</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">Watches new orders for Trading Operations.</div>
+<div class="block">Entry point for trading-service: the simulated market, instruments, quotes and sessions, the
+ client profile, holdings, portfolio and trade history, and the notification and market-activity
+ consumers.</div>
 </div>
 </div>
 </div>

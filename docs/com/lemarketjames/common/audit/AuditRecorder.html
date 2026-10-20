@@ -136,8 +136,13 @@ loadScripts(document, 'script');</script>
 <div class="block">Records one event for an order.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recordSubmission(com.lemarketjames.common.audit.SubmissionAuditEvent)" class="member-name-link">recordSubmission</a><wbr>(<a href="SubmissionAuditEvent.html" title="class in com.lemarketjames.common.audit">SubmissionAuditEvent</a>&nbsp;event)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recordCashMovement(com.lemarketjames.common.audit.CashAuditEvent)" class="member-name-link">recordCashMovement</a><wbr>(<a href="CashAuditEvent.html" title="class in com.lemarketjames.common.audit">CashAuditEvent</a>&nbsp;event)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Records a deposit or withdrawal in the transaction that changes the cash balance.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recordSubmission(com.lemarketjames.common.audit.SubmissionAuditEvent)" class="member-name-link">recordSubmission</a><wbr>(<a href="SubmissionAuditEvent.html" title="class in com.lemarketjames.common.audit">SubmissionAuditEvent</a>&nbsp;event)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Records one event of an order submission.</div>
 </div>
 </div>
@@ -199,6 +204,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Records one event of an order submission. Its <a href="SubmissionAuditEvent.html#eventKey()"><code>SubmissionAuditEvent.eventKey()</code></a> is
  unique in the table, so writing the same event again fails and rolls the caller's
  transaction back instead of storing a duplicate.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="recordCashMovement(com.lemarketjames.common.audit.CashAuditEvent)">
+<h3>recordCashMovement</h3>
+<div class="member-signature"><span class="annotations">@Transactional(propagation=MANDATORY)
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">recordCashMovement</span><wbr><span class="parameters">(<a href="CashAuditEvent.html" title="class in com.lemarketjames.common.audit">CashAuditEvent</a>&nbsp;event)</span></div>
+<div class="block">Records a deposit or withdrawal in the transaction that changes the cash balance.</div>
 </section>
 </li>
 </ul>

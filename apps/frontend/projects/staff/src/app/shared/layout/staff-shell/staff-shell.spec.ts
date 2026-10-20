@@ -26,7 +26,7 @@ describe('StaffShell', () => {
     expect(page.querySelectorAll('header a:not(.brand)')).toHaveLength(0);
   });
 
-  it('signs out through the gateway and returns to the staff login', async () => {
+  it('signs out through the API and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -36,10 +36,10 @@ describe('StaffShell', () => {
     auth.roles.set(['ANALYST']);
     const fixture = TestBed.createComponent(StaffShell);
     await fixture.whenStable();
-    // Resolves when the shell navigates, which it does only once the gateway has answered.
-    const navigatedTo = new Promise<unknown>((resolve) => {
-      TestBed.inject(Router).navigate = async (commands) => {
-        resolve(commands);
+    // Resolves when the shell navigates, which it does only once the API has answered.
+    const navigation = new Promise<{ commands: unknown; extras: unknown }>((resolve) => {
+      TestBed.inject(Router).navigate = async (commands, extras) => {
+        resolve({ commands, extras });
         return true;
       };
     });
@@ -49,7 +49,7 @@ describe('StaffShell', () => {
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.logout-btn')!.click();
     TestBed.inject(HttpTestingController).expectOne('/api/auth/logout').flush({ message: 'Logged out' });
 
-    expect(await navigatedTo).toEqual(['/login']);
+    expect(await navigation).toEqual({ commands: ['/login'], extras: { replaceUrl: true } });
     expect(auth.currentUser()).toBeNull();
   });
 });

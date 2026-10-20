@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
@@ -72,6 +73,21 @@ public class JwtService {
                 .compact();
     }
 
+    /** Generates a token whose issue time is explicitly after a session invalidation cutoff. */
+    public String generateToken(String username, Set<Role> roles, Instant issuedAt) {
+        Date now = new Date();
+        Date issued = Date.from(issuedAt);
+        Date expiry = new Date(Math.max(now.getTime(), issued.getTime()) + expirationMs);
+
+        return Jwts.builder()
+                .subject(username)
+                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())
+                .issuedAt(issued)
+                .expiration(expiry)
+                .signWith(signingKey)
+                .compact();
+    }
+
     /**
      * Gets the token expiration time in seconds.
      *
@@ -114,7 +130,9 @@ public class JwtService {
                     ? EnumSet.of(Role.CLIENT)
                     : names.stream().map(name -> Role.valueOf(String.valueOf(name)))
                             .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
-            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles));
+            Date issuedAt = claims.getIssuedAt();
+            Instant issuedInstant = issuedAt == null ? Instant.MIN : issuedAt.toInstant();
+            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles, issuedInstant));
         } catch (JwtException | IllegalArgumentException e) {
             return java.util.Optional.empty();
         }

@@ -54,7 +54,7 @@ for attempt in $(seq 1 60); do
     sleep 1
 done
 test "$filled" = 1
-# LMKT-23 AC3: the fill was announced. In this stack buy-sell-service publishes OrderFilled to Kafka
+# LMKT-23 AC3: the fill was announced. In this stack orders-service publishes OrderFilled to Kafka
 # (LMKT-137), so the record is read back from the topic rather than from the service's log.
 # Publishing runs just after the fill commits, hence the retries. Each read takes the whole topic
 # and ends once no record has arrived for 5 seconds, which the tool reports as a timeout.
@@ -77,11 +77,11 @@ count=$(compose exec -T db psql -At -U lemarket -d lemarket \
 test "$count" = 1
 
 # Restart the application, retaining PostgreSQL and its named volume.
-compose restart buy-sell-service
+compose restart orders-service
 wait_for_backend
 curl --fail --silent --show-error "$base/api/v1/orders/$order_id" -b "$scratch/cookies" > "$scratch/readback.json"
 node -e 'const fs=require("fs"), a=JSON.parse(fs.readFileSync(process.argv[1],"utf8")), b=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); for(const key of ["orderId","accountId","instrumentId","orderType","quantity","pricePerUnit","orderStatus"]) if(a[key]!==b[key]) throw Error("Restart readback mismatch: "+key);' "$scratch/order.json" "$scratch/readback.json"
-echo "BUY order persisted and remained readable after buy-sell-service restart."
+echo "BUY order persisted and remained readable after orders-service restart."
 
 cash_after=$(compose exec -T db psql -At -U lemarket -d lemarket -c "SELECT cash_balance FROM accounts WHERE account_id=$account_id;")
 test "$cash_before" = "$cash_after"

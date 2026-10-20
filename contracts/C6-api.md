@@ -6,33 +6,28 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 
 ## Rules for every public endpoint
 
-- **Entry point.** Browsers call only a gateway, under `/api/**`: the trading app calls the trading gateway (`:8080` in a container, `:8089` on the host) and the staff app calls the staff gateway (`:8090`). Paths under `/internal/**` exist only service-to-service and are never routed by either gateway. See [Which gateway serves which paths](#which-gateway-serves-which-paths).
-- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` calls are never refused this way. The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff gateway the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
+- **Entry point.** Browsers call only their own web app's origin, under `/api/**`: the trading app on `:4200` and the staff app on `:4201`. Each app forwards the paths it routes straight to the service that serves them (its Nginx in Docker, its dev-server proxy under `ng serve`); there is no gateway. Paths under `/internal/**` exist only service-to-service and neither app forwards them. See [Which web app routes which paths](#which-web-app-routes-which-paths).
+- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` calls are never refused this way. The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff app the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
 - **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
 - **Validation failures** return `400 { "errors": { "<field>": "<message>" } }`. Other bad input returns `400 { "message": "..." }`.
 
-## Which gateway serves which paths
+## Which web app routes which paths
 
-Each gateway's route list is its configuration file; this table says what they add up to. A path a gateway has no route for answers `404` there, whoever asks.
+Each app's routing is its Nginx configuration, repeated in its dev-server proxy; this table says what they add up to. A path an app does not route answers `404` there (staff app) or reaches trading-service, which has no such endpoint (trading app), whoever asks.
 
-| Paths | Service | Trading gateway ([application.yml](../services/gateway-service/src/main/resources/application.yml)) | Staff gateway ([application-staff.yml](../services/gateway-service/src/main/resources/application-staff.yml)) |
+| Paths | Service | Trading app ([nginx.conf](../apps/frontend/nginx.conf), [proxy.conf.json](../apps/frontend/proxy.conf.json)) | Staff app ([nginx.conf](../apps/frontend/projects/staff/nginx.conf), [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs)) |
 |---|---|---|---|
 | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | auth-service | yes | yes |
 | `POST /api/auth/register` | auth-service | yes | no: staff logins are not self-service |
-| `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/{orderId}/timeline` | buy-sell-service | yes, as part of `/api/v1/orders/**` | yes |
-| The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | buy-sell-service | yes | no |
-| Holdings, balance, profile, portfolio, trades | holdings-service | yes | no |
-| `/api/market/**` | market-service | yes | no |
-| `/api/v1/reports/**` | reporting-service | no: these paths fall through to core-service, which has no such endpoint | yes |
-| `/api/v1/notifications/**` | notification-service | yes | no |
-| `/api/v1/market-activity/**` | activity-service | yes | no |
-| `/api/v1/surveillance/**` | surveillance-service | no: these paths fall through to core-service, which has no such endpoint | yes |
-| Everything else under `/api/**` | core-service | yes | no |
+| `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
+| The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
+| `/api/v1/reports/**`, `/api/v1/surveillance/**` | staff-ops-service | no: these paths reach trading-service, which has no such endpoint | yes |
+| Everything else under `/api/**`: quotes, instruments, sessions, `/api/market/**`, holdings, balance, profile, portfolio, trades, notifications, market activity | trading-service | yes | no |
 
-- A gateway decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either gateway: a `CLIENT` who signs in through the staff gateway gets `403` on every staff route.
-- The session cookie has a different name at each gateway ([C7](C7-roles.md#the-staff-session-cookie)), so a session from one is not a session at the other.
-- A new staff endpoint needs a route in `application-staff.yml` and a row here.
+- An app decides only which paths exist. Who may call them is each service's rule ([C7](C7-roles.md)), the same through either app: a `CLIENT` who signs in through the staff app gets `403` on every staff route.
+- The session cookie has a different name in each app ([C7](C7-roles.md#the-staff-session-cookie)), so a session in one is not a session in the other.
+- A new staff endpoint needs a route in the staff app's `nginx.conf` and `staff-proxy.mjs`, and a row here. A new path for a service other than trading-service needs a route in the trading app's `nginx.conf` and `proxy.conf.json` too.
 
 ## Auth (auth-service)
 
@@ -40,16 +35,16 @@ Each gateway's route list is its configuration file; this table says what they a
 |---|---|---|
 | `POST /api/auth/register` | `username, password, email, fullName, streetAddress, apartment?, city, state, zipCode, country, ssn, initialDeposit, investmentExperience ("beginner" / "experienced"), employmentStatus, dateOfBirth (yyyy-MM-dd), phoneNumber` | `201 { username, message }` |
 | `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, message }` and the `jwt` cookie |
-| `POST /api/auth/logout` | none | `200 { message }`; clears the cookie |
+| `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
 | `GET /api/auth/me` | none | `200 { username, roles, accountId? }` |
 
-- Clients and staff sign in with the same endpoint, each through their own gateway. The staff gateway serves login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
+- Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
 - Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).
 - The right password for a login that may no longer be used gets `403 { "success": false, "code": "ACCOUNT_INACTIVE", "error", "message" }`, with both texts "This account is no longer active. Please contact the firm." That is any client that isn't `ACTIVE` ([AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)) or a staff login whose `active` flag is off. Match on `code` ([AccountInactiveException](../libs/common/src/main/java/com/lemarketjames/common/security/AccountInactiveException.java)), not the text. A wrong password never gets this response, so it never reveals an account's status, and an account that no longer exists gets the wrong-password `400`.
 - Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
 
-## Instruments (core-service)
+## Instruments (trading-service)
 
 ### GET /api/v1/instruments
 
@@ -64,9 +59,9 @@ The supported stock list: the `instruments` table, in id order, suspended stocks
 
 Prices aren't included; they come from `GET /api/quotes`.
 
-## Orders (buy-sell-service)
+## Orders (orders-service)
 
-Order statuses and allowed moves: [contract C1](C1-orders.md). Rejection codes: [RejectionReason](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java).
+Order statuses and allowed moves: [contract C1](C1-orders.md). Rejection codes: [RejectionReason](../services/orders-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java).
 
 ### POST /api/v1/orders
 
@@ -78,7 +73,7 @@ Places a market order for one of the caller's accounts.
 
 - `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
-- For a SELL, holdings-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
+- For a SELL, trading-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
 - Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
 
 **Response `201`** (the order DTO, also returned by every read below):
@@ -156,7 +151,7 @@ Live order-status events for the signed-in client, delivered as Server-Sent Even
 |---|---|
 | `GET /api/v1/orders/stream` | SSE stream of order-status changes for the caller's own account only |
 
-The stream emits an `order-status-changed` event each time buy-sell-service publishes an [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) for the caller's account.
+The stream emits an `order-status-changed` event each time orders-service publishes an [OrderStatusChanged](../services/orders-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) for the caller's account.
 
 **Event payload:**
 
@@ -187,7 +182,7 @@ Access control and failures:
 
 ### Order timeline (TRADING_OPS only)
 
-Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills. The staff app reaches it through the staff gateway ([which gateway](#which-gateway-serves-which-paths)).
+Retrieve the complete audit trail for an order, showing all events in chronological order. This endpoint is **restricted to staff with the TRADING_OPS role** and is used to investigate order lifecycle and troubleshoot fills. The staff app routes it to orders-service ([which web app](#which-web-app-routes-which-paths)).
 
 | Method & path | Returns |
 |---|---|
@@ -251,7 +246,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
 
 ### Trade search (TRADING_OPS only)
 
-`GET /api/v1/orders/trades/search` (buy-sell-service, through the trading gateway's orders route for the trading app's search screen, and through the staff gateway for the staff app).
+`GET /api/v1/orders/trades/search` (orders-service, through the trading app's orders route for its search screen, and through the staff app for Trading Ops).
 Supply exactly one search mode:
 
 - `?orderId=42`: the filled order with that ID.
@@ -263,7 +258,7 @@ four-digit year), supplied together or both omitted for client search. Filtering
 `from` through the entire `to` day (exclusive next midnight). Results are newest fill first,
 then descending order ID for equal fill times. Client IDs are not account IDs.
 
-**Response `200`** is an array of [TradeSearchResult](../services/buy-sell-service/src/main/java/com/lemarketjames/trades/TradeSearchResult.java):
+**Response `200`** is an array of [TradeSearchResult](../services/orders-service/src/main/java/com/lemarketjames/trades/TradeSearchResult.java):
 
 ```json
 [
@@ -281,19 +276,19 @@ including a client searching for their own trade, gets `403`. Operations may sea
 trades, including closed clients. Existing ownership rules for client history are unchanged.
 
 `GET /api/v1/orders/trades/clients?name=Alex` provides a Trading Operations-only client-name
-lookup through the staff gateway. It returns `[{ "clientId": 7, "fullName": "Alex Smith" }]`.
+lookup through the staff app. It returns `[{ "clientId": 7, "fullName": "Alex Smith" }]`.
 The trimmed name must contain 2–100 characters; matching is case-insensitive literal substring
 matching (not wildcard matching). Up to 50 matches are returned, sorted by name then client ID.
 No matches returns `[]`; invalid input gets `400`, missing authentication `401`, other roles `403`.
 The staff UI shows each matching name with its ID and asks the operator to select a client,
 then uses the existing client-ID search with an optional date range.
 
-The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Selecting a result's order number shows that order's audit timeline from [`GET /api/v1/orders/{orderId}/timeline`](#order-timeline-trading_ops-only). Its same-origin `/api` calls target the staff gateway on 8090 (LMKT-143), never the
-trading gateway. The staff gateway forwards login/logout, session checks, trade search and reports; owning services enforce roles.
+The staff frontend on port 4201 provides `/trade-search` with separate Order search and Client search options. Each accepts its corresponding ID or a client name. A unique name match loads trades automatically; duplicate names require a client selection. Client date filters are optional. Selecting a result's order number shows that order's audit timeline from [`GET /api/v1/orders/{orderId}/timeline`](#order-timeline-trading_ops-only). Its same-origin `/api` calls go to the staff app's own origin (LMKT-143), which forwards
+login/logout, session checks, trade search, the order timeline, reports and alerts, and nothing else; owning services enforce roles.
 Trading Operations land on their dashboard after login and reach it from a navigation link in the
 signed-in layout. Other signed-in roles are redirected to `/access-denied` ([C7](C7-roles.md#the-staff-app)). The screen labels dates and execution
 times as UTC, preserves four-decimal execution prices, and clears/cancels stale searches when
-criteria change. Component tests mock this endpoint; normal use calls the gateway.
+criteria change. Component tests mock this endpoint; normal use calls it through the staff app.
 
 ### Changing an order's status (TRADING_OPS only)
 
@@ -320,9 +315,9 @@ stale quotes; residence restrictions apply to both sides at placement.
 The quote used is stored with the fill: its price in `price_per_unit`, its feed in `quote_source`
 and its time in `quote_time` ([013](../database/schema/013_execution_quote.sql)); `filled_at` is
 the execution time. The source is the feed name defined in
-[MarketOrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/MarketOrderExecutor.java).
+[MarketOrderExecutor](../services/orders-service/src/main/java/com/lemarketjames/orders/execution/MarketOrderExecutor.java).
 
-Before sending a fill, buy-sell commits `PENDING`, its execution quote, and `settlement_pending`.
+Before sending a fill, orders-service commits `PENDING`, its execution quote, and `settlement_pending`.
 That flag prevents operations from changing/rejecting an order with an uncertain settlement.
 Holdings locks the account and persists one outcome per order in `settlement_receipts`, atomically
 with any cash/share changes. `POST /internal/holdings/settle` returns `200 { rejectionReason }`:
@@ -337,52 +332,72 @@ nothing.
 Cash movements use USD cents (HALF_UP); quantities and prices support at most four decimals.
 The dashboard opens `GET /api/v1/orders/stream` for live order-status events and refreshes
 orders, holdings and history whenever a status-change event arrives.
-Holdings reads order history and buying-power data from buy-sell, never core.
+Holdings (trading-service) reads order history and buying-power data from orders-service.
 
-## Holdings, balance, profile, trades (holdings-service)
+## Holdings, balance, profile, trades (trading-service)
 
 | Method & path | Returns |
 |---|---|
 | `GET /api/v1/holdings` (alias `/api/holdings`) | `{ success, holdings: [{ symbol, quantity, averageCost, currentPrice, totalCost, currentValue, gainLoss, gainLossPercent }] }` for the caller. An empty portfolio is `200` with `holdings: []`, never a 404. |
 | `POST /api/v1/holdings/validate` | Body `{ accountId, instrumentId, sellQuantity }` → `200 { success: true, message }`, or `400 { success: false, error }` when there aren't enough shares |
 | `GET /api/balance` (aliases `/api/v1/balance`, `/api/v1/portfolio`) | `{ success, balance: { cash, invested, totalValue, buyingPower, dayGainLoss, dayGainLossPercent, totalGainLoss, totalGainLossPercent, currency } }` for the caller |
+| `POST /api/v1/portfolio/deposits` | Body `{ amount, requestId }` → `200 { success: true, balance }` after adding cash |
+| `POST /api/v1/portfolio/withdrawals` | Body `{ amount, requestId }` → `200 { success: true, balance }` after removing available cash |
 | `GET /api/v1/profile` | `{ username, fullName, email, phone, accountId, cashBalance, currency, tradingEnabled, openedDate }` for the caller |
 | `GET /api/v1/trades?accountId=…` | the account's filled orders: `[{ symbol, side, quantity, pricePerUnit, filledAt }]` |
 | `GET /api/v1/portfolio/history?range=1D` | `{ success: true, range, points: [{ time, value }] }`: what the caller's stocks were worth over the [chart range](#chart-ranges), oldest first; `400 { success: false, error: "Unknown range" }` for any other range |
 
 Holdings, balance and profile take no `accountId`; they are scoped to the caller's own account. A login without an account (staff) gets `404 { "success": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }` from all three.
 
-Holding fields: `averageCost` is the average price paid per share, from settlement's cost basis. `currentPrice` is the latest market-service quote. `totalCost` = quantity × averageCost, `currentValue` = quantity × currentPrice, `gainLoss` = currentValue − totalCost, `gainLossPercent` = gainLoss / totalCost × 100.
+Holding fields: `averageCost` is the average price paid per share, from settlement's cost basis. `currentPrice` is the latest market quote. `totalCost` = quantity × averageCost, `currentValue` = quantity × currentPrice, `gainLoss` = currentValue − totalCost, `gainLossPercent` = gainLoss / totalCost × 100.
 
 How the balance fields are computed:
 
 | Field | Rule |
 |---|---|
 | `cash` | `accounts.cash_balance` |
-| `buyingPower` | `cash` minus the cost of the account's open BUY orders (open = not final, see `OrderStatus.isOpen` in [Order.java](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/Order.java)) |
+| `buyingPower` | `cash` minus the cost of the account's open BUY orders (open = not final, see `OrderStatus.isOpen` in [Order.java](../services/orders-service/src/main/java/com/lemarketjames/orders/entity/Order.java)) |
 | `invested` | Σ holding quantity × current price |
 | `totalValue` | `cash + invested` |
 | `dayGainLoss(%)` | Σ quantity × (price − today's open); % relative to Σ quantity × open |
 | `totalGainLoss(%)` | the holdings totals, relative to total cost |
 
-## Reports (reporting-service)
+### Deposit and withdraw cash
 
-Aggregate reports for staff, on reporting-service (`:8086`). The trading gateway has no route to them: they are served via the staff gateway (`:8090`), the staff app's only backend entry point ([which gateway](#which-gateway-serves-which-paths)).
+Both endpoints are scoped to the account resolved from the caller's JWT. A staff login has no
+account and gets `404 { success: false, code: "ACCOUNT_NOT_FOUND", error: "Account not found" }`.
+The success `balance` has exactly the `GET /api/balance` shape, so the app can show the new buying
+power without another request.
 
-Rules for every report (the full list, for whoever builds one, is in the service's [README](../services/reporting-service/README.md#rules-for-every-report-endpoint)):
+- `amount` is USD, above zero with at most two decimals and no more than the
+  [C5](C5-config.md) per-movement limit. A refusal is
+  `400 { success: false, code: "INVALID_AMOUNT", error }`.
+- A withdrawal may take at most `buyingPower`, leaving the cash reserved by open BUY orders in the
+  account. A refusal is `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`. If open orders
+  cannot be read, the withdrawal fails without changing cash; an outage never counts as no orders.
+- `requestId` is a UUID made by the app for an attempt and retained for its retries. The first call
+  stores its result; another call with the same ID returns successfully without moving cash again.
+- The balance change, idempotency receipt and `CASH_DEPOSITED` or `CASH_WITHDRAWN` audit event
+  commit in one transaction. The event contains `amount`, `balanceAfter` and `requestId` ([C2](C2-audit.md)).
+
+## Reports (staff-ops-service)
+
+Aggregate reports for staff, on staff-ops-service (`:8086`). The trading app has no route to them: only the staff app (`:4201`) forwards them ([which web app](#which-web-app-routes-which-paths)). They read through a connection pool of their own that is small, read-only and time-limited ([C5](C5-config.md#reporting-read-side-limits)).
+
+Rules for every report (the full list, for whoever builds one, is in the service's [README](../services/staff-ops-service/README.md#rules-for-every-report-endpoint)):
 
 - **Path.** Every report is under `/api/v1/reports/...`.
 - **Access.** `ANALYST` only ([C7](C7-roles.md)). A missing or expired cookie gets `401`; every other role gets `403`.
 - **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs`.
 - **Aggregates only.** A response never contains `client_id` or anything else that identifies an individual client, and never a single trade.
-- **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
+- **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
 
 ### GET /api/v1/reports/ping
 
-Reads no data. Tells a caller that reporting-service is up and that their role may read reports, and which time zone reports use.
+Reads no data. Tells a caller that staff-ops-service is up and that their role may read reports, and which time zone reports use.
 
 ```json
-{ "success": true, "service": "reporting-service", "timeZone": "America/New_York" }
+{ "success": true, "service": "staff-ops-service", "timeZone": "America/New_York" }
 ```
 
 `timeZone` is the IANA ID of the reports time zone in this environment; the value above is an example.
@@ -390,11 +405,11 @@ Reads no data. Tells a caller that reporting-service is up and that their role m
 ### GET /api/v1/reports/activity
 
 Trading activity grouped by the client's segment (LMKT-43), for `ANALYST` only.
-The staff app calls this through the staff gateway.
+The staff app calls this on its own origin, which forwards it to staff-ops-service.
 
 - `startDate`, `endDate`: optional ISO calendar dates (`YYYY-MM-DD`), both inclusive in
   the configured reports time zone. Omitted boundaries use the defaults defined in
-  [SegmentActivityService](../services/reporting-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
+  [SegmentActivityService](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
 - Filtering uses `filled_at`, converted to a half-open UTC range by `ReportCalendar`.
 - One row per segment with matching trades, sorted by segment name; no matching trades returns
   `200 { "success": true, "data": [] }`. Segments without matching trades are omitted.
@@ -427,7 +442,7 @@ Analyst-only segment trends, using the same view, date semantics and safeguards 
 The original activity endpoint retains its aggregate-only response shape.
 
 - `startDate`, `endDate`: selected inclusive range; defaults are shared with
-  [SegmentActivityService](../services/reporting-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
+  [SegmentActivityService](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/service/SegmentActivityService.java).
 - `comparisonStartDate`, `comparisonEndDate`: supply both or neither. When omitted,
   compare with the immediately preceding range of the same number of calendar days.
   Custom ranges can overlap or differ in duration; totals are not normalized by duration.
@@ -510,7 +525,7 @@ Insight: the traded volume of the last completed period compared with the period
 
 **Parameters:**
 
-- `periodType` (required): `DAY`, `WEEK`, `MONTH` or `YEAR`, in any letter case. The periods are those of [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the day before today in the reports time zone for `DAY`, the last Monday-to-Sunday week for `WEEK`, and so on.
+- `periodType` (required): `DAY`, `WEEK`, `MONTH` or `YEAR`, in any letter case. The periods are those of [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): the day before today in the reports time zone for `DAY`, the last Monday-to-Sunday week for `WEEK`, and so on.
 
 **Response `200`:**
 
@@ -526,7 +541,7 @@ Insight: the traded volume of the last completed period compared with the period
 ```
 
 - `startDate` and `endDate` are both included, days in the reports time zone. For `inProgress`, `endDate` is today.
-- `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-reporting-service)).
+- `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-staff-ops-service)).
 - `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
 
 **Failures:**
@@ -588,7 +603,7 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 ```
 
 - The window is the 30 days ending today in the reports time zone, both ends included; `days` lists every one of them, oldest first, and a day without trades is `0`, not missing. Today counts the trades made so far.
-- `activeClients` is the number of distinct clients with at least one filled trade that day, counted across all of a client's accounts. Each day is a range from [ReportCalendar](../services/reporting-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java).
+- `activeClients` is the number of distinct clients with at least one filled trade that day, counted across all of a client's accounts. Each day is a range from [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java).
 - Counts only: the response never contains a client, account or order identifier.
 
 **Failures:**
@@ -600,7 +615,7 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 
 ### GET /api/v1/reports/overnight
 
-The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in reporting-service's [README](../services/reporting-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
+The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in staff-ops-service's [README](../services/staff-ops-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
 
 Unlike the other reports, it reads the service's own `report_runs` table ([023](../database/schema/023_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
 
@@ -637,13 +652,13 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 }
 ```
 
-- One entry per report per night, for the last 30 nights (`RECENT_NIGHTS` in [OvernightReportsService](../services/reporting-service/src/main/java/com/lemarketjames/reports/overnight/OvernightReportsService.java)). The most recent `runDate` comes first, then by `name`. No runs gives `data: []`.
+- One entry per report per night, for the last 30 nights (`RECENT_NIGHTS` in [OvernightReportsService](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/overnight/OvernightReportsService.java)). The most recent `runDate` comes first, then by `name`. No runs gives `data: []`.
 - `timeZone` is the IANA ID of the reports time zone (`lmj.reports.time-zone`); the staff app shows every time in it. `runDate` (`YYYY-MM-DD`) is the trading day the run covers, in that zone: the run on the night of the 15th covers the 14th.
-- `status` is one of [RunStatus](../services/reporting-service/src/main/java/com/lemarketjames/reports/overnight/RunStatus.java): `SCHEDULED`, `RUNNING`, `READY`, `LATE` or `FAILED`.
+- `status` is one of [RunStatus](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/overnight/RunStatus.java): `SCHEDULED`, `RUNNING`, `READY`, `LATE` or `FAILED`.
 - `scheduledFor`, `readyBy` and `readyAt` are ISO-8601 UTC instants with a `Z`. `readyBy` is when a successful run must be available by, the ready-by time of that night (07:00 by default, `lmj.reports.ready-by`), so the app hard-codes neither the time nor the zone.
 - A run is `READY` when it finished by `readyBy`. It is `LATE` once `readyBy` has passed without it being ready: at that time a waiting or running run becomes `LATE` and carries on, and a run that finishes after `readyBy` is `LATE` too. A `LATE` run that then fails becomes `FAILED`.
 - `readyAt` is when the run finished: set when `READY`, and when `LATE` once the late run has finished (a `LATE` run with no `readyAt` is still waiting or running). `failureReason` is set only when `FAILED`. Otherwise each is `null`, never left out.
-- A run is `FAILED` when its report failed, with the report's message as the reason. It is also `FAILED` when reporting-service was down for the night's whole window (the reason starts "Did not run"), or stopped while the run was going (the reason starts "Interrupted"); so a night is never just missing from the list. `failureReason` is a message an analyst can read, never a stack trace.
+- A run is `FAILED` when its report failed, with the report's message as the reason. It is also `FAILED` when staff-ops-service was down for the night's whole window (the reason starts "Did not run"), or stopped while the run was going (the reason starts "Interrupted"); so a night is never just missing from the list. `failureReason` is a message an analyst can read, never a stack trace.
 
 **Failures:**
 
@@ -652,24 +667,24 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
-## The consumers (notification-, surveillance- and activity-service)
+## The consumers (notifications, surveillance and market activity)
 
-Three services read the [order events](#the-order-events) from Kafka and serve what they make of them. Each listens in a consumer group of its own, with one listener per topic it reads, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)). notification- and activity-service read one topic each; surveillance-service reads two.
+Three consumers read the [order events](#the-order-events) from Kafka and serve what they make of them: notifications and market activity in trading-service, surveillance in staff-ops-service. Each listens in a consumer group of its own, with one listener per topic it reads, and keeps its results in a table of its own ([018](../database/schema/018_event_consumers.sql)). Notifications and market activity read one topic each; surveillance reads two. Each group keeps the name of the service the consumer once was ([C5](C5-config.md#order-events)).
 
-| Service | Event it reads | Listener (topic and consumer group) | What it does with an event | Read back with |
+| Consumer | Event it reads | Listener (topic and consumer group) | What it does with an event | Read back with |
 |---|---|---|---|---|
-| notification-service (`:8087`) | `OrderStatusChanged` | [OrderStatusListener](../services/notification-service/src/main/java/com/lemarketjames/notifications/OrderStatusListener.java) | Stores one notification per status change, for the order's client | [`GET /api/v1/notifications`](#get-apiv1notifications-client-only), trading gateway |
-| surveillance-service (`:8088`) | `OrderSubmitted` | [OrderSubmittedListener](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/OrderSubmittedListener.java) | Raises an alert for Trading Ops when the order is large | [`GET /api/v1/surveillance/alerts`](#get-apiv1surveillancealerts-trading_ops-only), staff gateway only |
-| | `OrderStatusChanged` | [OrderStatusChangedListener](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/OrderStatusChangedListener.java), in the same consumer group | Raises an alert for Trading Ops when the order's settlement was refused | the same endpoint |
-| activity-service (`:8091`) | `OrderFilled` | [OrderFilledListener](../services/activity-service/src/main/java/com/lemarketjames/activity/OrderFilledListener.java) | Stores the fill, without its account | [`GET /api/v1/market-activity`](#get-apiv1market-activity), trading gateway |
+| Notifications, trading-service (`:8084`) | `OrderStatusChanged` | [OrderStatusListener](../services/trading-service/src/main/java/com/lemarketjames/notifications/OrderStatusListener.java) | Stores one notification per status change, for the order's client | [`GET /api/v1/notifications`](#get-apiv1notifications-client-only), trading app |
+| Surveillance, staff-ops-service (`:8086`) | `OrderSubmitted` | [OrderSubmittedListener](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/OrderSubmittedListener.java) | Raises an alert for Trading Ops when the order is large | [`GET /api/v1/surveillance/alerts`](#get-apiv1surveillancealerts-trading_ops-only), staff app only |
+| | `OrderStatusChanged` | [OrderStatusChangedListener](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/OrderStatusChangedListener.java), in the same consumer group | Raises an alert for Trading Ops when the order's settlement was refused | the same endpoint |
+| Market activity, trading-service (`:8084`) | `OrderFilled` | [OrderFilledListener](../services/trading-service/src/main/java/com/lemarketjames/activity/OrderFilledListener.java) | Stores the fill, without its account | [`GET /api/v1/market-activity`](#get-apiv1market-activity), trading app |
 
 Rules for all three, and for any consumer added later:
 
-- **Its own shape of the event.** A consumer reads the record value with a record class of its own that names only the fields it uses, through [OrderEventReader](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventReader.java). It depends on none of buy-sell-service's classes, and statuses and sides stay text, so a field or a status added by the publisher breaks nobody.
+- **Its own shape of the event.** A consumer reads the record value with a record class of its own that names only the fields it uses, through [OrderEventReader](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventReader.java). It depends on none of orders-service's classes, and statuses and sides stay text, so a field or a status added by the publisher breaks nobody.
 - **The same event twice changes nothing.** Kafka delivers at least once: a record can arrive again after a restart or a failed commit. Each consumer checks for the result before storing it, and a unique key in its table guarantees it: one notification per order and status, one alert per order and reason ([019](../database/schema/019_order_alert_reasons.sql)), one recorded fill per order.
 - **A record that can't be used is skipped.** A value that isn't valid JSON, or that lacks a field the consumer needs, is logged and skipped, so one bad record never blocks the ones behind it.
 - **A new consumer group starts at the oldest record**, so events published before the service first started are not missed. From then on it continues from its group's committed position.
-- **Nothing depends on a consumer.** Publishing is best effort (see [Outbound events](#internal-events-and-the-execution-interface-buy-sell-service)), so a notification, an alert or a recorded fill can be missing. Orders, holdings and the audit trail never read these tables; no service calls a consumer, and a consumer calls no service.
+- **Nothing depends on a consumer.** Publishing is best effort (see [Outbound events](#internal-events-and-the-execution-interface-orders-service)), so a notification, an alert or a recorded fill can be missing. Orders, holdings and the audit trail never read these tables; no service calls a consumer, and a consumer calls no service.
 - **The switch.** A consumer listens only where `LMJ_EVENTS_CONSUMER=kafka` is set ([C5](C5-config.md#order-events)). Elsewhere it starts no listener and its endpoint answers with what its table already holds.
 
 ### GET /api/v1/notifications (CLIENT only)
@@ -687,12 +702,12 @@ The signed-in client's newest notifications (up to 50), newest first. There is n
 ```
 
 - One entry per status change of an order ([C1](C1-orders.md)); placing an order is not a status change, so the first entry of an order is it leaving `SUBMITTED`. `occurredAt` is when the order changed status, ISO-8601 UTC.
-- No notifications is `200` with `notifications: []`. A login without an account gets the same `404 ACCOUNT_NOT_FOUND` as holdings-service gives.
+- No notifications is `200` with `notifications: []`. A login without an account gets the same `404 ACCOUNT_NOT_FOUND` as holdings give.
 - A missing or expired cookie gets `401`; staff roles get `403`.
 
 ### GET /api/v1/surveillance/alerts (TRADING_OPS only)
 
-The newest alerts (up to 100), newest first by `occurredAt`. Served by the staff gateway only; the trading gateway has no route to it.
+The newest alerts (up to 100), newest first by `occurredAt`. Routed by the staff app only; the trading app has no route to it.
 
 ```json
 {
@@ -706,12 +721,12 @@ The newest alerts (up to 100), newest first by `occurredAt`. Served by the staff
 }
 ```
 
-`reason` is an [AlertReason](../services/surveillance-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. An order has at most one alert per reason, so an order can appear more than once: a large order whose settlement is refused has both alerts.
+`reason` is an [AlertReason](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name. An order has at most one alert per reason, so an order can appear more than once: a large order whose settlement is refused has both alerts.
 
 | `reason` | Raised when | From | What the alert carries |
 |---|---|---|---|
 | `LARGE_ORDER` | An order is placed for at least the large-order quantity, a setting ([C5](C5-config.md)); `largeOrderQuantity` is its value in this environment, and the number above is an example. | `OrderSubmitted` | The order as it was placed: `instrumentId`, `side`, `quantity`, `price` (null for a SELL, which has no price until it fills) and `submittedAt`. `occurredAt` equals `submittedAt`; `rejectionReason` is null. |
-| `SETTLEMENT_REFUSED` | An order is rejected because holdings-service refused its settlement ([Automatic execution and recovery](#automatic-execution-and-recovery)): the order moves to `REJECTED` with `INSUFFICIENT_CASH` (a BUY) or `INSUFFICIENT_HOLDINGS` (a SELL). | `OrderStatusChanged` | `rejectionReason`, which of the two it was, and `occurredAt`, when the order was rejected. `instrumentId`, `side`, `quantity`, `price` and `submittedAt` are null: the status change does not carry them. The order's [timeline](#order-timeline-trading_ops-only) has them. |
+| `SETTLEMENT_REFUSED` | An order is rejected because trading-service refused its settlement ([Automatic execution and recovery](#automatic-execution-and-recovery)): the order moves to `REJECTED` with `INSUFFICIENT_CASH` (a BUY) or `INSUFFICIENT_HOLDINGS` (a SELL). | `OrderStatusChanged` | `rejectionReason`, which of the two it was, and `occurredAt`, when the order was rejected. `instrumentId`, `side`, `quantity`, `price` and `submittedAt` are null: the status change does not carry them. The order's [timeline](#order-timeline-trading_ops-only) has them. |
 
 ```json
 { "alertId": 4, "orderId": 42, "accountId": 7, "instrumentId": null, "side": null, "quantity": null,
@@ -740,13 +755,13 @@ How much of each stock traded in the last 24 hours, for anyone who is signed in.
 }
 ```
 
-- `trades` counts fills, `volume` is shares (buys and sells together), `turnover` is the sum of quantity x price in USD. The window is a rolling 24 hours ending now ([MarketActivityService](../services/activity-service/src/main/java/com/lemarketjames/activity/MarketActivityService.java)), so it needs no time zone; `since` is its start.
+- `trades` counts fills, `volume` is shares (buys and sells together), `turnover` is the sum of quantity x price in USD. The window is a rolling 24 hours ending now ([MarketActivityService](../services/trading-service/src/main/java/com/lemarketjames/activity/MarketActivityService.java)), so it needs no time zone; `since` is its start.
 - Aggregates only: the answer never names an order, an account or a client.
 - A missing or expired cookie gets `401`. Every role may read it.
 
-Portfolio history counts stocks only, like `invested`, so its last point is today's `invested`. There is no stored record of past holdings: the shares held at each point are rebuilt from the account's FILLED orders up to then (read from buy-sell-service like buying power), and valued at that point's price from market-service's history. Points before the first purchase are left out, so an account that has never owned a stock gets `points: []`. A failed orders or prices call also gives fewer points, never an error.
+Portfolio history counts stocks only, like `invested`, so its last point is today's `invested`. There is no stored record of past holdings: the shares held at each point are rebuilt from the account's FILLED orders up to then (read from orders-service like buying power), and valued at that point's price from the market's history. Points before the first purchase are left out, so an account that has never owned a stock gets `points: []`. A failed orders or prices call also gives fewer points, never an error.
 
-## Quotes (core-service, reading market-service)
+## Quotes (trading-service, reading its market simulator)
 
 | Method & path | Returns |
 |---|---|
@@ -759,31 +774,31 @@ Portfolio history counts stocks only, like `invested`, so its last point is toda
 
 ### Chart ranges
 
-The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by core- and holdings-service, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
+The two history endpoints take the same `range` values, listed with the span each covers in [`ChartRange`](../libs/market-client/src/main/java/com/lemarketjames/market/model/ChartRange.java) (shared by the stock and portfolio charts, case-insensitive; the default is `1D`). `1D` is the current trading day from its 1-minute candles (`price_candles`), each point stamped at the end of its minute. Longer ranges have one point per trading day from the daily bars (`price_history`, [migration 022](../database/README.md)), counted back from today, each stamped at the exchange's closing time (`MarketHours.closingTime`, e.g. 16:00 New York = 20:00 UTC) so every `time` is an ISO-8601 UTC instant. Money is rounded to 2 decimals.
 
 Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDataClient` call); the feed resumes automatically on the next successful call, with the outage's start and end logged ([C4](C4-quote-feed.md)).
 
-## Sessions (core-service)
+## Sessions (trading-service)
 
 `POST /api/sessions/validate?accountId=…` with header `Authorization: Bearer <jwt>` returns `200 { success: true, session: { sessionId, accountId, expiresAt, isActive }, message }`, or `401 { success: false, message }` once the token has expired.
 
-## Internal endpoints (service-to-service only, never through the gateway)
+## Internal endpoints (service-to-service only, never through a web app)
 
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
-| `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | core, buy-sell, holdings → market-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). |
-| `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | core, holdings → market-service | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
-| `POST /internal/holdings/settle` | buy-sell → holdings-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
-| `POST /internal/holdings/validate` | buy-sell → holdings-service | SELL holdings check at placement |
-| `/internal/market/control/**` | tests → market-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
-| `/internal/holdings/control/settlement-faults/{accountId}` | tests → holdings-service | [The settlement test control](#the-settlement-test-control), only when enabled |
+| `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | orders-service → trading-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). trading-service's own features read the same quotes in-process, and see an UNAVAILABLE feed the same way: no quote, and an outage recorded. |
+| `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | any service → trading-service (none today: its own charts read in-process) | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
+| `POST /internal/holdings/settle` | orders-service → trading-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
+| `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement |
+| `/internal/market/control/**` | tests → trading-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
+| `/internal/holdings/control/settlement-faults/{accountId}` | tests → trading-service | [The settlement test control](#the-settlement-test-control), only when enabled |
 
 ### The settlement test control
 
 Makes the settlements of one account fail part-way, so a test can show on a running stack that a
 failed settlement changes nothing and settles once when retried
 ([Automatic execution and recovery](#automatic-execution-and-recovery)). It exists only where its
-setting is on ([C5](C5-config.md#settlement-test-control)), and is served by holdings-service
+setting is on ([C5](C5-config.md#settlement-test-control)), and is served by trading-service
 itself on port 8084.
 
 ```bash
@@ -794,24 +809,24 @@ curl -X DELETE localhost:8084/internal/holdings/control/settlement-faults/7   # 
 
 - While an account is failing, `POST /internal/holdings/settle` for it answers `500` after the
   cash movement, the holding, the receipt and the `SETTLED` event have been written and before
-  they are committed, so all of them are rolled back. buy-sell-service keeps the order `PENDING`
+  they are committed, so all of them are rolled back. orders-service keeps the order `PENDING`
   with `settlement_pending` and retries on every poll.
 - A settlement that is refused (`INSUFFICIENT_CASH`, `INSUFFICIENT_HOLDINGS`) is still answered
   as a refusal, and a request that already has a receipt still gets its original outcome.
 - `failures` counts the settlements failed since the account was named; it is 0 once released.
 - Other accounts are not affected, so tests can use it while the rest of a suite runs.
 
-## Internal events and the execution interface (buy-sell-service)
+## Internal events and the execution interface (orders-service)
 
-- **Events.** buy-sell-service announces three things about an order: [OrderSubmitted](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderSubmitted.java) when it is placed, [OrderStatusChanged](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) after every status transition, and [OrderFilled](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) in addition when it fills. [The order events](#the-order-events) below says when each is published and what it carries. All three are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the order's transaction commits.
-- **Outbound events (Kafka).** After the order's transaction commits, [OrderEventForwarder](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands each event to an [OrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java). With Kafka switched on, as in Docker Compose and Jenkins, [KafkaOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaOrderEventPublisher.java) publishes them to the broker, where [three services consume them](#the-consumers-notification--surveillance--and-activity-service):
-  - **Topics.** One per event. Their names are constants in [OrderEventTopicNames](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventTopicNames.java) in `libs/common`, where the publisher and the consumers both read them; [OrderEventTopics](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventTopics.java) creates them on the broker when buy-sell-service starts.
+- **Events.** orders-service announces three things about an order: [OrderSubmitted](../services/orders-service/src/main/java/com/lemarketjames/orders/events/OrderSubmitted.java) when it is placed, [OrderStatusChanged](../services/orders-service/src/main/java/com/lemarketjames/orders/events/OrderStatusChanged.java) after every status transition, and [OrderFilled](../services/orders-service/src/main/java/com/lemarketjames/orders/events/OrderFilled.java) in addition when it fills. [The order events](#the-order-events) below says when each is published and what it carries. All three are in-process Spring events. Listen with `@EventListener`, or with `@TransactionalEventListener` to act only after the order's transaction commits.
+- **Outbound events (Kafka).** After the order's transaction commits, [OrderEventForwarder](../services/orders-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventForwarder.java) hands each event to an [OrderEventPublisher](../services/orders-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventPublisher.java). With Kafka switched on, as in Docker Compose and Jenkins, [KafkaOrderEventPublisher](../services/orders-service/src/main/java/com/lemarketjames/orders/messaging/KafkaOrderEventPublisher.java) publishes them to the broker, where [three consumers read them](#the-consumers-notifications-surveillance-and-market-activity):
+  - **Topics.** One per event. Their names are constants in [OrderEventTopicNames](../libs/common/src/main/java/com/lemarketjames/common/events/OrderEventTopicNames.java) in `libs/common`, where the publisher and the consumers both read them; [OrderEventTopics](../services/orders-service/src/main/java/com/lemarketjames/orders/messaging/OrderEventTopics.java) creates them on the broker when orders-service starts.
   - **Key.** The order id, as text. Within a topic, one order's events share a partition, so a consumer reads them in the order they happened. Nothing orders one topic against another: a consumer of two topics can receive an order's first status change before its `OrderSubmitted`.
   - **Value.** The event record as plain JSON, UTF-8: the event's fields under their own names, enums as their names, amounts as JSON numbers, and times as ISO-8601 UTC text as in the REST API. There are no type headers, so a consumer needs none of this service's classes.
   - **Delivery is best effort.** An order is committed before its events are sent. If the broker can't be reached the event is logged as an error and dropped; nothing replays it later (there is no outbox). A consumer that must not miss a fill should reconcile against the REST API or the `reporting_trades` view.
-  - **Without Kafka.** Where no broker runs (unit tests, the native Windows scripts), [KafkaStubOrderEventPublisher](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java) logs each record and sends nothing. This is the default; the setting that switches is in [C5](C5-config.md#order-events).
-- **Execution interface.** [OrderExecutor](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a quote ([QuoteUsed](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/execution/QuoteUsed.java)), reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
-- **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves; for reports it is the only source ([Reports](#reports-reporting-service)).
+  - **Without Kafka.** Where no broker runs (unit tests, the native Windows scripts), [KafkaStubOrderEventPublisher](../services/orders-service/src/main/java/com/lemarketjames/orders/messaging/KafkaStubOrderEventPublisher.java) logs each record and sends nothing. This is the default; the setting that switches is in [C5](C5-config.md#order-events).
+- **Execution interface.** [OrderExecutor](../services/orders-service/src/main/java/com/lemarketjames/orders/execution/OrderExecutor.java) takes an accepted order and returns an [ExecutionResult](../services/orders-service/src/main/java/com/lemarketjames/orders/execution/ExecutionResult.java): fill at a quote ([QuoteUsed](../services/orders-service/src/main/java/com/lemarketjames/orders/execution/QuoteUsed.java)), reject with a reason, or wait. The executor never changes status itself. Its caller applies the result through the normal transitions, so audit, events and settlement always happen the same way.
+- **Reporting data source.** The `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)) has one row per filled order, with the client's segment, symbol, side, quantity, price, gross amount and times. Reports and insights read from it rather than joining the order tables themselves; for reports it is the only source ([Reports](#reports-staff-ops-service)).
 
 ### The order events
 
@@ -844,7 +859,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 | `from` | text | Status before the transition ([C1](C1-orders.md)) |
 | `to` | text | Status after it |
 | `occurredAt` | time | When the transition happened |
-| `rejectionReason` | text or null | Why the order was rejected: a [RejectionReason](../services/buy-sell-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java) name, the same code as the order's `rejectionReason` in the REST API. Null unless `to` is `REJECTED`. Added after the other fields (LMKT-71): a record published before then has no such field, and a consumer reads that as null. |
+| `rejectionReason` | text or null | Why the order was rejected: a [RejectionReason](../services/orders-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java) name, the same code as the order's `rejectionReason` in the REST API. Null unless `to` is `REJECTED`. Added after the other fields (LMKT-71): a record published before then has no such field, and a consumer reads that as null. |
 
 **`OrderFilled`** carries what a portfolio or reporting consumer needs about a fill, so it doesn't have to read the order back.
 
@@ -865,23 +880,16 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
 - **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, the [volume insight](#get-apiv1reportsinsightsvolume) and the [overnight reports list](#get-apiv1reportsovernight) are built; see [Reports](#reports-reporting-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
+- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, the [volume insight](#get-apiv1reportsinsightsvolume) and the [overnight reports list](#get-apiv1reportsovernight) are built; see [Reports](#reports-staff-ops-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
-- **Watchlist (S41, LMKT-130/131/132):** core-service, in its own `watchlist` feature package (the trading gateway's catch-all already routes `/api/v1/watchlist` there). It needs a new `watchlist (account_id, instrument_id, added_at)` table, unique on `(account_id, instrument_id)`, in the next free migration number. Scoped to the caller's account from the JWT, like holdings; staff (no account) get the holdings-style `404 ACCOUNT_NOT_FOUND`.
+- **Watchlist (S41, LMKT-130/131/132):** trading-service, in its own `watchlist` feature package (the trading app's catch-all already routes `/api/v1/watchlist` there). It needs a new `watchlist (account_id, instrument_id, added_at)` table, unique on `(account_id, instrument_id)`, in the next free migration number. Scoped to the caller's account from the JWT, like holdings; staff (no account) get the holdings-style `404 ACCOUNT_NOT_FOUND`.
   - `GET /api/v1/watchlist` → `{ success: true, watchlist: [{ symbol, addedAt }] }`, newest first; an empty list is `200` with `watchlist: []`.
   - `POST /api/v1/watchlist { symbol }` → `201 { success: true, item: { symbol, addedAt } }`; `409 { success: false, code: "ALREADY_WATCHED", error }`; `404 { success: false, error: "Symbol not found" }` for a symbol not in `GET /api/v1/instruments`.
   - `DELETE /api/v1/watchlist/{symbol}` → `204`, also when the stock was not on the list, so a repeated remove is harmless.
   - Prices are not part of the watchlist: the trading app shows each watched stock's live quote from `GET /api/quotes`, which it already polls.
   - Until the back end exists `GET /api/v1/watchlist` answers `404`, which the trading app reports as the watchlist not being available yet, without stars on the stock list.
-- **Deposit and withdraw cash (S42, LMKT-149; stories LMKT-150/151/152):** holdings-service, which already owns `accounts.cash_balance` (the trading gateway routes `/api/v1/portfolio/**` there). Scoped to the caller's account from the JWT; staff get `404 ACCOUNT_NOT_FOUND`.
-  - `POST /api/v1/portfolio/deposits { amount, requestId }` and `POST /api/v1/portfolio/withdrawals { amount, requestId }` → `200 { success: true, balance }`, where `balance` has exactly the shape of `GET /api/balance`, so the caller shows the new buying power without another call.
-  - `amount` is USD, above zero with at most 2 decimals, and at most the per-movement limit, a business setting added to [C5](C5-config.md) by the back-end story; otherwise `400 { success: false, code: "INVALID_AMOUNT", error }`, with `error` a sentence the app shows as is.
-  - A withdrawal may take out at most `buyingPower`, so cash promised to open BUY orders stays put; otherwise `400 { success: false, code: "INSUFFICIENT_FUNDS", error }`.
-  - `requestId` is a UUID the app makes for each attempt and keeps for its retries: a second request with the same `requestId` returns the first one's result without moving the money again.
-  - Each movement changes the cash and records an audit event (new `AuditEventType`s `CASH_DEPOSITED` and `CASH_WITHDRAWN`, with the amount, the balance after and the `requestId`; [C2](C2-audit.md)) in one transaction.
-  - Until the back end exists these paths answer `404`, which the trading app reports as deposits and withdrawals not being available yet.
 
 ## Changing a contract
 
