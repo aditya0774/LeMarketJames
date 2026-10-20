@@ -32,4 +32,12 @@ describe('AnalystDashboard', () => {
     const http = TestBed.inject(HttpTestingController);
     expect(http.match((r) => r.url === '/api/v1/reports/insights/active-clients').length).toBe(1);
   });
+
+  it('shows the most-active-stocks tile, which asks for the current week', async () => {
+    const fixture = await create();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('staff-most-active-stocks-tile')).not.toBeNull();
+    const http = TestBed.inject(HttpTestingController);
+    expect(http.match((r) => r.url === '/api/v1/reports/insights/most-active-stocks').length).toBe(1);
+  });
 });

@@ -552,6 +552,37 @@ Insight: the traded volume of the last completed period compared with the period
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
+### GET /api/v1/reports/insights/most-active-stocks
+
+Insight: the five stocks with the highest gross traded value in the current week, for `ANALYST`
+only. The current week starts on Monday in the configured reports time zone and includes trades
+through today. It is computed from `reporting_trades` on every request, so the dashboard can refresh
+it at least daily without a scheduled cache.
+
+**Response `200`:**
+
+```json
+{
+  "startDate": "2026-10-12",
+  "endDate": "2026-10-14",
+  "stocks": [
+    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530 },
+    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410 }
+  ],
+  "generatedAt": "2026-10-14T14:00:00Z"
+}
+```
+
+Rows are ordered by `tradedValue` descending, then symbol ascending for ties. `tradedValue` is the
+sum of `quantity × price` for both BUY and SELL fills. Fewer than five rows are returned when fewer
+than five symbols traded; no trades returns an empty `stocks` array. The response contains no
+client, account or order identifiers.
+
+| HTTP | When | Body |
+|---|---|---|
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
 ### GET /api/v1/reports/insights/volume/compare
 
 The traded volume of two date ranges the caller chooses, compared. The staff tile uses it for its Today, This week and Last week cards (each against the period just before it) and for the ranges an analyst picks. Computed from `reporting_trades` on every request, like the insight above.
