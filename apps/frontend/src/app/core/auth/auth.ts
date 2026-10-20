@@ -71,8 +71,11 @@ export class Auth {
   }
 
   async logout(): Promise<void> {
-    await firstValueFrom(this.http.post(`${this.baseUrl}/logout`, {}));
-    this.applySession(null);
+    try {
+      await firstValueFrom(this.http.post(`${this.baseUrl}/logout`, {}));
+    } finally {
+      this.applySession(null);
+    }
   }
 
   // Restores login state after a page refresh by checking the httpOnly cookie with the backend.
