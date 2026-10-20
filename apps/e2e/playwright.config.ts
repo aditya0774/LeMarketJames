@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * End-to-end tests run against an already running stack; they never start the app themselves.
- * - Jenkins: the Docker Compose stack, where the nginx frontend on :4200 proxies /api to the gateway.
- * - Windows: scripts/windows/start-all.ps1, where `ng serve` on :4200 proxies /api to the gateway.
+ * - Jenkins: the Docker Compose stack, where the nginx frontend on :4200 proxies /api to the services.
+ * - Windows: scripts/windows/start-all.ps1, where `ng serve` on :4200 proxies /api to the services.
  * Either way the browser and the API calls go through the same origin a real user would use.
  */
 const isCi = !!process.env.CI;
@@ -23,9 +23,11 @@ export default defineConfig({
   // Two parallel Chromium instances starved it of CPU: pages froze mid-login and the whole
   // browser session closed. One worker is slower but stable; E2E_WORKERS raises it on a bigger agent.
   workers: isCi ? Number(process.env.E2E_WORKERS ?? 1) : undefined,
-  // Room for a login, a seeded page load and a trace teardown on a busy agent.
-  timeout: isCi ? 120_000 : 60_000,
-  expect: { timeout: isCi ? 15_000 : 10_000 },
+  // The Jenkins VM also runs the complete application stack, Kafka, PostgreSQL and Chromium.
+  // Leave enough room for requests to finish when those processes contend for CPU and memory;
+  // local runs keep their shorter feedback loop.
+  timeout: isCi ? 240_000 : 60_000,
+  expect: { timeout: isCi ? 30_000 : 10_000 },
   reporter: isCi
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],

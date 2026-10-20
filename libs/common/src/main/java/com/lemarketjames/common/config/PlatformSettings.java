@@ -21,7 +21,7 @@ import java.util.List;
  * application.properties just to restate a default.
  *
  * <p>Available in every servlet service that depends on libs/common (auth, core, holdings).
- * Market hours and holidays belong to market-service instead: see its MarketSimulationProperties.
+ * Market hours and holidays belong to trading-service instead: see its MarketSimulationProperties.
  */
 @Component
 @ConfigurationProperties(prefix = "lmj")
@@ -110,7 +110,7 @@ public class PlatformSettings {
         }
     }
 
-    /** How quotes are consumed (the feed itself is market-service's). */
+    /** How quotes are consumed (the feed itself is trading-service's). */
     public static class Market {
         /**
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
@@ -164,9 +164,15 @@ public class PlatformSettings {
 
     /** Scheduled reporting. */
     public static class Reports {
-        /** Local time of day the overnight reports run. */
+        /** Local time of day the overnight reports run: after the market closes and before it opens. */
         private LocalTime overnightRunTime = LocalTime.of(2, 0);
-        /** Time zone overnightRunTime is in. */
+        /**
+         * Local time of day a successful overnight run must be ready by, the same night. A run not
+         * finished by then is marked late, so the Analyst dashboard shows it is missing.
+         * Must be after overnightRunTime.
+         */
+        private LocalTime readyBy = LocalTime.of(7, 0);
+        /** Time zone overnightRunTime and readyBy are in. */
         private ZoneId timeZone = ZoneId.of("America/New_York");
 
         public LocalTime getOvernightRunTime() {
@@ -175,6 +181,14 @@ public class PlatformSettings {
 
         public void setOvernightRunTime(LocalTime overnightRunTime) {
             this.overnightRunTime = overnightRunTime;
+        }
+
+        public LocalTime getReadyBy() {
+            return readyBy;
+        }
+
+        public void setReadyBy(LocalTime readyBy) {
+            this.readyBy = readyBy;
         }
 
         public ZoneId getTimeZone() {

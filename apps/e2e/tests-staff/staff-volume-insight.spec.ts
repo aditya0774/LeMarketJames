@@ -2,11 +2,12 @@ import { expect, Page, Response, test } from '@playwright/test';
 import { Client } from 'pg';
 import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
-import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { addDays, Fill, insertFill, removeClient, todayIn } from './support/insight-fixtures';
+import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
 
 /**
  * LMKT-46: the volume insight tile on the Analyst dashboard, end to end (S38-INT). Everything
- * goes through the real staff app, staff gateway and reporting-service, without mocks.
+ * goes through the real staff app and staff-ops-service, without mocks.
  *
  * AC1  the tile compares today, this week and last week with the period before, from real data,
  *      and the user can compare two date ranges of their own
@@ -21,7 +22,7 @@ import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
  */
 const INSIGHT = '/api/v1/reports/insights/volume';
 const COMPARE = `${INSIGHT}/compare`;
-// Clients register through the trading app; the staff gateway has no registration route.
+// Clients register through the trading app; the staff app has no registration route.
 const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 const TILE = 'staff-volume-insight-tile';
 const PRESETS = { TODAY: 'Today', THIS_WEEK: 'This week', LAST_WEEK: 'Last week' } as const;
@@ -39,17 +40,6 @@ interface Ranges { currentFrom: string; currentTo: string; previousFrom: string;
 
 // ---- Calendar: whole days in the reports time zone, as in C6 ----
 
-/** A calendar day as YYYY-MM-DD, moved by whole days. UTC arithmetic keeps DST out of it. */
-function addDays(day: string, days: number): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function todayIn(timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-}
-
 /** YYYY-MM-DD as the m/d/yyyy a date picker input takes. */
 function pickerText(day: string): string {
   const [year, month, date] = day.split('-').map(Number);
@@ -57,8 +47,6 @@ function pickerText(day: string): string {
 }
 
 // ---- Fixtures: one throwaway client with fills in the periods the tile compares ----
-
-interface Fill { day: string; side: 'BUY' | 'SELL'; quantity: number; price: number }
 
 /** Fills today, yesterday, the day before, and in the last two weeks, so every card has trades. */
 function fillsFor(today: string): Fill[] {
@@ -72,27 +60,6 @@ function fillsFor(today: string): Fill[] {
     { day: lastMonday, side: 'BUY', quantity: 1000, price: 120 },
     { day: addDays(lastMonday, -7), side: 'BUY', quantity: 50000, price: 10 },
   ];
-}
-
-async function insertFill(db: Client, accountId: number, timeZone: string, fill: Fill): Promise<void> {
-  // Noon on the report day in the reports time zone, converted to the UTC wall clock the table stores.
-  const result = await db.query(
-    `INSERT INTO orders (account_id, instrument_id, order_type, quantity, price_per_unit, order_status,
-                         submitted_at, accepted_at, filled_at, created_at, updated_at)
-     SELECT $1, i.instrument_id, $2, $3, $4, 'FILLED', t.at, t.at, t.at, t.at, t.at
-     FROM instruments i,
-          (SELECT (($5::date + time '12:00') AT TIME ZONE $6::text) AT TIME ZONE 'UTC' AS at) t
-     WHERE i.ticker = 'AAPL'`,
-    [accountId, fill.side, fill.quantity, fill.price, fill.day, timeZone]);
-  expect(result.rowCount).toBe(1);
-}
-
-async function removeClient(db: Client, username: string): Promise<void> {
-  // Only this test's client; never truncate the shared database.
-  await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [username]);
-  await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [username]);
-  await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [username]);
-  await db.query('DELETE FROM clients WHERE username=$1', [username]);
 }
 
 // ---- Oracle: the same figures, folded from the data source in the test ----
@@ -348,7 +315,8 @@ test.describe('LMKT-46 volume insight', () => {
         .toBe(await shown(loaded[key].generatedAt));
     }
 
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    // The dashboard has other tiles with a Refresh button of their own.
+    await page.locator(TILE).getByRole('button', { name: 'Refresh', exact: true }).click();
     const second = await presetAnswers(seen, 3);
     for (const key of PRESET_KEYS) {
       const refreshed = await read(second[key]);
@@ -367,7 +335,7 @@ test.describe('LMKT-46 volume insight', () => {
     const weekBefore = (await read(first.THIS_WEEK)).current.shareVolume;
 
     await insertFill(db, accountId, timeZone, { day: today, side: 'BUY', quantity: 777, price: 10 });
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.locator(TILE).getByRole('button', { name: 'Refresh', exact: true }).click();
     const second = await presetAnswers(seen, 3);
 
     expect((await read(second.TODAY)).current.shareVolume).toBe(todayBefore + 777);
@@ -392,7 +360,7 @@ test.describe('LMKT-46 volume insight', () => {
       await expect(page).toHaveURL(/\/trade-search$/);
       await page.goto('/analyst');
       await expect(page).toHaveURL(/\/access-denied$/);
-      await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: ACCESS_DENIED_HEADING })).toBeVisible();
       await expect(page.locator(TILE)).toHaveCount(0);
 
       // Asking for the figures directly, with the Trading Ops session, is refused by the service too.

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openTab } from './support/nav';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 import { resetFeed, setFeedMode } from './support/market-control';
 
@@ -19,37 +20,38 @@ test.describe('Trading feed recovery', () => {
     await loginViaUi(page, user);
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // AC1: Trigger feed unavailable, open trade dialog, verify banner appears
+    // AC1: Trigger feed unavailable, open the trade page, verify banner appears
     await setFeedMode(request, 'UNAVAILABLE');
+    await openTab(page, 'Market');
     await page.getByLabel('Filter stocks').fill('AAPL');
     await page.getByRole('row', { name: 'Trade AAPL', exact: true }).click();
+    await expect(page).toHaveURL(/\/trade\?symbol=AAPL$/);
 
-    const dialog = page.getByRole('dialog', { name: 'Trade AAPL' });
-    await expect(dialog).toBeVisible();
-    
     // AC1: Banner should be visible when feed is unavailable
-    const errorBanner = dialog.getByRole('alert').filter({ hasText: 'Prices are temporarily unavailable' });
+    const errorBanner = page.getByRole('alert').filter({ hasText: 'Prices are temporarily unavailable' });
     await expect(errorBanner).toBeVisible();
 
-    // AC2: Place buy order button should be disabled when feed is unavailable
-    const buyButton = dialog.getByRole('button', { name: 'Place buy order' });
+    // AC2: The buy button should be disabled when feed is unavailable
+    const buyButton = page.getByRole('button', { name: /^Buy 1 AAPL/ });
     await expect(buyButton).toBeDisabled();
 
     // AC3: Restore feed to LIVE and verify recovery
     await setFeedMode(request, 'LIVE');
-    
-    // Wait for the banner to disappear (quote should load and quoteError should clear)
-    await expect(errorBanner).not.toBeVisible({ timeout: 10000 });
-    
+
+    // Wait for the banner to disappear (quote should load and quoteError should clear).
+    // A failed quote is retried every 5 s (DEFAULT_QUOTE_REFRESH_MS) and the feed needs a fresh tick
+    // first, so recovery can take two retries; 20 s leaves room on a slow CI agent.
+    await expect(errorBanner).not.toBeVisible({ timeout: 20000 });
+
     // AC3: Button should be enabled again once quote loads
-    await expect(buyButton).toBeEnabled({ timeout: 10000 });
+    await expect(buyButton).toBeEnabled({ timeout: 20000 });
 
     // AC4: Verify that the order can now be placed successfully
     await buyButton.click();
-    await expect(dialog.getByRole('status')).toHaveText(/Buy order #\d+ for 1 AAPL is \w+\./);
-    
-    // Cleanup: Close dialog and verify order is in dashboard
-    await dialog.getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('status')).toContainText(/Buy order #\d+ for 1 AAPL is \w+\./);
+
+    // Cleanup: verify the order is in the order list
+    await openTab(page, 'Orders');
     const orders = page.locator('section.panel', { has: page.getByRole('heading', { name: 'Orders' }) });
     await expect(orders.getByRole('row').filter({ hasText: 'AAPL' }).first()).toContainText('BUY');
 

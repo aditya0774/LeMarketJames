@@ -1,33 +1,65 @@
-<div class="landing-container">
-  <div class="landing-content">
-    <!-- Logo sits directly above the head in the background photo (positioned in home.css). -->
-    <div class="logo-section">
-      <img src="/logo.png" alt="LeMarket" class="logo-icon">
-    </div>
-    <h1 class="logo-text"><span class="logo-amber">Le</span><span class="logo-white">Market</span></h1>
+<div class="landing">
+  <img class="hero-bg" src="/LeChalk_centered_wide.jpg" alt="A player tossing chalk into the arena lights before tip-off" />
+  <div class="hero-scrim" aria-hidden="true"></div>
 
-    <!-- Tagline Section -->
-    <h2 class="tagline">Own the market like it's <span class="tagline-amber">your league</span>.</h2>
+  <header class="landing-head">
+    <app-brand size="lg" />
+    <nav class="landing-nav" aria-label="Account">
+      <a class="btn btn-ghost" routerLink="/login">Log in</a>
+      <a class="btn btn-primary" routerLink="/register">Create account</a>
+    </nav>
+  </header>
 
-    <!-- Description Section -->
-    <p class="description">
-      Real-time buy and sell orders, a clean dashboard, and market pricing — all in one place.
-    </p>
+  <main class="landing-main">
+    <section class="hero">
+      <div class="eyebrow">
+        <svg width="26" height="14" viewBox="0 0 26 14" aria-hidden="true">
+          <circle cx="3" cy="9" r="1.2" opacity="0.5" />
+          <circle cx="8" cy="4" r="1.5" opacity="0.8" />
+          <circle cx="12" cy="10" r="1" opacity="0.4" />
+          <circle cx="15" cy="3" r="1.1" opacity="0.6" />
+          <circle cx="20" cy="7" r="1.4" opacity="0.75" />
+          <circle cx="24" cy="2" r="0.9" opacity="0.45" />
+        </svg>
+        STRIVE FOR GREATNESS
+      </div>
+      <h1 class="hero-title">Investing that<br />makes sense<span class="dot">.</span></h1>
+      <p class="hero-copy">
+        Buy and sell stocks at live prices, see exactly what you own, and get plain-English guidance at
+        every step. No jargon required.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" routerLink="/register">
+          Get started
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
+        <a class="btn btn-outline btn-lg" routerLink="/login">I have an account</a>
+      </div>
+    </section>
 
-    <!-- Call to Action Buttons -->
-    <div class="button-group">
-      <button class="hero-btn btn-login" routerLink="/login">
-        Log in
-      </button>
-      <button class="hero-btn btn-create" routerLink="/register">
-        Create account
-      </button>
-    </div>
-  </div>
+    <section class="steps" aria-label="How it works">
+      <div class="step">
+        <span class="mono step-no">01</span>
+        <h2>Open an account</h2>
+        <p>About five minutes. You'll need ID details and a starting deposit of at least $5,000.</p>
+      </div>
+      <div class="step">
+        <span class="mono step-no">02</span>
+        <h2>Pick a stock</h2>
+        <p>Trade 50 companies with prices that update live, plus a one-day chart for each.</p>
+      </div>
+      <div class="step">
+        <span class="mono step-no">03</span>
+        <h2>Buy or sell</h2>
+        <p>See the estimated total before you confirm, then watch your order go through in real time.</p>
+      </div>
+    </section>
+  </main>
 
-  <!-- Footer -->
-  <footer class="landing-footer">
-    <span class="footer-badge">Founded by Team LeapBron James</span>
-    <span class="footer-text">LeMarket Trading Platform</span>
+  <footer class="landing-foot">
+    <span>lemarket · est. 12.30.84 · Akron, OH</span>
+    <span class="mono">Built by Team LeapBron · v6.23</span>
   </footer>
 </div>

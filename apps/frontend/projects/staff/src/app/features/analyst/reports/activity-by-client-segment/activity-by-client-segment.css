@@ -1,0 +1,149 @@
+/* The "By segment" tab of the redesign's Analyst board. Material's form fields, datepicker and
+   select already follow the theme (material-theme.scss), so only the layout lives here. */
+
+:host {
+  display: block;
+}
+
+.activity-by-client-segment-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-content {
+  display: grid;
+  gap: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stat-card,
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.stat-card {
+  padding: 18px 20px;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.stat-value {
+  margin: 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.chart-card {
+  padding: 20px;
+}
+
+.chart-header {
+  margin-bottom: 20px;
+}
+
+.chart-header h2 {
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.chart-header p {
+  margin: 4px 0 0;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+.chart-body {
+  display: grid;
+  gap: 22px;
+}
+
+.row-heading,
+.column-meta,
+.chart-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-heading {
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: var(--font-base);
+}
+
+.segment-label {
+  font-weight: 500;
+}
+
+.column-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bar-zone {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--l4);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--acc);
+}
+
+.column-meta {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.chart-scale {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: var(--font-2xs);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.error-state {
+  padding: 20px;
+}
+
+.error-state p {
+  margin: 6px 0 12px;
+  color: var(--dim);
+}
+
+@media (max-width: 700px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row-heading,
+  .column-meta {
+    flex-wrap: wrap;
+  }
+}

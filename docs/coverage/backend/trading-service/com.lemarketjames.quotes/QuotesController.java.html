@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuotesController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.quotes</a> &gt; <span class="el_source">QuotesController.java</span></div><h1>QuotesController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.quotes;
+
+import com.lemarketjames.market.model.ChartRange;
+import com.lemarketjames.quotes.dto.QuoteErrorResponse;
+import com.lemarketjames.quotes.dto.QuoteHistoryResponse;
+import com.lemarketjames.quotes.dto.QuoteSuccessResponse;
+import com.lemarketjames.quotes.dto.QuotesListResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Locale;
+
+/**
+ * Contract-aligned endpoint for stock quote retrieval.
+ */
+@RestController
+@RequestMapping(&quot;/api/quotes&quot;)
+public class QuotesController {
+
+    private final QuoteService quoteService;
+    private final QuoteHistoryService historyService;
+
+<span class="fc" id="L28">    public QuotesController(QuoteService quoteService, QuoteHistoryService historyService) {</span>
+<span class="fc" id="L29">        this.quoteService = quoteService;</span>
+<span class="fc" id="L30">        this.historyService = historyService;</span>
+<span class="fc" id="L31">    }</span>
+
+    /** Every quote in one response, so the dashboard polls once per refresh rather than once per stock. */
+    @GetMapping
+    public ResponseEntity&lt;?&gt; getAllQuotes() {
+        try {
+<span class="fc" id="L37">            return ResponseEntity.ok(new QuotesListResponse(true, quoteService.getAllQuotes()));</span>
+<span class="fc" id="L38">        } catch (QuoteService.QuoteFeedUnavailableException ex) {</span>
+<span class="fc" id="L39">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</span>
+<span class="fc" id="L40">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+        }
+    }
+
+    @GetMapping(&quot;/{symbol}&quot;)
+    public ResponseEntity&lt;?&gt; getQuote(@PathVariable String symbol) {
+        try {
+<span class="fc" id="L47">            return ResponseEntity.ok(new QuoteSuccessResponse(true, quoteService.getQuote(symbol)));</span>
+<span class="fc" id="L48">        } catch (QuoteService.SymbolNotFoundException ex) {</span>
+<span class="fc" id="L49">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L50">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+<span class="fc" id="L51">        } catch (QuoteService.QuoteFeedUnavailableException ex) {</span>
+<span class="fc" id="L52">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</span>
+<span class="fc" id="L53">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+        }
+    }
+
+    /** A stock's price over 1D, 1W, 1M, 3M or 6M, for the trade page's chart. */
+    @GetMapping(&quot;/{symbol}/history&quot;)
+    public ResponseEntity&lt;?&gt; getHistory(@PathVariable String symbol,
+                                        @RequestParam(defaultValue = &quot;1D&quot;) String range) {
+<span class="fc" id="L61">        ChartRange chartRange = ChartRange.fromCode(range).orElse(null);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (chartRange == null) {</span>
+<span class="fc" id="L63">            return ResponseEntity.badRequest().body(new QuoteErrorResponse(false, &quot;Unknown range&quot;));</span>
+        }
+        try {
+<span class="fc" id="L66">            return ResponseEntity.ok(new QuoteHistoryResponse(true, symbol.trim().toUpperCase(Locale.ROOT),</span>
+<span class="fc" id="L67">                    chartRange.code(), historyService.history(symbol, chartRange)));</span>
+<span class="fc" id="L68">        } catch (QuoteService.SymbolNotFoundException ex) {</span>
+<span class="fc" id="L69">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L70">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+<span class="fc" id="L71">        } catch (QuoteService.QuoteFeedUnavailableException ex) {</span>
+<span class="fc" id="L72">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)</span>
+<span class="fc" id="L73">                    .body(new QuoteErrorResponse(false, ex.getMessage()));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

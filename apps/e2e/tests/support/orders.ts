@@ -20,7 +20,7 @@ export interface OrderDto {
 
 /**
  * The feed name stored as the source of every execution quote. Mirrors QUOTE_SOURCE in
- * buy-sell-service's MarketOrderExecutor, which defines it; change both together.
+ * orders-service's MarketOrderExecutor, which defines it; change both together.
  */
 export const QUOTE_SOURCE = 'SIMULATED_FEED';
 
@@ -40,7 +40,7 @@ export async function instrumentIdOf(request: APIRequestContext, symbol: string)
 }
 
 /**
- * Places a market order through the gateway, i.e. through the real submission and validation
+ * Places a market order through the trading app, i.e. through the real submission and validation
  * code. Placement only saves the order; the background worker accepts and executes it.
  */
 export async function placeOrder(request: APIRequestContext, accountId: number, instrumentId: number,

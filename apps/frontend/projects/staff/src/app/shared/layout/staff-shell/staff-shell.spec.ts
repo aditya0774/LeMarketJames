@@ -16,11 +16,17 @@ describe('StaffShell', () => {
     await fixture.whenStable();
 
     const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('.staff-role')?.textContent?.trim()).toBe('Trading Operations');
+    // Log out sits in the account menu behind the avatar.
+    page.querySelector<HTMLButtonElement>('.avatar-btn')!.click();
+    fixture.detectChanges();
     expect(page.querySelector('.logout-btn')).toBeTruthy();
     expect(page.querySelector('router-outlet')).toBeTruthy();
+    // The role is a label, never a link to another role's workspace.
+    expect(page.querySelectorAll('header a:not(.brand)')).toHaveLength(0);
   });
 
-  it('signs out through the gateway and returns to the staff login', async () => {
+  it('signs out through the API and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -30,7 +36,7 @@ describe('StaffShell', () => {
     auth.roles.set(['ANALYST']);
     const fixture = TestBed.createComponent(StaffShell);
     await fixture.whenStable();
-    // Resolves when the shell navigates, which it does only once the gateway has answered.
+    // Resolves when the shell navigates, which it does only once the API has answered.
     const navigatedTo = new Promise<unknown>((resolve) => {
       TestBed.inject(Router).navigate = async (commands) => {
         resolve(commands);
@@ -38,6 +44,8 @@ describe('StaffShell', () => {
       };
     });
 
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.avatar-btn')!.click();
+    fixture.detectChanges();
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.logout-btn')!.click();
     TestBed.inject(HttpTestingController).expectOne('/api/auth/logout').flush({ message: 'Logged out' });
 

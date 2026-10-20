@@ -1,46 +1,57 @@
 import { provideRouter, Router } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { AppShell } from './app-shell';
 import { Auth } from '../../../core/auth/auth';
 import { expect, vi } from 'vitest';
 
 describe('AppShell', () => {
-  let fixture: ComponentFixture<AppShell>;
-  let auth: { logout: ReturnType<typeof vi.fn> };
-  let router: Router;
+	let fixture: ComponentFixture<AppShell>;
+	let auth: { currentUser: ReturnType<typeof signal<string | null>>; logout: ReturnType<typeof vi.fn> };
+	let router: Router;
 
-  beforeEach(async () => {
-    auth = { logout: vi.fn().mockResolvedValue(undefined) };
+	beforeEach(async () => {
+		auth = {
+			currentUser: signal('jane@example.com'),
+			logout: vi.fn().mockResolvedValue(undefined),
+		};
 
-    await TestBed.configureTestingModule({
-      imports: [AppShell],
-      providers: [
-        provideRouter([]),
-        { provide: Auth, useValue: auth },
-      ],
-    }).compileComponents();
+		await TestBed.configureTestingModule({
+			imports: [AppShell],
+			providers: [
+				provideRouter([]),
+				{ provide: Auth, useValue: auth },
+			],
+		}).compileComponents();
 
-    fixture = TestBed.createComponent(AppShell);
-    router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
-    fixture.detectChanges();
-  });
+		fixture = TestBed.createComponent(AppShell);
+		router = TestBed.inject(Router);
+		vi.spyOn(router, 'navigate').mockResolvedValue(true);
+		fixture.detectChanges();
+	});
 
-  it('logs out and replaces the protected history entry', async () => {
-    const button = fixture.nativeElement.querySelector('button[title="Log out"]') as HTMLButtonElement;
+	it('names the signed-in user in the account menu', () => {
+		expect(fixture.nativeElement.querySelector('.avatar-btn').textContent.trim()).toBe('J');
+	});
 
-    button.click();
-    await fixture.whenStable();
+	it('logs out and replaces the protected history entry', async () => {
+		const avatar = fixture.nativeElement.querySelector('.avatar-btn') as HTMLButtonElement;
+		avatar.click();
+		fixture.detectChanges();
+		const button = fixture.nativeElement.querySelector('button[title="Log out"], .logout-btn') as HTMLButtonElement;
 
-    expect(auth.logout).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/'], { replaceUrl: true });
-  });
+		button.click();
+		await fixture.whenStable();
 
-  it('navigates home even when logout fails', async () => {
-    auth.logout.mockRejectedValue(new Error('logout failed'));
+		expect(auth.logout).toHaveBeenCalled();
+		expect(router.navigate).toHaveBeenCalledWith(['/'], { replaceUrl: true });
+	});
 
-    await expect(fixture.componentInstance['logout']()).rejects.toThrow('logout failed');
+	it('navigates home even when logout fails', async () => {
+		auth.logout.mockRejectedValue(new Error('logout failed'));
 
-    expect(router.navigate).toHaveBeenCalledWith(['/'], { replaceUrl: true });
-  });
+		await expect(fixture.componentInstance['logout']()).rejects.toThrow('logout failed');
+
+		expect(router.navigate).toHaveBeenCalledWith(['/'], { replaceUrl: true });
+	});
 });

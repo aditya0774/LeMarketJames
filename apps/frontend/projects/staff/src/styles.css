@@ -1,148 +1,63 @@
 /* LeMarket staff app styles. Tokens and shared controls come from the trading app's
-   styles/ folder (one design system, two apps); this file holds only the staff shell. */
+   styles/ folder (one design system, two apps). The staff shell, login and report pages style
+   themselves; this file only sets the default heading sizes. */
 
 @import '../../../src/styles/tokens.css';
 @import '../../../src/styles/base.css';
 
-:root {
-  --staff-sidebar: var(--ink);
-  --staff-sidebar-text: var(--text);
-}
-
 h1 {
-  font-size: var(--font-3xl);
+  font-size: var(--font-2xl);
 }
 
 h2 {
-  font-size: var(--font-lg);
-}
-
-h3 {
   font-size: var(--font-md);
 }
 
-/* ================= STAFF SHELL ================= */
-
-.staff-shell {
-  min-height: 100vh;
-  background-color: var(--ink);
-  color: var(--text);
-  font-family: var(--font-body);
-  color-scheme: dark;
-  display: flex;
-}
-
-.staff-sidebar {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 220px;
-  padding: 20px 14px;
-  background-color: var(--surface);
-  color: var(--text);
-  border-right: 1px solid var(--border);
-}
-
-.staff-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px 20px;
-  font-size: var(--font-lg);
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.brand-icon {
-  width: 24px;
-  height: 24px;
-}
-
-/* Marks the staff app as internal so it is never mistaken for the client app. */
-.staff-badge {
-  margin-left: 4px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  font-size: var(--font-3xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.staff-sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.staff-sidebar nav a {
-  padding: 9px 10px;
-  border-radius: var(--radius);
-  color: var(--text-dim);
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.staff-sidebar nav a:hover {
-  color: var(--text);
-  background: var(--hover-row);
-}
-
-.staff-sidebar nav a.active {
-  color: var(--gold);
-  background: rgba(253, 185, 39, 0.08);
-  box-shadow: inset 2px 0 0 var(--gold);
-}
-
-.staff-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 14px 34px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
-}
-
-.logout-btn {
-  padding: 7px 12px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-dim);
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+h3 {
   font-size: var(--font-base);
 }
 
-.logout-btn:hover {
-  border-color: var(--text-faint);
-  color: var(--text);
-}
+/* ---------- Report pages ----------
+   Every analyst report starts with a bar of controls: a switch on the left, dates on the right. */
 
-.staff-main {
-  flex: 1;
-  min-width: 0;
+.report-bar {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.staff-content {
-  flex: 1;
-  padding: 0 34px 60px;
-  overflow-y: auto;
+.report-dates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-@media (max-width: 980px) {
-  .auth-panel {
-    padding: 26px 22px;
-  }
+.report-dates .mat-mdc-form-field {
+  width: 180px;
+}
 
-  .staff-main {
-    padding: 22px 16px 48px;
-  }
+.report-note {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}
+
+/* Material tables take the design's table look (the .t rules in base.css); these undo the
+   Material defaults those rules can't reach. */
+.mat-mdc-table.t {
+  background: transparent;
+}
+
+.mat-mdc-table.t .mat-mdc-header-row,
+.mat-mdc-table.t .mat-mdc-row,
+.mat-mdc-table.t .mat-mdc-footer-row {
+  height: auto;
+}
+
+.mat-mdc-table.t .mat-mdc-footer-cell {
+  border-top: 1px solid var(--line2);
+  font-weight: 500;
 }

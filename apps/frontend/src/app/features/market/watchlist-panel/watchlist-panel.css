@@ -1,0 +1,165 @@
+/* The design's Watchlist panel: an accent-bordered card of stock tiles. */
+
+.wl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 10px 10px;
+  border-color: var(--accline);
+}
+
+.wl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px 2px;
+}
+
+.wl-head h2 {
+  margin: 0;
+  font-size: var(--font-md);
+  letter-spacing: 0;
+}
+
+.sub {
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.count {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accb) 20%, transparent);
+  color: var(--seltext);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wl > .alert,
+.retry {
+  margin: 0 8px;
+}
+
+.retry {
+  align-self: flex-start;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+li {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg2);
+  border: 1px solid var(--l4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.wl-name,
+.wl-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wl-price {
+  align-items: flex-end;
+}
+
+.sym {
+  font-weight: 600;
+}
+
+.name {
+  font-size: 12px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chg {
+  font-size: 12px;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+app-sparkline {
+  display: block;
+  --row-chart-width: 100%;
+}
+
+.wl-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wl-actions .btn-soft {
+  flex: 1;
+}
+
+.wl-actions .btn {
+  height: 36px;
+}
+
+li.wl-none {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+
+.wl-none strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.wl-none path {
+  fill: none;
+  stroke: var(--faint2);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.loading,
+.wl-empty {
+  padding: 16px 8px;
+}

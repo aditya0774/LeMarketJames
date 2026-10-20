@@ -21,7 +21,7 @@ import java.util.List;
  * application.properties just to restate a default.
  *
  * &lt;p&gt;Available in every servlet service that depends on libs/common (auth, core, holdings).
- * Market hours and holidays belong to market-service instead: see its MarketSimulationProperties.
+ * Market hours and holidays belong to trading-service instead: see its MarketSimulationProperties.
  */
 @Component
 @ConfigurationProperties(prefix = &quot;lmj&quot;)
@@ -110,7 +110,7 @@ import java.util.List;
         }
     }
 
-    /** How quotes are consumed (the feed itself is market-service's). */
+    /** How quotes are consumed (the feed itself is trading-service's). */
 <span class="fc" id="L114">    public static class Market {</span>
         /**
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
@@ -164,43 +164,57 @@ import java.util.List;
 
     /** Scheduled reporting. */
 <span class="fc" id="L166">    public static class Reports {</span>
-        /** Local time of day the overnight reports run. */
+        /** Local time of day the overnight reports run: after the market closes and before it opens. */
 <span class="fc" id="L168">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
-        /** Time zone overnightRunTime is in. */
-<span class="fc" id="L170">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
+        /**
+         * Local time of day a successful overnight run must be ready by, the same night. A run not
+         * finished by then is marked late, so the Analyst dashboard shows it is missing.
+         * Must be after overnightRunTime.
+         */
+<span class="fc" id="L174">        private LocalTime readyBy = LocalTime.of(7, 0);</span>
+        /** Time zone overnightRunTime and readyBy are in. */
+<span class="fc" id="L176">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
 
         public LocalTime getOvernightRunTime() {
-<span class="fc" id="L173">            return overnightRunTime;</span>
+<span class="fc" id="L179">            return overnightRunTime;</span>
         }
 
         public void setOvernightRunTime(LocalTime overnightRunTime) {
-<span class="nc" id="L177">            this.overnightRunTime = overnightRunTime;</span>
-<span class="nc" id="L178">        }</span>
+<span class="fc" id="L183">            this.overnightRunTime = overnightRunTime;</span>
+<span class="fc" id="L184">        }</span>
+
+        public LocalTime getReadyBy() {
+<span class="fc" id="L187">            return readyBy;</span>
+        }
+
+        public void setReadyBy(LocalTime readyBy) {
+<span class="fc" id="L191">            this.readyBy = readyBy;</span>
+<span class="fc" id="L192">        }</span>
 
         public ZoneId getTimeZone() {
-<span class="nc" id="L181">            return timeZone;</span>
+<span class="nc" id="L195">            return timeZone;</span>
         }
 
         public void setTimeZone(ZoneId timeZone) {
-<span class="nc" id="L185">            this.timeZone = timeZone;</span>
-<span class="nc" id="L186">        }</span>
+<span class="nc" id="L199">            this.timeZone = timeZone;</span>
+<span class="nc" id="L200">        }</span>
     }
 
     /** Order surveillance: which new orders Trading Operations are alerted to. */
-<span class="fc" id="L190">    public static class Surveillance {</span>
+<span class="fc" id="L204">    public static class Surveillance {</span>
         /**
          * Shares in one order at which it counts as large. An order of this many shares or more
          * raises an alert for Trading Operations when it is placed; a smaller one raises none.
          */
-<span class="fc" id="L195">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
+<span class="fc" id="L209">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
 
         public BigDecimal getLargeOrderQuantity() {
-<span class="fc" id="L198">            return largeOrderQuantity;</span>
+<span class="fc" id="L212">            return largeOrderQuantity;</span>
         }
 
         public void setLargeOrderQuantity(BigDecimal largeOrderQuantity) {
-<span class="fc" id="L202">            this.largeOrderQuantity = largeOrderQuantity;</span>
-<span class="fc" id="L203">        }</span>
+<span class="fc" id="L216">            this.largeOrderQuantity = largeOrderQuantity;</span>
+<span class="fc" id="L217">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

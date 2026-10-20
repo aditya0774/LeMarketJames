@@ -6,15 +6,16 @@
     Windows counterpart of `docker compose up`, for machines that can't run Linux containers.
     Builds the backend once, then opens one PowerShell window per process so each one's log
     stays readable and closing a window stops that process. Every service's defaults already
-    point at localhost (database on 5432, services on 8081-8088 and 8091, the trading gateway on
-    8089 and the staff gateway on 8090), so no configuration is needed.
+    point at localhost (database on 5432, auth on 8082, trading on 8084, orders on 8085 and
+    staff-ops on 8086), and each app's dev server forwards /api straight to them, so no
+    configuration is needed.
 
     Run .\scripts\windows\setup-db.ps1 once first so the lemarket database exists.
 
     Kafka is not started: this script only runs what needs no container. Without -Kafka,
-    buy-sell-service logs its order events instead of publishing them (its stub publisher) and
-    the three consumer services start no listener, so nothing here needs a broker; their
-    endpoints still answer, with nothing new arriving. See "Kafka (order events)" in the README.
+    orders-service logs its order events instead of publishing them (its stub publisher) and
+    the consumers in trading-service and staff-ops-service start no listener, so nothing here
+    needs a broker; their endpoints still answer, with nothing new arriving. See "Kafka (order events)" in the README.
 
 .EXAMPLE
     .\scripts\windows\start-all.ps1
@@ -25,7 +26,7 @@ param(
     # Skip `mvn install` when nothing under libs/ or services/ changed since the last run.
     [switch]$SkipBuild,
     # Publish order events to a Kafka broker you already have running on localhost:9092, and have
-    # the three consumer services read them from it.
+    # the consumers in trading-service and staff-ops-service read them from it.
     [switch]$Kafka
 )
 
@@ -49,33 +50,26 @@ function Start-Window([string]$Title, [string]$WorkingDir, [string]$Command) {
     Write-Host "Started $Title"
 }
 
-# market-service first: core and holdings fetch prices from it. Their clients are lazy, so the
+# trading-service first: orders-service fetches prices from it. Their clients are lazy, so the
 # rest can start in any order.
-# A local stack is a test environment, so the quote-feed test controls are on (contracts/C4-quote-feed.md).
-Start-Window 'market-service :8083'   $repoRoot '$env:SIM_CONTROL_ENABLED = ''true''; mvn -B -pl services/market-service spring-boot:run'
+# A local stack is a test environment, so the quote-feed test controls (contracts/C4-quote-feed.md)
+# and the settlement test control (contracts/C5-config.md) are on, as in Docker Compose. With
+# -Kafka its notification and market-activity listeners start too.
+$trading = '$env:SIM_CONTROL_ENABLED = ''true''; $env:LMJ_SETTLEMENT_CONTROL_ENABLED = ''true''; ' +
+    'mvn -B -pl services/trading-service spring-boot:run'
+if ($Kafka) { $trading = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $trading }
+Start-Window 'trading-service :8084' $repoRoot $trading
 Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
-Start-Window 'core-service :8081'     $repoRoot 'mvn -B -pl services/core-service spring-boot:run'
 # The same setting Docker Compose gives it; the broker address defaults to localhost:9092.
-$buySell = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +
-    'mvn -B -pl services/buy-sell-service spring-boot:run'
-if ($Kafka) { $buySell = '$env:LMJ_EVENTS_PUBLISHER = ''kafka''; ' + $buySell }
-Start-Window 'buy-sell-service :8085' $repoRoot $buySell
-# The settlement test control is on, as in Docker Compose (contracts/C5-config.md).
-Start-Window 'holdings-service :8084' $repoRoot '$env:LMJ_SETTLEMENT_CONTROL_ENABLED = ''true''; mvn -B -pl services/holdings-service spring-boot:run'
-# Not behind the trading gateway below: only the staff gateway routes to it.
-Start-Window 'reporting-service :8086' $repoRoot 'mvn -B -pl services/reporting-service spring-boot:run'
-# The three Kafka consumers, with the same setting Docker Compose gives them; without it they
-# start no listener. surveillance-service is, like reporting-service, behind the staff gateway only.
-foreach ($consumer in 'notification-service :8087', 'surveillance-service :8088', 'activity-service :8091') {
-    $run = "mvn -B -pl services/$($consumer.Split(' ')[0]) spring-boot:run"
-    if ($Kafka) { $run = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $run }
-    Start-Window $consumer $repoRoot $run
-}
-# 8089 matches the port Docker Compose publishes the gateway on, which proxy.conf.json targets.
-Start-Window 'gateway-service :8089'  $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.arguments=--server.port=8089'"
-# The staff gateway is the same module with the "staff" profile, which sets port 8090 and the
-# staff routes. The staff app's proxy.conf.json targets it.
-Start-Window 'staff-gateway-service :8090' $repoRoot "mvn -B -pl services/gateway-service spring-boot:run '-Dspring-boot.run.profiles=staff'"
+$orders = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +
+    'mvn -B -pl services/orders-service spring-boot:run'
+if ($Kafka) { $orders = '$env:LMJ_EVENTS_PUBLISHER = ''kafka''; ' + $orders }
+Start-Window 'orders-service :8085' $repoRoot $orders
+# Reports and surveillance alerts. Only the staff app routes to it; with -Kafka its surveillance
+# listeners start too.
+$staffOps = 'mvn -B -pl services/staff-ops-service spring-boot:run'
+if ($Kafka) { $staffOps = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $staffOps }
+Start-Window 'staff-ops-service :8086' $repoRoot $staffOps
 
 $frontend = Join-Path $repoRoot 'apps\frontend'
 $npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start' } else { 'npm install; npm start' }
@@ -87,4 +81,4 @@ Start-Window 'staff-frontend :4201' $frontend $staff
 
 Write-Host ''
 Write-Host 'Services take ~30s to start. Then open http://localhost:4200 (trading app) or http://localhost:4201 (staff app)'
-Write-Host 'Health check: curl http://localhost:8089/actuator/health (trading gateway), http://localhost:8090/actuator/health (staff gateway)'
+Write-Host 'Health check: curl http://localhost:<port>/actuator/health for 8082 (auth), 8084 (trading), 8085 (orders), 8086 (staff-ops)'

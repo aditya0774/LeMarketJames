@@ -35,6 +35,7 @@ The 50 real stocks from 009 are all tradable. **`CAVS`** (id 52) is the suspende
 - Holdings, average costs and cash are calculated from the seeded fills, so every balance agrees with the history.
 - Audit events for every seeded order, one per lifecycle step it reached. The filled ones are complete trades: SUBMITTED, a RULE_CHECKED for each placement check, VALIDATED, ACCEPTED, FILLED, SETTLED.
 - One refused submission for `seed_notrading`: a trail with no order, ending on the failed `ACCOUNT_STATUS` check ([C2](C2-audit.md#the-submission-trail)). Find it by its request ID, not an order ID.
+- Six months of daily prices for every stock (`price_history`, [022](../database/README.md#022--daily-price-history)), up to the day before the seed ran, so the 1W–6M charts have data from the first start. Each stock's line passes through the price of every seeded fill in that window and ends at its current price, so the portfolio chart agrees with the seeded trades. The 1D chart has only what the simulator has recorded since it started.
 
 ## Where it's loaded
 

@@ -50,7 +50,8 @@ test.describe('Account cut off mid-session', () => {
       await expect(page.getByText(`Welcome back, ${user.username}`)).toHaveCount(0);
       await expect(page.getByText('Buying power')).toHaveCount(0);
       await expect(page.getByText(DEPOSIT)).toHaveCount(0);
-      await expect(page.getByRole('heading', { name: 'Portfolio' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'What you own' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Quick trade' })).toHaveCount(0);
 
       // The cookie no longer opens the app either.
       await page.goto('/dashboard');

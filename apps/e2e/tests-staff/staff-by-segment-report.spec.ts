@@ -1,6 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import { connectDatabase } from '../tests/support/database';
-import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, openAnalystTab, signIn, TRADING_OPS } from './support/staff';
 
 const REPORT = '/analyst/reports/activity-by-client-segment';
 const API = '/api/v1/reports/activity/comparison';
@@ -26,7 +26,7 @@ async function openReport(page: Page) {
   await signIn(page, ANALYST);
   await expect(page).toHaveURL(/\/analyst$/);
   const response = page.waitForResponse(r => new URL(r.url()).pathname === API);
-  await page.locator('.report-card', { hasText: 'Activity by Client Segment' }).click();
+  await openAnalystTab(page, 'By segment');
   expect((await response).status()).toBe(200);
   await expect(page).toHaveURL(new RegExp(`${REPORT}$`));
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
@@ -222,7 +222,7 @@ for (const [role, user] of [['CLIENT', CLIENT], ['TRADING_OPS', TRADING_OPS]] as
     });
     await test.step('Reject the role and render the access-denied page', async () => {
       await expect(page).toHaveURL(/\/access-denied$/);
-      await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: ACCESS_DENIED_HEADING })).toBeVisible();
       await expect(page.locator(CONTENT)).toHaveCount(0);
     });
   });

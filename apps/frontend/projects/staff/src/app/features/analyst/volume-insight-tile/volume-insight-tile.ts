@@ -1,16 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { interval } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
+import { ReportsTimeZoneService } from '../../../shared/services/reports-time-zone.service';
 import { VolumeInsightService } from '../../../shared/services/volume-insight.service';
 import { VolumeComparisonResponse, VolumeRangeRequest } from '../../../shared/models/volume-insight.model';
 import { toIsoDay, volumePresets } from '../../../shared/utils/volume-ranges';
@@ -40,14 +38,21 @@ function newCard(key: string, label: string, request: VolumeRangeRequest): Card 
   selector: 'staff-volume-insight-tile',
   imports: [
     DatePipe, DecimalPipe, NgTemplateOutlet, ReactiveFormsModule,
-    MatButtonModule, MatCardModule, MatDatepickerModule, MatFormFieldModule,
-    MatIconModule, MatInputModule, MatNativeDateModule,
+    MatDatepickerModule, MatFormFieldModule,
+    MatInputModule, MatNativeDateModule,
   ],
   templateUrl: './volume-insight-tile.html',
-  styleUrls: ['./volume-insight-tile.scss'],
+  styleUrl: './volume-insight-tile.css',
 })
 export class VolumeInsightTile {
   private readonly insights = inject(VolumeInsightService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * The reports time zone, whose day "today" is. Until it is known, or if it cannot be read, the
+   * browser's day is used.
+   */
+  private timeZone: string | undefined;
 
   /** Today, this week so far and last week, each against the period before it. */
   readonly presets = signal<Card[]>(
@@ -67,15 +72,27 @@ export class VolumeInsightTile {
 
   constructor() {
     this.fillPickFromThisWeek();
+    // The days to ask for depend on the reports time zone, so the cards load once it is known.
+    inject(ReportsTimeZoneService).timeZone$.pipe(takeUntilDestroyed()).subscribe({
+      next: (zone) => {
+        this.timeZone = zone;
+        this.start();
+      },
+      error: () => this.start(),
+    });
+  }
+
+  /** First load, then background reloads, which keep the figures on screen instead of flashing "Loading…". */
+  private start(): void {
     this.refresh();
-    // Background reloads keep the figures on screen instead of flashing "Loading…".
-    interval(AUTO_REFRESH_MS).pipe(takeUntilDestroyed()).subscribe(() => this.refresh(true));
+    this.fillPickFromThisWeek();
+    interval(AUTO_REFRESH_MS).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refresh(true));
   }
 
   /** Reloads every card. A silent reload keeps what is on screen, including after a failure. */
   refresh(silent = false): void {
     // Dates are worked out again so a tile left open overnight rolls over to the new day.
-    const fresh = volumePresets(new Date());
+    const fresh = volumePresets(new Date(), this.timeZone);
     this.presets.update((all) => all.map((c, i) => ({ ...c, request: fresh[i].request })));
     for (const card of this.presets()) {
       this.load(card.key, silent);
@@ -107,8 +124,15 @@ export class VolumeInsightTile {
     return change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
   }
 
+  /** The arrow shown before a change; the signed number beside it says the same in words. */
   icon(change: number): string {
-    return { up: 'arrow_upward', down: 'arrow_downward', flat: 'remove' }[this.direction(change)];
+    return { up: '▲', down: '▼', flat: '–' }[this.direction(change)];
+  }
+
+  /** One period's volume as a share of the larger of the two periods, for its bar (0–100). */
+  share(volume: number, other: number): number {
+    const largest = Math.max(volume, other);
+    return largest > 0 ? (volume / largest) * 100 : 0;
   }
 
   private load(key: string, silent: boolean): void {

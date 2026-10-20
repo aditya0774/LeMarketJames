@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { newUser, registerViaApi } from './support/users';
+import { logoutViaUi, newUser, registerViaApi } from './support/users';
 
 const LOCKOUT_WAIT_MS = Number(process.env.E2E_LOCKOUT_WAIT_MS ?? 3_000);
 
@@ -38,7 +38,7 @@ test.describe('Account lockout (LMKT-11)', () => {
     expect(resetLogin.status()).toBe(200);
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    await page.getByRole('button', { name: 'Log out' }).click();
+    await logoutViaUi(page);
     await expect(page).toHaveURL(/\/$/);
     await openLogin(page);
 

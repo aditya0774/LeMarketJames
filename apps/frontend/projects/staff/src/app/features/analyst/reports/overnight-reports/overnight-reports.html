@@ -1,0 +1,74 @@
+<section class="overnight">
+  <div class="report-bar">
+    @if (timeZone(); as zone) {
+      <span class="report-note zone">Times in {{ zone }}</span>
+    }
+    <button type="button" class="btn btn-soft refresh" (click)="refresh()" [disabled]="isLoading()">Refresh</button>
+  </div>
+
+  @if (isLoading()) {
+    <output class="card loading">Loading overnight reports…</output>
+  } @else if (error(); as message) {
+    <div class="alert err" role="alert">
+      <div><b>Unable to load report.</b> {{ message }}</div>
+      <button type="button" class="btn btn-soft retry" (click)="refresh()">Try again</button>
+    </div>
+  } @else if (reports().length === 0) {
+    <div class="card empty-state">
+      <strong>No overnight reports have run yet.</strong>
+    </div>
+  } @else {
+    <div class="card table-card">
+      <table class="t" aria-label="Overnight report runs">
+        <thead>
+          <tr>
+            <th scope="col">Report</th>
+            <th scope="col">Status</th>
+            <th scope="col">Ready</th>
+            <th scope="col">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (report of reports(); track report.id) {
+            <tr [attr.data-status]="report.status">
+              <td>
+                <span class="report-name">{{ report.name }}</span>
+                <span class="run-date">For {{ report.runDate }}</span>
+              </td>
+              <td><span class="pill status-badge {{ statusPill(report.status) }}">{{ statusLabel(report.status) }}</span></td>
+              <td class="ready-time mono">
+                @switch (report.status) {
+                  @case ('READY') {
+                    {{ report.readyAt ? time(report.readyAt) : '—' }}
+                  }
+                  @case ('LATE') {
+                    @if (report.readyAt) {
+                      {{ time(report.readyAt) }}
+                    } @else {
+                      Not ready yet
+                    }
+                  }
+                  @case ('FAILED') {
+                    —
+                  }
+                  @default {
+                    Expected by {{ time(report.readyBy) }}
+                  }
+                }
+              </td>
+              <td class="details">
+                @if (report.status === 'FAILED') {
+                  <span class="failure-reason">{{ report.failureReason || 'No reason recorded' }}</span>
+                } @else if (report.status === 'LATE') {
+                  <span class="late-note">Missed the ready-by time, {{ time(report.readyBy) }}</span>
+                } @else {
+                  <span class="scheduled">Scheduled for {{ time(report.scheduledFor) }}</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

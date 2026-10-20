@@ -94,9 +94,10 @@ loadScripts(document, 'script');</script>
 @RequestMapping("/api/market")
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">MarketController</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">The first HTTP surface for the market feature: server-to-server callers (core-service today)
- reach <a href="service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> over the network instead of as an in-process bean. Returns
- <a href="model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model"><code>QuoteSnapshot</code></a> directly since callers share this exact record via libs/market-client.
+<div class="block">The market's HTTP surface for callers in other services: orders-service reads prices here,
+ through libs/market-client's MarketDataClient, while this service's own features use
+ <a href="service/MarketDataService.html" title="interface in com.lemarketjames.market.service"><code>MarketDataService</code></a> in-process. Returns <a href="model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model"><code>QuoteSnapshot</code></a> directly since callers share
+ this exact record via libs/market-client.
 
  <p>While the feed is <a href="service/FeedMode.html#UNAVAILABLE"><code>FeedMode.UNAVAILABLE</code></a> (contract C4), every endpoint answers 503, which
  callers' MarketDataClient already treats as "no quote".</div>

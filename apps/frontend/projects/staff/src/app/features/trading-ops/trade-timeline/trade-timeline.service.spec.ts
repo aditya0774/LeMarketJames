@@ -1,43 +1,33 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TradeTimelineService } from './trade-timeline.service';
-import { firstValueFrom } from 'rxjs';
 import { AuditEvent } from '../../../shared/models/audit-event.model';
 
 describe('TradeTimelineService', () => {
   let service: TradeTimelineService;
+  let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(TradeTimelineService);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
+  afterEach(() => http.verify());
 
-  it('should return audit events in chronological order', async () => {
-    const events = await firstValueFrom(service.getOrderTimeline(42));
-    expect(events.length).toBe(5);
-    expect(events[0]?.eventType).toBe('SUBMITTED');
-    expect(events[4]?.eventType).toBe('SETTLED');
-  });
+  it('asks the staff API for the order timeline and passes the events on', () => {
+    const events: AuditEvent[] = [
+      { eventType: 'SUBMITTED', occurredAt: '2026-09-21T10:30:00Z', details: { side: 'BUY', quantity: 10, price: 244.2366 } },
+      { eventType: 'FILLED', occurredAt: '2026-09-21T10:30:03Z', details: { executionPrice: 244.2366, quantity: 10 } },
+    ];
+    let received: AuditEvent[] = [];
 
-  it('should include all event details from contract C6', async () => {
-    const events = await firstValueFrom(service.getOrderTimeline(42));
-    const submitted = events.find((e) => e.eventType === 'SUBMITTED');
-    expect(submitted?.details['side']).toBe('BUY');
-    expect(submitted?.details['quantity']).toBe(10);
-    expect(submitted?.details['price']).toBe(244.2366);
+    service.getOrderTimeline(42).subscribe((e) => (received = e));
+    const request = http.expectOne('/api/v1/orders/42/timeline');
+    expect(request.request.method).toBe('GET');
+    request.flush(events);
 
-    const settled = events.find((e) => e.eventType === 'SETTLED');
-    expect(settled?.details['cashDelta']).toBe(-2442.366);
-    expect(settled?.details['quantityDelta']).toBe(10);
-  });
-
-  it('should return events with ISO-8601 UTC timestamps', async () => {
-    const events = await firstValueFrom(service.getOrderTimeline(42));
-    events.forEach((event) => {
-      expect(event.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
-    });
+    expect(received).toEqual(events);
   });
 });

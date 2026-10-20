@@ -50,11 +50,11 @@ describe('ByStockAggregateTable', () => {
       const headers = fixture.nativeElement.querySelectorAll('th');
       const headerTexts = Array.from(headers).map((h: any) => h.textContent.trim());
 
-      expect(headerTexts.some((text: string) => text.includes('Symbol'))).toBe(true);
-      expect(headerTexts.some((text: string) => text.includes('Total Quantity'))).toBe(true);
-      expect(headerTexts.some((text: string) => text.includes('Total Gross Amount'))).toBe(true);
-      expect(headerTexts.some((text: string) => text.includes('Buy Count'))).toBe(true);
-      expect(headerTexts.some((text: string) => text.includes('Sell Count'))).toBe(true);
+      expect(headerTexts.some((text: string) => text.includes('Stock'))).toBe(true);
+      expect(headerTexts.some((text: string) => text.includes('Shares traded'))).toBe(true);
+      expect(headerTexts.some((text: string) => text.includes('Gross amount'))).toBe(true);
+      expect(headerTexts.some((text: string) => text.includes('Buys'))).toBe(true);
+      expect(headerTexts.some((text: string) => text.includes('Sells'))).toBe(true);
     });
 
     it('displays correct data in cells', () => {

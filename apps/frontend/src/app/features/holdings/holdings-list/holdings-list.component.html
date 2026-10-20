@@ -1,137 +1,114 @@
 <div class="holdings-container">
-  <!-- Back Button -->
-  <div class="back-button-wrapper">
-    <button mat-icon-button routerLink="/dashboard" class="back-button">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-  </div>
+  <h1 class="sr-only">My holdings</h1>
+  @let rows = sorted((holdings$ | async)?.holdings);
+  @let totals = totalsOf(rows);
+  @let slices = slicesOf(rows);
 
-  <!-- AC1: Loading State -->
-  <div *ngIf="isLoading()" class="state-container loading-state">
-    <mat-spinner [diameter]="48"></mat-spinner>
-    <p>Loading holdings...</p>
-  </div>
+  @if (isLoading()) {
+    <output class="card state-card loading"><span class="spinner"></span>Loading holdings…</output>
+  } @else if (error(); as err) {
+    <!-- AC1: a safe message only, never details of the account or the failure. -->
+    <div class="card state-card error-state">
+      <div class="alert err" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3 2 20h20Z" /><path d="M12 10v4M12 17h.01" /></svg>
+        <div><b>Unable to load holdings</b><span class="error-message">{{ err.message }}</span></div>
+      </div>
+      <!-- AC1: retry is offered only for the permission error, which a fresh session can clear. -->
+      @if (isAuthError()) {
+        <button type="button" class="btn btn-outline retry-button" (click)="retry()">Try again</button>
+      }
+    </div>
+  } @else if (rows.length === 0) {
+    <div class="card state-card empty-state">
+      <strong>No stocks yet</strong>
+      Once you buy your first stock, it shows up here with what it's worth.
+      <a class="btn btn-primary order-button" routerLink="/trade">Make your first trade</a>
+    </div>
+  } @else {
+    <section class="card split-card" aria-label="How your money is split">
+      <div class="split-top">
+        <span>How your money is split</span>
+        <span>Worth now <span class="mono worth">{{ totals.value | currency: 'USD' }}</span></span>
+      </div>
+      <!-- The legend below names every slice, so the bar itself is decoration. -->
+      <div class="split-bar" aria-hidden="true">
+        @for (s of slices; track s.symbol; let i = $index) {
+          <span [style.flex]="s.percent" [style.background]="color(i)"></span>
+        }
+      </div>
+      <div class="split-legend">
+        @for (s of slices; track s.symbol; let i = $index) {
+          <span><i [style.background]="color(i)"></i><b class="mono">{{ s.symbol }}</b> {{ s.percent | number: '1.0-0' }}%</span>
+        }
+      </div>
+    </section>
 
-  <!-- AC1: Error State with Safe Message (no data leakage) -->
-  <ng-container *ngIf="!isLoading() && error() as err">
-    <mat-card class="state-container error-state">
-      <mat-card-content>
-        <h3>Unable to Load Holdings</h3>
-        <p class="error-message">{{ err.message }}</p>
-        
-        <!-- AC1: Retry button only shown for auth errors (403) -->
-        <button 
-          mat-raised-button 
-          color="primary" 
-          (click)="retry()" 
-          *ngIf="isAuthError()"
-          class="retry-button">
-          Try Again
-        </button>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
-
-  <!-- AC2: Empty State (user logged in but has no holdings) -->
-  <ng-container *ngIf="!isLoading() && !error() && (holdings$ | async)?.holdings?.length === 0">
-    <mat-card class="state-container empty-state">
-      <mat-card-content>
-        <h3>No Holdings Yet</h3>
-        <p>You haven't purchased any stocks yet. Start trading to see your holdings here.</p>
-        <button 
-          mat-raised-button 
-          color="primary" 
-          routerLink="/dashboard"
-          class="order-button">
-          Place an Order
-        </button>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
-
-  <!-- AC2: Success State (holdings table) -->
-  <ng-container *ngIf="!isLoading() && !error() && (holdings$ | async)?.holdings?.length! > 0">
-    <mat-card class="holdings-card">
-      <mat-card-header>
-        <h2>My Holdings</h2>
-      </mat-card-header>
-      
-      <mat-card-content>
-        <div class="table-wrapper">
-          <table mat-table [dataSource]="(holdings$ | async)?.holdings || []" class="holdings-table" aria-label="My holdings">
-            
-            <!-- Symbol Column -->
-            <ng-container matColumnDef="symbol">
-              <th mat-header-cell *matHeaderCellDef>Symbol</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.symbol }}</td>
-            </ng-container>
-
-            <!-- Quantity Column -->
-            <ng-container matColumnDef="quantity">
-              <th mat-header-cell *matHeaderCellDef>Quantity</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.quantity | number: '1.0-4' }}</td>
-            </ng-container>
-
-            <!-- Average Cost Column -->
-            <ng-container matColumnDef="averageCost">
-              <th mat-header-cell *matHeaderCellDef>Avg Cost</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.averageCost | currency }}</td>
-            </ng-container>
-
-            <!-- Current Price Column -->
-            <ng-container matColumnDef="currentPrice">
-              <th mat-header-cell *matHeaderCellDef>Current Price</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.currentPrice | currency }}</td>
-            </ng-container>
-
-            <!-- Total Cost Column -->
-            <ng-container matColumnDef="totalCost">
-              <th mat-header-cell *matHeaderCellDef>Total Cost</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.totalCost | currency }}</td>
-            </ng-container>
-
-            <!-- Current Value Column -->
-            <ng-container matColumnDef="currentValue">
-              <th mat-header-cell *matHeaderCellDef>Current Value</th>
-              <td mat-cell *matCellDef="let holding">{{ holding.currentValue | currency }}</td>
-            </ng-container>
-
-            <!-- Gain/Loss Column (with color coding) -->
-            <ng-container matColumnDef="gainLoss">
-              <th mat-header-cell *matHeaderCellDef>Gain/Loss</th>
-              <td 
-                mat-cell 
-                *matCellDef="let holding"
-                [class.positive]="holding.gainLoss >= 0"
-                [class.negative]="holding.gainLoss < 0"
-                class="gain-loss">
-                {{ holding.gainLoss | currency }}
+    <section class="card table-card">
+      <div class="table-wrapper">
+        <table class="t holdings-table" aria-label="My holdings">
+          <thead>
+            <tr class="groups">
+              <td></td>
+              <td></td>
+              <th class="sep" colspan="2" scope="colgroup">WHAT YOU PAID</th>
+              <th class="sep" colspan="2" scope="colgroup">WORTH NOW</th>
+              <th class="sep" colspan="2" scope="colgroup">GAIN / LOSS</th>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="col">Stock</th>
+              <th scope="col" class="r">Shares</th>
+              <th scope="col" class="sep r">Avg. per share</th>
+              <th scope="col" class="r">Total</th>
+              <th scope="col" class="sep r">Price per share</th>
+              <th scope="col" class="r">Total</th>
+              <th scope="col" class="sep r">Dollars</th>
+              <th scope="col" class="r">Percent</th>
+              <th scope="col"><span class="sr-only">Trades</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of rows; track h.symbol) {
+              <!-- The row opens that stock's trade history; Enter does the same from the keyboard. -->
+              <tr class="hover clickable-row" tabindex="0" [attr.aria-label]="'Trades for ' + h.symbol"
+                  (click)="onStockClick(h.symbol)" (keydown.enter)="onStockClick(h.symbol)">
+                <td><span class="sym">{{ h.symbol }}</span><span class="sym-sub">{{ nameFor(h.symbol) }}</span></td>
+                <td class="r mono">{{ h.quantity | number: '1.0-4' }}</td>
+                <td class="sep r mono">{{ h.averageCost | currency: 'USD' }}</td>
+                <td class="r mono">{{ h.totalCost | currency: 'USD' }}</td>
+                <td class="sep r mono">{{ h.currentPrice | currency: 'USD' }}</td>
+                <td class="r mono">{{ h.currentValue | currency: 'USD' }}</td>
+                <td class="sep r mono gain-loss" [class.positive]="h.gainLoss >= 0" [class.negative]="h.gainLoss < 0">{{ h.gainLoss | signedCurrency }}</td>
+                <td class="r mono gain-loss-percent" [class.positive]="h.gainLossPercent >= 0" [class.negative]="h.gainLossPercent < 0">
+                  {{ h.gainLossPercent >= 0 ? '▲' : '▼' }} {{ (h.gainLossPercent < 0 ? -h.gainLossPercent : h.gainLossPercent) | number: '1.2-2' }}%
+                </td>
+                <td class="r"><span class="trades-link">Trades →</span></td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              <td></td>
+              <td class="sep"></td>
+              <td class="r mono">{{ totals.cost | currency: 'USD' }}</td>
+              <td class="sep"></td>
+              <td class="r mono">{{ totals.value | currency: 'USD' }}</td>
+              <td class="sep r mono" [class.positive]="totals.gainLoss >= 0" [class.negative]="totals.gainLoss < 0">{{ totals.gainLoss | signedCurrency }}</td>
+              <td class="r mono" [class.positive]="totals.gainLoss >= 0" [class.negative]="totals.gainLoss < 0">
+                {{ totals.gainLoss >= 0 ? '▲' : '▼' }} {{ (totals.gainLossPercent < 0 ? -totals.gainLossPercent : totals.gainLossPercent) | number: '1.2-2' }}%
               </td>
-            </ng-container>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
 
-            <!-- Gain/Loss % Column (with color coding) -->
-            <ng-container matColumnDef="gainLossPercent">
-              <th mat-header-cell *matHeaderCellDef>Gain/Loss %</th>
-              <td 
-                mat-cell 
-                *matCellDef="let holding"
-                [class.positive]="holding.gainLossPercent >= 0"
-                [class.negative]="holding.gainLossPercent < 0"
-                class="gain-loss-percent">
-                {{ holding.gainLossPercent | number: '1.2-2' }}%
-              </td>
-            </ng-container>
-
-            <!-- Table Header Row -->
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            
-            <!-- Table Data Rows (clickable to view stock trades) -->
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
-                class="clickable-row"
-                (click)="onStockClick(row.symbol)"></tr>
-          </table>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </ng-container>
+    <section class="explain" aria-label="What these columns mean">
+      <span><b>Avg. per share</b> — the average you paid across every buy.</span>
+      <span><b>Worth now</b> — shares × today's live price.</span>
+      <span><b>Gain / loss</b> — only becomes real money when you sell.</span>
+    </section>
+  }
 </div>

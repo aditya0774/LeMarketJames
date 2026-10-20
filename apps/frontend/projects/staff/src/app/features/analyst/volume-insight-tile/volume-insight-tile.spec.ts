@@ -5,6 +5,7 @@ import { VolumeComparisonResponse } from '../../../shared/models/volume-insight.
 import { VolumeInsightTile } from './volume-insight-tile';
 
 const COMPARE = '/api/v1/reports/insights/volume/compare';
+const PING = '/api/v1/reports/ping';
 
 /** The C6 example, with the change and previous period adjustable per test. */
 function comparison(overrides: Partial<VolumeComparisonResponse> = {}): VolumeComparisonResponse {
@@ -34,6 +35,9 @@ describe('VolumeInsightTile', () => {
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(VolumeInsightTile);
+    fixture.detectChanges();
+    // The tile asks for the reports time zone first; the cards load once it has it.
+    httpMock.expectOne(PING).flush({ success: true, service: 'staff-ops-service', timeZone: 'America/New_York' });
     fixture.detectChanges();
   });
 
@@ -174,5 +178,24 @@ describe('VolumeInsightTile', () => {
 
     expect(presetRequests().length).toBe(0);
     expect(card('CUSTOM').querySelector('[role="alert"]')).not.toBeNull();
+  });
+});
+
+describe('VolumeInsightTile without the reports time zone', () => {
+  it("still loads, using the browser's day, when the zone cannot be read", async () => {
+    await TestBed.configureTestingModule({
+      imports: [VolumeInsightTile],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    const httpMock = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(VolumeInsightTile);
+    fixture.detectChanges();
+
+    httpMock.expectOne(PING).flush({ message: 'boom' }, { status: 500, statusText: 'Server Error' });
+
+    const requests = httpMock.match((r) => r.url === COMPARE);
+    expect(requests.length).toBe(3);
+    requests.forEach((r) => r.flush(comparison()));
+    httpMock.verify();
   });
 });

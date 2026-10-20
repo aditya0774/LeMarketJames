@@ -1,23 +1,23 @@
 import { expect, Page, test } from '@playwright/test';
-import { ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, openAnalystTab, signIn, signOut, TRADING_OPS } from './support/staff';
 
 /**
  * LMKT-139: staff sign in on the staff app and each role gets its own pages
- * (contracts/C7-roles.md). Everything goes through the real staff app, staff gateway and
- * auth-service, without mocks. The tests only sign in and read, so they share the seed logins.
+ * (contracts/C7-roles.md). Everything goes through the real staff app and auth-service, without
+ * mocks. The tests only sign in and read, so they share the seed logins.
  */
-const REPORTS = ['Trade Activity by Period', 'Activity by Stock', 'Activity by Client Segment', 'Overnight Reports'];
+const TABS = ['Volume', 'By period', 'By stock', 'By segment', 'Overnight'];
 
 async function expectAccessDenied(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/access-denied$/);
-  await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: ACCESS_DENIED_HEADING })).toBeVisible();
 }
 
 test.describe('Staff login', () => {
   test('the app opens on the staff login, and so does every page for a signed-out visitor', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Staff Login' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Staff log in' })).toBeVisible();
 
     for (const address of ['/trade-search', '/analyst', '/analyst/reports/activity-by-stock']) {
       await page.goto(address);
@@ -32,15 +32,15 @@ test.describe('Staff login', () => {
     await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toBeVisible();
   });
 
-  test('an Analyst lands on the Analyst dashboard and sees the report list', async ({ page }) => {
+  test('an Analyst lands on the Volume tab and sees every report as a tab', async ({ page }) => {
     await signIn(page, ANALYST);
 
     await expect(page).toHaveURL(/\/analyst$/);
-    await expect(page.getByRole('heading', { name: 'Analyst Dashboard' })).toBeVisible();
-    // The dashboard lists each report as a card.
-    await expect(page.locator('.report-card .report-title')).toHaveText(REPORTS);
+    await expect(page.getByRole('heading', { name: 'Trading volume', exact: true })).toBeVisible();
+    // The analyst workspace has one tab per report, after Volume.
+    await expect(page.getByRole('navigation', { name: 'Analyst reports' }).getByRole('link')).toHaveText(TABS);
 
-    await page.locator('.report-card', { hasText: 'Activity by Stock' }).click();
+    await openAnalystTab(page, 'By stock');
     await expect(page).toHaveURL(/\/analyst\/reports\/activity-by-stock$/);
   });
 
@@ -54,7 +54,7 @@ test.describe('Staff login', () => {
       await page.goto(address);
       await expectAccessDenied(page);
     }
-    await expect(page.getByRole('heading', { name: 'Analyst Dashboard' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Trading volume', exact: true })).toHaveCount(0);
   });
 
   test('an Analyst is refused on the Trading Ops pages', async ({ page }) => {
@@ -76,8 +76,8 @@ test.describe('Staff login', () => {
 
     await expect(page.getByRole('alert')).toContainText('This login is for staff only');
     await expect(page).toHaveURL(/\/login$/);
-    // The gateway gave the client a staff session cookie on sign-in; it must be gone again,
-    // so the gateway no longer knows this browser.
+    // The staff app gave the client a staff session cookie on sign-in; it must be gone again,
+    // so the staff app no longer knows this browser.
     await expect.poll(async () => (await context.cookies()).map(cookie => cookie.name)).not.toContain('staff_jwt');
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
 
@@ -91,7 +91,7 @@ test.describe('Staff login', () => {
     await signIn(page, TRADING_OPS);
     await expect(page).toHaveURL(/\/trade-search$/);
 
-    await page.getByRole('button', { name: 'Log out' }).click();
+    await signOut(page);
     await expect(page).toHaveURL(/\/login$/);
 
     await page.goto('/trade-search');

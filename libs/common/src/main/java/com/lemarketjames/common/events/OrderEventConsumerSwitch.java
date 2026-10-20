@@ -2,7 +2,7 @@ package com.lemarketjames.common.events;
 
 /**
  * The setting that decides whether a service listens to the order events on Kafka (contract C5).
- * It is the consuming side's counterpart of buy-sell-service's {@code lmj.events.publisher}.
+ * It is the consuming side's counterpart of orders-service's {@code lmj.events.publisher}.
  *
  * <p>Unset means the service does not listen and contacts no broker, so unit tests and a stack
  * started without Kafka (the native Windows scripts) need none; Docker Compose and Jenkins set it

@@ -1,75 +1,53 @@
 <div class="activity-by-client-segment-container">
-  <div class="report-header">
-    <p class="report-kicker">Analyst Report</p>
-    <h1>Trading Activity by Client Segment</h1>
-    <p class="description">Compare trading activity across client segments for your selected date range.</p>
+  <div class="report-bar">
     <div class="header-meta">
-      <span class="meta-pill">{{ selectedRangeLabel() }}</span>
-      <span class="meta-pill">{{ reportData().length }} segments</span>
+      <span class="badge">{{ selectedRangeLabel() }}</span>
+      <span class="badge">{{ reportData().length }} segments</span>
     </div>
+    <form method="post" [formGroup]="dateRangeForm" class="report-dates">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Start Date</mat-label>
+        <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (dateChange)="onDateRangeChange()" />
+        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>End Date</mat-label>
+        <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (dateChange)="onDateRangeChange()" />
+        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Compare with</mat-label>
+        <mat-select formControlName="comparisonMode" (selectionChange)="onComparisonModeChange()">
+          <mat-option value="previous">Previous period</mat-option>
+          <mat-option value="custom">Custom dates</mat-option>
+        </mat-select>
+      </mat-form-field>
+      @if (dateRangeForm.controls.comparisonMode.value === 'custom') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Comparison start</mat-label>
+          <input matInput [matDatepicker]="comparisonStartPicker" formControlName="comparisonStartDate" />
+          <mat-datepicker-toggle matSuffix [for]="comparisonStartPicker" />
+          <mat-datepicker #comparisonStartPicker />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Comparison end</mat-label>
+          <input matInput [matDatepicker]="comparisonEndPicker" formControlName="comparisonEndDate" />
+          <mat-datepicker-toggle matSuffix [for]="comparisonEndPicker" />
+          <mat-datepicker #comparisonEndPicker />
+        </mat-form-field>
+      }
+      <button class="btn btn-primary" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">Refresh</button>
+    </form>
   </div>
 
-  <mat-card class="filter-card">
-    <mat-card-content>
-      <form [formGroup]="dateRangeForm" class="date-range-form">
-        <div class="date-fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Start Date</mat-label>
-            <input id="segment-start-date" aria-label="Start Date" matInput [matDatepicker]="startPicker" formControlName="startDate" (dateChange)="onDateRangeChange()" />
-            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
-            <mat-datepicker #startPicker></mat-datepicker>
-          </mat-form-field>
+  <output *ngIf="isLoading()" class="card loading"><span class="spinner"></span>Loading report…</output>
 
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>End Date</mat-label>
-            <input id="segment-end-date" aria-label="End Date" matInput [matDatepicker]="endPicker" formControlName="endDate" (dateChange)="onDateRangeChange()" />
-            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
-            <mat-datepicker #endPicker></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Compare with</mat-label>
-            <mat-select formControlName="comparisonMode" (selectionChange)="onComparisonModeChange()">
-              <mat-option value="previous">Previous period</mat-option>
-              <mat-option value="custom">Custom dates</mat-option>
-            </mat-select>
-          </mat-form-field>
-          @if (dateRangeForm.controls.comparisonMode.value === 'custom') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Comparison start</mat-label>
-            <input matInput [matDatepicker]="comparisonStartPicker" formControlName="comparisonStartDate" />
-            <mat-datepicker-toggle matSuffix [for]="comparisonStartPicker" />
-            <mat-datepicker #comparisonStartPicker />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Comparison end</mat-label>
-            <input matInput [matDatepicker]="comparisonEndPicker" formControlName="comparisonEndDate" />
-            <mat-datepicker-toggle matSuffix [for]="comparisonEndPicker" />
-            <mat-datepicker #comparisonEndPicker />
-          </mat-form-field>
-          }
-        </div>
-
-        <button class="btn btn-gold" type="button" (click)="onDateRangeChange()" [disabled]="isLoading()">
-          Refresh
-        </button>
-      </form>
-
-    </mat-card-content>
-  </mat-card>
-
-  <div *ngIf="isLoading()" class="loading-state" role="status">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Loading report...</p>
-  </div>
-
-  <div *ngIf="error() && !isLoading()" class="error-state" role="alert">
-    <mat-card>
-      <mat-card-content>
-        <h2>Unable to Load Report</h2>
-        <p>{{ error() }}</p>
-        <button class="btn btn-gold" (click)="onRetry()">Try Again</button>
-      </mat-card-content>
-    </mat-card>
+  <div *ngIf="error() && !isLoading()" class="card error-state" role="alert">
+    <h2>Unable to Load Report</h2>
+    <p>{{ error() }}</p>
+    <button type="button" class="btn btn-outline" (click)="onRetry()">Try Again</button>
   </div>
 
   <div *ngIf="!isLoading() && !error()" class="report-content">

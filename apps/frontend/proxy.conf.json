@@ -1,1 +1,6 @@
-{"/api/**":{"target":"http://localhost:8089","secure":false}}
+{
+  "/api/auth": { "target": "http://localhost:8082", "secure": false },
+  "/api/v1/orders": { "target": "http://localhost:8085", "secure": false },
+  "/api/v1/buy-orders": { "target": "http://localhost:8085", "secure": false },
+  "/api": { "target": "http://localhost:8084", "secure": false }
+}

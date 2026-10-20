@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TradesReportController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports</a> &gt; <span class="el_source">TradesReportController.java</span></div><h1>TradesReportController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports;
+
+import com.lemarketjames.reports.dto.TradesReportResponse;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+
+/**
+ * Report endpoint for aggregate trading activity by stock symbol.
+ * ANALYST-only; role enforcement is handled by SecurityConfig at the path level.
+ * Returns totals (quantity, gross amount) and counts (BUY/SELL) grouped by symbol.
+ * No individual client, account, or order IDs are exposed.
+ */
+@RestController
+@RequestMapping(&quot;/api/v1/reports&quot;)
+public class TradesReportController {
+
+    private final TradesReportService tradesReportService;
+
+<span class="fc" id="L23">    public TradesReportController(TradesReportService tradesReportService) {</span>
+<span class="fc" id="L24">        this.tradesReportService = tradesReportService;</span>
+<span class="fc" id="L25">    }</span>
+
+    /**
+     * Get aggregate trades grouped by stock symbol, filtered by date range.
+     * Aggregates all FILLED trades across all clients, grouped by symbol, sorted alphabetically.
+     *
+     * @param startDate Optional start date (inclusive, YYYY-MM-DD); defaults to 30 days ago
+     * @param endDate Optional end date (inclusive, YYYY-MM-DD); defaults to today
+     * @return Aggregate trades by symbol; 400 if dates are invalid, 403 if not ANALYST role, 401 if missing JWT
+     */
+    @GetMapping(&quot;/trades-by-stock&quot;)
+    public TradesReportResponse tradesAggregateByStock(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate) {
+<span class="fc" id="L39">        var data = tradesReportService.getTradesAggregateByStock(startDate, endDate);</span>
+<span class="fc" id="L40">        return new TradesReportResponse(true, data);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,67 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.trades-table {
+  min-width: 640px;
+}
+
+/* Sortable headers are full-cell buttons. */
+.trades-table th.sortable {
+  padding: 0;
+}
+
+.trades-table th button {
+  width: 100%;
+  height: 44px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font: 500 var(--font-xs) var(--font-body);
+  cursor: pointer;
+}
+
+.trades-table th button:hover {
+  color: var(--text);
+}
+
+.trades-table th.numeric button {
+  justify-content: flex-end;
+}
+
+.total-head {
+  text-align: right;
+}
+
+.date-cell {
+  font-size: var(--font-sm);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.cost-note {
+  margin-left: 6px;
+  font: 400 var(--font-xs) var(--font-body);
+  color: var(--faint);
+}
+
+.empty-cell {
+  padding: 32px 18px;
+  text-align: center;
+  color: var(--faint);
+}
+
+.trades-summary {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.summary-text {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}

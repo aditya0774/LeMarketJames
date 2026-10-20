@@ -1,0 +1,76 @@
+.market-filter {
+  flex: 0 1 280px;
+}
+
+.stock-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stock-cell .sym {
+  min-width: 52px;
+}
+
+.stock-name {
+  font-size: var(--font-sm);
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+tr.clickable {
+  cursor: pointer;
+}
+
+tr.clickable:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Looks like the design's Trade button; the row itself is the control, so this is decoration. */
+.trade-link {
+  pointer-events: none;
+}
+
+/* The watch star: outlined, filled gold once the stock is on the watchlist. */
+.star-col {
+  width: 44px;
+  padding-right: 0;
+}
+
+.star {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.star:hover {
+  background: var(--card2);
+}
+
+.star svg {
+  width: 18px;
+  height: 18px;
+}
+
+.star path {
+  fill: none;
+  stroke: var(--faint2);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.star.on path {
+  fill: var(--pri);
+  stroke: var(--pri);
+}

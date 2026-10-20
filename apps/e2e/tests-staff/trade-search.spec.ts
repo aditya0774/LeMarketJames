@@ -6,11 +6,11 @@ import { signIn, TRADING_OPS } from './support/staff';
 
 /**
  * LMKT-39 trade search, on the staff app since LMKT-145 moved it out of the trading app.
- * Sign-in, searches and authorization all use the real staff app, staff gateway and backend,
+ * Sign-in, searches and authorization all use the real staff app and backend,
  * without mocks.
  */
 const SEARCH = '/api/v1/orders/trades/search';
-// Clients register through the trading app; the staff gateway has no registration route.
+// Clients register through the trading app; the staff app has no registration route.
 const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
 
 interface SearchFixture {
@@ -113,7 +113,6 @@ test('LMKT-39 AC2: client/date search includes UTC boundaries and excludes other
   await openTradeSearch(page);
   await page.getByRole('radio', { name: 'Client search' }).check();
   await page.getByLabel('Client ID or client name').fill(String(trades.clientId));
-  await page.getByText('Optional client date range').click();
   await page.getByLabel('Start date (UTC)').fill('2026-01-10');
   await page.getByLabel('End date (UTC)').fill('2026-01-11');
   const result = await search(page, { clientId: String(trades.clientId), from: '2026-01-10', to: '2026-01-11' });
@@ -131,8 +130,8 @@ test('LMKT-39 AC2: client/date search includes UTC boundaries and excludes other
 });
 
 test('LMKT-39 AC3: a client cannot query even their own trade', async ({ tradingApp, trades }) => {
-  // The staff app turns a client away at the login (staff-login.spec.ts) and the staff gateway
-  // refuses them (tests/staff-gateway.spec.ts). The trading gateway still routes the search
+  // The staff app turns a client away at the login (staff-login.spec.ts) and its API refuses
+  // them (tests/staff-api.spec.ts). The trading app still routes the search
   // path, so it is the service's own rule that has to hold for the client's customer session.
   await loginViaApi(tradingApp, trades.user);
   const queries: Array<Record<string, string>> = [

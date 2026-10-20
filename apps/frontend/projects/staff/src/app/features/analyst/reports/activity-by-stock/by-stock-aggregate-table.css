@@ -1,0 +1,45 @@
+.trades-by-stock-aggregate-table {
+  overflow: auto;
+}
+
+.aggregate-table th.sortable {
+  padding: 0;
+}
+
+.aggregate-table th button {
+  width: 100%;
+  height: 40px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font: 500 var(--font-xs) var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.aggregate-table th button:hover {
+  color: var(--text);
+}
+
+.aggregate-table th.r button {
+  justify-content: flex-end;
+}
+
+.bar-col {
+  width: 22%;
+}
+
+.bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--pri);
+}
+
+.empty-state p {
+  margin: 0;
+}

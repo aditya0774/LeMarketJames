@@ -67,6 +67,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "include": ["**/*.spec.ts", "../projects/shared-ui/src/**/*.spec.ts"],
             "coverageReporters": ["html", "cobertura", "lcovonly", "text-summary"]
           }
         }
@@ -118,7 +119,7 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": { "port": 4201, "proxyConfig": "projects/staff/proxy.conf.json" },
+          "options": { "port": 4201, "proxyConfig": "projects/staff/proxy.conf.mjs" },
           "configurations": {
             "production": {
               "buildTarget": "staff:build:production"

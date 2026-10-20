@@ -1,10 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { homeFor } from '../../../core/auth/staff-home';
 import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
+import { Brand } from '../../../shared/components/brand/brand';
 
 /** Shown to a client who signs in here; their session is ended before it is shown. */
 export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
@@ -12,8 +13,14 @@ export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
 /** Shown, with the heading "Account not active", for a staff login that has been deactivated (C6). */
 export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
 
+/** How the message box looks: err for a failure, warn for a lockout, info for a pointer elsewhere. */
+export type LoginAlertKind = 'err' | 'warn' | 'info';
+
+/** The auth service words both lockout responses this way ("Account locked for …", "Account temporarily locked. Try again in …"). */
+const LOCKOUT_PREFIX = /^Account (temporarily )?locked/;
+
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, Brand],
   selector: 'staff-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
@@ -21,12 +28,14 @@ export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Pleas
 /**
  * Staff Login Component
  *
- * Renders the login form for staff (Trading Ops and Analyst roles).
- * Uses the same LeMarket auth styles as the trading app.
+ * Renders the login form for staff (Trading Ops and Analyst roles), laid out like the redesign's
+ * "Staff log in" board: what Courtside View is on the left, the form on the right. Messages follow
+ * the trading app's log in: red when it failed, amber for a lockout, purple for a client login.
  */
 export class Login {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly errorHeading = signal('Login failed');
+  protected readonly errorKind = signal<LoginAlertKind>('err');
   protected readonly submitting = signal(false);
   protected readonly form: ReturnType<FormBuilder['group']>;
   protected showPassword = false;
@@ -54,16 +63,15 @@ export class Login {
     }
 
     this.errorMessage.set(null);
-    this.errorHeading.set('Login failed');
     this.submitting.set(true);
     try {
       await this.auth.login(this.form.value.username, this.form.value.password);
       if (this.auth.hasRole('CLIENT')) {
         // Clients and staff share one sign-in endpoint (C7), so a client's credentials work here
-        // and the gateway has already given this browser a staff_jwt. Nothing in this app is
+        // and the staff app has already given this browser a staff_jwt. Nothing in this app is
         // for clients: sign out again so it doesn't keep one.
         await this.auth.logout();
-        this.errorMessage.set(STAFF_ONLY_MESSAGE);
+        this.showAlert('info', 'Client account', STAFF_ONLY_MESSAGE);
         return;
       }
       await this.router.navigate([homeFor(this.auth.roles())]);
@@ -72,7 +80,12 @@ export class Login {
         this.showAccountInactive();
         return;
       }
-      this.errorMessage.set(this.loginErrorMessage(error));
+      const message = this.loginErrorMessage(error);
+      if (LOCKOUT_PREFIX.test(message)) {
+        this.showAlert('warn', 'Account locked', message);
+        return;
+      }
+      this.showAlert('err', 'Login failed', message);
     } finally {
       this.submitting.set(false);
     }
@@ -95,8 +108,13 @@ export class Login {
   }
 
   private showAccountInactive(): void {
-    this.errorHeading.set('Account not active');
-    this.errorMessage.set(ACCOUNT_INACTIVE_MESSAGE);
+    this.showAlert('err', 'Account not active', ACCOUNT_INACTIVE_MESSAGE);
+  }
+
+  private showAlert(kind: LoginAlertKind, heading: string, message: string): void {
+    this.errorKind.set(kind);
+    this.errorHeading.set(heading);
+    this.errorMessage.set(message);
   }
 
   protected togglePasswordVisibility(): void {

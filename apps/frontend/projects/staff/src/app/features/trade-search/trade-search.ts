@@ -4,12 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { ClientSearchResult, TradeSearchResult, TradeSearchService } from '../../core/trades/trade-search.service';
+import { TradeTimelineComponent } from '../trading-ops/trade-timeline/trade-timeline';
+import { TradeTimelineService } from '../trading-ops/trade-timeline/trade-timeline.service';
+import { AuditEvent } from '../../shared/models/audit-event.model';
 
-@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe],
+/**
+ * Trading Ops trade search, laid out like the redesign's Trade search board: the search form on
+ * the left, the completed trades on the right, and below them the selected order's timeline from
+ * the audit trail (C6, GET /api/v1/orders/{orderId}/timeline).
+ */
+@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe, TradeTimelineComponent],
   templateUrl: './trade-search.html', styleUrl: './trade-search.css' })
 export class TradeSearch implements OnDestroy {
   private readonly api = inject(TradeSearchService);
+  private readonly timelines = inject(TradeTimelineService);
   private request?: Subscription;
+  private timelineRequest?: Subscription;
   mode: 'order' | 'client' = 'order';
   term = '';
   from = '';
@@ -21,12 +31,42 @@ export class TradeSearch implements OnDestroy {
   readonly searched = signal(false);
   readonly error = signal('');
   readonly selected = signal('');
+  /** The order whose timeline is shown; null until one is chosen in the results. */
+  readonly selectedOrder = signal<number | null>(null);
+  readonly timeline = signal<AuditEvent[]>([]);
+  readonly timelineLoading = signal(false);
+  readonly timelineError = signal('');
 
   clearResults(): void {
     this.request?.unsubscribe();
     this.loading.set(false); this.searched.set(false); this.results.set([]);
     this.error.set(''); this.clients.set([]); this.clientsSearched.set(false);
     this.selected.set('');
+    this.clearTimeline();
+  }
+
+  /** Loads an order's audit events, replacing any timeline still loading. */
+  showTimeline(orderId: number): void {
+    this.clearTimeline();
+    this.selectedOrder.set(orderId);
+    this.timelineLoading.set(true);
+    this.timelineRequest = this.timelines.getOrderTimeline(orderId).subscribe({
+      next: (events) => { this.timeline.set(events); this.timelineLoading.set(false); },
+      error: (error: HttpErrorResponse) => {
+        this.timelineLoading.set(false);
+        this.timelineError.set(error.status === 403 ? 'Access denied. Order timelines require Trading Operations.'
+          : error.status === 401 ? 'Your session has expired. Please sign in again.'
+          : 'Unable to load this order timeline. Please try again.');
+      },
+    });
+  }
+
+  private clearTimeline(): void {
+    this.timelineRequest?.unsubscribe();
+    this.selectedOrder.set(null);
+    this.timeline.set([]);
+    this.timelineLoading.set(false);
+    this.timelineError.set('');
   }
 
   search(): void {
@@ -87,5 +127,5 @@ export class TradeSearch implements OnDestroy {
     return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }
   utcTime(value: string): string { return value.replace('T', ' ') + ' UTC'; }
-  ngOnDestroy(): void { this.request?.unsubscribe(); }
+  ngOnDestroy(): void { this.request?.unsubscribe(); this.timelineRequest?.unsubscribe(); }
 }

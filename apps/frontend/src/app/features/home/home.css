@@ -1,166 +1,187 @@
-.landing-container {
+/* Landing page from the redesign's "Landing" board: the chalk-toss photo fills the page behind a
+   scrim that is solid on the left (where the text sits) and fades to the right, so the player
+   stays visible while the copy stays readable in both themes. */
+
+.landing {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 100vh;
-  /* Image is wider than tall, so plain "cover" leaves no vertical room to reposition it;
-     sizing to 130% height creates overflow so center-Y can still be adjusted. */
-  background:
-    linear-gradient(135deg, rgba(15, 3, 33, 0.88) 0%, rgba(26, 10, 62, 0.82) 50%, rgba(13, 2, 27, 0.92) 100%),
-    url('/LeChalk_centered_wide.jpg') center 70% / auto 130% no-repeat;
-  padding: 40px 20px;
-  color: #ffffff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  position: relative;
+  background: var(--bg);
+  color: var(--text);
   overflow: hidden;
 }
 
-/* The text block sits in the lower half so it clears the head the logo is anchored above. */
-.landing-content {
+.hero-bg,
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+/* The player is centred in a wide photo; anchoring it near the left edge puts him about
+   two-thirds of the way across the screen, clear of the text. */
+.hero-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 4% 30%;
+}
+
+/* Built from the page colour, so the same fade works in both themes. */
+.hero-scrim {
+  --fade: var(--bg);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fade) 96%, transparent) 0%,
+      color-mix(in srgb, var(--fade) 87%, transparent) 38%,
+      color-mix(in srgb, var(--fade) 40%, transparent) 70%,
+      color-mix(in srgb, var(--fade) 52%, transparent) 100%
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--fade) 97%, transparent) 0%, transparent 40%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fade) 72%, transparent) 0%, transparent 18%);
+}
+
+.landing-head,
+.landing-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: 20px clamp(16px, 4vw, 56px);
+}
+
+.landing-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--lhdr) 60%, transparent);
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-nav .btn-ghost {
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.landing-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px clamp(16px, 4vw, 56px) 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: space-between;
+  gap: 40px 56px;
+}
+
+.hero {
+  flex: 0 1 620px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  flex: 1;
-  position: relative;
-  z-index: 1;
-  text-align: center;
+  gap: 24px;
 }
 
-/* Logo Section */
-/* Pinned to the photo, not to the text flow. The background is sized to 130% of the container
-   height and anchored at 70% vertically, and the top of the head is about 42% down the image,
-   so it lands at roughly 34% of the container height (0.42 * 1.3 - 0.21). The head is also
-   horizontally centred in the image. The logo's bottom edge rests just above that point. */
-.logo-section {
-  --logo-size: clamp(110px, 24vh, 220px);
-  position: absolute;
-  left: 50%;
-  top: 33%;
-  /* logo.png is wider than tall and has empty space under the artwork inside the square box,
-     so nudge the box down by that share (about 28% of its size) to close the visible gap. */
-  transform: translate(-50%, calc(-100% + var(--logo-size) * 0.28));
-  z-index: 1;
-}
-
-.logo-icon {
-  display: block;
-  width: var(--logo-size);
-  height: var(--logo-size);
-  object-fit: contain;
-  filter: drop-shadow(0 6px 20px rgba(255, 193, 7, 0.35));
-}
-
-.logo-text {
-  font-family: 'Big Shoulders Display', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 48px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  margin: 0;
-}
-
-.logo-amber {
-  color: var(--gold);
-  text-shadow: 0 2px 10px rgba(253, 185, 39, 0.3);
-}
-
-.logo-white {
-  color: #ffffff;
-}
-
-/* Tagline */
-.tagline {
-  font-family: 'Big Shoulders Display', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 42px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 20px 0;
-  letter-spacing: 1px;
-  line-height: 1.2;
-}
-
-.tagline-amber {
-  color: var(--gold);
-}
-
-/* Description */
-.description {
-  font-size: 16px;
-  color: var(--text-dim);
-  max-width: 600px;
-  margin: 20px 0 40px;
-  line-height: 1.6;
-  font-weight: 400;
-}
-
-/* Button Group */
-.button-group {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.hero-btn {
+.eyebrow {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: auto;
-  padding: 12px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 10px;
-  text-transform: none;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  min-width: 160px;
-  font-family: inherit;
-}
-
-.btn-login {
-  background-color: rgba(255, 255, 255, 0.03);
-  color: #ffffff;
-  border: 1.5px solid var(--purple-mid);
-}
-
-.btn-login:hover {
-  background-color: rgba(92, 42, 140, 0.15);
-  border-color: var(--purple-mid);
-}
-
-.btn-create {
-  background-color: var(--gold);
-  color: var(--ink);
-  border: none;
-}
-
-.btn-create:hover {
-  background-color: var(--gold-soft);
-  box-shadow: 0 4px 12px rgba(253, 185, 39, 0.3);
-}
-
-/* Footer */
-.landing-footer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
   gap: 10px;
-  padding-top: 20px;
+  color: var(--acc);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
-.footer-badge {
-  border: 1px solid rgba(253, 185, 39, 0.6);
-  border-radius: 4px;
-  padding: 3px var(--space-sm);
-  color: var(--gold);
-  font-weight: 600;
-  font-size: var(--font-2xs);
-  letter-spacing: 1px;
+.eyebrow svg {
+  fill: var(--acc);
 }
 
-.footer-text {
-  color: var(--text-faint);
+.hero-title {
+  font-size: 60px;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+
+.hero-title .dot {
+  color: var(--pri);
+}
+
+.hero-copy {
+  margin: 0;
+  max-width: 520px;
+  font-size: var(--font-lg);
+  line-height: 1.6;
+  color: var(--text2);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.hero-actions .btn-outline {
+  border-color: var(--line2);
+  font-weight: 500;
+}
+
+/* "How it works": three frosted cards joined by hairlines. */
+.steps {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.step-no {
   font-size: var(--font-xs);
+  color: var(--pri);
+}
+
+.step h2 {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.step p {
+  margin: 0;
+  font-size: var(--font-base);
+  line-height: 1.55;
+  color: var(--dim);
+}
+
+.landing-foot {
+  gap: 12px;
+  border-top: 1px solid var(--lhdr);
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+@media (max-width: 720px) {
+  .hero-title {
+    font-size: 40px;
+  }
 }

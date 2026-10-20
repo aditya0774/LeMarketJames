@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InProcessMarketData.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.inprocess</a> &gt; <span class="el_source">InProcessMarketData.java</span></div><h1>InProcessMarketData.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.inprocess;
+
+import com.lemarketjames.market.client.MarketFeedStatus;
+import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.market.service.FeedMode;
+import com.lemarketjames.market.service.MarketDataService;
+import com.lemarketjames.market.service.MarketFeedControl;
+import com.lemarketjames.market.service.MarketSimulator;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+/**
+ * The prices every feature of this service reads: the simulator's quotes, as a caller across the
+ * network would see them.
+ *
+ * &lt;p&gt;Quotes, holdings and portfolio once reached the simulator over HTTP through market-client's
+ * {@code MarketDataClient}, which is how they learned of a feed outage (contract C4): the
+ * simulator's endpoints answer 503 while the feed is UNAVAILABLE, and the client then records the
+ * outage in {@link MarketFeedStatus} and returns no quote. In this process there is no HTTP call
+ * to fail, so this decorator does the same thing itself; without it those features would keep
+ * showing prices during a simulated outage. {@code @Primary} so every {@code MarketDataService}
+ * injection point gets it rather than the bare {@code MarketSimulator}.
+ */
+@Service
+@Primary
+public class InProcessMarketData implements MarketDataService {
+
+    private final MarketDataService simulator;
+    private final MarketFeedControl feed;
+    private final MarketFeedStatus feedStatus;
+
+    /**
+     * @param simulator  the simulator's own quotes
+     * @param feed       the feed mode the test controls set (contract C4)
+     * @param feedStatus where callers look to tell an outage from an unknown ticker
+     */
+    public InProcessMarketData(MarketSimulator simulator, MarketFeedControl feed,
+<span class="fc" id="L43">                               MarketFeedStatus feedStatus) {</span>
+<span class="fc" id="L44">        this.simulator = simulator;</span>
+<span class="fc" id="L45">        this.feed = feed;</span>
+<span class="fc" id="L46">        this.feedStatus = feedStatus;</span>
+<span class="fc" id="L47">    }</span>
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByTicker(String ticker) {
+<span class="fc" id="L51">        return read(() -&gt; simulator.findByTicker(ticker), Optional::empty);</span>
+    }
+
+    @Override
+    public Optional&lt;QuoteSnapshot&gt; findByInstrumentId(int instrumentId) {
+<span class="fc" id="L56">        return read(() -&gt; simulator.findByInstrumentId(instrumentId), Optional::empty);</span>
+    }
+
+    @Override
+    public Collection&lt;QuoteSnapshot&gt; findAll() {
+<span class="fc" id="L61">        return read(simulator::findAll, List::of);</span>
+    }
+
+    /** Answers like MarketDataClient: nothing, and an outage recorded, while the feed is down. */
+    private &lt;T&gt; T read(Supplier&lt;T&gt; lookup, Supplier&lt;T&gt; unavailable) {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (feed.feedMode() == FeedMode.UNAVAILABLE) {</span>
+<span class="fc" id="L67">            feedStatus.recordFailure();</span>
+<span class="fc" id="L68">            return unavailable.get();</span>
+        }
+<span class="fc" id="L70">        feedStatus.recordSuccess();</span>
+<span class="fc" id="L71">        return lookup.get();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

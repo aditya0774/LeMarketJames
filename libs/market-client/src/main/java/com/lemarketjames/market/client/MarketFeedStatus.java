@@ -9,10 +9,10 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Tracks whether {@link MarketDataClient}'s calls to market-service are currently succeeding,
- * across every call this service makes. {@code MarketDataClient} reports each call's outcome
- * here; callers who need to distinguish "the feed is down" from an ordinary empty result (an
- * unsimulated instrument) read {@link #isAvailable()}.
+ * Tracks whether the quote feed is currently answering, across every read this service makes.
+ * {@link MarketDataClient} reports each call's outcome here, and so does trading-service's
+ * in-process {@code InProcessMarketData}; callers who need to distinguish "the feed is down" from
+ * an ordinary empty result (an unsimulated instrument) read {@link #isAvailable()}.
  *
  * <p>There is no separate "resume" action: the feed is back up the moment a call succeeds again,
  * which is exactly what {@link #recordSuccess()} observes. Outage start and end are logged here

@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+- Seven services instead of thirteen, with every feature kept. The stack is now two web apps,
+  four microservices and Kafka:
+  - The trading app (4200) and the staff app (4201).
+  - `auth-service` (8082).
+  - `orders-service` (8085), formerly `buy-sell-service`.
+  - `trading-service` (8084), which merges `core-`, `market-`, `holdings-`, `notification-` and
+    `activity-service`.
+  - `staff-ops-service` (8086), which merges `reporting-` and `surveillance-service`.
+  - Kafka (9092).
+
+  Details:
+  - **No gateways.** Both gateways are gone (host ports 8089 and 8090), and so is the unused
+    `staff-gateway-service` module. Each web app's Nginx, and its dev-server proxy under
+    `ng serve`, now routes `/api` straight to the services ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)).
+  - **Staff routing.** The staff app keeps the staff gateway's behaviour: only staff paths exist,
+    the browser holds `staff_jwt` while the services see `jwt`, and `Origin` is not passed on
+    ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
+  - **In-process market.** trading-service reads its market simulator in-process. Its
+    `InProcessMarketData` and `InProcessPriceHistory` keep the quote-feed outage behaviour of the
+    HTTP client ([C4](contracts/C4-quote-feed.md)).
+  - **Moved ports.** The market test controls moved from 8083 to 8084 (`E2E_MARKET_URL`), and
+    the surveillance alerts from 8088 to 8086.
+  - **Reports keep their own pool.** In staff-ops-service, reports read through a read-only,
+    time-limited pool of their own (`reporting.datasource.hikari.*`); surveillance writes through
+    the ordinary pool.
+  - **Kafka groups unchanged.** The three consumer groups keep their names.
+  - **Ping.** `GET /api/v1/reports/ping` now answers `"service": "staff-ops-service"`.
+  - **No migrations.** No schema change; no migration needed.
+- LMKT-44: Add the report load test (`apps/e2e/load/report-load.spec.ts`, `npm run test:load`)
+  and a Jenkins **Run report load test** stage. Over a year of inserted trades, it times client
+  orders from placement to FILLED, first alone and then while analysts run reports nonstop
+  through the staff gateway. It fails if p95 under load exceeds the baseline's allowance or an
+  absolute cap. The timings of both phases are attached to the report as `load-summary.json`.
+  Its first runs failed (p95 1.5 s → 3.4 s), so `GET /api/v1/reports/trades` now groups in
+  SQL instead of loading every trade into the service. That also fixes its periods to use
+  the reports time zone; evening trades used to land on the next day. And reporting-service's
+  pool defaults to 1 connection (`REPORTING_DB_POOL_SIZE`), since each busy report connection
+  takes a CPU core from order execution. The test now passes.
 - LMKT-72, LMKT-74: Buy and sell settlement tested end to end. `apps/e2e/tests/settlement.spec.ts`
   follows real fills from the executor through settlement on a running stack: a buy the client
   can no longer afford, or a sell of shares that are gone, by fill time is `REJECTED` with

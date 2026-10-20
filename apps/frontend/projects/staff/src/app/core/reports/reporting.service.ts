@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 /**
- * DTO for a single stock's aggregate trading activity (from reporting-service).
+ * DTO for a single stock's aggregate trading activity (from staff-ops-service).
  */
 export interface TradesByStockRow {
   symbol: string;
@@ -14,7 +14,7 @@ export interface TradesByStockRow {
 }
 
 /**
- * Response wrapper from reporting-service.
+ * Response wrapper from staff-ops-service.
  */
 export interface TradesReportResponse {
   success: boolean;
@@ -59,7 +59,7 @@ export interface SegmentComparisonResponse extends SegmentActivityReportResponse
 }
 
 /**
- * Service to fetch aggregate trading reports from the reporting-service.
+ * Service to fetch aggregate trading reports from staff-ops-service.
  * Calls `/api/v1/reports/trades-by-stock` (ANALYST-only endpoint).
  */
 @Injectable({

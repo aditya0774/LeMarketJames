@@ -13,7 +13,7 @@ import java.util.Set;
  * Trading hours for a market, used to decide when an instrument's price may move and how long
  * a "trading year" is for the GBM time step.
  *
- * <p>Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; market-service
+ * <p>Exchange holidays are supplied by the caller ({@link #isOpen(Instant, Set)}; trading-service
  * configures them as {@code sim.holidays}). Half days are not modelled.
  *
  * @param zone               time zone the exchange operates in
@@ -94,6 +94,17 @@ public record MarketHours(ZoneId zone, LocalTime open, LocalTime close, boolean 
     /** @return the exchange-local calendar date, used to detect when a new trading day starts */
     public LocalDate tradingDate(Instant instant) {
         return instant.atZone(zone).toLocalDate();
+    }
+
+    /**
+     * @return when the session of {@code day} closes, used to stamp a daily close on a chart; a market
+     *         open all day closes at the following midnight
+     */
+    public Instant closingTime(LocalDate day) {
+        if (close.equals(LocalTime.MAX)) {
+            return day.plusDays(1).atStartOfDay(zone).toInstant();
+        }
+        return day.atTime(close).atZone(zone).toInstant();
     }
 
     /** @return length of one trading session in seconds */

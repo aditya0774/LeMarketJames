@@ -4,25 +4,27 @@
 
 ## Architecture at a Glance
 
-- **Frontend** (4200): `apps/frontend/src/app` — Angular SPA
-- **Staff frontend** (4201): `apps/frontend/projects/staff/src/app` — separate Angular SPA for staff (Trading Ops, Analyst). A second project in the same Angular workspace as the trading frontend: same `package.json` and toolchain, no shared application code. Its backend entry point is the staff gateway (8090); it never calls the trading gateway. Like the trading frontend it calls `/api` on its own origin, forwarded by its own `proxy.conf.json` (dev server) or `nginx.conf` (Docker).
-- **Gateway** (8080): `services/gateway-service` — Spring Cloud Gateway; the only backend entry point for the frontend
-- **Staff gateway** (8090): the same `services/gateway-service` module started with the `staff` profile (`application-staff.yml`) — the only backend entry point for the staff frontend. It routes `/api/v1/reports/**` to `reporting-service`, sign-in, sign-out and `/api/auth/me` to `auth-service`, the Trading Ops trade search and order timeline to `buy-sell-service`, and `/api/v1/surveillance/**` to `surveillance-service`; nothing else. It also gives staff their own session cookie, `staff_jwt`, by renaming the services' `jwt` in both directions ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
+Seven services: two web apps, four Spring Boot microservices and a Kafka broker, plus the shared PostgreSQL database.
+
+- **Trading app** (4200): `apps/frontend/src/app` — Angular SPA for clients. It calls `/api` on its own origin; its `nginx.conf` (Docker) or `proxy.conf.json` (dev server) forwards each path straight to the service that serves it. There is no gateway.
+- **Staff app** (4201): `apps/frontend/projects/staff/src/app` — separate Angular SPA for staff (Trading Ops, Analyst). A second project in the same Angular workspace as the trading app: same `package.json` and toolchain. The two share no features, routes or services; the UI building blocks both show the same way (the theme service and the account menu) live once in `apps/frontend/projects/shared-ui`, imported as `@lemarket/shared-ui`. Its own `nginx.conf` (Docker) or `staff-proxy.mjs` (dev server) forwards only the staff paths: sign-in, sign-out and `/api/auth/me` to `auth-service`, the Trading Ops trade search and order timeline to `orders-service`, and `/api/v1/reports/**` and `/api/v1/surveillance/**` to `staff-ops-service`; anything else answers 404. It also gives staff their own session cookie, `staff_jwt`, by renaming the services' `jwt` in both directions ([C7](contracts/C7-roles.md#the-staff-session-cookie)).
 - **Auth service** (8082): `services/auth-service` — registration, login, logout, `/api/auth/me`
-- **Market service** (8083): `services/market-service` — the GBM price simulator, exposed at `/api/market/**` for server-to-server callers (no browser ever calls it directly)
-- **Holdings service** (8084): `services/holdings-service` — client profile (`/api/v1/profile`), holdings (`/api/v1/holdings`), portfolio/balance aggregate (`/api/v1/portfolio`), and trade history (`/api/v1/trades`). Settles fills (debits/credits cash, updates holdings) via `POST /internal/holdings/settle`, called server-to-server by `buy-sell-service` and never routed through the gateway. Order placement and execution live in `buy-sell-service`.
-- **Buy-sell service** (8085): `services/buy-sell-service` — order placement, lifecycle, automatic execution and history; calls holdings for idempotent settlement.
-- **Reporting service** (8086): `services/reporting-service` — aggregate, read-only reports for analysts under `/api/v1/reports/**`, built on the `reporting_trades` view. Not routed by the trading gateway: the staff gateway (8090) is its only caller. Its [README](services/reporting-service/README.md) holds the rules every report endpoint follows.
-- **Notification service** (8087), **surveillance service** (8088), **activity service** (8091): `services/notification-service`, `services/surveillance-service`, `services/activity-service` — the three Kafka consumers. Each listens to the order event topics it needs in its own consumer group (one topic each, except surveillance, which reads two), keeps its results in its own table and serves them from one read-only endpoint: a client's notifications about their orders (`/api/v1/notifications`), Trading Ops' alerts on large orders and refused settlements (`/api/v1/surveillance/alerts`, staff gateway only) and the traded volume per stock (`/api/v1/market-activity`). They call no service and no service calls them ([C6](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service)).
-- **Core service** (8081): `services/core-service` — quotes, instruments, sessions
+- **Orders service** (8085): `services/orders-service` — order placement, lifecycle, automatic execution and history, and the Trading Ops trade search and order timeline. Reads prices from and settles fills in `trading-service`, and publishes the order events to Kafka.
+- **Trading service** (8084): `services/trading-service` — Trading/Holdings: everything a client trades against apart from the orders themselves.
+  - The GBM market simulator, exposed at `/api/market/**` for `orders-service`; this service's own features read it in-process (`com.lemarketjames.market.inprocess`).
+  - Quotes, instruments and sessions; the client profile (`/api/v1/profile`), holdings (`/api/v1/holdings`), portfolio/balance aggregate (`/api/v1/portfolio`) and trade history (`/api/v1/trades`).
+  - Settles fills (debits/credits cash, updates holdings) via `POST /internal/holdings/settle`, called server-to-server by `orders-service` and never forwarded by a web app.
+  - Two Kafka consumers: a client's notifications about their orders (`/api/v1/notifications`) and the traded volume per stock (`/api/v1/market-activity`).
+  - Everything under `/api/**` that no other service claims reaches it through the trading app.
+- **Staff ops service** (8086): `services/staff-ops-service` — Analyst/Trading Ops: aggregate, read-only reports for analysts under `/api/v1/reports/**`, built on the `reporting_trades` view, and the Kafka consumer that raises Trading Ops' alerts on large orders and refused settlements (`/api/v1/surveillance/alerts`). Only the staff app routes to it. Reports read through a connection pool of their own that is small, read-only and time-limited; alerts are written through the ordinary one. Its [README](services/staff-ops-service/README.md) holds the rules every report endpoint follows.
+- **Broker: Kafka** (9092): a single-node broker (KRaft, no ZooKeeper) defined in `docker-compose.yml`. `orders-service` publishes its order events to it in Docker and Jenkins; without a broker (unit tests, the native Windows scripts) it logs them instead ([C6](contracts/C6-api.md#internal-events-and-the-execution-interface-orders-service), setting in [C5](contracts/C5-config.md#order-events)). The three consumers (notifications, market activity, surveillance) read them from it, under the matching setting, each in a consumer group of its own ([C6](contracts/C6-api.md#the-consumers-notifications-surveillance-and-market-activity)).
 - **Shared libraries**: `libs/common` — JWT (`JwtService`, `JwtAuthenticationFilter`), shared account/client entities, `GlobalExceptionHandler`; `libs/market-client` — the `MarketDataService` interface, its quote/instrument model, and a ready-made HTTP implementation (`MarketDataClient`) any servlet service can use for prices just by depending on this module
-- **Database** (5432): `database/schema` — one PostgreSQL database shared by every service, versioned via numbered SQL files
-- **Kafka** (9092): a single-node broker (KRaft, no ZooKeeper) defined in `docker-compose.yml`. `buy-sell-service` publishes its order events to it in Docker and Jenkins; without a broker (unit tests, the native Windows scripts) it logs them instead ([C6](contracts/C6-api.md#internal-events-and-the-execution-interface-buy-sell-service), setting in [C5](contracts/C5-config.md#order-events)). The three consumer services above read them from it, under the matching setting.
+- **Database** (5432): `database/schema` — one PostgreSQL database shared by every service, versioned via numbered SQL files. Infrastructure, not one of the seven services.
 - **API:** All endpoints use `/api/v1/` prefix
 
-**Runtime flow:** `frontend` → `gateway-service` → {`auth-service`, `core-service`, `market-service`, `holdings-service`, `buy-sell-service`, `notification-service`, `activity-service`} → `db`. Only services talk to the database; the gateway just routes and forwards the `jwt` cookie, and each service validates it with the shared `JWT_SECRET`. `core-service` and `holdings-service` also call `market-service` directly for prices (server-to-server, bypassing the gateway); `buy-sell-service` and `holdings-service` also call each other directly (settlement and trade-history/buying-power reads, respectively) — see `holdings-service`'s description above. `reporting-service` sits outside this flow: it reads the same database but is reached only through the staff gateway, never the trading one. After an order transition commits, `buy-sell-service` also publishes it to Kafka; that is one-way and no request depends on it. `notification-service`, `surveillance-service` and `activity-service` consume those events and write only their own tables.
+**Runtime flow:** `trading app` → {`auth-service`, `orders-service`, `trading-service`} → `db`. Only services talk to the database; the trading app's Nginx just routes by path and passes the `jwt` cookie on, and each service validates it with the shared `JWT_SECRET`. `orders-service` and `trading-service` also call each other directly, server-to-server: prices and settlement one way, trade-history and buying-power reads the other. After an order transition commits, `orders-service` also publishes it to Kafka; that is one-way and no request depends on it. The consumers in `trading-service` and `staff-ops-service` read those events and write only their own tables.
 
-**Staff flow:** `staff frontend` → staff gateway → {`auth-service`, `reporting-service`, `buy-sell-service`, `surveillance-service`} → `db`. The staff gateway forwards the browser's `staff_jwt` cookie to the services as `jwt` and drops any customer `jwt`, so services validate staff exactly as they validate clients.
+**Staff flow:** `staff app` → {`auth-service`, `orders-service`, `staff-ops-service`} → `db`. The staff app sends the browser's `staff_jwt` cookie to the services as `jwt` and drops any customer `jwt`, so services validate staff exactly as they validate clients. `staff-ops-service` calls no service and no service calls it.
 
 ## Shared Contracts (C1–C7): read before coding
 
@@ -46,19 +48,16 @@ LeMarketJames/
 │   ├── common/              # Shared jar used by the servlet services
 │   └── market-client/       # MarketDataService contract, model, and a shared HTTP client implementation
 ├── services/
-│   ├── gateway-service/     # :8080  routes auth/market/holdings paths to their services, everything else → core
-│   │                        # :8090  with the "staff" profile: the staff gateway (staff routes only)
 │   ├── auth-service/        # :8082
-│   ├── market-service/      # :8083
-│   ├── holdings-service/    # :8084
-│   ├── buy-sell-service/    # :8085
-│   ├── reporting-service/   # :8086  analyst reports; no trading-gateway route
-│   ├── notification-service/  # :8087  Kafka consumer: a client's order notifications
-│   ├── surveillance-service/  # :8088  Kafka consumer: large-order and refused-settlement alerts for Trading Ops; no trading-gateway route
-│   ├── activity-service/    # :8091  Kafka consumer: traded volume per stock
-│   └── core-service/        # :8081
+│   ├── orders-service/      # :8085  orders, execution, Trading Ops search and timeline; publishes order events
+│   ├── trading-service/     # :8084  market simulator, quotes, instruments, sessions, holdings, portfolio,
+│   │                        #        trade history; Kafka consumers: notifications, market activity
+│   └── staff-ops-service/   # :8086  analyst reports and Trading Ops surveillance alerts (Kafka consumer);
+│                            #        staff app only
 ├── apps/
-│   ├── frontend/            # Angular workspace: trading SPA (:4200) in src/, staff SPA (:4201) in projects/staff/
+│   ├── frontend/            # Angular workspace: trading SPA (:4200) in src/, staff SPA (:4201) in projects/staff/,
+│   │                        #   UI building blocks both use in projects/shared-ui/ (@lemarket/shared-ui);
+│   │                        #   each app's nginx.conf and dev proxy route /api to the services
 │   └── e2e/                 # Playwright end-to-end tests, run against a live stack
 ├── contracts/               # Shared contracts C1–C7 (read before coding)
 ├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)
@@ -78,13 +77,13 @@ Run Maven commands from the repo root.
 |---|---|
 | All backend tests | `mvn -B clean test` |
 | One module's tests | `mvn -B -pl services/auth-service -am test` |
-| Run a service | `mvn -B -pl libs/common install` once, then `mvn -B -pl services/core-service spring-boot:run` |
-| Run the staff gateway | `mvn -B -pl services/gateway-service spring-boot:run "-Dspring-boot.run.profiles=staff"` |
+| Run a service | `mvn -B -pl libs/common,libs/market-client install` once, then `mvn -B -pl services/trading-service spring-boot:run` |
 | Frontend tests (both apps) | `cd apps/frontend && ng test` |
 | Frontend build | `cd apps/frontend && ng build` |
 | Staff app tests / build / dev server | `cd apps/frontend && ng test staff` / `ng build staff` / `ng serve staff` |
 | End-to-end tests (stack must be running on :4200) | `cd apps/e2e && npm install && npm test` |
 | Staff app end-to-end tests (stack must be running on :4201) | `cd apps/e2e && npm install && npm run test:staff` |
+| Report load test (stack on :4200 and :4201, `SIM_RESPECT_MARKET_HOURS=false`) | `cd apps/e2e && npm install && npm run test:load` |
 | Full stack (Docker, Linux/Jenkins) | `docker compose up -d --build` |
 | Full stack (native Windows, no Docker) | `.\scripts\windows\setup-db.ps1` once, then `.\scripts\windows\start-all.ps1`; stop with `.\scripts\windows\stop-all.ps1` |
 
@@ -92,24 +91,24 @@ Run Maven commands from the repo root.
 
 1. Create `services/<name>-service/` with its own `pom.xml`: parent `lemarketjames-parent`, `<relativePath>../../pom.xml</relativePath>`, and a `common` dependency if it's a servlet service.
 2. Add the folder to `<modules>` in the root `pom.xml`.
-3. Put the `@SpringBootApplication` class in the root `com.lemarketjames` package so it picks up `com.lemarketjames.common.*`. Move the feature's packages and tests out of `core-service`.
+3. Put the `@SpringBootApplication` class in the root `com.lemarketjames` package so it picks up `com.lemarketjames.common.*`. Move the feature's packages and tests out of the service that held them. Before adding a service at all, check that the feature doesn't belong in one of the four that exist: the stack is kept to seven services on purpose.
 4. Point it at the shared database (`SPRING_DATASOURCE_*`) as `lemarket_app`, the restricted account that can't change audit records ([C2](contracts/C2-audit.md#the-lockdown)); never the owner `lemarket`. Give it the same `JWT_SECRET`, and keep `spring.jpa.hibernate.ddl-auto=validate`. Schema changes still go in `database/schema`.
-5. Add a route for its paths in `services/gateway-service/src/main/resources/application.yml`, **above** the `core-service` catch-all. A staff-only service such as `reporting-service` gets no route here; add its route to the staff gateway's list in `application-staff.yml` in the same folder, and its paths to [C6](contracts/C6-api.md#which-gateway-serves-which-paths).
-6. Add a `Dockerfile` (copy an existing service's), a service in `docker-compose.yml`, and the name to the Jenkinsfile: a unit-test stage, the image loop, the smoke test's health ports and the `compose logs` lists. The "Show running containers" stage then expects its container without being told. Add it to `scripts/windows/start-all.ps1` and `stop-all.ps1` too, and its `target/surefire-reports` folder to `sonar.junit.reportPaths` in `sonar-project.properties`, which lists them module by module.
+5. Route its paths in the web app that serves them: for the trading app in `apps/frontend/nginx.conf` and `apps/frontend/proxy.conf.json`/`proxy.vm.json`, **above** the `trading-service` catch-all; for the staff app in `apps/frontend/projects/staff/nginx.conf` and `staff-proxy.mjs`. A staff-only service gets no trading-app route. Add its paths to [C6](contracts/C6-api.md#which-web-app-routes-which-paths).
+6. Add a `Dockerfile` (copy an existing service's), a service in `docker-compose.yml` (and to the `depends_on` of the web app that routes to it), and the name to the Jenkinsfile: a unit-test stage, the image loop, the smoke test's health ports and the `compose logs` lists. The "Show running containers" stage then expects its container without being told. Add it to `scripts/windows/start-all.ps1` and `stop-all.ps1` too, and its `target/surefire-reports` folder to `sonar.junit.reportPaths` in `sonar-project.properties`, which lists them module by module.
 
 ## Feature Dependencies (Keep Acyclic)
 
 - **Auth** → Self-contained, required by everything. The endpoints live in `auth-service`. Other services only use `libs/common` (JWT validation, shared account entities) and never call auth-service directly.
-- **Market** → Self-contained simulated price source. The engine lives in `market-service`; other features reach it via `libs/market-client`'s `MarketDataService` interface (implemented as an HTTP client, `MarketDataClient`, shared by `core-service` and `holdings-service`).
-- **Orders** → Auth. Placement/lifecycle lives in `buy-sell-service`; it triggers settlement in `holdings-service` when an order fills, and `holdings-service` reads order data back from `buy-sell-service` for trade history and buying power (both server-to-server, not through the gateway).
-- **Holdings** → Auth, Market, Orders (reads only, via `holdings-service`'s `OrdersClient`)
+- **Market** → Self-contained simulated price source. The engine lives in `trading-service`; other features reach it via `libs/market-client`'s `MarketDataService` interface: in-process inside `trading-service` (`InProcessMarketData`, which also reports feed outages the way the HTTP client does), and over HTTP from `orders-service` (`MarketDataClient`).
+- **Orders** → Auth, Market. Placement/lifecycle lives in `orders-service`; it triggers settlement in `trading-service` when an order fills, and `trading-service` reads order data back from `orders-service` for trade history and buying power (both server-to-server, not through a web app).
+- **Holdings** → Auth, Market, Orders (reads only, via `trading-service`'s `OrdersClient`)
 - **Quotes** → Market
 - **Sessions** → Auth
-- **Instruments** → Auth. The supported stock list (`GET /api/v1/instruments`) lives in `core-service`, using the shared `Instrument` mapping in `libs/common`.
-- **Audit** → nothing. `libs/common`'s `AuditRecorder` is called by Orders (buy-sell-service) and Holdings settlement (holdings-service) inside their own transactions ([C2](contracts/C2-audit.md)).
-- **Reports** → Auth (roles only). `reporting-service` reads the `reporting_trades` view and nothing else; it calls no other service and no service calls it ([rules](services/reporting-service/README.md#rules-for-every-report-endpoint)).
-- **Order event consumers** (Notifications, Surveillance, Market activity) → the order events on Kafka, and Auth (roles only). The topic names and the setting that switches listening on live in `libs/common` (`com.lemarketjames.common.events`), so a consumer never depends on `buy-sell-service`. A consumer reads an event with a record of its own, stores the same event only once, and has no foreign key to the tables of other services ([rules](contracts/C6-api.md#the-consumers-notification--surveillance--and-activity-service)).
-- **Roles** → Auth. They travel in the JWT, and each service enforces them in its own `SecurityConfig` ([C7](contracts/C7-roles.md)). Neither gateway checks a role; the staff gateway only limits which paths exist.
+- **Instruments** → Auth. The supported stock list (`GET /api/v1/instruments`) lives in `trading-service`, using the shared `Instrument` mapping in `libs/common`.
+- **Audit** → nothing. `libs/common`'s `AuditRecorder` is called by Orders (orders-service) and Holdings settlement (trading-service) inside their own transactions ([C2](contracts/C2-audit.md)).
+- **Reports** → Auth (roles only). The reports in `staff-ops-service` read the `reporting_trades` view and nothing else, through their own read-only pool; they call no other service ([rules](services/staff-ops-service/README.md#rules-for-every-report-endpoint)).
+- **Order event consumers** (Notifications and Market activity in `trading-service`, Surveillance in `staff-ops-service`) → the order events on Kafka, and Auth (roles only). The topic names and the setting that switches listening on live in `libs/common` (`com.lemarketjames.common.events`), so a consumer never depends on `orders-service`. A consumer reads an event with a record of its own, stores the same event only once, and has no foreign key to the tables of other features ([rules](contracts/C6-api.md#the-consumers-notifications-surveillance-and-market-activity)).
+- **Roles** → Auth. They travel in the JWT, and each service enforces them in its own `SecurityConfig` ([C7](contracts/C7-roles.md)). Neither web app checks a role; the staff app only limits which paths exist.
 
 ## Further Reading
 

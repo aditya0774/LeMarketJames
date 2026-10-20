@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PriceHistoryClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Market Client</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.market.client</a> &gt; <span class="el_source">PriceHistoryClient.java</span></div><h1>PriceHistoryClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.market.client;
+
+import com.lemarketjames.market.model.DailyBar;
+import com.lemarketjames.market.model.PricePoint;
+import com.lemarketjames.market.service.PriceHistoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * {@link PriceHistoryService} over HTTP, reached at trading-service's {@code /api/market/history/**}
+ * and {@code /api/market/intraday/**}. Like {@link MarketDataClient}, a failed or slow call degrades
+ * to an empty history (a chart with nothing to draw) rather than an error, since charts are
+ * non-critical read data.
+ *
+ * &lt;p&gt;Only created in services that set {@code market.service.url}; trading-service itself implements
+ * {@link PriceHistoryService} directly.
+ */
+@Service
+@ConditionalOnProperty(name = &quot;market.service.url&quot;)
+public class PriceHistoryClient implements PriceHistoryService {
+
+<span class="fc" id="L32">    private static final Logger log = LoggerFactory.getLogger(PriceHistoryClient.class);</span>
+
+    private final RestClient restClient;
+
+    public PriceHistoryClient(
+            @Value(&quot;${market.service.url}&quot;) String marketServiceUrl,
+            @Value(&quot;${market.service.connect-timeout-ms:3000}&quot;) long connectTimeoutMs,
+<span class="fc" id="L39">            @Value(&quot;${market.service.read-timeout-ms:5000}&quot;) long readTimeoutMs) {</span>
+<span class="fc" id="L40">        var factory = new SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L41">        factory.setConnectTimeout(Duration.ofMillis(connectTimeoutMs));</span>
+<span class="fc" id="L42">        factory.setReadTimeout(Duration.ofMillis(readTimeoutMs));</span>
+<span class="fc" id="L43">        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(marketServiceUrl).build();</span>
+<span class="fc" id="L44">    }</span>
+
+    @Override
+    public List&lt;DailyBar&gt; dailyBars(int instrumentId, LocalDate from) {
+        try {
+<span class="fc" id="L49">            DailyBar[] bars = restClient.get()</span>
+<span class="fc" id="L50">                    .uri(&quot;/api/market/history/{instrumentId}?from={from}&quot;, instrumentId, from)</span>
+<span class="fc" id="L51">                    .retrieve()</span>
+<span class="fc" id="L52">                    .body(DailyBar[].class);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            return bars == null ? List.of() : List.of(bars);</span>
+<span class="fc" id="L54">        } catch (RestClientException e) {</span>
+<span class="fc" id="L55">            log.warn(&quot;trading-service history call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
+<span class="fc" id="L56">            return List.of();</span>
+        }
+    }
+
+    @Override
+    public List&lt;PricePoint&gt; intraday(int instrumentId) {
+        try {
+<span class="fc" id="L63">            PricePoint[] points = restClient.get()</span>
+<span class="fc" id="L64">                    .uri(&quot;/api/market/intraday/{instrumentId}&quot;, instrumentId)</span>
+<span class="fc" id="L65">                    .retrieve()</span>
+<span class="fc" id="L66">                    .body(PricePoint[].class);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            return points == null ? List.of() : List.of(points);</span>
+<span class="fc" id="L68">        } catch (RestClientException e) {</span>
+<span class="fc" id="L69">            log.warn(&quot;trading-service intraday call failed for instrument {}: {}&quot;, instrumentId, e.getMessage());</span>
+<span class="fc" id="L70">            return List.of();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
