@@ -74,7 +74,7 @@ export const LESSONS: Lesson[] = [
     visual: 'bid-ask',
     level: 'beginner',
     minutes: 1,
-    cta: { label: 'Place a practice trade', route: '/trade' },
+    cta: { label: 'Try the simulator', route: '/learn/simulator' },
     title: 'Market and limit orders',
     summary: 'Choosing between speed and price.',
     body: [

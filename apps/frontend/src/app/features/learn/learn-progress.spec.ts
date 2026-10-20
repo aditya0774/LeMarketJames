@@ -10,6 +10,16 @@ describe('LearnProgress', () => {
 
   const service = () => TestBed.inject(LearnProgress);
 
+  it('marks a lesson read, and doing it again leaves it read', () => {
+    const progress = service();
+
+    progress.markRead('a');
+    progress.markRead('a');
+
+    expect(progress.isRead('a')).toBe(true);
+    expect(JSON.parse(localStorage.getItem('learn.read')!)).toEqual(['a']);
+  });
+
   it('suggests the first lesson when nothing is read', () => {
     expect(service().nextUnread(['a', 'b', 'c'])).toBe('a');
   });

@@ -4,9 +4,11 @@
   display: block;
 }
 
+/* A page that gives the text more room (the lesson reader) sets these two variables. */
 p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--lesson-text-size, 13.5px);
+  line-height: var(--lesson-text-leading, normal);
   color: var(--dim);
 }
 

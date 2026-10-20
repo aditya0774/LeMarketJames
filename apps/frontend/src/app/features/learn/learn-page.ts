@@ -1,37 +1,21 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { KeyTerms } from './key-terms/key-terms';
-import { LessonText } from './lesson-text/lesson-text';
-import { LessonVisual } from './visuals/lesson-visual';
+import { RouterLink } from '@angular/router';
 import { LearnProgress } from './learn-progress';
-import { GlossaryTerm, Lesson, LESSONS, LessonLevel } from './learn-content';
-import { splitLesson, termsOf, TextSegment } from './term-links';
-
-/** A lesson with its place in the suggested reading order, which a filter never changes. */
-interface LessonEntry {
-  lesson: Lesson;
-  number: number;
-  /** The body paragraphs with the lesson's glossary terms marked, ready to show. */
-  paragraphs: TextSegment[][];
-  /** The terms the lesson teaches, shown as clickable chips in its key terms box. */
-  terms: GlossaryTerm[];
-  /** The lesson after this one in the full order, for the "Next lesson" link. */
-  next: Lesson | null;
-}
+import { LessonLevel, LESSONS } from './learn-content';
+import { LESSON_ENTRIES } from './lesson-entries';
 
 type LevelFilter = 'all' | LessonLevel;
 
 /**
- * The Learn tab: short lessons on the stock market and investing, with the terms each one uses
- * explained inside it, and links into the app's other tabs so a client can put what they read into
- * practice.
+ * The Learn tab's index: where to start or continue, a level filter and a tile per lesson. Each
+ * tile opens that lesson in the reader (`/learn/:lessonId`), which has the text, Back and Next.
  *
- * Text comes from learn-content.ts and "read" state from LearnProgress; this page only lays it out.
+ * What to show comes from lesson-entries.ts and "read" state from LearnProgress; this page only
+ * lays it out.
  */
 @Component({
   selector: 'app-learn-page',
-  imports: [RouterLink, KeyTerms, LessonText, LessonVisual],
+  imports: [RouterLink],
   templateUrl: './learn-page.html',
   styleUrl: './learn-page.css',
 })
@@ -45,25 +29,11 @@ export class LearnPage {
   ];
   protected readonly filter = signal<LevelFilter>('all');
 
-  /** Numbered once from the full list, so "3" stays "3" whichever filter is on. */
-  private readonly entries: readonly LessonEntry[] = LESSONS.map((lesson, i) => {
-    const terms = termsOf(lesson);
-    return {
-      lesson,
-      number: i + 1,
-      paragraphs: splitLesson(lesson.body, terms),
-      terms,
-      next: LESSONS[i + 1] ?? null,
-    };
-  });
-
+  /** Numbered from the full list, so "3" stays "3" whichever filter is on. */
   protected readonly visibleEntries = computed(() => {
     const level = this.filter();
-    return level === 'all' ? this.entries : this.entries.filter((e) => e.lesson.level === level);
+    return level === 'all' ? LESSON_ENTRIES : LESSON_ENTRIES.filter((e) => e.lesson.level === level);
   });
-
-  /** The lesson a link like /learn#orders points at, which opens instead of staying collapsed. */
-  protected readonly targetLesson = toSignal(inject(ActivatedRoute).fragment, { initialValue: null });
 
   /** Computed so the count follows the progress signal. */
   protected readonly readCount = computed(() => this.progress.countRead(LESSONS.map((l) => l.id)));
@@ -77,9 +47,5 @@ export class LearnPage {
 
   protected setFilter(value: LevelFilter): void {
     this.filter.set(value);
-  }
-
-  protected onToggleRead(id: string): void {
-    this.progress.toggle(id);
   }
 }

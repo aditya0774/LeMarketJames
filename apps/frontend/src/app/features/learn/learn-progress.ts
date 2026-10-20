@@ -23,6 +23,16 @@ export class LearnProgress {
     this.save(next);
   }
 
+  /** Marks a lesson read; unlike toggle, doing it again leaves it read. */
+  markRead(id: string): void {
+    if (this.isRead(id)) {
+      return;
+    }
+    const next = new Set(this.readIds()).add(id);
+    this.readIds.set(next);
+    this.save(next);
+  }
+
   /** How many of the given lessons are read, ignoring ids that no longer exist. */
   countRead(ids: readonly string[]): number {
     const read = this.readIds();

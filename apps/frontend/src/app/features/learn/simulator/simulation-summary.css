@@ -1,0 +1,55 @@
+/* The result sentence; the accent colour follows a gain or a loss, but the words and arrow say it too. */
+
+:host {
+  display: block;
+}
+
+.sim-result {
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-left-width: 4px;
+  border-radius: var(--radius-xl);
+}
+
+.sim-result.up {
+  border-left-color: var(--up);
+}
+
+.sim-result.down {
+  border-left-color: var(--down);
+}
+
+p {
+  margin: 0;
+}
+
+.sim-lead {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.sim-lead strong {
+  color: var(--text);
+}
+
+.sim-gain {
+  margin-top: 12px;
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+
+.up .sim-gain {
+  color: var(--up);
+}
+
+.down .sim-gain {
+  color: var(--down);
+}
+
+.sim-note {
+  margin-top: 8px;
+  font-size: var(--font-sm);
+  color: var(--faint);
+}

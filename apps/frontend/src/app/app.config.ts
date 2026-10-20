@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideAppInitializer, inject } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { Auth } from './core/auth/auth';
@@ -16,8 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(Theme);
     }),
-    // anchorScrolling makes a link like /learn#orders scroll to that element.
-    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
+    provideRouter(routes),
     provideHttpClient(withInterceptors([withCredentialsInterceptor, accountInactiveInterceptor]))
   ]
 };

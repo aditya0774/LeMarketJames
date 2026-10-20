@@ -1,0 +1,109 @@
+/* One centred, fluid reading column: about 720px on a desktop, the full width on a phone. */
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.reader-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.reader-back {
+  font-size: var(--font-sm);
+}
+
+.reader-count {
+  margin: 0;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.reader-bar {
+  flex-basis: 100%;
+  height: 4px;
+  background: var(--line5);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.reader-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--pri);
+  border-radius: 999px;
+}
+
+.reader-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 32px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: var(--radius-xl);
+}
+
+@media (max-width: 560px) {
+  .reader-card {
+    padding: 20px 18px;
+  }
+}
+
+/* The title takes focus on each lesson; the page, not the box, is the focus indicator. */
+.reader-title {
+  font-size: var(--font-xl);
+  outline: none;
+}
+
+.reader-meta {
+  margin: 0;
+  font-size: var(--font-xs);
+  color: var(--faint);
+  text-transform: capitalize;
+}
+
+.reader-read-mark {
+  color: var(--pri);
+}
+
+.reader-summary {
+  margin: 0;
+  font-size: var(--font-md);
+  color: var(--faint);
+}
+
+/* Lesson paragraphs read larger here than they did squeezed into a card. */
+.reader-card app-lesson-text {
+  --lesson-text-size: 15px;
+  --lesson-text-leading: 1.7;
+}
+
+.reader-card app-lesson-visual {
+  display: block;
+}
+
+.reader-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reader-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reader-missing {
+  align-items: flex-start;
+}

@@ -1,4 +1,4 @@
-/* The Learn tab: an intro, a jump list, a grid of collapsible lesson cards (each explaining its own terms), in the same cards as the Trade board. */
+/* The Learn tab: an intro, a "what next" banner, a level filter and a grid of lesson tiles that open the reader. */
 
 .learn {
   display: flex;
@@ -70,42 +70,30 @@
   gap: 8px;
 }
 
-.lesson-next {
-  display: inline-block;
-  margin-top: 12px;
-  font-size: var(--font-sm);
-  font-weight: 500;
-}
-
 .lesson-read-mark {
   color: var(--pri);
 }
 
+/* A tile that opens the lesson in the reader; the whole tile is the link. */
 .lesson {
-  padding: 20px 28px;
-  /* Keeps the card's title below a sticky header when a #lesson link scrolls to it. */
-  scroll-margin-top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 24px;
+  color: inherit;
+  text-decoration: none;
   background: var(--card);
   border: 1px solid var(--line5);
   border-radius: var(--radius-xl);
 }
 
-/* Cards in one grid row stay aligned instead of stretching when one opens. */
-.lessons {
-  align-items: start;
+.lesson:hover {
+  border-color: var(--pri);
 }
 
-.lesson summary {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
-}
-
-.lesson summary:focus-visible {
+.lesson:focus-visible {
   outline: 2px solid var(--pri);
-  outline-offset: 4px;
-  border-radius: 4px;
+  outline-offset: 2px;
 }
 
 .lesson .lesson-title {
@@ -118,30 +106,10 @@
   text-transform: capitalize;
 }
 
-.lesson p {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--dim);
-}
-
-.lesson[open] > :not(summary) {
-  margin-top: 8px;
-}
-
 .lesson .lesson-summary {
+  margin: 4px 0 0;
   font-size: var(--font-sm);
-  color: var(--faint);
-}
-
-.lesson app-lesson-visual {
-  display: block;
-}
-
-.lesson-actions {
-  display: flex;
-  margin-top: 12px;
-  flex-wrap: wrap;
-  gap: 10px;
+  color: var(--dim);
 }
 
 .learn-note {

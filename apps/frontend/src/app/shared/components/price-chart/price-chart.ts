@@ -28,10 +28,14 @@ export class PriceChart {
   readonly error = input<string | null>(null);
   /** What the empty chart says, e.g. that the portfolio fills in after a first purchase. */
   readonly emptyText = input(DEFAULT_EMPTY_TEXT);
+  /** Whether to offer the 1D–6M switch; a page that fixes the span itself hides it. */
+  readonly showRanges = input(true);
+  /** Words for the span in the change line, e.g. "since you bought"; the range's own wording when null. */
+  readonly spanLabel = input<string | null>(null);
   readonly rangeChange = output<ChartRange>();
 
   protected readonly ranges = CHART_RANGES;
-  protected readonly rangeLabel = computed(() => CHART_RANGE_LABELS[this.range()]);
+  protected readonly rangeLabel = computed(() => this.spanLabel() ?? CHART_RANGE_LABELS[this.range()]);
   protected readonly geometry = computed(() => chartGeometry(this.points(), this.range()));
   protected readonly money = money;
 
