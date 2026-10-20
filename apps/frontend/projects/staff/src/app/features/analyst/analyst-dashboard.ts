@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { VolumeInsightTile } from './volume-insight-tile/volume-insight-tile';
 import { ActiveClientTrendTile } from './active-client-trend-tile/active-client-trend-tile';
+import { MostActiveStocksTile } from './most-active-stocks-tile/most-active-stocks-tile';
 
 /**
  * The analyst's start page, the Volume tab: trading volume against the period before (LMKT-46),
@@ -9,10 +10,11 @@ import { ActiveClientTrendTile } from './active-client-trend-tile/active-client-
  */
 @Component({
   selector: 'staff-analyst-dashboard',
-  imports: [VolumeInsightTile, ActiveClientTrendTile],
+  imports: [VolumeInsightTile, ActiveClientTrendTile, MostActiveStocksTile],
   template: `
     <staff-volume-insight-tile />
     <staff-active-client-trend-tile />
+    <staff-most-active-stocks-tile />
   `,
   styles: `
     :host {

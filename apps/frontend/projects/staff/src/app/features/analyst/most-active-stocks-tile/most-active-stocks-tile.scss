@@ -1,0 +1,25 @@
+.active-stocks-tile {
+  margin-bottom: 1rem;
+}
+
+.tile-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+h2 { margin: 0; }
+.range, .refreshed, .status { color: #5f6368; margin: .35rem 0; }
+.refresh { white-space: nowrap; }
+table { border-collapse: collapse; margin-top: 1rem; width: 100%; }
+th, td { padding: .55rem .75rem; text-align: right; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+thead { border-bottom: 2px solid #d8dce1; }
+tbody tr + tr { border-top: 1px solid #eceff1; }
+.error { color: #b3261e; }
+
+@media (max-width: 600px) {
+  th, td { padding: .5rem .25rem; }
+  th:nth-child(4), td:nth-child(4) { display: none; }
+}

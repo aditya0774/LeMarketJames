@@ -2,7 +2,8 @@ import { expect } from '@playwright/test';
 import { Client } from 'pg';
 
 /**
- * Fixtures shared by the staff insight specs (LMKT-46 volume, LMKT-48 active clients): whole
+ * Fixtures shared by the staff insight specs (LMKT-46 volume, LMKT-47 most active stocks,
+ * LMKT-48 active clients): whole
  * report-time-zone days, and filled orders placed on a chosen day for a throwaway client. Only
  * data setup uses SQL; the figures under test always come from the real API.
  */
@@ -19,7 +20,8 @@ export function todayIn(timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 
-export interface Fill { day: string; side: 'BUY' | 'SELL'; quantity: number; price: number }
+/** One filled order to place. `symbol` defaults to AAPL; the most-active-stocks spec needs several stocks. */
+export interface Fill { day: string; side: 'BUY' | 'SELL'; quantity: number; price: number; symbol?: string }
 
 /** Inserts one FILLED order for the account at noon on the report day, in the reports time zone. */
 export async function insertFill(db: Client, accountId: number, timeZone: string, fill: Fill): Promise<void> {
@@ -30,8 +32,8 @@ export async function insertFill(db: Client, accountId: number, timeZone: string
      SELECT $1, i.instrument_id, $2, $3, $4, 'FILLED', t.at, t.at, t.at, t.at, t.at
      FROM instruments i,
           (SELECT (($5::date + time '12:00') AT TIME ZONE $6::text) AT TIME ZONE 'UTC' AS at) t
-     WHERE i.ticker = 'AAPL'`,
-    [accountId, fill.side, fill.quantity, fill.price, fill.day, timeZone]);
+     WHERE i.ticker = $7`,
+    [accountId, fill.side, fill.quantity, fill.price, fill.day, timeZone, fill.symbol ?? 'AAPL']);
   expect(result.rowCount).toBe(1);
 }
 

@@ -9,6 +9,9 @@ interface SessionResponse {
   username: string;
   roles?: Role[];
   accountId?: number;
+  /** Staff only: their own email and full name, from staff_users (C6, LMKT-144). */
+  email?: string;
+  fullName?: string;
 }
 
 interface AuthResponse extends SessionResponse {
@@ -21,6 +24,9 @@ export class Auth {
 
   readonly currentUser = signal<string | null>(null);
   readonly roles = signal<readonly Role[]>([]);
+  /** The signed-in staff member's email and full name; null when the session doesn't carry them. */
+  readonly email = signal<string | null>(null);
+  readonly fullName = signal<string | null>(null);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -56,5 +62,7 @@ export class Auth {
   private applySession(session: SessionResponse | null): void {
     this.currentUser.set(session?.username ?? null);
     this.roles.set(session?.roles ?? []);
+    this.email.set(session?.email ?? null);
+    this.fullName.set(session?.fullName ?? null);
   }
 }
