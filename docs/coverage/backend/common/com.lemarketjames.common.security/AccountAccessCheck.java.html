@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountAccessCheck.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.security</a> &gt; <span class="el_source">AccountAccessCheck.java</span></div><h1>AccountAccessCheck.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.security;
+
+import java.time.Instant;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Decides, on every authenticated request, whether the account behind a still-valid token may
+ * keep using it (LMKT-57). Kept as a small interface so the shared filter never depends on how
+ * accounts are stored, and a test that doesn't care can mock it: a mock's empty answer means &quot;allowed&quot;.
+ */
+public interface AccountAccessCheck {
+
+    /**
+     * @param username the token's subject
+     * @param roles    the token's roles; tells a client token from a staff one
+     * @return empty if the account may carry on, otherwise why not: a client's status name,
+     *         {@link SecurityEventLog#REASON_DEACTIVATED} or {@link SecurityEventLog#REASON_NOT_FOUND}
+     */
+    default Optional&lt;String&gt; revokedReason(String username, Set&lt;Role&gt; roles) {
+<span class="fc" id="L21">        return revokedReason(username, roles, Instant.MIN);</span>
+    }
+
+    Optional&lt;String&gt; revokedReason(String username, Set&lt;Role&gt; roles, Instant issuedAt);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

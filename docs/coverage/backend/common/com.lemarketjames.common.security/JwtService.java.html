@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
@@ -35,10 +36,10 @@ public class JwtService {
      * @param expirationMs the token expiration time in milliseconds
      */
     public JwtService(@Value(&quot;${jwt.secret}&quot;) String secret,
-<span class="fc" id="L38">                       @Value(&quot;${jwt.expiration-ms}&quot;) long expirationMs) {</span>
-<span class="fc" id="L39">        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L40">        this.expirationMs = expirationMs;</span>
-<span class="fc" id="L41">    }</span>
+<span class="fc" id="L39">                       @Value(&quot;${jwt.expiration-ms}&quot;) long expirationMs) {</span>
+<span class="fc" id="L40">        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L41">        this.expirationMs = expirationMs;</span>
+<span class="fc" id="L42">    }</span>
 
     /**
      * Generates a JWT token for a client (the {@link Role#CLIENT} role).
@@ -47,7 +48,7 @@ public class JwtService {
      * @return a signed JWT token string
      */
     public String generateToken(String username) {
-<span class="fc" id="L50">        return generateToken(username, Set.of(Role.CLIENT));</span>
+<span class="fc" id="L51">        return generateToken(username, Set.of(Role.CLIENT));</span>
     }
 
     /**
@@ -60,16 +61,31 @@ public class JwtService {
      * @return a signed JWT token string
      */
     public String generateToken(String username, Set&lt;Role&gt; roles) {
-<span class="fc" id="L63">        Date now = new Date();</span>
-<span class="fc" id="L64">        Date expiry = new Date(now.getTime() + expirationMs);</span>
+<span class="fc" id="L64">        Date now = new Date();</span>
+<span class="fc" id="L65">        Date expiry = new Date(now.getTime() + expirationMs);</span>
 
-<span class="fc" id="L66">        return Jwts.builder()</span>
-<span class="fc" id="L67">                .subject(username)</span>
-<span class="fc" id="L68">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
-<span class="fc" id="L69">                .issuedAt(now)</span>
-<span class="fc" id="L70">                .expiration(expiry)</span>
-<span class="fc" id="L71">                .signWith(signingKey)</span>
-<span class="fc" id="L72">                .compact();</span>
+<span class="fc" id="L67">        return Jwts.builder()</span>
+<span class="fc" id="L68">                .subject(username)</span>
+<span class="fc" id="L69">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
+<span class="fc" id="L70">                .issuedAt(now)</span>
+<span class="fc" id="L71">                .expiration(expiry)</span>
+<span class="fc" id="L72">                .signWith(signingKey)</span>
+<span class="fc" id="L73">                .compact();</span>
+    }
+
+    /** Generates a token whose issue time is explicitly after a session invalidation cutoff. */
+    public String generateToken(String username, Set&lt;Role&gt; roles, Instant issuedAt) {
+<span class="nc" id="L78">        Date now = new Date();</span>
+<span class="nc" id="L79">        Date issued = Date.from(issuedAt);</span>
+<span class="nc" id="L80">        Date expiry = new Date(Math.max(now.getTime(), issued.getTime()) + expirationMs);</span>
+
+<span class="nc" id="L82">        return Jwts.builder()</span>
+<span class="nc" id="L83">                .subject(username)</span>
+<span class="nc" id="L84">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
+<span class="nc" id="L85">                .issuedAt(issued)</span>
+<span class="nc" id="L86">                .expiration(expiry)</span>
+<span class="nc" id="L87">                .signWith(signingKey)</span>
+<span class="nc" id="L88">                .compact();</span>
     }
 
     /**
@@ -78,7 +94,7 @@ public class JwtService {
      * @return the expiration time in seconds
      */
     public long getExpirationSeconds() {
-<span class="fc" id="L81">        return expirationMs / 1000;</span>
+<span class="fc" id="L97">        return expirationMs / 1000;</span>
     }
 
     /**
@@ -88,7 +104,7 @@ public class JwtService {
      * @return an Optional containing the username if valid, or empty if the token is invalid or expired
      */
     public java.util.Optional&lt;String&gt; extractUsername(String token) {
-<span class="fc" id="L91">        return extractClaims(token).map(TokenClaims::username);</span>
+<span class="fc" id="L107">        return extractClaims(token).map(TokenClaims::username);</span>
     }
 
     /**
@@ -101,22 +117,24 @@ public class JwtService {
      */
     public java.util.Optional&lt;TokenClaims&gt; extractClaims(String token) {
         try {
-<span class="fc" id="L104">            Claims claims = Jwts.parser()</span>
-<span class="fc" id="L105">                    .verifyWith(signingKey)</span>
-<span class="fc" id="L106">                    .build()</span>
-<span class="fc" id="L107">                    .parseSignedClaims(token)</span>
-<span class="fc" id="L108">                    .getPayload();</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (claims.getSubject() == null) {</span>
-<span class="nc" id="L110">                return java.util.Optional.empty();</span>
+<span class="fc" id="L120">            Claims claims = Jwts.parser()</span>
+<span class="fc" id="L121">                    .verifyWith(signingKey)</span>
+<span class="fc" id="L122">                    .build()</span>
+<span class="fc" id="L123">                    .parseSignedClaims(token)</span>
+<span class="fc" id="L124">                    .getPayload();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (claims.getSubject() == null) {</span>
+<span class="nc" id="L126">                return java.util.Optional.empty();</span>
             }
-<span class="fc" id="L112">            List&lt;?&gt; names = claims.get(ROLES_CLAIM, List.class);</span>
-<span class="pc bpc" id="L113" title="1 of 4 branches missed.">            Set&lt;Role&gt; roles = names == null || names.isEmpty()</span>
-<span class="fc" id="L114">                    ? EnumSet.of(Role.CLIENT)</span>
-<span class="fc" id="L115">                    : names.stream().map(name -&gt; Role.valueOf(String.valueOf(name)))</span>
-<span class="fc" id="L116">                            .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
-<span class="fc" id="L117">            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles));</span>
-<span class="fc" id="L118">        } catch (JwtException | IllegalArgumentException e) {</span>
-<span class="fc" id="L119">            return java.util.Optional.empty();</span>
+<span class="fc" id="L128">            List&lt;?&gt; names = claims.get(ROLES_CLAIM, List.class);</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">            Set&lt;Role&gt; roles = names == null || names.isEmpty()</span>
+<span class="fc" id="L130">                    ? EnumSet.of(Role.CLIENT)</span>
+<span class="fc" id="L131">                    : names.stream().map(name -&gt; Role.valueOf(String.valueOf(name)))</span>
+<span class="fc" id="L132">                            .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
+<span class="fc" id="L133">            Date issuedAt = claims.getIssuedAt();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            Instant issuedInstant = issuedAt == null ? Instant.MIN : issuedAt.toInstant();</span>
+<span class="fc" id="L135">            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles, issuedInstant));</span>
+<span class="fc" id="L136">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="fc" id="L137">            return java.util.Optional.empty();</span>
         }
     }
 }
