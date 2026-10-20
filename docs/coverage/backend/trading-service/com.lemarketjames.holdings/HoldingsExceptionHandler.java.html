@@ -46,12 +46,12 @@ import java.util.Map;
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAccountNotFound(IllegalArgumentException ex) {
-<span class="nc" id="L49">        String message = ex.getMessage();</span>
+<span class="fc" id="L49">        String message = ex.getMessage();</span>
         // Only handle account-not-found cases; let other IllegalArgumentExceptions propagate
-<span class="nc bnc" id="L51" title="All 4 branches missed.">        if (message != null &amp;&amp; message.contains(&quot;No account found&quot;)) {</span>
-<span class="nc" id="L52">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
-<span class="nc" id="L53">                    .body(Map.of(</span>
-<span class="nc" id="L54">                        &quot;success&quot;, false,</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">        if (message != null &amp;&amp; message.contains(&quot;No account found&quot;)) {</span>
+<span class="fc" id="L52">            return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L53">                    .body(Map.of(</span>
+<span class="fc" id="L54">                        &quot;success&quot;, false,</span>
                         &quot;error&quot;, &quot;Account not found&quot;,
                         &quot;code&quot;, &quot;ACCOUNT_NOT_FOUND&quot;
                     ));

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PortfolioStreamController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Trading Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.stream</a> &gt; <span class="el_source">PortfolioStreamController.java</span></div><h1>PortfolioStreamController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.stream;
+
+import com.lemarketjames.common.domain.AccountRepository;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+/**
+ * The signed-in client's live portfolio stream (contract C6). There is no account in the path:
+ * the account is the caller's own, so nobody can listen to another client's settlements.
+ */
+@RestController
+public class PortfolioStreamController {
+
+    private final AccountRepository accounts;
+    private final PortfolioStreamService streams;
+
+<span class="fc" id="L20">    public PortfolioStreamController(AccountRepository accounts, PortfolioStreamService streams) {</span>
+<span class="fc" id="L21">        this.accounts = accounts;</span>
+<span class="fc" id="L22">        this.streams = streams;</span>
+<span class="fc" id="L23">    }</span>
+
+    /**
+     * Opens a {@code balance-changed} stream for the caller's own account. A login without an
+     * account gets the same 404 holdings gives it (HoldingsExceptionHandler).
+     */
+    @GetMapping(value = &quot;/api/v1/portfolio/stream&quot;, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(Authentication caller) {
+<span class="fc" id="L31">        Integer accountId = accounts.findAccountIdByUsername(caller.getName())</span>
+<span class="fc" id="L32">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;No account found for username: &quot; + caller.getName()));</span>
+<span class="fc" id="L33">        return streams.subscribe(accountId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

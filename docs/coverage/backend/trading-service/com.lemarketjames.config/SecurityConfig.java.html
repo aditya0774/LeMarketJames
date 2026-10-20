@@ -31,7 +31,7 @@ import java.util.List;
  *   &lt;li&gt;{@code /api/market/**} needs no JWT either: orders-service reads prices there without a
  *       cookie, and the quotes carry no user data.&lt;/li&gt;
  *   &lt;li&gt;Notifications are about a client's own orders, so only clients may read them (contract
- *       C7). Market activity says how much of each stock traded and never who traded it, so anyone
+ *       C7). So is the live portfolio stream. Market activity says how much of each stock traded and never who traded it, so anyone
  *       signed in may read it.&lt;/li&gt;
  * &lt;/ul&gt;
  */
@@ -41,6 +41,9 @@ import java.util.List;
 
     /** Every notification endpoint lives under this prefix, so one rule guards them all. */
     public static final String NOTIFICATIONS_PATHS = &quot;/api/v1/notifications/**&quot;;
+
+    /** The live portfolio stream: a client's own settlements, so clients only. */
+    public static final String PORTFOLIO_STREAM_PATH = &quot;/api/v1/portfolio/stream&quot;;
 
     /** Every activity endpoint lives under this prefix, so one rule guards them all. */
     public static final String ACTIVITY_PATHS = &quot;/api/v1/market-activity/**&quot;;
@@ -60,23 +63,23 @@ import java.util.List;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
                                                    AccountAccessCheck accessCheck) throws Exception {
-<span class="fc" id="L63">        http</span>
-<span class="fc" id="L64">            .csrf(AbstractHttpConfigurer::disable)</span>
-<span class="fc" id="L65">            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</span>
-<span class="fc" id="L66">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
-<span class="fc" id="L67">            .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(</span>
-<span class="fc" id="L68">                    (request, response, authException) -&gt; response.sendError(401)))</span>
-<span class="fc" id="L69">            .authorizeHttpRequests(auth -&gt; auth</span>
+<span class="fc" id="L66">        http</span>
+<span class="fc" id="L67">            .csrf(AbstractHttpConfigurer::disable)</span>
+<span class="fc" id="L68">            .cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</span>
+<span class="fc" id="L69">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="fc" id="L70">            .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(</span>
+<span class="fc" id="L71">                    (request, response, authException) -&gt; response.sendError(401)))</span>
+<span class="fc" id="L72">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
-<span class="fc" id="L71">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L72">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/internal/**&quot;, &quot;/api/market/**&quot;).permitAll()</span>
+<span class="fc" id="L74">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
+<span class="fc" id="L75">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/internal/**&quot;, &quot;/api/market/**&quot;).permitAll()</span>
                 // Staff have no trading account, so there is nothing of theirs to read here.
-<span class="fc" id="L74">                .requestMatchers(NOTIFICATIONS_PATHS).hasRole(Role.CLIENT.name())</span>
-<span class="fc" id="L75">                .requestMatchers(ACTIVITY_PATHS, &quot;/api/sessions/**&quot;).authenticated()</span>
-<span class="fc" id="L76">                .anyRequest().authenticated())</span>
-<span class="fc" id="L77">            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);</span>
+<span class="fc" id="L77">                .requestMatchers(NOTIFICATIONS_PATHS, PORTFOLIO_STREAM_PATH).hasRole(Role.CLIENT.name())</span>
+<span class="fc" id="L78">                .requestMatchers(ACTIVITY_PATHS, &quot;/api/sessions/**&quot;).authenticated()</span>
+<span class="fc" id="L79">                .anyRequest().authenticated())</span>
+<span class="fc" id="L80">            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);</span>
 
-<span class="fc" id="L79">        return http.build();</span>
+<span class="fc" id="L82">        return http.build();</span>
     }
 
     /**
@@ -87,15 +90,15 @@ import java.util.List;
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-<span class="fc" id="L90">        CorsConfiguration configuration = new CorsConfiguration();</span>
-<span class="fc" id="L91">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8084&quot;));</span>
-<span class="fc" id="L92">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
-<span class="fc" id="L93">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
-<span class="fc" id="L94">        configuration.setAllowCredentials(true);</span>
+<span class="fc" id="L93">        CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L94">        configuration.setAllowedOrigins(List.of(allowedOrigin, &quot;http://localhost:8084&quot;));</span>
+<span class="fc" id="L95">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L96">        configuration.setAllowedHeaders(List.of(&quot;*&quot;));</span>
+<span class="fc" id="L97">        configuration.setAllowCredentials(true);</span>
 
-<span class="fc" id="L96">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
-<span class="fc" id="L97">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
-<span class="fc" id="L98">        return source;</span>
+<span class="fc" id="L99">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc" id="L100">        source.registerCorsConfiguration(&quot;/**&quot;, configuration);</span>
+<span class="fc" id="L101">        return source;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
