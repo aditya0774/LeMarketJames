@@ -83,7 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (claims.isPresent()) {
             TokenClaims token = claims.get();
             if (isChecked(request)) {
-                Optional<String> revoked = accessCheck.revokedReason(token.username(), token.roles());
+                Optional<String> revoked = accessCheck.revokedReason(token.username(), token.roles(), token.issuedAt());
                 if (revoked.isPresent()) {
                     reject(token.username(), revoked.get(), response);
                     return;
