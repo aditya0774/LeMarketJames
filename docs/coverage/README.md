@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `6476d511` on 2026-10-19 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `4f2b9890` on 2026-10-20 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -8,15 +8,15 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
 | Area | Line % | Branch % | Lines missed / total |
 |---|---:|---:|---:|
-| [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 53.07 | 78.00 | 199 / 424 |
+| [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 54.95 | 74.07 | 200 / 444 |
 | [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 83.70 | 76.00 | 22 / 135 |
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 95.85 | 82.69 | 12 / 289 |
 | [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 92.53 | 84.59 | 70 / 937 |
 | [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 84.88 | 89.06 | 93 / 615 |
-| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 88.41 | 86.94 | 175 / 1510 |
-| **Back end (all modules)** | 85.40 | 85.01 | 571 / 3910 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 96.92 | 91.47 | 84 / 2729 |
-| **Everything** | 90.13 | 89.47 | 655 / 6639 |
+| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 89.07 | 87.59 | 175 / 1601 |
+| **Back end (all modules)** | 85.77 | 84.99 | 572 / 4021 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 96.81 | 91.47 | 87 / 2729 |
+| **Everything** | 90.24 | 89.42 | 659 / 6750 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -47,13 +47,14 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 | `src/app/features/holdings/by-stock-report/by-stock-report.component.html` | 5 | 85.71 |
 | `src/app/features/orders/order-form/order-form.ts` | 5 | 92.42 |
 | `src/app/core/orders/account-orders.ts` | 3 | 94.12 |
+| `src/app/core/orders/orders.service.ts` | 3 | 82.35 |
 | `src/app/features/holdings/by-stock-report/by-stock-trades-table.ts` | 3 | 91.18 |
-| `src/app/features/auth/login/login.html` | 2 | 95.24 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-20 | `4f2b9890` | 85.77 | 84.99 | 96.81 | 91.47 |
 | 2026-10-19 | `6476d511` | 85.40 | 85.01 | 96.92 | 91.47 |
 | 2026-10-19 | `9b2a988c` | 85.13 | 84.84 | 96.92 | 91.47 |
 | 2026-10-19 | `5521aa94` | 85.13 | 84.84 | 96.92 | 91.47 |

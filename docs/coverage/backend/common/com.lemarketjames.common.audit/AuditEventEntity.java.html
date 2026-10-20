@@ -91,44 +91,51 @@ public class AuditEventEntity {
 <span class="fc" id="L91">        this.eventKey = event.eventKey();</span>
 <span class="fc" id="L92">    }</span>
 
+    /** A cash movement event, identified by the caller's idempotency key rather than an order. */
+    public AuditEventEntity(CashAuditEvent event, Instant occurredAt) {
+<span class="fc" id="L96">        this(null, event.accountId(), event.clientId(), event.type(), event.details(), occurredAt);</span>
+<span class="fc" id="L97">        this.requestId = event.requestId();</span>
+<span class="fc" id="L98">        this.eventKey = &quot;cash:&quot; + event.requestId();</span>
+<span class="fc" id="L99">    }</span>
+
     public Long getAuditId() {
-<span class="nc" id="L95">        return auditId;</span>
+<span class="nc" id="L102">        return auditId;</span>
     }
 
     public String getRequestId() {
-<span class="fc" id="L99">        return requestId;</span>
+<span class="fc" id="L106">        return requestId;</span>
     }
 
     public String getEventKey() {
-<span class="fc" id="L103">        return eventKey;</span>
+<span class="fc" id="L110">        return eventKey;</span>
     }
 
     public Integer getOrderId() {
-<span class="fc" id="L107">        return orderId;</span>
+<span class="fc" id="L114">        return orderId;</span>
     }
 
     public Integer getAccountId() {
-<span class="fc" id="L111">        return accountId;</span>
+<span class="fc" id="L118">        return accountId;</span>
     }
 
     public Integer getClientId() {
-<span class="fc" id="L115">        return clientId;</span>
+<span class="fc" id="L122">        return clientId;</span>
     }
 
     public AuditEventType getEventType() {
-<span class="fc" id="L119">        return eventType;</span>
+<span class="fc" id="L126">        return eventType;</span>
     }
 
     public Map&lt;String, Object&gt; getDetails() {
-<span class="fc" id="L123">        return details;</span>
+<span class="fc" id="L130">        return details;</span>
     }
 
     public Instant getOccurredAt() {
-<span class="fc" id="L127">        return occurredAt;</span>
+<span class="fc" id="L134">        return occurredAt;</span>
     }
 
     public boolean isArchived() {
-<span class="nc" id="L131">        return archived;</span>
+<span class="nc" id="L138">        return archived;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
