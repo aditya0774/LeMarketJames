@@ -106,7 +106,7 @@ class OrderSubmissionAuditIntegrationTest {
         List<AuditEventEntity> trail = trailOf(result);
 
         assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:PRICE_AVAILABLE:PASS",
-            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:CASH:PASS", "VALIDATED"), stepsOf(trail));
+            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:CASH:PASS", "VALIDATED"), stepsOf(trail));
         AuditEventEntity submitted = trail.get(0);
         assertEquals(AuditEventType.SUBMITTED, submitted.getEventType());
         assertEquals(clientId, submitted.getClientId());
@@ -136,8 +136,8 @@ class OrderSubmissionAuditIntegrationTest {
 
         List<AuditEventEntity> trail = trailOf(result);
 
-        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"), stepsOf(trail));
-        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"),
+        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"), stepsOf(trail));
+        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "QUANTITY", "HOLDINGS"),
             trail.get(trail.size() - 1).getDetails().get("checks"));
         assertNull(trail.get(0).getDetails().get("price"), "a SELL isn't priced at placement");
     }
@@ -148,7 +148,7 @@ class OrderSubmissionAuditIntegrationTest {
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_CASH")).andReturn();
 
         List<AuditEventEntity> trail = assertRefusedTrail(result, steps("SUBMITTED", COMMON_CHECKS_PASSED,
-            "RULE_CHECKED:PRICE_AVAILABLE:PASS", "RULE_CHECKED:QUOTE_FRESH:PASS",
+            "RULE_CHECKED:PRICE_AVAILABLE:PASS", "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS",
             "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"));
         // The price the order was valued at when it was refused is kept with the submission.
         assertEquals(0, new BigDecimal("250.1235").compareTo(new BigDecimal(trail.get(0).getDetails().get("price").toString())));
@@ -186,7 +186,7 @@ class OrderSubmissionAuditIntegrationTest {
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS")).andReturn();
 
         assertRefusedTrail(result, steps("SUBMITTED", COMMON_CHECKS_PASSED,
-            "RULE_CHECKED:HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"));
+            "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"));
     }
 
     @Test
@@ -255,7 +255,7 @@ class OrderSubmissionAuditIntegrationTest {
         assertThrows(Exception.class, () -> submit("SELL", accountId, instrumentId, 1));
 
         List<AuditEventEntity> trail = audit.findByRequestIdOrderByAuditIdAsc(onlyRequestIdOfTheCaller());
-        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:HOLDINGS:ERROR"), stepsOf(trail));
+        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:ERROR"), stepsOf(trail));
         assertEquals(0, countOrders());
     }
 

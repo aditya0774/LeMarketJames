@@ -47,13 +47,14 @@ public class OrderPlacement {
         }
         trail.passedAll();
 
-        // Persist only after all submission checks pass.
+        // Persist only after all submission checks pass, for the shares the checks settled on.
         Order order = new Order(
             request.getAccountId(),
             request.getInstrumentId(),
             request.getOrderType(),
-            request.getQuantity()
+            outcome.quantity()
         );
+        order.setRequestedAmount(request.getAmount());
 
         if (outcome.price() != null) {
             order.setPricePerUnit(outcome.price());

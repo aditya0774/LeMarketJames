@@ -6,6 +6,8 @@ export interface OrderDto {
   orderId: number;
   orderType: 'BUY' | 'SELL';
   quantity: number;
+  /** BR-04: the USD amount the order was placed for; null when it was placed by shares. */
+  requestedAmount: number | null;
   pricePerUnit: number | null;
   orderStatus: string;
   rejectionReason: string | null;

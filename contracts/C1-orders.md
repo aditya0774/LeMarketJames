@@ -16,6 +16,7 @@ Every order story codes against the same order shape and lifecycle, so validatio
 - **Every status change goes through `Order.transitionTo`** (or `Order.reject`, which records a reason code). A move the lifecycle doesn't allow throws `InvalidStatusTransitionException`, and the API answers `409 INVALID_STATUS_TRANSITION`. `setOrderStatus` exists only to put fixtures into a known state.
 - **`FILLED` and `REJECTED` are final.** `OrderStatus.isOpen()` tells open from final; use it rather than your own list.
 - **`rejection_reason` holds a `RejectionReason` code**, never free text.
+- **An order is for whole shares (BR-04).** `quantity` is always a whole number of at least one share, whether the client asked for shares or for a dollar amount. An order placed by amount also keeps that amount in `requested_amount` (`requestedAmount` in the DTO); it is null for an order placed by shares. A placement that isn't for whole shares is refused with `INVALID_QUANTITY` ([C6](C6-api.md#post-apiv1orders)).
 - **Filling settles first.** Moving to `FILLED` needs a price and settles cash and holdings through trading-service before the status is saved, so an order is never FILLED without its side effects.
 - **Every transition is audited and announced.** It writes its audit event in the same transaction ([C2](C2-audit.md)) and publishes `OrderStatusChanged`, plus `OrderFilled` on a fill ([C6](C6-api.md#the-order-events)). Placing an order isn't a transition; it is announced once with `OrderSubmitted`.
 

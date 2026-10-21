@@ -25,20 +25,24 @@ export interface OrdersStreamSnapshot {
   event?: OrderStatusChangedEvent;
 }
 
-export interface OrderRequest {
+/**
+ * An order says how much to trade once: whole shares, or a dollar amount the server turns into as
+ * many whole shares as it covers (BR-04, contract C6).
+ */
+export type OrderSize = { quantity: number; amount?: never } | { amount: number; quantity?: never };
+
+export type OrderRequest = OrderSize & {
   accountId: number;
   instrumentId: number;
   orderType: 'BUY' | 'SELL';
-  quantity: number;
   pricePerUnit?: number;
-}
+};
 
-export interface BuyOrderRequest {
+export type BuyOrderRequest = OrderSize & {
   accountId: number;
   instrumentId: number;
-  quantity: number;
   pricePerUnit: number;
-}
+};
 
 export interface OrderResponse {
   success: boolean;
@@ -51,6 +55,8 @@ export interface OrderResponse {
   orderType: 'BUY' | 'SELL';
   quantity: number;
   pricePerUnit?: number | null;
+  /** The dollar amount the order was placed for; null when it was placed by shares. */
+  requestedAmount?: number | null;
   orderStatus: 'SUBMITTED' | 'ACCEPTED' | 'PENDING' | 'FILLED' | 'REJECTED' | 'DELAYED';
   rejectionReason?: string | null;
   submittedAt: string;
@@ -101,6 +107,10 @@ export class OrderService {
       // Holdings validation uses the signed-in account, which must match the order.
       if (!this.auth.currentAccountId() || order.accountId !== this.auth.currentAccountId()) {
         return throwError(() => new Error('Please select your authenticated account before selling.'));
+      }
+      // A sell by amount has no share count until the server prices it; it checks the holdings then.
+      if (order.quantity === undefined) {
+        return of({ success: true, error: undefined });
       }
       return this.holdingsService.validateOwnHoldings(order.instrumentId, order.quantity);
     }).pipe(

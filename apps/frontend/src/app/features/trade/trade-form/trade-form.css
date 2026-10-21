@@ -147,3 +147,19 @@
   display: flex;
   gap: 10px;
 }
+
+/* Shares or Amount (BR-04): a smaller switch under Buy/Sell, sized to its two options. */
+.size-toggle {
+  align-self: flex-start;
+}
+
+/* The amount sits in the same box as the shares stepper, with a "$" before the figure. */
+.amount-prefix {
+  padding-left: 14px;
+  color: var(--dim);
+}
+
+.field .amount-box input:not([type='checkbox']) {
+  padding-left: 6px;
+  text-align: left;
+}

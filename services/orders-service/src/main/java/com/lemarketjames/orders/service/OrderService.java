@@ -128,6 +128,7 @@ public class OrderService {
             Order.OrderType.BUY,
             request.getQuantity()
         );
+        createOrderRequest.setAmount(request.getAmount());
         createOrderRequest.setPricePerUnit(request.getPricePerUnit());
         return createOrder(createOrderRequest, requestId);
     }

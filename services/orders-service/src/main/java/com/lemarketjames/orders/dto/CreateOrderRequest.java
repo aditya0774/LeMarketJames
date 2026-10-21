@@ -1,6 +1,9 @@
 package com.lemarketjames.orders.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.lemarketjames.orders.entity.Order;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
@@ -17,10 +20,16 @@ public class CreateOrderRequest {
     @NotNull(message = "orderType is required")
     private Order.OrderType orderType;
 
-    @NotNull(message = "quantity is required")
+    // Whole shares only, but checked by the QUANTITY rule, not here: a refused size belongs in the
+    // audit trail like every other refusal (contract C2).
     @Positive(message = "quantity must be positive")
-    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
+    @Digits(integer = 10, fraction = 4)
     private BigDecimal quantity;
+
+    /** BR-04: a dollar amount to buy or sell as many whole shares of as it covers, instead of a quantity. */
+    @Positive(message = "amount must be positive")
+    @Digits(integer = 13, fraction = 2, message = "amount must be dollars and cents")
+    private BigDecimal amount;
 
     @Positive(message = "pricePerUnit must be positive")
     private BigDecimal pricePerUnit;
@@ -68,6 +77,20 @@ public class CreateOrderRequest {
         this.quantity = quantity;
     }
     
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    @JsonIgnore
+    @AssertTrue(message = OrderSize.EXACTLY_ONE)
+    public boolean isQuantityOrAmount() {
+        return OrderSize.exactlyOne(quantity, amount);
+    }
+
     public BigDecimal getPricePerUnit() {
         return pricePerUnit;
     }

@@ -63,6 +63,11 @@ public class SubmissionRecorder {
         submitted.put("quantity", trail.quantity());
         submitted.put("price", trail.price());
         submitted.put("instrumentId", trail.instrumentId());
+        if (trail.amount() != null) {
+            // BR-04: an order by amount; quantity is then the whole shares worked out from it, or
+            // null when it was refused before that.
+            submitted.put("amount", trail.amount());
+        }
         if (!trail.ownsAccount()) {
             // The account column stays empty for an account that isn't the caller's; keep what was asked for.
             submitted.put("requestedAccountId", trail.requestedAccountId());

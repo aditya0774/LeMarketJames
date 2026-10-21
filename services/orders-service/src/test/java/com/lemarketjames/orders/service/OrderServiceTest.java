@@ -183,7 +183,7 @@ class OrderServiceTest {
         assertTrue(orderService.createOrder(request, REQUEST_ID).isSuccess());
 
         assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
-            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"),
+            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"),
             auditedSteps());
         // Every event names the order, the caller's client and account, and the one request.
         audited().forEach(event -> {
@@ -199,12 +199,12 @@ class OrderServiceTest {
         assertNull(submitted.get("price"));
         assertFalse(submitted.containsKey("requestedAccountId"));
         // VALIDATED lists the rules that actually ran, not a fixed list.
-        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"),
-            audited().get(6).details().get("checks"));
+        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "QUANTITY", "HOLDINGS"),
+            audited().get(7).details().get("checks"));
         // The order is saved before its events, so they can carry its ID.
         var sequence = inOrder(orderRepository, auditRecorder);
         sequence.verify(orderRepository).save(any());
-        sequence.verify(auditRecorder, times(7)).recordSubmission(any());
+        sequence.verify(auditRecorder, times(8)).recordSubmission(any());
         // The new order is announced once, with what was ordered (contract C6).
         verify(events).publishEvent(argThat((Object e) -> e instanceof OrderSubmitted announced
             && announced.orderId() == 77 && announced.accountId() == 1 && announced.instrumentId() == 1
@@ -225,7 +225,7 @@ class OrderServiceTest {
 
         assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
             "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:PRICE_AVAILABLE:PASS",
-            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"), auditedSteps());
+            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"), auditedSteps());
         audited().forEach(event -> {
             assertNull(event.orderId(), "a refused order has no order ID");
             assertEquals(42, event.clientId());
@@ -280,8 +280,8 @@ class OrderServiceTest {
         assertSame(unreachable, assertThrows(IllegalStateException.class,
             () -> orderService.createOrder(request, REQUEST_ID)));
 
-        assertEquals("RULE_CHECKED:HOLDINGS:ERROR", auditedSteps().get(5));
-        assertEquals(6, auditedSteps().size());
+        assertEquals("RULE_CHECKED:HOLDINGS:ERROR", auditedSteps().get(6));
+        assertEquals(7, auditedSteps().size());
         verifyNoInteractions(orderRepository);
     }
 

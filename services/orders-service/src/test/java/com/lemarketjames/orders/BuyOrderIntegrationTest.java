@@ -1,6 +1,8 @@
 package com.lemarketjames.orders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lemarketjames.common.audit.AuditEventRepository;
+import com.lemarketjames.common.audit.AuditEventType;
 import com.lemarketjames.common.domain.*;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
@@ -48,6 +50,7 @@ class BuyOrderIntegrationTest {
     @Autowired JwtService jwt;
     @Autowired JdbcTemplate jdbc;
     @Autowired AuditTestCleanup cleanup;
+    @Autowired AuditEventRepository auditEvents;
     String username;
     Integer accountId;
     Integer instrumentId;
@@ -100,7 +103,7 @@ class BuyOrderIntegrationTest {
         var audit = jdbc.queryForList("SELECT action, client_id FROM audit_log WHERE order_id=? ORDER BY audit_id", orderId);
         // One RULE_CHECKED per placement check sits between the two (OrderSubmissionAuditIntegrationTest).
         assertEquals(List.of("SUBMITTED", "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED",
-            "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "VALIDATED"),
+            "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "RULE_CHECKED", "VALIDATED"),
             audit.stream().map(event -> event.get("action")).toList());
         Integer clientId = clients.findByUsername(username).orElseThrow().getClientId();
         audit.forEach(event -> assertEquals(clientId, ((Number) event.get("client_id")).intValue()));
@@ -132,6 +135,64 @@ class BuyOrderIntegrationTest {
             .andExpect(status().isUnauthorized());
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM orders WHERE account_id=?", Integer.class, accountId));
     }
+    // BR-04: an amount buys as many whole shares as it covers at the ask; the order keeps both.
+    @Test
+    void aBuyByAmountSavesTheWholeSharesAndTheAmountAskedFor() throws Exception {
+        var result = mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY", "amount", new BigDecimal("400.00")))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.quantity").value(1))
+            .andExpect(jsonPath("$.requestedAmount").value(400.00)).andReturn();
+        int orderId = json.readTree(result.getResponse().getContentAsString()).get("orderId").asInt();
+
+        var row = jdbc.queryForMap("SELECT quantity, requested_amount FROM orders WHERE order_id=?", orderId);
+        assertEquals(0, BigDecimal.ONE.compareTo((BigDecimal) row.get("quantity")), "400 / 250.1235 rounds down to 1");
+        assertEquals(0, new BigDecimal("400.00").compareTo((BigDecimal) row.get("requested_amount")));
+        var submitted = auditEvents.findByOrderIdOrderByOccurredAtAsc(orderId).get(0);
+        assertEquals(AuditEventType.SUBMITTED, submitted.getEventType());
+        assertEquals(0, new BigDecimal("400.00").compareTo(new BigDecimal(submitted.getDetails().get("amount").toString())));
+        assertEquals(0, BigDecimal.ONE.compareTo(new BigDecimal(submitted.getDetails().get("quantity").toString())));
+    }
+
+    // BR-04: the buy endpoint the trade form uses takes an amount too.
+    @Test
+    void theBuyEndpointTakesAnAmount() throws Exception {
+        mvc.perform(post("/api/v1/buy-orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "amount", new BigDecimal("400.00"), "pricePerUnit", new BigDecimal("250.12")))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.quantity").value(1))
+            .andExpect(jsonPath("$.requestedAmount").value(400.00));
+    }
+
+    // BR-04: whole shares only, and an order says its size exactly once.
+    @Test
+    void ordersThatAreNotForWholeSharesAreRefusedAndNotSaved() throws Exception {
+        mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY", "quantity", new BigDecimal("0.5")))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUANTITY"));
+        mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY", "amount", new BigDecimal("250.00")))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUANTITY"))
+            .andExpect(jsonPath("$.reason").value("Amount is less than the price of one share"));
+        mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY", "quantity", 1, "amount", new BigDecimal("400.00")))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.quantityOrAmount").exists());
+        mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY"))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.quantityOrAmount").exists());
+        mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("accountId", accountId, "instrumentId", instrumentId,
+                "orderType", "BUY", "amount", new BigDecimal("400.001")))))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.amount").exists());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM orders WHERE account_id=?", Integer.class, accountId));
+    }
+
     private Integer saveNonTradableInstrument() {
         Instrument instrument = new Instrument();
         instrument.setTicker("NT" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));

@@ -571,3 +571,19 @@ Get-Content database/schema/028_instrument_location_restrictions.sql | psql -v O
 
 Rules are configuration kept in migrations: `lemarket_app` may only read the table. orders-service
 validates it at startup, so apply it before starting a new orders-service.
+
+## 031 — The amount an order was placed for
+
+`schema/031_order_requested_amount.sql` adds `orders.requested_amount NUMERIC(15,2)`, null unless the
+client placed the order by dollar amount (BR-04). orders-service turns an amount into as many whole
+shares as it covers at the quote it priced the order from and saves those in `quantity`, as for any
+order; `requested_amount` keeps what the client asked for ([C1](../contracts/C1-orders.md),
+[C6](../contracts/C6-api.md#post-apiv1orders)). A CHECK keeps it positive.
+
+```powershell
+Get-Content database/schema/031_order_requested_amount.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+orders-service validates the column at startup, so apply it before starting a new orders-service.
+029 and 030 are reserved for later work and may be added after it; the files still apply in
+number order.

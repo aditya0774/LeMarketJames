@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- BR-04: Orders can be placed by amount. `POST /api/v1/orders` and `/api/v1/buy-orders` take
+  `amount` (USD) instead of `quantity`, exactly one of the two; the server buys or sells as many whole
+  shares as the amount covers at the ask (BUY) or bid (SELL) and keeps the amount on the order
+  (`orders.requested_amount`, migration 031; `requestedAmount` in the order DTO). Orders are whole
+  shares only, now enforced on the server too: the new placement check `QUANTITY` refuses `0.5` or an
+  amount below one share's price with the new code `INVALID_QUANTITY`. The trade form (and the
+  Overview's quick trade) has a Shares / Amount switch and shows "Buys N shares, about $X left over"
+  before the client confirms ([C6](contracts/C6-api.md#post-apiv1orders), [C1](contracts/C1-orders.md),
+  [C2](contracts/C2-audit.md#the-submission-trail)).
 - BR-05: Open orders now reserve what they will spend. A BUY must fit the cash less the cost of the
   account's open BUYs (the buying power the balance shows), and a SELL the holding less the shares in
   its open SELLs of that stock; trading-service's `POST /internal/holdings/validate` takes the new

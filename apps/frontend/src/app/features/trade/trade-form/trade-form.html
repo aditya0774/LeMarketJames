@@ -7,16 +7,35 @@
     <button type="button" class="opt" [class.sell-active]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">Sell</button>
   </fieldset>
 
+  <!-- BR-04: size the order in whole shares (the default) or as a dollar amount. -->
+  <fieldset class="seg size-toggle">
+    <legend class="sr-only">Order by shares or by amount</legend>
+    <button type="button" [attr.aria-pressed]="sizeMode() === 'SHARES'" (click)="setSizeMode('SHARES')">Shares</button>
+    <button type="button" [attr.aria-pressed]="sizeMode() === 'AMOUNT'" (click)="setSizeMode('AMOUNT')">Amount</button>
+  </fieldset>
+
   <div class="tf-row">
-    <div class="field">
-      <label for="trade-qty">Shares</label>
-      <div class="qty-stepper">
-        <button type="button" aria-label="Decrease quantity" (click)="step(-1)">&minus;</button>
-        <input id="trade-qty" class="mono" type="number" min="1" step="1" inputmode="numeric"
-               [value]="quantity()" (input)="setQuantity($any($event.target).value)" />
-        <button type="button" aria-label="Increase quantity" (click)="step(1)">+</button>
+    @if (sizeMode() === 'SHARES') {
+      <div class="field">
+        <label for="trade-qty">Shares</label>
+        <div class="qty-stepper">
+          <button type="button" aria-label="Decrease quantity" (click)="step(-1)">&minus;</button>
+          <input id="trade-qty" class="mono" type="number" min="1" step="1" inputmode="numeric"
+                 [value]="quantity()" (input)="setQuantity($any($event.target).value)" />
+          <button type="button" aria-label="Increase quantity" (click)="step(1)">+</button>
+        </div>
       </div>
-    </div>
+    } @else {
+      <div class="field">
+        <label for="trade-amount">Amount (USD)</label>
+        <div class="qty-stepper amount-box">
+          <span class="amount-prefix" aria-hidden="true">$</span>
+          <input id="trade-amount" class="mono" type="number" min="0.01" step="0.01" inputmode="decimal"
+                 placeholder="0.00" aria-describedby="trade-amount-shares"
+                 [value]="amount() ?? ''" (input)="setAmount($any($event.target).value)" />
+        </div>
+      </div>
+    }
     <div class="field">
       <label for="trade-type">Order type</label>
       <!-- Only market orders exist in the backend so far. -->
@@ -37,7 +56,24 @@
     }
   </p>
 
-  @if (!quantityValid()) {
+  @if (sizeMode() === 'AMOUNT') {
+    <!-- The preview the client confirms against; the server works the shares out again at its own quote. -->
+    <p class="tf-note" id="trade-amount-shares" aria-live="polite">
+      @if (amount() === null) {
+        Enter how much to {{ side() === 'BUY' ? 'spend' : 'sell' }}; orders are for whole shares.
+      } @else if (!amountValid()) {
+        Enter an amount in dollars and cents.
+      } @else if (price() === null) {
+        The share count shows once the live price loads.
+      } @else if (quantityValid()) {
+        {{ side() === 'BUY' ? 'Buys' : 'Sells' }} {{ shares() }} share{{ shares() === 1 ? '' : 's' }}, about
+        {{ leftover() | currency: 'USD' }} {{ side() === 'BUY' ? 'left over' : 'less than the amount' }}.
+      }
+    </p>
+    @if (amountValid() && price() !== null && !quantityValid()) {
+      <div class="field-error">Amount is less than the price of one share.</div>
+    }
+  } @else if (!quantityValid()) {
     <div class="field-error">Enter a whole number of shares (at least 1).</div>
   }
   @if (exceedsHoldings()) {
@@ -49,7 +85,7 @@
 
   <div class="tf-sum">
     <div class="tf-line">
-      <span>{{ quantityValid() ? quantity() : 0 }} share{{ quantity() === 1 ? '' : 's' }} × {{ price() !== null ? (price() | currency: 'USD') : '—' }} (est.)</span>
+      <span>{{ quantityValid() ? shares() : 0 }} share{{ shares() === 1 ? '' : 's' }} × {{ price() !== null ? (price() | currency: 'USD') : '—' }} (est.)</span>
       <span>Fees <span class="mono">$0.00</span></span>
     </div>
     <div class="tf-total">
@@ -87,7 +123,7 @@
       @if (submitting()) {
         Placing order…
       } @else {
-        {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ quantityValid() ? quantity() : 0 }} {{ symbol() }}@if (price() !== null && quantityValid()) { · {{ estimatedTotal() | currency: 'USD' }}}
+        {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ quantityValid() ? shares() : 0 }} {{ symbol() }}@if (price() !== null && quantityValid()) { · {{ estimatedTotal() | currency: 'USD' }}}
       }
     </button>
     <p class="tf-foot">Market orders fill at the best price available, so the final amount may differ slightly.</p>

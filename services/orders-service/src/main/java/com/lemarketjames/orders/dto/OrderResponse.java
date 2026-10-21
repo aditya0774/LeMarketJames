@@ -24,6 +24,7 @@ public class OrderResponse {
     private LocalDateTime filledAt;
     private String quoteSource;
     private Instant quoteTime;
+    private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,6 +44,7 @@ public class OrderResponse {
         this.filledAt = order.getFilledAt();
         this.quoteSource = order.getQuoteSource();
         this.quoteTime = order.getQuoteTime();
+        this.requestedAmount = order.getRequestedAmount();
         this.createdAt = order.getCreatedAt();
         this.updatedAt = order.getUpdatedAt();
     }
@@ -136,6 +138,11 @@ public class OrderResponse {
     /** When the feed produced the execution quote (UTC); null until the order has been priced for execution. */
     public Instant getQuoteTime() {
         return quoteTime;
+    }
+
+    /** The dollar amount the order was placed for (BR-04); null for an order placed by shares. */
+    public BigDecimal getRequestedAmount() {
+        return requestedAmount;
     }
 
     public LocalDateTime getCreatedAt() {

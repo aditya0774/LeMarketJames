@@ -280,4 +280,101 @@ describe('TradeForm', () => {
 
     expect((el().querySelector('#trade-qty') as HTMLInputElement).value).toBe('1');
   });
+
+  describe('by amount (BR-04)', () => {
+    const byAmount = () => {
+      (el().querySelectorAll('.size-toggle button')[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+    const setAmount = (value: string) => {
+      const amount = el().querySelector('#trade-amount') as HTMLInputElement;
+      amount.value = value;
+      amount.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    it('starts on shares', () => {
+      expect(el().querySelector('#trade-qty')).not.toBeNull();
+      expect(el().querySelector('#trade-amount')).toBeNull();
+      expect(el().querySelector('.size-toggle [aria-pressed=true]')?.textContent).toBe('Shares');
+    });
+
+    it('shows the whole shares an amount buys and what is left over before confirming', () => {
+      byAmount();
+      setAmount('600');
+
+      expect(el().querySelector('#trade-amount-shares')?.textContent).toContain('Buys 2 shares, about $100.00 left over.');
+      expect(submitButton().textContent?.trim()).toBe('Buy 2 TSLA · $500.00');
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it('sends the amount, not a share count, and confirms the shares the server bought', () => {
+      byAmount();
+      setAmount('600');
+      submitButton().click();
+      fixture.detectChanges();
+
+      expect(placedBuy).toEqual([{ accountId: 7, instrumentId: 5, amount: 600, pricePerUnit: 250 }]);
+      expect(el().querySelector('[role=status]')?.textContent).toContain('Buy order #42 for 2 TSLA is submitted.');
+    });
+
+    it('sells by amount through the order endpoint', () => {
+      sell();
+      byAmount();
+      setAmount('520.50');
+
+      expect(el().querySelector('#trade-amount-shares')?.textContent).toContain('Sells 2 shares, about $20.50 less than the amount.');
+      submitButton().click();
+      fixture.detectChanges();
+
+      expect(placedSell).toEqual([{ accountId: 7, instrumentId: 5, orderType: 'SELL', amount: 520.5 }]);
+    });
+
+    it('blocks an amount below the price of one share', () => {
+      byAmount();
+      setAmount('249.99');
+
+      expect(el().textContent).toContain('Amount is less than the price of one share.');
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('blocks an amount with fractions of a cent, and an empty one', () => {
+      byAmount();
+      expect(submitButton().disabled).toBe(true);
+      expect(el().textContent).toContain('orders are for whole shares');
+
+      setAmount('300.005');
+      expect(el().textContent).toContain('Enter an amount in dollars and cents.');
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('blocks selling more shares than held by amount too', () => {
+      sell();
+      byAmount();
+      setAmount('1000'); // 4 shares at 250; 3 held
+
+      expect(el().textContent).toContain("You can't sell more shares than you hold.");
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('waits for the live price to say how many shares', () => {
+      fixture.componentRef.setInput('quote', null);
+      fixture.detectChanges();
+      byAmount();
+      setAmount('600');
+
+      expect(el().textContent).toContain('The share count shows once the live price loads.');
+    });
+
+    it('keeps the way of sizing on "New trade" but clears the amount', () => {
+      byAmount();
+      setAmount('600');
+      submitButton().click();
+      fixture.detectChanges();
+      (el().querySelector('.tf-actions .btn-outline') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect((el().querySelector('#trade-amount') as HTMLInputElement).value).toBe('');
+    });
+  });
 });

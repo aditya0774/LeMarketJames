@@ -101,8 +101,18 @@ class SubmissionValidatorTest {
     }
 
     private void quoted(double ask) {
+        quoted(ask, ask);
+    }
+
+    private void quoted(double bid, double ask) {
         when(market.findByInstrumentId(1)).thenReturn(Optional.of(
-            new QuoteSnapshot(null, ask, ask, ask, ask, ask, ask, ask, 0, Instant.now(), null)));
+            new QuoteSnapshot(null, ask, bid, ask, ask, ask, ask, ask, 0, Instant.now(), null)));
+    }
+
+    private static CreateOrderRequest byAmount(Order.OrderType side, String amount) {
+        var request = new CreateOrderRequest(1, 1, side, null);
+        request.setAmount(new BigDecimal(amount));
+        return request;
     }
 
     @Test
@@ -119,7 +129,7 @@ class SubmissionValidatorTest {
         assertFalse(outcome.isRefused());
         assertEquals(new BigDecimal("250.0000"), outcome.price());
         assertEquals(new BigDecimal("250.0000"), trail.price());
-        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "CASH:PASS"), results(trail));
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:PASS", "CASH:PASS"), results(trail));
         assertEquals(1, trail.accountId());
         verifyNoInteractions(holdings);
     }
@@ -135,7 +145,7 @@ class SubmissionValidatorTest {
 
         assertFalse(outcome.isRefused());
         assertNull(outcome.price());
-        assertEquals(commonChecksThen("HOLDINGS:PASS"), results(trail));
+        assertEquals(commonChecksThen("QUANTITY:PASS", "HOLDINGS:PASS"), results(trail));
         verify(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"), BigDecimal.ZERO);
         verifyNoInteractions(market, cash);
     }
@@ -224,7 +234,7 @@ class SubmissionValidatorTest {
 
         assertThrows(InsufficientHoldingsException.class, () -> validator.validate(request, trail));
 
-        assertEquals(commonChecksThen("HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"), results(trail));
+        assertEquals(commonChecksThen("QUANTITY:PASS", "HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"), results(trail));
     }
 
     @Test
@@ -288,7 +298,7 @@ class SubmissionValidatorTest {
         var outcome = validator.validate(request, trail);
 
         assertEquals("INSUFFICIENT_CASH", outcome.refusal().getCode());
-        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "CASH:FAIL:INSUFFICIENT_CASH"),
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:PASS", "CASH:FAIL:INSUFFICIENT_CASH"),
             results(trail));
         assertEquals(new BigDecimal("250.0000"), trail.price());
     }
@@ -303,12 +313,125 @@ class SubmissionValidatorTest {
         var trail = trailFor(request);
 
         assertThrows(IllegalStateException.class, () -> validator.validate(request, trail));
-        assertEquals(COMMON_CHECKS_PASSED, results(trail), "not a pass and not a refusal yet");
+        assertEquals(commonChecksThen("QUANTITY:PASS"), results(trail), "not a pass and not a refusal yet");
 
         trail.abandon();
 
-        assertEquals(commonChecksThen("HOLDINGS:ERROR"), results(trail));
+        assertEquals(commonChecksThen("QUANTITY:PASS", "HOLDINGS:ERROR"), results(trail));
         trail.abandon();
-        assertEquals(5, trail.checks().size(), "abandoning twice records the check once");
+        assertEquals(6, trail.checks().size(), "abandoning twice records the check once");
+    }
+
+    // BR-04: whole shares only, and orders by amount.
+
+    @Test
+    void aFractionalSellFailsQuantityBeforeHoldingsAreAsked() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        var request = new CreateOrderRequest(1, 1, Order.OrderType.SELL, new BigDecimal("0.5"));
+        var trail = trailFor(request);
+
+        var outcome = validator.validate(request, trail);
+
+        assertEquals("INVALID_QUANTITY", outcome.refusal().getCode());
+        assertEquals("Orders are for whole shares: enter a quantity of at least 1", outcome.refusal().getReason());
+        assertEquals(commonChecksThen("QUANTITY:FAIL:INVALID_QUANTITY"), results(trail));
+        verifyNoInteractions(holdings, market);
+    }
+
+    @Test
+    void aFractionalBuyFailsQuantityBeforeCash() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        quoted(250);
+        var request = new CreateOrderRequest(1, 1, Order.OrderType.BUY, new BigDecimal("1.5"));
+        var trail = trailFor(request);
+
+        var outcome = validator.validate(request, trail);
+
+        assertEquals("INVALID_QUANTITY", outcome.refusal().getCode());
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:FAIL:INVALID_QUANTITY"),
+            results(trail));
+        verifyNoInteractions(cash);
+    }
+
+    @Test
+    void aWholeQuantityAtTheDatabaseScaleCountsAsWhole() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        var request = new CreateOrderRequest(1, 1, Order.OrderType.SELL, new BigDecimal("2.0000"));
+
+        assertFalse(validator.validate(request, trailFor(request)).isRefused());
+    }
+
+    @Test
+    void aBuyByAmountBuysTheWholeSharesItCoversAtTheAsk() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        quoted(99, 100);
+        when(cash.validateSufficientCash(1, new BigDecimal("200.0000"))).thenReturn(true);
+        var request = byAmount(Order.OrderType.BUY, "250.00");
+        var trail = trailFor(request);
+
+        var outcome = validator.validate(request, trail);
+
+        assertFalse(outcome.isRefused());
+        assertEquals(0, new BigDecimal("2").compareTo(outcome.quantity()), "250 / 100 rounds down to 2 shares");
+        assertEquals(new BigDecimal("100.0000"), outcome.price());
+        assertEquals(0, new BigDecimal("2").compareTo(trail.quantity()));
+        assertEquals(new BigDecimal("250.00"), trail.amount());
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:PASS", "CASH:PASS"),
+            results(trail));
+    }
+
+    @Test
+    void anAmountBelowOneSharesPriceFailsQuantity() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        quoted(250);
+        var request = byAmount(Order.OrderType.BUY, "249.99");
+        var trail = trailFor(request);
+
+        var outcome = validator.validate(request, trail);
+
+        assertEquals("INVALID_QUANTITY", outcome.refusal().getCode());
+        assertEquals("Amount is less than the price of one share", outcome.refusal().getReason());
+        assertNull(trail.quantity(), "no shares were worked out");
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:FAIL:INVALID_QUANTITY"),
+            results(trail));
+        verifyNoInteractions(cash);
+    }
+
+    @Test
+    void aSellByAmountIsPricedAtTheBidButStoresNoPrice() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        quoted(99, 101);
+        var request = byAmount(Order.OrderType.SELL, "250.00");
+        var trail = trailFor(request);
+
+        var outcome = validator.validate(request, trail);
+
+        assertFalse(outcome.isRefused());
+        assertNull(outcome.price(), "a SELL gets its price at execution");
+        assertEquals(new BigDecimal("99.0000"), trail.price(), "the bid it was sized at is kept for the audit");
+        assertEquals(0, new BigDecimal("2").compareTo(outcome.quantity()), "250 / 99 rounds down to 2 shares");
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:PASS", "QUOTE_FRESH:PASS", "QUANTITY:PASS", "HOLDINGS:PASS"),
+            results(trail));
+        verify(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"), BigDecimal.ZERO);
+        verifyNoInteractions(cash);
+    }
+
+    @Test
+    void aSellByAmountWithNoUsableBidFailsPriceAvailable() {
+        ownsAccount();
+        instrumentIsTradable(true);
+        quoted(0, 101);
+        var request = byAmount(Order.OrderType.SELL, "250.00");
+        var trail = trailFor(request);
+
+        assertEquals("PRICE_UNAVAILABLE", validator.validate(request, trail).refusal().getCode());
+        assertEquals(commonChecksThen("PRICE_AVAILABLE:FAIL:PRICE_UNAVAILABLE"), results(trail));
+        verifyNoInteractions(holdings);
     }
 }

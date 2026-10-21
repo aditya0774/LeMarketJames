@@ -45,6 +45,21 @@ describe('Order creation holdings validation', () => {
     http.expectOne('/api/v1/orders').flush({ orderId: 8 });
   });
 
+  it('leaves a SELL by amount to the server, which knows its shares only once priced (BR-04)', () => {
+    const byAmount: OrderRequest = { accountId: 1, instrumentId: 42, orderType: 'SELL', amount: 250 };
+    service.createOrder(byAmount).subscribe();
+    http.expectNone('/api/v1/holdings/validate');
+    expect(http.expectOne('/api/v1/orders').request.body).toEqual(byAmount);
+  });
+
+  it('still refuses a SELL by amount for another account', () => {
+    let error: Error | undefined;
+    service.createOrder({ accountId: 2, instrumentId: 42, orderType: 'SELL', amount: 250 })
+      .subscribe({ error: e => error = e });
+    http.expectNone('/api/v1/orders');
+    expect(error?.message).toContain('authenticated account');
+  });
+
   it('submits dedicated buy orders to the buy-order endpoint', () => {
     service.submitBuyOrder({
       accountId: 1,

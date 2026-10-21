@@ -102,12 +102,12 @@ class SubmissionRestartIntegrationTest {
     void aRestartMidwayThroughAnAcceptedSubmissionLosesNothingAndDuplicatesNothing() {
         CreateOrderRequest buy = new CreateOrderRequest(accountId, instrumentId, Order.OrderType.BUY, BigDecimal.ONE);
 
-        // The process stops while writing the last event: the order and eight events are already
+        // The process stops while writing the last event: the order and nine events are already
         // in the transaction, which then never commits.
         stopTheProcessWhenWriting(requestId + ":VALIDATED");
         assertThrows(IllegalStateException.class, () -> restartedService().createOrder(buy, requestId));
 
-        assertWrittenBeforeTheStop(8, "SUBMITTED and the seven checks were written before the stop");
+        assertWrittenBeforeTheStop(9, "SUBMITTED and the eight checks were written before the stop");
         assertEquals(0, countEvents(), "no partial trail survives");
         assertEquals(0, countOrders(), "and no order without its trail");
 
@@ -140,7 +140,7 @@ class SubmissionRestartIntegrationTest {
         stopTheProcessWhenWriting(requestId + ":RULE_CHECKED:CASH");
         assertThrows(IllegalStateException.class, () -> restartedService().createOrder(tooBig, requestId));
 
-        assertWrittenBeforeTheStop(7, "SUBMITTED and six checks were written before the stop");
+        assertWrittenBeforeTheStop(8, "SUBMITTED and seven checks were written before the stop");
         assertEquals(0, countEvents(), "no partial trail survives");
 
         reset(events);
@@ -173,21 +173,21 @@ class SubmissionRestartIntegrationTest {
 
     private void assertWholeAcceptedTrailExactlyOnce(Integer orderId) {
         assertEquals(1, countEvents(AuditEventType.SUBMITTED));
-        assertEquals(7, countEvents(AuditEventType.RULE_CHECKED));
+        assertEquals(8, countEvents(AuditEventType.RULE_CHECKED));
         assertEquals(1, countEvents(AuditEventType.VALIDATED));
-        assertEquals(9, countEvents());
-        assertEquals(9, countDistinctEventKeys(), "one event per type and rule");
-        assertEquals(9, jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE request_id=? AND order_id=?",
+        assertEquals(10, countEvents());
+        assertEquals(10, countDistinctEventKeys(), "one event per type and rule");
+        assertEquals(10, jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE request_id=? AND order_id=?",
             Integer.class, requestId, orderId), "all of them for the one order");
         assertEquals(1, countOrders());
     }
 
     private void assertWholeRefusedTrailExactlyOnce() {
         assertEquals(1, countEvents(AuditEventType.SUBMITTED));
-        assertEquals(7, countEvents(AuditEventType.RULE_CHECKED));
+        assertEquals(8, countEvents(AuditEventType.RULE_CHECKED));
         assertEquals(0, countEvents(AuditEventType.VALIDATED));
-        assertEquals(8, countEvents());
-        assertEquals(8, countDistinctEventKeys(), "one event per type and rule");
+        assertEquals(9, countEvents());
+        assertEquals(9, countDistinctEventKeys(), "one event per type and rule");
         assertEquals(0, countOrders());
     }
 

@@ -32,6 +32,7 @@ public class SubmissionTrail {
     private final List<Check> checks = new ArrayList<>();
     private ValidationRule open;
     private BigDecimal price;
+    private BigDecimal shares;
     private boolean passed;
 
     /**
@@ -84,6 +85,11 @@ public class SubmissionTrail {
         this.price = price;
     }
 
+    /** The whole shares the order is for, once the QUANTITY rule has passed (worked out from an amount, BR-04). */
+    public void sized(BigDecimal shares) {
+        this.shares = shares;
+    }
+
     public String requestId() {
         return requestId;
     }
@@ -124,7 +130,13 @@ public class SubmissionTrail {
         return request.getOrderType();
     }
 
+    /** The shares the order is for: as asked for, or as worked out from its amount once that is known. */
     public BigDecimal quantity() {
-        return request.getQuantity();
+        return shares != null ? shares : request.getQuantity();
+    }
+
+    /** The dollar amount the order was placed for; null for an order placed by shares. */
+    public BigDecimal amount() {
+        return request.getAmount();
     }
 }

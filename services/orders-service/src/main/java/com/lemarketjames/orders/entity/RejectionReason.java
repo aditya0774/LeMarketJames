@@ -11,6 +11,11 @@ public enum RejectionReason {
     INSUFFICIENT_HOLDINGS,
     /** The stock is suspended (instruments.tradable = false). */
     NOT_TRADABLE,
+    /**
+     * BR-04: the order isn't for a whole number of shares (at least one), or its dollar amount
+     * doesn't cover the price of one share.
+     */
+    INVALID_QUANTITY,
     /** No usable quote: the feed is down or returned no price. */
     PRICE_UNAVAILABLE,
     /** The quote is older than the staleness limit (lmj.market.staleness-limit). */

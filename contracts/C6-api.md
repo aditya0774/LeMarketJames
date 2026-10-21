@@ -113,9 +113,13 @@ Places a market order for one of the caller's accounts.
 
 ```json
 { "accountId": 7, "instrumentId": 5, "orderType": "BUY", "quantity": 1 }
+{ "accountId": 7, "instrumentId": 5, "orderType": "BUY", "amount": 250.00 }
 ```
 
-- `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
+- `orderType` is `BUY` or `SELL`. IDs must be positive.
+- **Size the order once (BR-04):** either `quantity`, in shares, or `amount`, in USD (dollars and cents). Both or neither is a `400` with `errors.quantityOrAmount`.
+- **Whole shares only.** A `quantity` that isn't a whole number of at least one share (`0.5`, `1.25`) is refused with `INVALID_QUANTITY`, by the `QUANTITY` placement check ([C2](C2-audit.md#the-submission-trail)), so the refusal is audited like any other.
+- **An `amount` buys or sells as many whole shares as it covers**, at the ask for a BUY and the bid for a SELL, rounded down: $250.00 at an ask of $99.50 is 2 shares. An amount that doesn't cover one share is refused with `INVALID_QUANTITY` and the reason "Amount is less than the price of one share". The order is then saved and checked for those shares like any other: its `quantity` is the share count and `requestedAmount` keeps the amount. Shares are fixed at placement; the fill price can still differ from the placement quote, as for every market order, so the cost of an order by amount can end a little above or below it.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
 - For a SELL, trading-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
 - **Open orders reserve what they will spend (BR-05).** A BUY must fit the account's cash less the cost of its open BUYs (quantity × the ask each was placed at), which is the `buyingPower` the balance endpoints show. A SELL must fit the holding less the shares in the account's open SELLs of that stock. Open means not yet `FILLED` or `REJECTED` ([C1](C1-orders.md)). Cash and shares only move at settlement; the reservation is just this check.
@@ -130,13 +134,15 @@ Places a market order for one of the caller's accounts.
   "success": true, "reason": null, "code": null,
   "orderId": 42, "accountId": 7, "instrumentId": 5,
   "symbol": "AAPL", "instrumentName": "BronApple",
-  "orderType": "BUY", "quantity": 1,
+  "orderType": "BUY", "quantity": 1, "requestedAmount": null,
   "pricePerUnit": 244.2366, "orderStatus": "SUBMITTED", "rejectionReason": null,
   "submittedAt": "2026-09-21T10:30:00", "acceptedAt": null, "filledAt": null,
   "quoteSource": null, "quoteTime": null,
   "createdAt": "2026-09-21T10:30:00", "updatedAt": "2026-09-21T10:30:00"
 }
 ```
+
+`requestedAmount` is the USD amount the order was placed for, or null when it was placed by shares.
 
 `quoteSource` and `quoteTime` describe the quote the order was priced from at execution: the feed it came from, and when the feed produced it (ISO-8601 UTC, e.g. `2026-09-21T10:30:04.512Z`). Both are null until execution prices the order; from then on `pricePerUnit` is that quote's price, and `filledAt` is the execution time.
 
@@ -148,17 +154,18 @@ Places a market order for one of the caller's accounts.
 |---|---|---|
 | 400 | The client or account may not trade | `success: false, code: ACCOUNT_RESTRICTED, reason` |
 | 400 | Suspended stock | `success: false, code: NOT_TRADABLE, error` |
+| 400 | Not a whole number of shares, or an `amount` below the price of one share | `success: false, code: INVALID_QUANTITY, reason` |
 | 400 | Not enough shares outside open SELLs (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
 | 400 | Not enough cash outside open BUYs (BUY); `reason` names the cost and the available cash | `success: false, code: INSUFFICIENT_CASH, reason` |
-| 400 | No usable quote (BUY) | `success: false, code: PRICE_UNAVAILABLE, reason` |
-| 400 | Stale quote (BUY) | `success: false, code: STALE_QUOTE, reason` |
+| 400 | No usable quote (BUY, or any order by `amount`) | `success: false, code: PRICE_UNAVAILABLE, reason` |
+| 400 | Stale quote (BUY, or any order by `amount`) | `success: false, code: STALE_QUOTE, reason` |
 | 400 | Residence restricted for this stock, or for every stock | `success: false, code: LOCATION_RESTRICTED, reason` |
-| 400 | Invalid fields / unknown instrument | `errors` / `message` |
+| 400 | Invalid fields (including both or neither of `quantity` and `amount`) / unknown instrument | `errors` / `message` |
 | 401 / 403 | Not logged in / not the caller's account | see rules above |
 
 ### POST /api/v1/buy-orders
 
-The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ accountId, instrumentId, quantity, pricePerUnit }`. `pricePerUnit` is required, but it is validation input only; the server still uses the live ask. The trade dialog uses this endpoint for buys.
+The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ accountId, instrumentId, quantity, pricePerUnit }`, or `amount` instead of `quantity` (BR-04, the same rules). `pricePerUnit` is required, but it is validation input only; the server still uses the live ask. The trade dialog uses this endpoint for buys.
 
 ### Reading orders
 

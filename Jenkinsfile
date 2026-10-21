@@ -311,6 +311,8 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/027_account_status_changes.sql
                     # orders-service validates its entities at startup, the per-stock location rules included (BR-05).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/028_instrument_location_restrictions.sql
+                    # ...and the amount an order was placed for (BR-04).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/031_order_requested_amount.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests

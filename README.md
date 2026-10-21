@@ -1419,7 +1419,7 @@ sequenceDiagram
     participant Database
     participant Kafka
 
-    Client->>WebApp: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity}
+    Client->>WebApp: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity or amount}
     WebApp->>OrderController: forward to orders-service with the jwt cookie
     Note over OrderController: JwtAuthenticationFilter has validated the token.<br/>SubmissionRequestId sets the X-Request-Id response header.
     OrderController->>OrderService: createOrder(request, requestId)
@@ -1428,15 +1428,18 @@ sequenceDiagram
     OrderPlacement->>SubmissionValidator: validate(request, trail)
 
     SubmissionValidator->>Database: Lock the account; it is the caller's and may trade,<br/>location not restricted for this stock, instrument tradable
+    opt BUY order, or any order by amount (BR-04)
+        SubmissionValidator->>Market: GET /api/market/quotes/by-instrument/{id}
+        Market-->>SubmissionValidator: Quote (ask for a BUY, bid for a SELL, time)
+        SubmissionValidator->>SubmissionValidator: Price available and quote fresh
+    end
+    SubmissionValidator->>SubmissionValidator: Whole shares (an amount becomes<br/>as many as it covers at that price)
     opt SELL order
         SubmissionValidator->>Holdings: POST /internal/holdings/validate<br/>(with the shares in open SELLs)
         Holdings-->>SubmissionValidator: Enough shares, or InsufficientHoldingsException
     end
     opt BUY order
-        SubmissionValidator->>Market: GET /api/market/quotes/by-instrument/{id}
-        Market-->>SubmissionValidator: Quote (ask price, time)
-        SubmissionValidator->>SubmissionValidator: Price available and quote fresh
-        SubmissionValidator->>Database: Cash less open BUYs covers quantity x ask price
+        SubmissionValidator->>Database: Cash less open BUYs covers shares x ask price
     end
     SubmissionValidator-->>OrderPlacement: ValidationOutcome (passed, or refused with a reason)
 

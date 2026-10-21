@@ -146,6 +146,11 @@ public class Order {
     @Column(name = "quote_time")
     private Instant quoteTime;
 
+    // BR-04: the dollar amount the client asked for, when the order was placed by amount; quantity
+    // holds the whole shares it was turned into. Null for an order placed by shares.
+    @Column(name = "requested_amount", precision = 15, scale = 2)
+    private BigDecimal requestedAmount;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -288,6 +293,14 @@ public class Order {
 
     public void setQuoteTime(Instant quoteTime) {
         this.quoteTime = quoteTime;
+    }
+
+    public BigDecimal getRequestedAmount() {
+        return requestedAmount;
+    }
+
+    public void setRequestedAmount(BigDecimal requestedAmount) {
+        this.requestedAmount = requestedAmount;
     }
 
     public LocalDateTime getCreatedAt() {
