@@ -24,6 +24,7 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | `GET /api/v1/clients/{clientId}/status`, `PUT /api/v1/clients/{clientId}/status` | auth-service | no: these paths reach trading-service, which has no such endpoint | yes |
 | `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
 | The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
+| `GET /api/v1/audit/archive` | orders-service | no: this path reaches trading-service, which has no such endpoint | yes |
 | `/api/v1/reports/**`, `/api/v1/surveillance/**` | staff-ops-service | no: these paths reach trading-service, which has no such endpoint | yes |
 | Everything else under `/api/**`: quotes, instruments, sessions, `/api/market/**`, holdings, balance, profile, portfolio, trades, watchlist, notifications, market activity | trading-service | yes | no |
 
@@ -249,6 +250,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "SUBMITTED",
     "occurredAt": "2026-09-21T10:30:00Z",
+    "archived": false,
     "details": {
       "side": "BUY",
       "quantity": 10,
@@ -258,6 +260,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "VALIDATED",
     "occurredAt": "2026-09-21T10:30:01Z",
+    "archived": false,
     "details": {
       "validationStatus": "PASSED"
     }
@@ -265,11 +268,13 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "ACCEPTED",
     "occurredAt": "2026-09-21T10:30:02Z",
+    "archived": false,
     "details": {}
   },
   {
     "eventType": "FILLED",
     "occurredAt": "2026-09-21T10:30:03Z",
+    "archived": false,
     "details": {
       "executionPrice": 244.2366,
       "quantity": 10
@@ -278,6 +283,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "SETTLED",
     "occurredAt": "2026-09-21T10:30:04Z",
+    "archived": false,
     "details": {
       "cashDelta": -2442.366,
       "quantityDelta": 10
@@ -297,6 +303,33 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
 - An unknown or inaccessible order ID returns `403` (no information leak).
 - Clients and other staff roles are denied with `403`, even if they own the order.
 - Events are sourced exclusively from the audit trail ([C2](C2-audit.md)), ensuring immutable and comprehensive order history.
+- `archived` is `true` for an event older than the online retention window (BR-14, [C2](C2-audit.md#retention-and-the-archive)). Archived events stay in the timeline; the staff app labels them "Archived".
+
+### Audit archive (TRADING_OPS only)
+
+`GET /api/v1/audit/archive` (orders-service, through the staff app only) returns archived audit events: those older than the online retention window ([C5](C5-config.md#who-uses-each-setting)), for Risk and Compliance through Trading Ops (BR-14, [C2](C2-audit.md#retention-and-the-archive)). It reads only; no endpoint changes or deletes an audit record.
+
+| Query parameter | Meaning |
+|---|---|
+| `orderId` | Events of one order (positive integer) |
+| `requestId` | Events of one submission, including a refused one that has no order (1–36 characters) |
+| `clientId` | Events naming that client (positive integer) |
+| `from`, `to` | ISO-8601 instants, e.g. `2019-01-01T00:00:00Z`; `from` inclusive, `to` exclusive, `from` before `to` |
+| `limit`, `offset` | Page size and start; defaults and bounds in [ArchiveQuery](../services/orders-service/src/main/java/com/lemarketjames/audit/ArchiveQuery.java) |
+
+Every parameter is optional and they combine with AND. There is no lower age bound: a record older than seven years is returned like any other.
+
+**Response `200`**, oldest first, audit ID breaking ties of time:
+
+```json
+{ "success": true,
+  "events": [
+    { "auditId": 412, "eventType": "SUBMITTED", "orderId": 42, "accountId": 9, "clientId": 7,
+      "requestId": "8a3f…", "occurredAt": "2018-03-01T15:00:00Z", "details": { "side": "BUY" } }
+  ] }
+```
+
+`orderId`, `accountId`, `clientId` and `requestId` can be null, as on the stored event ([C2](C2-audit.md#stored-fields)). No match returns `"events": []`. A malformed or out-of-range parameter, or `from` not before `to`, returns `400 { "message": "..." }`; no session `401`; any role but `TRADING_OPS` `403`.
 
 ### Trade search (TRADING_OPS only)
 
@@ -318,9 +351,11 @@ then descending order ID for equal fill times. Client IDs are not account IDs.
 [
   { "orderId": 42, "clientId": 7, "accountId": 9, "instrumentId": 5,
     "symbol": "AAPL", "side": "BUY", "quantity": 2, "pricePerUnit": 123.4567,
-    "filledAt": "2026-01-10T12:00:00" }
+    "filledAt": "2026-01-10T12:00:00", "archived": false }
 ]
 ```
+
+`archived` is `true` when the trade filled before the online retention window, so its audit trail is archived (BR-14, [C2](C2-audit.md#retention-and-the-archive)); such trades are still found, and the staff app labels them "Archived".
 
 Only FILLED orders are trades. Unknown IDs, unfilled orders and ranges with no matches return
 `200 []`. Results use stored execution prices and instrument symbols, without live quote calls.
@@ -1071,7 +1106,7 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
-- **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
+- **Audit (TRADING_OPS):** the archive is built: [Audit archive](#audit-archive-trading_ops-only) returns events older than the online window. A search of the online (recent) events by request, client or time, beyond one order's [timeline](#order-timeline-trading_ops-only), is still planned with the shape agreed here: `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C5](C5-config.md) retention). `orderId` and `accountId` can be null on a refused order's events.
 - **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, the [volume insight](#get-apiv1reportsinsightsvolume) and the [overnight reports list](#get-apiv1reportsovernight) are built; see [Reports](#reports-staff-ops-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.

@@ -7,6 +7,7 @@ import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.instruments.Instrument;
 import com.lemarketjames.common.instruments.InstrumentRepository;
 import com.lemarketjames.common.security.Role;
+import com.lemarketjames.audit.AuditRetention;
 import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
@@ -50,6 +51,7 @@ public class OrderService {
     private final OrderTransitions transitions;
     private final AuditEventRepository auditEventRepository;
     private final InstrumentRepository instrumentRepository;
+    private final AuditRetention retention;
 
     public OrderService(OrderRepository orderRepository,
                         AccountAccess accountAccess,
@@ -57,7 +59,8 @@ public class OrderService {
                         SubmissionRecorder submissions,
                         OrderTransitions transitions,
                         AuditEventRepository auditEventRepository,
-                        InstrumentRepository instrumentRepository) {
+                        InstrumentRepository instrumentRepository,
+                        AuditRetention retention) {
         this.orderRepository = orderRepository;
         this.accountAccess = accountAccess;
         this.placement = placement;
@@ -65,6 +68,7 @@ public class OrderService {
         this.transitions = transitions;
         this.auditEventRepository = auditEventRepository;
         this.instrumentRepository = instrumentRepository;
+        this.retention = retention;
     }
 
     /**
@@ -318,7 +322,9 @@ public class OrderService {
             .map(event -> new AuditEventDto(
                 event.getEventType(),
                 event.getOccurredAt(),
-                event.getDetails()
+                event.getDetails(),
+                // Older events stay in the timeline, marked: a dispute about an old trade still needs them.
+                retention.isArchived(event.getOccurredAt())
             ))
             .toList();
     }

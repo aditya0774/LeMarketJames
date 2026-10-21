@@ -16,6 +16,9 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
           <div class="event-header">
             <span class="event-type">{{ event.eventType }}</span>
             <span class="event-time">{{ utc(event.occurredAt) }}</span>
+            @if (event.archived) {
+              <span class="pill archived" title="Older than the online retention window; kept, never deleted">Archived</span>
+            }
           </div>
           <dl class="event-details">
             @for (entry of getDetailsEntries(event.details); track entry[0]) {
@@ -80,6 +83,9 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
       font-family: var(--font-mono);
       font-size: var(--font-xs);
       color: var(--dim);
+    }
+    .archived {
+      align-self: flex-start;
     }
     .event-details {
       margin: 0;

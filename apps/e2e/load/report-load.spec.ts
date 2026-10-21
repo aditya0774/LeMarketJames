@@ -1,6 +1,6 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
 import { Client } from 'pg';
-import { connectDatabase } from '../tests/support/database';
+import { connectDatabase, removeTestClients } from '../tests/support/database';
 import { OrderDto, getOrder, instrumentIdOf, loginViaApi, placeOrder, utc } from '../tests/support/orders';
 import { TestUser, newUser, registerViaApi } from '../tests/support/users';
 import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
@@ -272,10 +272,8 @@ test('LMKT-44: order confirmations stay on target while reports run (AC1, AC2)',
       .toBeLessThanOrEqual(allowedMs);
   } finally {
     await Promise.all(contexts.map(context => context.dispose()));
-    // Remove only the inserted history: those rows have no audit trail, unlike the orders placed
-    // through the API, whose audit records may never be deleted (C2).
-    await db.query(`DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a
-      JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)`, [historyUser.username]);
-    await db.end();
+    // Remove only the history client and its inserted history: those rows have no audit trail,
+    // unlike the orders placed through the API, whose audit records may never be deleted (C2).
+    try { await removeTestClients(historyUser.username); } finally { await db.end(); }
   }
 });

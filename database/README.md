@@ -12,10 +12,10 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `staff_users` | seed data only (no staff admin yet) | auth-service (staff login) |
 | `accounts` | auth-service (created at registration), trading-service (cash on settlement) | every servlet service |
 | `instruments` | migrations only | orders-service (orders), trading-service (`GET /api/v1/instruments`, the market simulator) |
-| `orders` | orders-service | orders-service, trading-service (through orders-service's API) |
-| `settlement_receipts` | trading-service | trading-service (idempotent execution outcomes) |
+| `orders` | orders-service. Never deleted; a FILLED or REJECTED order never changes again ([029](#029--trade-record-lockdown)) | orders-service, trading-service (through orders-service's API) |
+| `settlement_receipts` | trading-service. Insert only ([029](#029--trade-record-lockdown)) | trading-service (idempotent execution outcomes) |
 | `holdings` | trading-service (settlement) | trading-service |
-| `audit_log` | orders-service and trading-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | — (audit views are planned) |
+| `audit_log` | orders-service and trading-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | orders-service: the Trading Ops order timeline and the audit archive ([C6](../contracts/C6-api.md#audit-archive-trading_ops-only)) |
 | `market_quotes`, `price_candles` | trading-service (market simulator) | trading-service |
 | `price_history` | seed data ([022](#022--daily-price-history)), then trading-service (today's bar) | trading-service, for the stock chart and the portfolio chart ([C6](../contracts/C6-api.md#chart-ranges)) |
 | `instrument_market_params` | migrations only | trading-service (market simulator) |
@@ -572,6 +572,29 @@ Get-Content database/schema/028_instrument_location_restrictions.sql | psql -v O
 Rules are configuration kept in migrations: `lemarket_app` may only read the table. orders-service
 validates it at startup, so apply it before starting a new orders-service.
 
+## 029 — Trade record lockdown
+
+`schema/029_trade_record_lockdown.sql` locks the trade records the way 016 locks the audit trail
+(BR-14, [C2](../contracts/C2-audit.md#the-lockdown)):
+
+| Table | `lemarket_app` may | Triggers refuse, for every role |
+|---|---|---|
+| `orders` | `SELECT`, `INSERT`, `UPDATE` (the lifecycle) | `UPDATE` of a row already `FILLED` or `REJECTED`; any `DELETE` or `TRUNCATE` |
+| `settlement_receipts`, `cash_movement_receipts`, `account_status_changes` | `SELECT`, `INSERT` | any `UPDATE`, `DELETE` or `TRUNCATE` |
+
+The application account gets `permission denied` (`42501`) for what it lacks, and everyone else,
+the owner included, gets `Trade records are immutable` (`LM001`) from the triggers, which are
+`ENABLE ALWAYS` like 016's. An account that ever moved cash can't be deleted either: 024's
+`ON DELETE CASCADE` would take its receipts with it, and their trigger refuses that.
+
+```powershell
+Get-Content database/schema/029_trade_record_lockdown.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+Tests that insert their own orders remove them as the owner, switching `orders_no_delete` off
+inside the deleting transaction only: `AuditTestCleanup` in the Java tests, `removeTestClients`
+in the e2e suite (which needs `E2E_OWNER_DATABASE_URL`). Nothing in the application can.
+
 ## 031 — The amount an order was placed for
 
 `schema/031_order_requested_amount.sql` adds `orders.requested_amount NUMERIC(15,2)`, null unless the
@@ -585,5 +608,49 @@ Get-Content database/schema/031_order_requested_amount.sql | psql -v ON_ERROR_ST
 ```
 
 orders-service validates the column at startup, so apply it before starting a new orders-service.
-029 and 030 are reserved for later work and may be added after it; the files still apply in
-number order.
+030 is reserved for later work and may be added after it; the files still apply in number order.
+
+## Backups and restore
+
+BR-14. Backups are `pg_dump` custom-format files (compressed; `pg_restore` restores all of a file or
+one table), named `lemarket-<UTC time>.dump`, taken as the owner `lemarket`. Each run keeps the
+newest 7 (`BACKUP_KEEP`). A dump is written under a temporary name and renamed when complete, so a
+failed run never counts as a backup and never prunes a good one.
+
+| How | Where the files go |
+|---|---|
+| Docker: the `db-backup` service runs [scripts/backup-db.sh](../scripts/backup-db.sh) every night at 02:00 UTC (`BACKUP_TIME`), and once at first start | the `db_backups` volume; `docker compose logs db-backup` lists each run |
+| By hand, Mac or Linux: `sh scripts/backup-db.sh` from the repo root (uses the Compose db container, so no PostgreSQL client is needed; with `PGHOST` set it runs a local `pg_dump` instead) | `backups/` at the repo root (git-ignored) |
+| By hand, native Windows: `.\scripts\windows\backup-db.ps1` (schedule it with Task Scheduler for nightly backups) | `backups\` at the repo root |
+
+Copy a backup out of the Docker volume (`docker compose down -v` deletes the volume with the database):
+
+```sh
+docker compose cp db-backup:/backups ./backups-from-docker
+```
+
+**Check a backup** by restoring it into a scratch database next to the live one, then compare:
+
+```sh
+docker compose exec -T db createdb -U lemarket lemarket_restore_test
+docker compose exec -T db pg_restore -U lemarket --exit-on-error -d lemarket_restore_test < backups/lemarket-<time>.dump
+docker compose exec -T db psql -U lemarket -d lemarket_restore_test -c "SELECT count(*), sum(cash_balance) FROM accounts"
+docker compose exec -T db dropdb -U lemarket lemarket_restore_test
+```
+
+**Restore over the live database** (this replaces all data since the backup):
+
+```sh
+docker compose stop auth-service orders-service trading-service staff-ops-service db-backup
+docker compose exec -T db dropdb -U lemarket lemarket
+docker compose exec -T db createdb -U lemarket lemarket
+docker compose exec -T db pg_restore -U lemarket --exit-on-error -d lemarket < backups/lemarket-<time>.dump
+docker compose start auth-service orders-service trading-service staff-ops-service db-backup
+```
+
+Native Windows: the same with `dropdb`, `createdb` and `pg_restore` from the PostgreSQL `bin`
+folder, adding `-h localhost -U lemarket`. Restore into a new database rather than with
+`pg_restore --clean`: the audit and trade-record triggers refuse the `TRUNCATE`/`DELETE` a clean
+would need, which is the point of them. A restore keeps the triggers armed and the grants of
+`lemarket_app`. On a new PostgreSQL install, create the `lemarket_app` role first (as `setup-db.ps1`
+or 016 does): roles live outside the database, so a dump does not carry them.

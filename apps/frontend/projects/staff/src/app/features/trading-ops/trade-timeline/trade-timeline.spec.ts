@@ -165,6 +165,20 @@ describe('TradeTimelineComponent', () => {
     expect(card.textContent).toContain('2026-09-21T13:29:50Z');
   });
 
+  // BR-14: an event older than the online retention window is still shown, marked as archived.
+  it('marks only the archived events', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = [
+      { ...mockEvents[0], archived: true },
+      { ...mockEvents[1], archived: false },
+    ];
+    await fixture.whenStable();
+
+    const cards: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.timeline-event'));
+    expect(cards.map(card => card.querySelector('.archived')?.textContent?.trim() ?? null)).toEqual(['Archived', null]);
+  });
+
   it('renders empty state when no events provided', async () => {
     await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
     const fixture = TestBed.createComponent(TradeTimelineComponent);

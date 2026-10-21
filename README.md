@@ -252,6 +252,7 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - **Orders** (orders-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
 - **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
+- **Records kept, backed up** (BR-14): a filled or rejected order, the settlement and cash receipts and the account status history can't be changed or deleted by anyone, the owner included ([C2](contracts/C2-audit.md#the-lockdown)). Everything is kept at least seven years; events older than the online window (365 days by default) are marked archived in the timeline and trade search, and Trading Ops retrieve them through `GET /api/v1/audit/archive` ([C2](contracts/C2-audit.md#retention-and-the-archive)). A nightly `pg_dump` keeps the last seven backups ([database/README.md](database/README.md#backups-and-restore))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
 - **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding. It is the platform's additional capability ([BR-18](#additional-capability-br-18-learn-and-simulator))
 - **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
@@ -502,7 +503,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    ```
    (On older installs with Compose v1, the command is `docker-compose up -d --build`.)
 
-   This starts the seven services, plus the database:
+   This starts the eight services, plus the database:
    - The trading app (a production nginx build): `https://localhost:4200`; its Nginx forwards `/api` to the services
    - The staff app (the same, for staff): `https://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
    - Auth service: `http://localhost:8082` (direct access for debugging)
@@ -511,6 +512,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    - Staff ops service: `http://localhost:8086` (direct access for debugging; only the staff app routes to it)
    - PostgreSQL database: `localhost:5432`
    - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
+   - Nightly database backup (`db-backup`, no port): a `pg_dump` at 02:00 UTC into the `db_backups` volume, keeping the last seven ([Backups and restore](database/README.md#backups-and-restore))
 
    The two web apps are the only ports another computer can reach, and only over HTTPS; see [HTTPS and local-only ports](#https-and-local-only-ports).
 
@@ -768,7 +770,7 @@ npm test                          # or: npm run test:headed to watch the browser
 npm run report                    # open the HTML report from the last run
 ```
 
-To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Connect as the application account (`PGUSER=lemarket_app`), as Jenkins does: the suite needs no more rights than the services have. Only enable database seeding for a disposable development or CI database; never point it at production.
+To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Connect as the application account (`PGUSER=lemarket_app`), as Jenkins does: the suite needs no more rights than the services have. The specs that insert their own orders (order history, trade search, the insight tiles, the load test) remove them afterwards as the owner, which needs `E2E_OWNER_DATABASE_URL` too (e.g. `postgres://lemarket:changeme@localhost:5432/lemarket`): nobody else may delete an order ([C2](contracts/C2-audit.md#the-lockdown)). Only enable database seeding for a disposable development or CI database; never point it at production.
 
 The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
 
@@ -1015,7 +1017,7 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 9. Runs the Playwright end-to-end suites, the trading app's and then the staff app's (see [End-to-End Tests](#end-to-end-tests-playwright))
 10. Places a buy order and a sell order, waits for each to fill, restarts orders-service and checks the order is still there and was settled once ([scripts/verify-buy-order.sh](scripts/verify-buy-order.sh), [scripts/verify-sell-order.sh](scripts/verify-sell-order.sh))
 11. Places a large order and checks that each of the three Kafka consumers acted on its events: the client's notification, the Trading Ops alert and the fill in market activity. The stage (**Verify Kafka consumers**) ends by printing the broker's consumer groups
-12. Checks that the services' database account cannot change audit records ([scripts/verify-audit-lockdown.sh](scripts/verify-audit-lockdown.sh)), then smoke-tests the quote and tradability APIs
+12. Checks that the services' database account cannot change audit or trade records ([scripts/verify-audit-lockdown.sh](scripts/verify-audit-lockdown.sh)), then smoke-tests the quote and tradability APIs
 13. Cleans up resources
 
 The Jenkins agent requires:

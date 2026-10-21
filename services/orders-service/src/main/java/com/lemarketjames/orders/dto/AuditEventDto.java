@@ -15,9 +15,11 @@ import java.util.Map;
  * @param eventType the type of event (SUBMITTED, VALIDATED, ACCEPTED, FILLED, REJECTED, SETTLED)
  * @param occurredAt when the event happened, as a UTC instant
  * @param details event-specific data (keys vary by eventType; see {@link com.lemarketjames.common.audit.AuditEventType} javadoc)
+ * @param archived older than the online retention window (BR-14, contract C2): kept and shown, never deleted
  */
 public record AuditEventDto(
     AuditEventType eventType,
     Instant occurredAt,
-    Map<String, Object> details
+    Map<String, Object> details,
+    boolean archived
 ) {}

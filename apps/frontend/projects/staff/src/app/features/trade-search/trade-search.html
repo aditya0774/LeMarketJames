@@ -104,7 +104,12 @@
                   <td class="side" [class.buy]="trade.side === 'BUY'">{{ trade.side }}</td>
                   <td class="r mono">{{ trade.quantity | number: '1.0-4' }}</td>
                   <td class="r mono">{{ trade.pricePerUnit | number: '1.4-4' }}</td>
-                  <td class="mono when">{{ utcTime(trade.filledAt) }}</td>
+                  <td class="mono when">
+                    {{ utcTime(trade.filledAt) }}
+                    @if (trade.archived) {
+                      <span class="pill archived" title="Older than the online retention window; kept, never deleted">Archived</span>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

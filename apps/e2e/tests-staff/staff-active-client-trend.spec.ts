@@ -155,8 +155,8 @@ test.describe('LMKT-48 active-client trend', () => {
         await insertFill(db, accountB, timeZone, fill(day));
       }
     } catch (error) {
-      await removeClient(db, clientA.username);
-      await removeClient(db, clientB.username);
+      await removeClient(clientA.username);
+      await removeClient(clientB.username);
       await db.end();
       throw error;
     } finally {
@@ -167,8 +167,8 @@ test.describe('LMKT-48 active-client trend', () => {
 
   test.afterAll(async () => {
     try {
-      await removeClient(db, clientA.username);
-      await removeClient(db, clientB.username);
+      await removeClient(clientA.username);
+      await removeClient(clientB.username);
     } finally { await db.end(); }
   });
 

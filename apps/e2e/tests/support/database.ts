@@ -17,6 +17,45 @@ export async function connectDatabase(): Promise<Client> {
   return db;
 }
 
+/**
+ * Removes throwaway clients with the orders a test inserted for them, and their accounts and
+ * addresses. Never truncates the shared test database.
+ *
+ * Nobody may delete an order (029, contract C2): the application account lacks the privilege and
+ * a trigger refuses the owner. So this connects as the owner (E2E_OWNER_DATABASE_URL) and switches
+ * the trigger off inside the deleting transaction only, as the Java tests' AuditTestCleanup does.
+ * The table stays locked until the transaction ends, so no other session sees it switched off.
+ * For fixture orders only: an order placed through the API has audit events, which still can't go.
+ */
+export async function removeTestClients(...usernames: string[]): Promise<void> {
+  const connectionString = process.env.E2E_OWNER_DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('Set E2E_OWNER_DATABASE_URL (the owner, lemarket) so the test can remove the orders it inserted.');
+  }
+  const db = new Client({ connectionString });
+  await db.connect();
+  const account = 'SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1';
+  const client = 'SELECT client_id FROM clients WHERE username=$1';
+  try {
+    await db.query('BEGIN');
+    await db.query('ALTER TABLE orders DISABLE TRIGGER orders_no_delete');
+    for (const username of usernames) {
+      await db.query(`DELETE FROM orders WHERE account_id IN (${account})`, [username]);
+      await db.query(`DELETE FROM accounts WHERE client_id IN (${client})`, [username]);
+      await db.query(`DELETE FROM addresses WHERE client_id IN (${client})`, [username]);
+      await db.query('DELETE FROM clients WHERE username=$1', [username]);
+    }
+    // Back to the state 029 leaves it in. A failure above rolls the switch-off back too.
+    await db.query('ALTER TABLE orders ENABLE ALWAYS TRIGGER orders_no_delete');
+    await db.query('COMMIT');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  } finally {
+    await db.end();
+  }
+}
+
 export interface AuditEvent {
   action: string;
   details: Record<string, unknown>;

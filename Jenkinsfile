@@ -311,6 +311,8 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/027_account_status_changes.sql
                     # orders-service validates its entities at startup, the per-stock location rules included (BR-05).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/028_instrument_location_restrictions.sql
+                    # AuditLockdownIntegrationTest checks the trade-record lockdown too (BR-14).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/029_trade_record_lockdown.sql
                     # ...and the amount an order was placed for (BR-04).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/031_order_requested_amount.sql
 
@@ -639,12 +641,15 @@ pipeline {
                     # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
                     # --network host lets the browser reach localhost:4200 on the agent; running as
                     # the Jenkins user keeps the report files deletable by the workspace cleanup.
+                    # The owner URL is only for removing the orders a test inserted, which the
+                    # application account may not delete (029, contracts/C2-audit.md).
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
                         -e E2E_BASE_URL=https://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test'
@@ -679,6 +684,7 @@ pipeline {
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
@@ -712,6 +718,7 @@ pipeline {
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c '{ [ -d node_modules/@playwright/test ] || npm ci --no-audit --no-fund; } && npx playwright test -c playwright.load.config.ts'
@@ -928,9 +935,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
+                    docker compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db db-backup kafka || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
+                    docker-compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db db-backup kafka || true
                 fi
             '''
         }

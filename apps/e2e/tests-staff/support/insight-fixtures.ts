@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { Client } from 'pg';
+import { removeTestClients } from '../../tests/support/database';
 
 /**
  * Fixtures shared by the staff insight specs (LMKT-46 volume, LMKT-47 most active stocks,
@@ -45,10 +46,7 @@ export async function accountIdOf(db: Client, username: string): Promise<number>
   return rows[0].account_id;
 }
 
-/** Removes a throwaway client and its orders only; never truncates the shared database. */
-export async function removeClient(db: Client, username: string): Promise<void> {
-  await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [username]);
-  await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [username]);
-  await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [username]);
-  await db.query('DELETE FROM clients WHERE username=$1', [username]);
+/** Removes a throwaway client and the fills inserted for it, as the owner (orders are never deleted otherwise, C2). */
+export async function removeClient(username: string): Promise<void> {
+  await removeTestClients(username);
 }

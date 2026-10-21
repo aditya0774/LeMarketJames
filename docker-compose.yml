@@ -269,8 +269,35 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./database/schema:/docker-entrypoint-initdb.d
 
+  # BR-14: a nightly pg_dump of the database, keeping the newest few, in the db_backups volume. The
+  # same scripts/backup-db.sh as a manual backup; restore steps in database/README.md ("Backups and
+  # restore"). Takes one at first start too. Same image as db, so pg_dump matches the server.
+  db-backup:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["sh", "/opt/backup/backup-db-nightly.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: lemarket
+      # The owner: only it can read every table, including those lemarket_app may not change.
+      PGUSER: lemarket
+      PGPASSWORD: ${DB_PASSWORD:-changeme}
+      BACKUP_DIR: /backups
+      # Empty means the scripts' defaults: keep 7 (backup-db.sh), at 02:00 UTC (backup-db-nightly.sh).
+      BACKUP_KEEP: ${BACKUP_KEEP:-}
+      BACKUP_TIME: ${BACKUP_TIME:-}
+    volumes:
+      - db_backups:/backups
+      - ./scripts/backup-db.sh:/opt/backup/backup-db.sh:ro
+      - ./scripts/backup-db-nightly.sh:/opt/backup/backup-db-nightly.sh:ro
+
 volumes:
   db_data:
     # Named volume: persists Postgres data across `docker compose down` and
     # `docker compose up`. Use `docker compose down -v` to also remove this
     # volume, which wipes the database and starts fresh on the next `up`.
+  db_backups:
+    # The nightly backups (db-backup above). Kept by `docker compose down`; `down -v` removes them
+    # with the database, so copy one out first if you need it (database/README.md).

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # LMKT-100: an audit record can't be changed or deleted, and every refused attempt is recorded in
 # PostgreSQL's server log with who tried and what they ran (contracts/C2-audit.md).
+# BR-14: the same for the trade records (029): a final order, the receipts, the status history.
 # Runs only against the disposable Jenkins Compose stack.
 set -euo pipefail
 
@@ -34,6 +35,11 @@ fingerprint() {
 }
 before=$(fingerprint)
 
+# Trade records to aim at: any order for a delete, a final one for an update (the seed data has both).
+order_id=$(db lemarket -c "SELECT min(order_id) FROM orders;")
+final_id=$(db lemarket -c "SELECT min(order_id) FROM orders WHERE order_status IN ('FILLED', 'REJECTED');")
+[[ "$order_id" =~ ^[0-9]+$ && "$final_id" =~ ^[0-9]+$ ]]
+
 # Tries one statement and requires it to be refused for the expected reason. It runs in a
 # transaction that is rolled back, so an attempt that wrongly got through would still change nothing.
 refused() {
@@ -61,6 +67,7 @@ recorded() {
 
 denied="permission denied for table"
 immutable="Audit records are immutable:"
+trade="Trade records are immutable:"
 # account | how it must fail | label | statement
 attempts=(
     "lemarket_app|$denied audit_log|app-update|UPDATE audit_log SET archived = TRUE WHERE audit_id = $audit_id"
@@ -72,13 +79,23 @@ attempts=(
     "lemarket|$immutable DELETE on audit_log refused|owner-delete|DELETE FROM audit_log WHERE audit_id = $audit_id"
     "lemarket|$immutable TRUNCATE on audit_log refused|owner-truncate|TRUNCATE audit_log"
     "lemarket|$immutable TRUNCATE on order_events refused|owner-events|TRUNCATE order_events"
+    "lemarket_app|$denied orders|app-order-delete|DELETE FROM orders WHERE order_id = $order_id"
+    "lemarket_app|$trade UPDATE on orders refused|app-final-update|UPDATE orders SET price_per_unit = 1 WHERE order_id = $final_id"
+    "lemarket_app|$denied settlement_receipts|app-settlement|UPDATE settlement_receipts SET quantity = 1"
+    "lemarket_app|$denied cash_movement_receipts|app-cash|DELETE FROM cash_movement_receipts"
+    "lemarket_app|$denied account_status_changes|app-status|DELETE FROM account_status_changes"
+    "lemarket|$trade DELETE on orders refused|owner-order-delete|DELETE FROM orders WHERE order_id = $order_id"
+    "lemarket|$trade UPDATE on orders refused|owner-final-update|UPDATE orders SET price_per_unit = 1 WHERE order_id = $final_id"
+    "lemarket|$trade TRUNCATE on settlement_receipts refused|owner-settlement|TRUNCATE settlement_receipts"
+    "lemarket|$trade TRUNCATE on cash_movement_receipts refused|owner-cash|TRUNCATE cash_movement_receipts"
+    "lemarket|$trade TRUNCATE on account_status_changes refused|owner-status|TRUNCATE account_status_changes"
 )
 
 for attempt in "${attempts[@]}"; do
     IFS='|' read -r user expected label sql <<< "$attempt"
     refused "$user" "$expected" "$label" "$sql"
 done
-echo "All ${#attempts[@]} attempts to change audit records were refused."
+echo "All ${#attempts[@]} attempts to change audit and trade records were refused."
 
 # Only the owner can switch a trigger off, and that is recorded as well. Rolled back, so it never
 # takes effect.

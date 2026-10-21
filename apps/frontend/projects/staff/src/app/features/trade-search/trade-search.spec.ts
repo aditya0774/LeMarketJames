@@ -91,6 +91,18 @@ describe('Staff order and client search', () => {
       expect(el.querySelector('.ts-selected')?.textContent).toBe('Order ID 42');
     });
 
+    // BR-14: an old trade is still found, marked as archived beside its time.
+    it('marks an archived trade in the results', () => {
+      const {el, refresh} = render();
+      component.term = '42'; component.search(); refresh();
+      order().flush([{...trade, archived: true}]); refresh();
+      expect(el.querySelector('td.when .archived')?.textContent?.trim()).toBe('Archived');
+
+      component.term = '43'; component.search(); refresh();
+      order().flush([{...trade, orderId: 43, archived: false}]); refresh();
+      expect(el.querySelector('td.when .archived')).toBeNull();
+    });
+
     it('says when nothing matched, and shows an error in place of the hint', () => {
       const {el, refresh} = render();
       component.mode = 'client'; component.term = '42'; component.search(); client().flush([]); refresh();

@@ -6,4 +6,6 @@ export interface AuditEvent {
   eventType: string;
   occurredAt: string;
   details: Record<string, any>;
+  /** Older than the online retention window (BR-14, contract C2): kept and shown, never deleted. */
+  archived?: boolean;
 }

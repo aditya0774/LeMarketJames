@@ -73,6 +73,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status/*").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/reject").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers("/api/v1/orders/*/timeline").hasRole(Role.TRADING_OPS.name())
+                // Archived audit events, for Risk and Compliance through operations (BR-14, contract C7).
+                .requestMatchers("/api/v1/audit/**").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.GET, "/api/v1/orders/stream").hasRole(Role.CLIENT.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders", "/api/v1/buy-orders").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())

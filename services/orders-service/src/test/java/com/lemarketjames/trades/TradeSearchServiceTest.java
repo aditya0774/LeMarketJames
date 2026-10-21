@@ -1,5 +1,6 @@
 package com.lemarketjames.trades;
 
+import com.lemarketjames.audit.AuditRetention;
 import com.lemarketjames.orders.entity.Order.OrderStatus;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,7 +12,8 @@ import static org.mockito.Mockito.*;
 
 class TradeSearchServiceTest {
     private final TradeSearchRepository repository = mock(TradeSearchRepository.class);
-    private final TradeSearchService service = new TradeSearchService(repository);
+    private final AuditRetention retention = mock(AuditRetention.class);
+    private final TradeSearchService service = new TradeSearchService(repository, retention);
 
     @Test
     void orderSearchOnlyRequestsFilledOrder() {
@@ -45,5 +47,24 @@ class TradeSearchServiceTest {
     void invalidSearchNeverQueries(Integer orderId, Integer clientId, String from, String to) {
         assertThrows(IllegalArgumentException.class, () -> service.search(orderId, clientId, from, to));
         verifyNoInteractions(repository);
+    }
+
+    // BR-14: an old trade is still found, marked archived; the window decides which ones.
+    @Test
+    void tradesOlderThanTheOnlineWindowAreMarkedArchived() {
+        LocalDateTime old = LocalDateTime.of(2018, 3, 1, 15, 0);
+        LocalDateTime recent = LocalDateTime.of(2026, 10, 1, 15, 0);
+        when(repository.findAllClientTrades(7, OrderStatus.FILLED)).thenReturn(List.of(
+            new TradeSearchResult(2, 7, 70, 1, "AAPL", com.lemarketjames.orders.entity.Order.OrderType.BUY,
+                java.math.BigDecimal.ONE, java.math.BigDecimal.TEN, recent),
+            new TradeSearchResult(1, 7, 70, 1, "AAPL", com.lemarketjames.orders.entity.Order.OrderType.SELL,
+                java.math.BigDecimal.ONE, java.math.BigDecimal.TEN, old)));
+        when(retention.isArchived(old)).thenReturn(true);
+
+        List<TradeSearchResult> found = service.search(null, 7, null, null);
+
+        assertEquals(List.of(2, 1), found.stream().map(TradeSearchResult::orderId).toList());
+        assertFalse(found.get(0).archived());
+        assertTrue(found.get(1).archived());
     }
 }

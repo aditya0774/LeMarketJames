@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- BR-14: Trade records are kept and can't be changed. Migration 029 locks them like the audit trail:
+  an order is never deleted and, once FILLED or REJECTED, never updated; `settlement_receipts`,
+  `cash_movement_receipts` and `account_status_changes` are insert-only, for `lemarket_app` and (by
+  trigger) for the owner too. Audit events older than `lmj.audit.online-retention` count as archived:
+  the order timeline and trade search return `archived` and the staff app labels them, and the new
+  `GET /api/v1/audit/archive` (orders-service, Trading Ops, staff app) retrieves them by order,
+  request, client and time, with no age limit. Backups: `scripts/backup-db.sh`,
+  `scripts/windows/backup-db.ps1` and a nightly `db-backup` Compose service (`pg_dump`, keeping 7);
+  restore steps in database/README.md. Tests that insert orders remove them as the owner: the e2e
+  suite now needs `E2E_OWNER_DATABASE_URL` ([C2](contracts/C2-audit.md#retention-and-the-archive),
+  [C6](contracts/C6-api.md#audit-archive-trading_ops-only), [C5](contracts/C5-config.md#who-uses-each-setting)).
 - BR-17: Insights are flagged when they move. Every Analyst insight now carries a `flag`
   (`flagged`, `changePercent`, `direction`, `thresholdPercent`): flagged when it moved by
   `lmj.reports.insight-flag-percent` or more against the period it is compared with.

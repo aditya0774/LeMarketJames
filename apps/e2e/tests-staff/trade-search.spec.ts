@@ -1,5 +1,5 @@
 import { APIRequestContext, test as base, expect, Page } from '@playwright/test';
-import { connectDatabase } from '../tests/support/database';
+import { connectDatabase, removeTestClients } from '../tests/support/database';
 import { loginViaApi } from '../tests/support/orders';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { signIn, TRADING_OPS } from './support/staff';
@@ -61,12 +61,7 @@ const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture 
       await use({ user: users[0], clientId: account.client_id, accountId: account.account_id, firstId, lastId });
     } finally {
       try {
-        for (const user of users) {
-          await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [user.username]);
-          await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-          await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-          await db.query('DELETE FROM clients WHERE username=$1', [user.username]);
-        }
+        await removeTestClients(...users.map(user => user.username));
       } finally { await db.end(); }
     }
   },

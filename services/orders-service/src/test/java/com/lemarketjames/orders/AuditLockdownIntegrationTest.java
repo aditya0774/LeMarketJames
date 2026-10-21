@@ -34,7 +34,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * LMKT-100: an audit record can't be changed or deleted, whoever tries (contract C2,
  * database/schema/016_audit_lockdown.sql). The application account lacks the privilege, and a
- * trigger refuses everyone else, the owner included.
+ * trigger refuses everyone else, the owner included. BR-14 extends that to the trade records
+ * (029): a final order, the settlement and cash receipts and the account status history.
  *
  * <p>PostgreSQL only: accounts, grants and triggers are the database's, so the H2 unit-test schema
  * has none of them. Every attempt runs in a transaction that is rolled back whatever happens, so
@@ -45,8 +46,13 @@ class AuditLockdownIntegrationTest {
 
     /** PostgreSQL's own code for a missing privilege. */
     static final String PERMISSION_DENIED = "42501";
-    /** Raised by the triggers in 016. */
+    /** Raised by the triggers in 016 and 029. */
     static final String AUDIT_IMMUTABLE = "LM001";
+    /** The insert-only trade records (029). */
+    static final List<String> INSERT_ONLY = List.of("settlement_receipts", "cash_movement_receipts", "account_status_changes");
+    /** A throwaway order on the first seeded account, in the given status; always rolled back. */
+    static final String NEW_ORDER = "INSERT INTO orders (account_id, instrument_id, order_type, quantity, order_status) "
+        + "SELECT min(account_id), (SELECT min(instrument_id) FROM instruments), 'BUY', 1, ? FROM accounts RETURNING order_id";
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactions;
@@ -156,10 +162,90 @@ class AuditLockdownIntegrationTest {
     @Test
     void everyTriggerIsArmedEvenInReplicaMode() {
         // 'A' is ENABLE ALWAYS: it fires whatever session_replication_role says.
-        assertEquals(List.of("A", "A", "A", "A"), jdbc.queryForList(
-            "SELECT tgenabled::text FROM pg_trigger WHERE tgname IN ('audit_log_immutable_row', "
-                + "'audit_log_immutable_truncate', 'order_events_immutable_row', 'order_events_immutable_truncate')",
-            String.class));
+        List<String> triggers = List.of("audit_log_immutable_row", "audit_log_immutable_truncate",
+            "order_events_immutable_row", "order_events_immutable_truncate",
+            "orders_final_immutable", "orders_no_delete", "orders_no_truncate",
+            "settlement_receipts_immutable_row", "settlement_receipts_immutable_truncate",
+            "cash_movement_receipts_immutable_row", "cash_movement_receipts_immutable_truncate",
+            "account_status_changes_immutable_row", "account_status_changes_immutable_truncate");
+        assertEquals(triggers.size(), jdbc.queryForObject(
+            "SELECT count(*) FROM pg_trigger WHERE tgenabled = 'A' AND tgname = ANY (?)", Integer.class,
+            (Object) triggers.toArray(String[]::new)));
+    }
+
+    // BR-14 (029): the trade records. The application keeps what it needs and nothing more.
+    @Test
+    void theApplicationAccountMayMoveOrdersButNeverRemoveThem() {
+        for (String allowed : List.of("SELECT", "INSERT", "UPDATE")) {
+            assertTrue(hasPrivilege("orders", allowed), allowed + " on orders");
+        }
+        for (String withheld : List.of("DELETE", "TRUNCATE")) {
+            assertFalse(hasPrivilege("orders", withheld), withheld + " on orders");
+        }
+        for (String table : INSERT_ONLY) {
+            assertTrue(hasPrivilege(table, "SELECT") && hasPrivilege(table, "INSERT"), "read and add " + table);
+            for (String withheld : List.of("UPDATE", "DELETE", "TRUNCATE")) {
+                assertFalse(hasPrivilege(table, withheld), withheld + " on " + table);
+            }
+        }
+    }
+
+    @Test
+    void anOpenOrderStillMovesAlongItsLifecycleUntilItIsFinal() {
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            Integer orderId = jdbc.queryForObject(NEW_ORDER, Integer.class, "SUBMITTED");
+            assertEquals(1, jdbc.update("UPDATE orders SET order_status='ACCEPTED' WHERE order_id=?", orderId));
+            // The move into a final status is the last update the order ever gets.
+            assertEquals(1, jdbc.update("UPDATE orders SET order_status='FILLED', price_per_unit=1 WHERE order_id=?", orderId));
+        });
+    }
+
+    @Test
+    void nobodyChangesAFinalOrder() {
+        for (String status : List.of("FILLED", "REJECTED")) {
+            assertRefused(AUDIT_IMMUTABLE, () -> asTheApplicationOn(NEW_ORDER, status,
+                "UPDATE orders SET price_per_unit=1 WHERE order_id=?"));
+            assertRefused(AUDIT_IMMUTABLE, () -> asTheOwnerOn(NEW_ORDER, status,
+                "UPDATE orders SET order_status='ACCEPTED' WHERE order_id=?"));
+        }
+        assertRefused(AUDIT_IMMUTABLE, () -> asTheApplication("UPDATE orders SET price_per_unit=1 WHERE order_status='FILLED'"));
+    }
+
+    @Test
+    void nobodyDeletesAnOrder() {
+        assertRefused(PERMISSION_DENIED, () -> asTheApplicationOn(NEW_ORDER, "SUBMITTED", "DELETE FROM orders WHERE order_id=?"));
+        assertRefused(PERMISSION_DENIED, () -> asTheApplication("TRUNCATE orders CASCADE"));
+        assertRefused(AUDIT_IMMUTABLE, () -> asTheOwnerOn(NEW_ORDER, "SUBMITTED", "DELETE FROM orders WHERE order_id=?"));
+        assertRefused(AUDIT_IMMUTABLE, () -> asTheOwner("TRUNCATE orders CASCADE"));
+    }
+
+    @Test
+    void nobodyChangesOrDeletesAReceiptOrAStatusChange() {
+        String settlement = "INSERT INTO settlement_receipts (order_id, account_id, instrument_id, order_type, quantity, price_per_unit) "
+            + "VALUES (-1, 1, 1, ?, 1, 1) RETURNING order_id";
+        String cash = "INSERT INTO cash_movement_receipts (request_id, account_id, movement_type, amount, cash_balance_after) "
+            + "SELECT gen_random_uuid(), min(account_id), ?, 1, 1 FROM accounts RETURNING account_id";
+        String statusChange = "INSERT INTO account_status_changes (client_id, old_status, new_status, reason, changed_by) "
+            + "SELECT min(client_id), 'ACTIVE', ?, 'BR-14 lockdown test', 'test' FROM clients RETURNING client_id";
+        // Each row is added and attacked in one rolled-back transaction, so no test row is ever kept.
+        Map<String, String[]> attempts = Map.of(
+            settlement, new String[] {"BUY", "UPDATE settlement_receipts SET quantity=2 WHERE order_id=?",
+                "DELETE FROM settlement_receipts WHERE order_id=?"},
+            cash, new String[] {"DEPOSIT", "UPDATE cash_movement_receipts SET amount=2 WHERE account_id=?",
+                "DELETE FROM cash_movement_receipts WHERE account_id=?"},
+            statusChange, new String[] {"SUSPENDED", "UPDATE account_status_changes SET reason='changed' WHERE client_id=?",
+                "DELETE FROM account_status_changes WHERE client_id=?"});
+        attempts.forEach((insert, attempt) -> {
+            for (String change : List.of(attempt[1], attempt[2])) {
+                assertRefused(PERMISSION_DENIED, () -> asTheApplicationOn(insert, attempt[0], change));
+                assertRefused(AUDIT_IMMUTABLE, () -> asTheOwnerOn(insert, attempt[0], change));
+            }
+        });
+        for (String table : INSERT_ONLY) {
+            assertRefused(PERMISSION_DENIED, () -> asTheApplication("TRUNCATE " + table));
+            assertRefused(AUDIT_IMMUTABLE, () -> asTheOwner("TRUNCATE " + table));
+        }
     }
 
     // The tests' own reset (AuditTestCleanup) is the one sanctioned way around the trigger. It has
@@ -186,6 +272,18 @@ class AuditLockdownIntegrationTest {
 
     private void asTheOwner(String sql, Object... args) {
         owner.thenRollBack(db -> db.update(sql, args));
+    }
+
+    /** Adds a row with {@code insert} (one parameter, returning the id), then runs {@code change} on that id; rolled back. */
+    private void asTheApplicationOn(String insert, String value, String change) {
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            jdbc.update(change, jdbc.queryForObject(insert, Integer.class, value));
+        });
+    }
+
+    private void asTheOwnerOn(String insert, String value, String change) {
+        owner.thenRollBack(db -> db.update(change, db.queryForObject(insert, Integer.class, value)));
     }
 
     private static void assertRefused(String sqlState, Executable attempt) {

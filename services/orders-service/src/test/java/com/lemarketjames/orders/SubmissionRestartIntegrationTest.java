@@ -68,6 +68,7 @@ class SubmissionRestartIntegrationTest {
     @Autowired OrderPlacement placement;
     @Autowired SubmissionRecorder submissions;
     @Autowired OrderTransitions transitions;
+    @Autowired com.lemarketjames.audit.AuditRetention retention;
     @Autowired JdbcTemplate jdbc;
     @Autowired AuditTestCleanup cleanup;
     // Spied, not mocked: writes are real except the one that stands in for the process stopping.
@@ -156,7 +157,7 @@ class SubmissionRestartIntegrationTest {
 
     /** A coordinator with nothing in memory from an earlier attempt, as after a restart. */
     private OrderService restartedService() {
-        return new OrderService(orders, accountAccess, placement, submissions, transitions, events, instruments);
+        return new OrderService(orders, accountAccess, placement, submissions, transitions, events, instruments, retention);
     }
 
     /** Fails the write of one event, as if the process stopped there; every other write is real. */

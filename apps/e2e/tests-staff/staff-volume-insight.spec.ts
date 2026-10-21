@@ -199,7 +199,7 @@ test.describe('LMKT-46 volume insight', () => {
       accountId = rows[0].account_id;
       for (const fill of fillsFor(today)) await insertFill(db, accountId, timeZone, fill);
     } catch (error) {
-      await removeClient(db, client.username);
+      await removeClient(client.username);
       await db.end();
       throw error;
     } finally {
@@ -209,7 +209,7 @@ test.describe('LMKT-46 volume insight', () => {
   });
 
   test.afterAll(async () => {
-    try { await removeClient(db, client.username); } finally { await db.end(); }
+    try { await removeClient(client.username); } finally { await db.end(); }
   });
 
   test('AC1: the tile compares today, this week and last week with the period before, from real data', async ({ page }) => {
