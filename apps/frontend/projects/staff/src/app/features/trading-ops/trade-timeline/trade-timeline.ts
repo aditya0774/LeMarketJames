@@ -57,6 +57,9 @@ import { AuditEvent } from '../../../shared/models/audit-event.model';
     .timeline-event[data-tone='refused'] {
       --tone: var(--down);
     }
+    .timeline-event[data-tone='waiting'] {
+      --tone: var(--dim);
+    }
     .event-bar {
       height: 3px;
       border-radius: 2px;
@@ -114,13 +117,19 @@ export class TradeTimelineComponent {
     return value.replace('T', ' ').replace(/(\.\d+)?Z$/, '') + ' UTC';
   }
 
-  /** Colour of the event: green when it filled, gold once settled, red when refused, else in progress. */
+  /**
+   * Colour of the event: green when it filled, gold once settled, red when refused, grey while it
+   * waited for the market to open (DELAYED, contract C2), else in progress.
+   */
   tone(eventType: string): string {
     if (eventType === 'FILLED') {
       return 'done';
     }
     if (eventType === 'SETTLED') {
       return 'settled';
+    }
+    if (eventType === 'DELAYED') {
+      return 'waiting';
     }
     return /REJECT|REFUS|FAIL/.test(eventType) ? 'refused' : 'progress';
   }

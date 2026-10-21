@@ -15,7 +15,10 @@ public enum RejectionReason {
     PRICE_UNAVAILABLE,
     /** The quote is older than the staleness limit (lmj.market.staleness-limit). */
     STALE_QUOTE,
-    /** The market is closed and the order can't wait for the open. */
+    /**
+     * The market is closed and the order can't wait for the open. Also the {@code reason} on a
+     * DELAYED audit event, when execution makes an order wait for the open (contract C2).
+     */
     MARKET_CLOSED,
     /** The client or account may not trade: status isn't ACTIVE, or trading is disabled on the account. */
     ACCOUNT_RESTRICTED,

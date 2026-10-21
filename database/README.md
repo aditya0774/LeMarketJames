@@ -519,3 +519,17 @@ Get-Content database/schema/025_watchlist.sql | psql -v ON_ERROR_STOP=1 -h local
 
 Rows go with their account (`ON DELETE CASCADE`). No grant is needed: 016's default privileges
 give `lemarket_app` the new table.
+
+## 026 — Audit the waiting steps
+
+`schema/026_audit_waiting_steps.sql` adds `PENDING` and `DELAYED` to the audit action constraint.
+orders-service now audits every status an order moves to, so an order's trail shows when it waited
+for the market to open and when it started executing ([C2](../contracts/C2-audit.md#the-execution-trail)).
+010, 014 and 024 carry the same list. A clean database applies all of them after 011 has given the
+seeded open orders their waiting step, so each must allow it.
+
+```powershell
+Get-Content database/schema/026_audit_waiting_steps.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+It only redefines a constraint; no rows are written or changed.

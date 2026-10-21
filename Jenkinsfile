@@ -302,6 +302,8 @@ pipeline {
                     # trading-service validates its entities at startup too (HoldingsOwnDataIntegrationTest),
                     # watchlist included, and a kept db volume never re-runs initdb.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/025_watchlist.sql
+                    # The order tests now audit PENDING and DELAYED, which 026 adds to the action list.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/026_audit_waiting_steps.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests

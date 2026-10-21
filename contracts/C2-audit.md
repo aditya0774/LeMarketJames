@@ -51,6 +51,34 @@ A BUY refused for lack of cash:
 | … | one per rule, in order |
 | `RULE_CHECKED` | `{"rule": "CASH", "result": "FAIL", "reason": "INSUFFICIENT_CASH"}` |
 
+## The execution trail
+
+After placement, orders-service audits every status an order moves to ([C1](C1-orders.md)), in the transaction that moves it, so the trail shows every step the order went through, including the time it waited.
+
+- **`ACCEPTED`**: the order was accepted for execution.
+- **`DELAYED`**: its market was closed, so it waits for the open, with `reason` `MARKET_CLOSED`. While the market stays closed, later attempts leave it `DELAYED` and write nothing more.
+- **`PENDING`**: it is executing. Either it has a price and settlement is under way, or an attempt failed and it will be retried. A retry that leaves it `PENDING` writes nothing more.
+- **`FILLED`** or **`REJECTED`**: how it ended. A rejection keeps its `reason`. When execution refused the order on a quote it did receive (`STALE_QUOTE`, or `PRICE_UNAVAILABLE` for an unusable price), the event also has that quote's `quotePrice` and `quoteTime`, so a dispute can see what the market showed. With no quote at all there is only the `reason`.
+
+An order placed while the market was closed, then filled at the open:
+
+| `action` | `details` |
+|---|---|
+| `ACCEPTED` | `{}` |
+| `DELAYED` | `{"reason": "MARKET_CLOSED"}` |
+| `PENDING` | `{}` |
+| `SETTLED` | `{"cashDelta": -202.4692, "quantityDelta": 2}` (written by trading-service) |
+| `FILLED` | `{"quantity": 2, "price": 101.2346}` |
+
+An order refused at execution on a stale quote:
+
+| `action` | `details` |
+|---|---|
+| `ACCEPTED` | `{}` |
+| `REJECTED` | `{"reason": "STALE_QUOTE", "quotePrice": 101.2346, "quoteTime": "2026-09-21T13:29:50Z"}` |
+
+A move made through the status endpoint ([C6](C6-api.md#orders-orders-service)) is audited the same way. Its `DELAYED` has no `reason`, and its `REJECTED` has `reason` `REJECTED_BY_OPERATIONS` (or the code it was given).
+
 **Reading a trail.** Use `findByOrderIdOrderByOccurredAtAsc` for an order, which returns its submission events followed by the rest of its life. Use `findByRequestIdOrderByAuditIdAsc` for a refused order, which has no order ID. Order an order's trail by `created_at`: the seeded checks ([C3](C3-seed-data.md)) were added after their orders' later events, so `audit_id` does not order them.
 
 ## Rules
@@ -65,7 +93,7 @@ A BUY refused for lack of cash:
   | Where | Event types |
   |---|---|
   | orders-service, order placement | `SUBMITTED`, then `RULE_CHECKED` for each rule that runs, then `VALIDATED` if the order is saved |
-  | orders-service, status changes | `ACCEPTED`, `FILLED`, `REJECTED` |
+  | orders-service, status changes | `ACCEPTED`, `DELAYED`, `PENDING`, `FILLED`, `REJECTED` ([the execution trail](#the-execution-trail)) |
   | trading-service, settlement | `SETTLED` |
   | trading-service, cash movements | `CASH_DEPOSITED`, `CASH_WITHDRAWN` |
 
@@ -114,5 +142,5 @@ Every refused attempt is recorded in PostgreSQL's server log, by the server itse
 
 ## Mirrors (change together with `AuditEventType`)
 
-- The `audit_log.action` CHECK constraint, in both [010](../database/schema/010_shared_contracts.sql) and [014](../database/schema/014_submission_audit.sql): 010 is re-applied before 014, so the two lists must match.
-- The seeded events in [011](../database/schema/011_seed_test_data.sql), brought to the current shape by [015](../database/schema/015_seed_submission_audit.sql). 015 also mirrors `ValidationRule`.
+- The `audit_log.action` CHECK constraint, in every migration that defines it: [010](../database/schema/010_shared_contracts.sql), [014](../database/schema/014_submission_audit.sql), [024](../database/schema/024_cash_movements.sql) and [026](../database/schema/026_audit_waiting_steps.sql). The lists must all match. A clean database applies every file in turn, after the seed has written its events, and Jenkins re-applies them. A migration that adds an action updates all of them.
+- The seeded events in [011](../database/schema/011_seed_test_data.sql) (an open seeded order ends on the `PENDING` or `DELAYED` step it waits in), brought to the current shape by [015](../database/schema/015_seed_submission_audit.sql). 015 also mirrors `ValidationRule`.

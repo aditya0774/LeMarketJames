@@ -93,7 +93,7 @@ END $$;
 -- RULE_CHECKED events, and re-adding the constraint without that type would fail.
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_action_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_action_check
-    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED', 'CASH_DEPOSITED', 'CASH_WITHDRAWN'));
+    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'DELAYED', 'FILLED', 'REJECTED', 'SETTLED', 'CASH_DEPOSITED', 'CASH_WITHDRAWN'));
 CREATE INDEX IF NOT EXISTS audit_log_order_idx  ON audit_log (order_id);
 CREATE INDEX IF NOT EXISTS audit_log_client_idx ON audit_log (client_id, created_at);
 
