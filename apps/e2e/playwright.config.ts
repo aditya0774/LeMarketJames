@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SELF_SIGNED, TRADING_APP_URL } from './tests/support/app-urls';
 
 /**
  * End-to-end tests run against an already running stack; they never start the app themselves.
@@ -32,7 +33,8 @@ export default defineConfig({
     ? [['list'], ['junit', { outputFile: 'results/junit.xml' }], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
+    baseURL: TRADING_APP_URL,
+    ...SELF_SIGNED,
     // Keep evidence only when something fails, so passing runs stay fast and small.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

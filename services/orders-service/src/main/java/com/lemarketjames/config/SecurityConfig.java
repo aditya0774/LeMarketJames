@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Spring Security configuration for the application.
@@ -33,8 +34,9 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** The trading app's origins, from a comma-separated setting (contract C5). */
     @Value("${app.cors.allowed-origin}")
-    private String allowedOrigin;
+    private List<String> allowedOrigins;
 
     /** Shared with the services that serve and call {@code /internal/**} (contract C5). */
     @Value("${internal.api-token}")
@@ -90,7 +92,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
-        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8081"));
+        configuration.setAllowedOrigins(Stream.concat(allowedOrigins.stream(), Stream.of("http://localhost:8081")).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

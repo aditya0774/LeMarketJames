@@ -3,6 +3,7 @@ import { connectDatabase } from '../tests/support/database';
 import { loginViaApi } from '../tests/support/orders';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-39 trade search, on the staff app since LMKT-145 moved it out of the trading app.
@@ -11,7 +12,7 @@ import { signIn, TRADING_OPS } from './support/staff';
  */
 const SEARCH = '/api/v1/orders/trades/search';
 // Clients register through the trading app; the staff app has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 
 interface SearchFixture {
   user: TestUser;
@@ -25,7 +26,7 @@ interface SearchFixture {
 // Final statuses keep the execution worker from changing these read-side fixtures.
 const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture }>({
   tradingApp: async ({ playwright }, use) => {
-    const context = await playwright.request.newContext({ baseURL: TRADING_APP });
+    const context = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
     await use(context);
     await context.dispose();
   },

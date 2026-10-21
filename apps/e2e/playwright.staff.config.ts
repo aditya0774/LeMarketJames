@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import tradingConfig from './playwright.config';
+import { SELF_SIGNED, STAFF_APP_URL } from './tests/support/app-urls';
 
 /**
  * End-to-end tests of the staff app (apps/frontend/projects/staff). Everything not set here is
@@ -25,7 +26,8 @@ export default defineConfig({
   use: {
     ...tradingConfig.use,
     // The same variable staff-api.spec.ts uses for the staff app's address.
-    baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201',
+    baseURL: STAFF_APP_URL,
+    ...SELF_SIGNED,
   },
   projects: [{ name: 'staff', use: { ...devices['Desktop Chrome'] } }],
 });

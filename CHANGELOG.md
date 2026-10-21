@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- BR-02 hardening: both web apps are HTTPS only in Docker: `https://localhost:4200` and `:4201`,
+  with a self-signed certificate made at image build (accept the browser warning once). Plain HTTP
+  on those ports is redirected. The session cookie is `Secure` (`AUTH_COOKIE_SECURE=true`). The
+  services', database's and Kafka's ports are published on `127.0.0.1` only
+  (`SERVICE_BIND_ADDRESS`; a shared VM sets `0.0.0.0`). `APP_CORS_ALLOWED_ORIGIN` is now a
+  comma-separated list, by default the https and http localhost origins. `start-all.ps1` serves both
+  dev servers with `--ssl`. The e2e tests, the Jenkins smoke tests and `scripts/verify-*.sh` use
+  `https://` and accept the certificate ([README](README.md#https-and-local-only-ports),
+  [C5](contracts/C5-config.md#web-apps-ports-and-service-urls)).
 - BR-02: No endpoint answers without a credential, except health, registration, sign-in and
   `GET /api/market/**`. `/internal/**` in trading- and orders-service (settlement, the SELL check
   and the test controls) now needs the shared `INTERNAL_API_TOKEN` in the `X-Internal-Token`

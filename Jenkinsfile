@@ -568,15 +568,17 @@ pipeline {
                     # The web apps route /api by path (apps/frontend/nginx.conf and the staff app's).
                     # Signed out, the trading app reaches auth-service (401 from /me) and
                     # trading-service (401); the staff app has no route for a customer path (404).
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     expect_status() {
                         actual=$(curl --silent --output /dev/null --write-out "%{http_code}" "$2" || true)
                         echo "$2 -> $actual (expected $1)"
                         test "$actual" = "$1"
                     }
-                    expect_status 401 http://localhost:4200/api/auth/me
-                    expect_status 401 http://localhost:4200/api/v1/holdings
-                    expect_status 401 http://localhost:4201/api/v1/reports/ping
-                    expect_status 404 http://localhost:4201/api/v1/holdings
+                    expect_status 401 https://localhost:4200/api/auth/me
+                    expect_status 401 https://localhost:4200/api/v1/holdings
+                    expect_status 401 https://localhost:4201/api/v1/reports/ping
+                    expect_status 404 https://localhost:4201/api/v1/holdings
 
                     echo "Spring Boot container logs:"
                     compose logs auth-service orders-service trading-service staff-ops-service
@@ -630,7 +632,7 @@ pipeline {
                     # the Jenkins user keeps the report files deletable by the workspace cleanup.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
@@ -663,8 +665,8 @@ pipeline {
                     # the clients whose trades they insert and then look up from the staff app.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
-                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_STAFF_BASE_URL=https://localhost:4201 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
@@ -696,8 +698,8 @@ pipeline {
                     # so only install when they didn't run.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_BASE_URL=http://localhost:4200 \
-                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
+                        -e E2E_STAFF_BASE_URL=https://localhost:4201 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
@@ -771,7 +773,9 @@ pipeline {
 
                     # Through the trading app's Nginx: register/login reach auth-service, quotes
                     # trading-service and orders orders-service.
-                    base="http://localhost:4200"
+                    base="https://localhost:4200"
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
@@ -840,7 +844,9 @@ JSON
 
                     # Through the trading app's Nginx: register/login reach auth-service, quotes
                     # trading-service and orders orders-service.
-                    base="http://localhost:4200"
+                    base="https://localhost:4200"
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 

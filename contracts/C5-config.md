@@ -45,9 +45,18 @@ are is defined once per app and per way of running it, and nowhere else:
 | Docker (Nginx) | [nginx.conf](../apps/frontend/nginx.conf): `auth-service:8082`, `orders-service:8085`, `trading-service:8084` | [nginx.conf](../apps/frontend/projects/staff/nginx.conf): `auth-service:8082`, `orders-service:8085`, `staff-ops-service:8086` |
 | `ng serve` (dev server) | [proxy.conf.json](../apps/frontend/proxy.conf.json): the same ports on `localhost`; [proxy.vm.json](../apps/frontend/proxy.vm.json) for the shared VM | [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs), used by `proxy.conf.mjs` (`localhost`) and `proxy.vm.mjs` (the shared VM) |
 
+- **Both web apps are HTTPS** in Docker (BR-02): each Nginx listens on 443 with a self-signed
+  certificate made when its image is built, Compose publishes it as 4200 and 4201, and plain HTTP
+  on those ports is redirected to HTTPS. `start-all.ps1` runs both dev servers with `--ssl`; a plain
+  `ng serve` stays HTTP. See the README's [HTTPS and local-only ports](../README.md#https-and-local-only-ports).
+- **The session cookie is Secure** wherever the apps are HTTPS: auth-service's `auth.cookie.secure`
+  (`AUTH_COOKIE_SECURE`) is `true` in Docker Compose and `start-all.ps1`, and off by default for a
+  plain-HTTP dev setup.
 - Each service's own port is `server.port` in its `application.properties`: auth 8082, trading
   8084, orders 8085, staff-ops 8086. Docker Compose publishes each on the same host port, for
-  direct debugging and the test controls; browsers never call them.
+  direct debugging and the test controls; browsers never call them. Those ports, the database's and
+  Kafka's are bound to `127.0.0.1` only (`SERVICE_BIND_ADDRESS`, BR-02), so another computer reaches
+  only the web apps. A shared VM that others develop against sets `SERVICE_BIND_ADDRESS=0.0.0.0`.
 - Services that call each other find each other through settings with `localhost` defaults,
   which Docker Compose sets to the container names ([docker-compose.yml](../docker-compose.yml)):
   orders-service's `MARKET_SERVICE_URL` and `HOLDINGS_SERVICE_URL` (both trading-service) and
@@ -55,7 +64,8 @@ are is defined once per app and per way of running it, and nowhere else:
   `INTERNAL_API_TOKEN` (see the internal API token row above).
 - Both apps call `/api` on their own origin, so CORS only matters to a browser that calls a
   service's port directly. Services that accept browser POSTs allow `APP_CORS_ALLOWED_ORIGIN`,
-  the trading app's origin.
+  the trading app's origin: a comma-separated list, by default its `https://` and `http://`
+  addresses on `localhost`, so both an HTTPS stack and a plain `ng serve` work.
 - The staff app does not pass the browser's `Origin` header on to the services. They accept only
   the trading app's origin, and a browser sends `Origin` with every `POST`, staff sign-in
   included; dropping it means no service needs to know the staff app's origin.

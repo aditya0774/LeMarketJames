@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Spring Security configuration for trading-service, one chain for every feature it serves.
@@ -50,8 +51,9 @@ public class SecurityConfig {
     /** Every activity endpoint lives under this prefix, so one rule guards them all. */
     public static final String ACTIVITY_PATHS = "/api/v1/market-activity/**";
 
+    /** The trading app's origins, from a comma-separated setting (contract C5). */
     @Value("${app.cors.allowed-origin}")
-    private String allowedOrigin;
+    private List<String> allowedOrigins;
 
     /** Shared with the services that call {@code /internal/**} (contract C5). */
     @Value("${internal.api-token}")
@@ -101,7 +103,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8084"));
+        configuration.setAllowedOrigins(Stream.concat(allowedOrigins.stream(), Stream.of("http://localhost:8084")).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

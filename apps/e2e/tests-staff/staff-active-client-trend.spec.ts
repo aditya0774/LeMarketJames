@@ -4,6 +4,7 @@ import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { accountIdOf, addDays, Fill, insertFill, removeClient, todayIn } from './support/insight-fixtures';
 import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-48: the active-client trend tile on the Analyst dashboard, end to end (S40-INT). Everything
@@ -26,7 +27,7 @@ const TREND = '/api/v1/reports/insights/active-clients';
 const INSIGHTS = '/api/v1/reports/insights';
 const WINDOW_DAYS = 30;
 // Clients register through the trading app; the staff app has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 const TILE = 'staff-active-client-trend-tile';
 
 interface Trend {
@@ -126,8 +127,8 @@ test.describe('LMKT-48 active-client trend', () => {
     db = await connectDatabase();
     clientA = newUser('trenda');
     clientB = newUser('trendb');
-    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP });
-    const staffApp = await playwright.request.newContext({ baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201' });
+    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
+    const staffApp = await playwright.request.newContext({ baseURL: STAFF_APP_URL, ...SELF_SIGNED });
     try {
       await registerViaApi(tradingApp, clientA);
       await registerViaApi(tradingApp, clientB);

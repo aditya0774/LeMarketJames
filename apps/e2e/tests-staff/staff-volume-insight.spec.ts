@@ -4,6 +4,7 @@ import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { addDays, Fill, insertFill, removeClient, todayIn } from './support/insight-fixtures';
 import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-46: the volume insight tile on the Analyst dashboard, end to end (S38-INT). Everything
@@ -23,7 +24,7 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
 const INSIGHT = '/api/v1/reports/insights/volume';
 const COMPARE = `${INSIGHT}/compare`;
 // Clients register through the trading app; the staff app has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 const TILE = 'staff-volume-insight-tile';
 const PRESETS = { TODAY: 'Today', THIS_WEEK: 'This week', LAST_WEEK: 'Last week' } as const;
 type PresetKey = keyof typeof PRESETS;
@@ -177,8 +178,8 @@ test.describe('LMKT-46 volume insight', () => {
   test.beforeAll(async ({ playwright }) => {
     db = await connectDatabase();
     client = newUser('volume');
-    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP });
-    const staffApp = await playwright.request.newContext({ baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201' });
+    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
+    const staffApp = await playwright.request.newContext({ baseURL: STAFF_APP_URL, ...SELF_SIGNED });
     try {
       await registerViaApi(tradingApp, client);
       // The reports time zone is a setting (C5), so ask the service instead of assuming one.

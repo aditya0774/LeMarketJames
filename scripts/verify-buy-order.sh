@@ -2,13 +2,16 @@
 # Runs only against the disposable Jenkins Compose stack, through the frontend proxy.
 set -euo pipefail
 
+# The web apps use a self-signed certificate (BR-02), so curl accepts it.
+curl() { command curl --insecure "$@"; }
+
 if docker compose version >/dev/null 2>&1; then
     compose() { docker compose "$@"; }
 else
     compose() { docker-compose "$@"; }
 fi
 
-base=http://localhost:4200
+base=https://localhost:4200
 username="buyci$(date +%s)"
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT

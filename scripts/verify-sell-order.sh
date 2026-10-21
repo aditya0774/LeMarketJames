@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Disposable Jenkins stack only. The HTTP requests traverse the frontend's Nginx -> services.
 set -euo pipefail
+
+# The web apps use a self-signed certificate (BR-02), so curl accepts it.
+curl() { command curl --insecure "$@"; }
 if docker compose version >/dev/null 2>&1; then
     compose() { docker compose "$@"; }
 else
     compose() { docker-compose "$@"; }
 fi
-base=http://localhost:4200
+base=https://localhost:4200
 username="sellci$(date +%s)"
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT

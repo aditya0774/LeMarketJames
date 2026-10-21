@@ -27,8 +27,9 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** The trading app's origins, from a comma-separated setting (contract C5). */
     @Value("${app.cors.allowed-origin}")
-    private String allowedOrigin;
+    private List<String> allowedOrigins;
 
     /**
      * Configures the security filter chain for HTTP requests.
@@ -67,7 +68,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

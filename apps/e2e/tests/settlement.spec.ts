@@ -11,6 +11,7 @@ import {
   failSettlementsFor, resendSettlement, restoreSettlementsFor, settlementFailuresOf,
 } from './support/settlement-control';
 import { newUser, registerViaApi } from './support/users';
+import { SELF_SIGNED, STAFF_APP_URL } from './support/app-urls';
 
 /**
  * LMKT-72 (S17, a buy) and LMKT-74 (S18, a sell): settlement on the live stack, of fills the
@@ -30,7 +31,7 @@ const SYMBOL = 'MA';
 // What a new client registers with (support/users.ts).
 const OPENING_CASH = 10000;
 // The staff app, where Trading Ops read their alerts (the same variable staff-api.spec.ts uses).
-const STAFF = process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201';
+const STAFF = STAFF_APP_URL;
 
 // The stages after this suite in Jenkins place orders too; never leave the worker paused for them.
 test.afterAll(async ({ request }) => {
@@ -118,7 +119,7 @@ async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: s
  * screen yet, so this is the staff app's answer to a signed-in TRADING_OPS browser (C6).
  */
 async function expectTradingOpsAlerted(browser: Browser, order: OrderDto, accountId: number, reason: string) {
-  const context = await browser.newContext({ baseURL: STAFF });
+  const context = await browser.newContext({ baseURL: STAFF, ...SELF_SIGNED });
   try {
     const page = await context.newPage();
     await signIn(page, TRADING_OPS);

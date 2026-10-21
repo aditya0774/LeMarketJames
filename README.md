@@ -29,6 +29,7 @@ A full-stack trading application of seven services: two **Angular 21** web apps 
    - [Method 1: Local Development (Maven + npm)](#method-1-local-development-maven--npm)
    - [Method 2: Docker Build & Run](#method-2-docker-build--run)
    - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
+   - [HTTPS and local-only ports](#https-and-local-only-ports)
    - [Trading App and Staff App](#trading-app-and-staff-app)
    - [Market simulation settings](#market-simulation-settings)
    - [Kafka (order events)](#kafka-order-events)
@@ -407,7 +408,7 @@ curl http://localhost:8084/actuator/health   # trading
 curl http://localhost:8085/actuator/health   # orders
 curl http://localhost:8086/actuator/health   # staff ops
 ```
-Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
+Expect `{"status":"UP"}`, then open `http://localhost:4200` (`https://localhost:4200` when `start-all.ps1` started it: it serves both apps over HTTPS, see [HTTPS](#https-and-local-only-ports)). If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
 
 **Frontend Setup (Angular on port 4200):**
 
@@ -496,14 +497,16 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    (On older installs with Compose v1, the command is `docker-compose up -d --build`.)
 
    This starts the seven services, plus the database:
-   - The trading app (a production nginx build): `http://localhost:4200`; its Nginx forwards `/api` to the services
-   - The staff app (the same, for staff): `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
+   - The trading app (a production nginx build): `https://localhost:4200`; its Nginx forwards `/api` to the services
+   - The staff app (the same, for staff): `https://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
    - Auth service: `http://localhost:8082` (direct access for debugging)
    - Trading service: `http://localhost:8084` (direct access for debugging and the test controls)
    - Orders service: `http://localhost:8085` (direct access for debugging)
    - Staff ops service: `http://localhost:8086` (direct access for debugging; only the staff app routes to it)
    - PostgreSQL database: `localhost:5432`
    - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
+
+   The two web apps are the only ports another computer can reach, and only over HTTPS; see [HTTPS and local-only ports](#https-and-local-only-ports).
 
 2. The schema is applied automatically. On first start, Postgres runs every file in `database/schema/` in numeric order, because that folder is mounted into `docker-entrypoint-initdb.d`. This only happens when the `db_data` volume is empty. To pick up new schema files on an existing database, either apply them with `psql` (see [database/README.md](database/README.md)) or wipe and recreate the database:
    ```bash
@@ -520,7 +523,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    ```
    Kafka has no HTTP health endpoint; `docker compose ps kafka` shows `healthy` once the broker answers.
 
-4. Open `http://localhost:4200` and log in or register.
+4. Open `https://localhost:4200` and log in or register. The first visit shows a certificate warning: the certificate is self-signed. Accept it once per app.
 
 5. View logs:
    ```bash
@@ -552,11 +555,21 @@ Run the backend in Docker and the Angular dev server on the same machine, so fro
 
 3. Open `http://localhost:4200`.
 
+### HTTPS and local-only ports
+
+Docker Compose serves both web apps over HTTPS only (BR-02), so passwords and the session cookie never cross the network in clear text:
+
+- **Self-signed certificate.** Each web app's image makes one for `localhost` when it is built (`openssl` in its Dockerfile). Browsers warn on the first visit; accept the warning once per app. A plain `http://localhost:4200` is redirected to `https://`.
+- **Secure cookie.** auth-service runs with `AUTH_COOKIE_SECURE=true`, so the browser only ever sends the session cookie over HTTPS.
+- **Local-only service ports.** The services, the database and Kafka are published on `127.0.0.1` only (`SERVICE_BIND_ADDRESS`). Another computer can open the web apps but none of the ports behind them. A shared VM that other machines develop against with `npm run start:vm` sets `SERVICE_BIND_ADDRESS=0.0.0.0` in its environment.
+- **Native Windows.** `start-all.ps1` runs both dev servers with `--ssl` and sets `AUTH_COOKIE_SECURE=true` too. A plain `npm start` stays on `http://`, which the services still accept.
+- **Scripts and tests.** The e2e tests accept the certificate (`ignoreHTTPSErrors`), and the `scripts/verify-*.sh` smoke scripts call `curl --insecure`.
+
 **Opening a Linux/Jenkins host's stack from another machine:**
 
-The services only accept cross-origin browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
+The services only accept cross-origin browser API calls from the origins in `APP_CORS_ALLOWED_ORIGIN`, a comma-separated list that defaults to `https://localhost:4200,http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
 ```bash
-APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
+APP_CORS_ALLOWED_ORIGIN=https://<linux-host>:4200
 ```
 This is per-machine configuration and is never committed, so the repo stays tied to no particular host.
 
@@ -738,7 +751,7 @@ To run one app's tests, see [Trading App and Staff App](#trading-app-and-staff-a
 
 ### End-to-End Tests (Playwright)
 
-[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, buying a stock, and filtering order history. The tests don't start the app. Run them against a disposable stack that is already up on `http://localhost:4200` (Method 1 or Method 3). Most tests register their own user; the order-history suite also inserts exact UTC boundary fixtures into that disposable stack and removes them afterward.
+[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, buying a stock, and filtering order history. The tests don't start the app. Run them against a disposable stack that is already up on `https://localhost:4200` (Method 3, or `start-all.ps1`); the tests accept its self-signed certificate. For a plain-HTTP dev server, set `E2E_BASE_URL=http://localhost:4200`. Most tests register their own user; the order-history suite also inserts exact UTC boundary fixtures into that disposable stack and removes them afterward.
 
 ```bash
 cd apps/e2e
@@ -760,20 +773,20 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 
 `reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls staff-ops-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
 
-`staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
+`staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `https://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
 
 `settlement.spec.ts` follows a buy and a sell through settlement (S17, S18), with fills the executor really made: an order the client can no longer pay for, or has no shares left for, by the time it fills is `REJECTED` and Trading Ops are alerted; a settlement that fails part-way changes nothing and settles exactly once afterwards. Besides what the execution suites need, it needs:
 
 - The settlement test control ([C5](contracts/C5-config.md#settlement-test-control)) on trading-service, reached directly at `http://localhost:8084`; set `E2E_HOLDINGS_URL` if it is elsewhere.
 - The execution control on orders-service, reached directly at `http://localhost:8085` (`E2E_EXECUTION_URL`), to hold an order back until the price or the holding has changed.
 - Kafka, which carries the alert to staff-ops-service: Docker Compose has it; on the native Windows stack start with `-Kafka` ([Kafka (order events)](#kafka-order-events)).
-- The staff app on `http://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
+- The staff app on `https://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
 
 It pauses the execution worker for the whole stack, as `execution-retry.spec.ts` does, so both run one test at a time in the Playwright project `execution-recovery`, after the main tests.
 
 `execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished, `execution-recovery` included. Playwright skips it when an earlier test failed.
 
-**The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `http://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It also holds the trade search tests (`trade-search.spec.ts`), which moved here with the screen: they register clients through the trading app (`E2E_BASE_URL`) and insert their trades, so they need the same database settings as the order-history suite above.
+**The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `https://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It also holds the trade search tests (`trade-search.spec.ts`), which moved here with the screen: they register clients through the trading app (`E2E_BASE_URL`) and insert their trades, so they need the same database settings as the order-history suite above.
 
 ```bash
 cd apps/e2e
@@ -791,22 +804,22 @@ Once the application is running (via any of the three methods), you can access:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
-| **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
-| **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
-| **Trading app API** | `http://localhost:4200/api/...` | The trading app's Nginx (or dev proxy) forwards each `/api` path to auth-, orders- or trading-service; there is no gateway |
-| **Auth Register API** | `POST http://localhost:4200/api/auth/register` | Register new user (forwarded to auth-service) |
-| **Auth Login API** | `POST http://localhost:4200/api/auth/login` | User login (forwarded to auth-service) |
-| **Staff app API** | `http://localhost:4201/api/...` | The staff app forwards only the staff paths: reports, alerts, staff sign-in, trade search and order timeline |
-| **Staff Login API** | `POST http://localhost:4201/api/auth/login` | Staff sign-in (forwarded to auth-service); sets the `staff_jwt` cookie |
+| **Angular Frontend** | `https://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
+| **Registration Page** | `https://localhost:4200/register` | User registration with Material Design form |
+| **Staff App** | `https://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
+| **Trading app API** | `https://localhost:4200/api/...` | The trading app's Nginx (or dev proxy) forwards each `/api` path to auth-, orders- or trading-service; there is no gateway |
+| **Auth Register API** | `POST https://localhost:4200/api/auth/register` | Register new user (forwarded to auth-service) |
+| **Auth Login API** | `POST https://localhost:4200/api/auth/login` | User login (forwarded to auth-service) |
+| **Staff app API** | `https://localhost:4201/api/...` | The staff app forwards only the staff paths: reports, alerts, staff sign-in, trade search and order timeline |
+| **Staff Login API** | `POST https://localhost:4201/api/auth/login` | Staff sign-in (forwarded to auth-service); sets the `staff_jwt` cookie |
 | **Health Checks** | `GET http://localhost:{8082,8084,8085,8086}/actuator/health` | auth / trading / orders / staff ops liveness (`UP`/`DOWN`) |
-| **Orders** | `POST http://localhost:4200/api/v1/orders` | orders-service: submit a buy or sell order as the signed-in client |
-| **Holdings / Portfolio** | `GET http://localhost:4200/api/v1/holdings`, `/api/v1/portfolio` | trading-service: the signed-in client's positions and cash balance |
-| **Instruments** | `GET http://localhost:4200/api/v1/instruments` | trading-service: the supported stock list |
-| **Notifications** | `GET http://localhost:4200/api/v1/notifications` | trading-service: the signed-in client's order notifications, built from Kafka events |
-| **Market activity** | `GET http://localhost:4200/api/v1/market-activity` | trading-service: traded volume per stock over the last 24 hours, built from Kafka events |
-| **Surveillance alerts (staff)** | `GET http://localhost:4201/api/v1/surveillance/alerts` | staff-ops-service, through the staff app; `TRADING_OPS` login only, built from Kafka events |
-| **Reports (staff)** | `GET http://localhost:4201/api/v1/reports/trades?periodType=MONTH` | staff-ops-service, through the staff app: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
+| **Orders** | `POST https://localhost:4200/api/v1/orders` | orders-service: submit a buy or sell order as the signed-in client |
+| **Holdings / Portfolio** | `GET https://localhost:4200/api/v1/holdings`, `/api/v1/portfolio` | trading-service: the signed-in client's positions and cash balance |
+| **Instruments** | `GET https://localhost:4200/api/v1/instruments` | trading-service: the supported stock list |
+| **Notifications** | `GET https://localhost:4200/api/v1/notifications` | trading-service: the signed-in client's order notifications, built from Kafka events |
+| **Market activity** | `GET https://localhost:4200/api/v1/market-activity` | trading-service: traded volume per stock over the last 24 hours, built from Kafka events |
+| **Surveillance alerts (staff)** | `GET https://localhost:4201/api/v1/surveillance/alerts` | staff-ops-service, through the staff app; `TRADING_OPS` login only, built from Kafka events |
+| **Reports (staff)** | `GET https://localhost:4201/api/v1/reports/trades?periodType=MONTH` | staff-ops-service, through the staff app: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 | **Kafka Broker** | `localhost:9092` | Order events from orders-service to the consumers in trading- and staff-ops-service (Method 3 only; not HTTP) |
 
@@ -1567,11 +1580,12 @@ does not route to it; the staff app (4201) does. Sign in there as staff and call
 `staff_jwt` cookie that sign-in sets (seed logins: [C3](contracts/C3-seed-data.md)):
 
 ```bash
-curl -c cookies.txt -H "Content-Type: application/json" \
+# -k: the staff app's certificate is self-signed (HTTPS and local-only ports, above).
+curl -k -c cookies.txt -H "Content-Type: application/json" \
      -d '{"username":"analyst@seed.lemarket.com","password":"Pass123!"}' \
-     http://localhost:4201/api/auth/login
-curl -b cookies.txt http://localhost:4201/api/v1/reports/ping
-curl -b cookies.txt "http://localhost:4201/api/v1/reports/trades?periodType=MONTH"
+     https://localhost:4201/api/auth/login
+curl -k -b cookies.txt https://localhost:4201/api/v1/reports/ping
+curl -k -b cookies.txt "https://localhost:4201/api/v1/reports/trades?periodType=MONTH"
 ```
 
 The first only checks access; the second is the trade report, counted and totalled per day, week, month or year.
