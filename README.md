@@ -21,6 +21,7 @@ A full-stack trading application of seven services: two **Angular 21** web apps 
    - [Authentication Flow](#authentication-flow)
    - [Technology Stack](#technology-stack)
    - [Current Features & Endpoints](#current-features--endpoints)
+   - [Additional capability (BR-18): Learn and simulator](#additional-capability-br-18-learn-and-simulator)
    - [Design Principles](#design-principles)
 3. [Prerequisites](#prerequisites)
 4. [Running the Application](#running-the-application)
@@ -244,7 +245,7 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
-- **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding
+- **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding. It is the platform's additional capability ([BR-18](#additional-capability-br-18-learn-and-simulator))
 - **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
 - **Staff app**: trade search and order timeline for Trading Ops; surveillance alerts for Trading Ops (staff-ops-service); aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs ([C6](contracts/C6-api.md#reports-staff-ops-service))
 
@@ -253,6 +254,46 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
 - Data persisted in PostgreSQL; market prices are simulated in memory by trading-service and saved as quotes and candles
 - Quote-feed design, settings and test controls: **[contracts/C4-quote-feed.md](contracts/C4-quote-feed.md)**
+
+### Additional capability (BR-18): Learn and simulator
+
+The BRS asks for one additional capability that adds value for clients or the business, proposed by the delivery team (§4.1), with a reason why it was chosen over other options (BR-18). Ours is the trading app's **Learn** tab and its **stock simulator**.
+
+**The client problem.** The platform is built for Joanna (BRS §6): a self-directed investor who is "not a trading professional" and "has no patience for jargon". BRS §9.5 sets the standard: a first-time client should be able to place an order and understand its outcome "without training or a user guide". The core screens have to use terms that such a client may not know: bid and ask, market order, buying power, cost basis, an order that is `DELAYED` or `REJECTED`. Learn explains those terms in the app, next to the tab where they appear, and lets her try out an idea without risking money.
+
+**What it is.**
+
+- **Lessons** (`/learn`): nine short lessons, marked beginner or intermediate: how the stock market works, how a trade works, market and limit orders, risk and diversification, reading a quote and chart, what happens to your order, cash and buying power, reading your holdings, and long-term habits. Each lesson marks the glossary terms it teaches (20 terms) and ends with a link to the tab where she can try it out (Market, Orders, Holdings, Overview or the simulator). The index suggests what to read next and remembers which lessons this browser has read.
+- **Stock simulator** (`/learn/simulator`): pick a stock, a day in the last six months and a dollar amount, and see what that purchase would be worth today, with the stock's chart. It places no order and changes no balance or holding.
+
+**Options considered.** Each option is rated for value to clients, value to the business, effort to build, and risk to the platform.
+
+<!-- TEAM: confirm the ratings and the reasoning below -->
+
+| Option | Client value | Business value | Effort | Risk | Outcome |
+|---|---|---|---|---|---|
+| **Learn tab and stock simulator** | High: meets the usability standard (§9.5) for the persona the platform is built for | Medium to high: clients who understand an order before placing it make fewer mistaken orders, which means fewer disputes for Trading Ops (David, §6) and fewer support calls | Low: trading app only; no new service, table or endpoint | Low: reads price data and places no orders, so the lifecycle, audit trail and settlement are untouched | **Chosen** |
+| Social or copy trading | Medium: trade ideas from other clients | Medium: engagement | High: profiles, a follow graph, consent, a new service, and copied orders that still go through every validation | High: shows one client's trades to another, against BR-02 and §9.3; copying a trade looks like advice, and advised dealing is out of scope (§4.2) | Rejected |
+| Native mobile app | High: Joanna checks positions "around news events" (§6) | Medium | High: two more codebases, app-store releases and a separate way to keep sessions | Medium: a second UI to keep in step with every rule | Rejected: native mobile apps are out of scope for this phase (§4.2) |
+
+**Why Learn won.** It is the only option that is fully in scope and serves the usability standard directly. It costs the least, carries the least risk to the trading core, and builds only on what the platform already has.
+
+**How it extends the platform without rebuilding it** (BRS §3, fourth objective: a capability "can be added without rebuilding what came before"):
+
+- **No backend change.** The commits that added it (`feature/learn-tab`, `feature/papertrading`, `feature/simulator`) changed only the trading app: three routes behind the existing `clientGuard`, one nav link and the `features/learn/` folder.
+- **It reuses an existing endpoint.** The simulator reads the stock's daily prices from `GET /api/quotes/{symbol}/history?range=6M` ([C6](contracts/C6-api.md#chart-ranges)), the same history the trade page's chart uses, through the existing `PriceHistory` and `InstrumentCatalog` services. It calls no order, cash or holdings endpoint.
+- **Content is kept apart from the components.** Lessons and terms live in `learn-content.ts`, so they can be added or reworded, or later served by a backend, without touching a template.
+
+**Evidence.** 105 unit tests in 11 spec files under [`apps/frontend/src/app/features/learn/`](apps/frontend/src/app/features/learn/), for example:
+
+- `simulator/simulator-math.spec.ts` checks the purchase arithmetic, gains and losses, and days with no price (weekends, days outside the history).
+- `simulator/simulator-page.spec.ts` covers the default purchase, the date limits, the quick picks, and prices that are unavailable.
+- `learn-page.spec.ts` covers the index: the lesson tiles, what to read next and the level filter.
+- `lesson/lesson-page.spec.ts` covers the reader and the Back and Next links.
+- `term-links.spec.ts` checks that every glossary term is taught in at least one lesson and marked where it is first mentioned; `key-terms/key-terms.spec.ts` covers the term chips that show each definition.
+- `learn-progress.spec.ts` covers which lessons are marked read.
+
+No Playwright end-to-end spec covers the Learn tab yet; the end-to-end nav helper only knows its tab name.
 
 ### Design Principles
 
