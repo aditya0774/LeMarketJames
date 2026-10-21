@@ -1,4 +1,5 @@
 import { APIRequestContext, expect } from '@playwright/test';
+import { INTERNAL_HEADERS } from './internal-api';
 
 /**
  * Helper to stabilize market prices for deterministic E2E tests.
@@ -38,6 +39,7 @@ export type FeedMode = 'LIVE' | 'STALE' | 'UNAVAILABLE';
  */
 export async function pinPrice(request: APIRequestContext, ticker: string, price: number): Promise<void> {
   const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/prices/${ticker}`, {
+    headers: INTERNAL_HEADERS,
     data: { price, pinned: true },
   });
   expect(response.status(), `pin ${ticker}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
@@ -45,7 +47,9 @@ export async function pinPrice(request: APIRequestContext, ticker: string, price
 
 /** Lets a stock pinned with pinPrice move again. */
 export async function releasePrice(request: APIRequestContext, ticker: string): Promise<void> {
-  const response = await request.delete(`${MARKET_SERVICE_URL}/internal/market/control/prices/${ticker}`);
+  const response = await request.delete(`${MARKET_SERVICE_URL}/internal/market/control/prices/${ticker}`, {
+    headers: INTERNAL_HEADERS,
+  });
   expect(response.status(), await response.text()).toBe(200);
 }
 
@@ -61,13 +65,18 @@ export async function getQuote(request: APIRequestContext, ticker: string): Prom
  * project may call this: it runs after every other test has finished (playwright.config.ts).
  */
 export async function setFeedMode(request: APIRequestContext, mode: FeedMode): Promise<void> {
-  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/feed`, { data: { mode } });
+  const response = await request.put(`${MARKET_SERVICE_URL}/internal/market/control/feed`, {
+    headers: INTERNAL_HEADERS,
+    data: { mode },
+  });
   expect(response.status(), `feed ${mode}: is sim.control.enabled on? ${await response.text()}`).toBe(200);
 }
 
 /** Back to a LIVE feed with nothing pinned. */
 export async function resetFeed(request: APIRequestContext): Promise<void> {
-  const response = await request.post(`${MARKET_SERVICE_URL}/internal/market/control/reset`);
+  const response = await request.post(`${MARKET_SERVICE_URL}/internal/market/control/reset`, {
+    headers: INTERNAL_HEADERS,
+  });
   expect(response.status(), await response.text()).toBe(200);
 }
 
@@ -108,6 +117,7 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
     if (price !== null) {
       try {
         const response = await request.put(`${baseUrl}/internal/market/control/prices/${ticker}`, {
+          headers: INTERNAL_HEADERS,
           data: { price, pinned: true }
         });
         if (!response.ok()) {
@@ -129,7 +139,9 @@ export async function pinMarketPrices(request: APIRequestContext, baseUrl = MARK
 export async function unpinMarketPrices(request: APIRequestContext, baseUrl = MARKET_SERVICE_URL): Promise<void> {
   for (const ticker of SEED_HOLDINGS_TICKERS) {
     try {
-      const response = await request.delete(`${baseUrl}/internal/market/control/prices/${ticker}`);
+      const response = await request.delete(`${baseUrl}/internal/market/control/prices/${ticker}`, {
+        headers: INTERNAL_HEADERS,
+      });
       if (!response.ok()) {
         console.warn(`Failed to unpin price for ${ticker}: ${response.status()}`);
       }

@@ -49,7 +49,8 @@ test.describe('Execution recovery (LMKT-24)', () => {
       expect(row.order_status).toBe('FILLED');
       expect(row.rejection_reason).toBeNull();
       const trail = await auditTrail(db, orderId);
-      expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+      // PENDING once, however many attempts it waited through (BR-15, C2).
+      expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'SETTLED', 'FILLED']);
       expect(trail.filter(event => event.action === 'FILLED')).toHaveLength(1);
       expect(trail.filter(event => event.action === 'SETTLED')).toHaveLength(1);
     } finally {

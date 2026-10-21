@@ -1,5 +1,7 @@
 package com.lemarketjames.holdings;
 
+import org.springframework.context.annotation.Import;
+import com.lemarketjames.security.InternalTokenMockMvc;
 import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.holdings.entity.HoldingsEntity;
@@ -43,6 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "lmj.settlement.control-enabled=true"
 })
 @AutoConfigureMockMvc
+// Calls /internal/** as orders-service does, with the shared token (BR-02).
+@Import(InternalTokenMockMvc.class)
 class SettlementControlIntegrationTest {
 
     private static final String SETTLE = "/internal/holdings/settle";

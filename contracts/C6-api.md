@@ -7,7 +7,7 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 ## Rules for every public endpoint
 
 - **Entry point.** Browsers call only their own web app's origin, under `/api/**`: the trading app on `:4200` and the staff app on `:4201`. Each app forwards the paths it routes straight to the service that serves them (its Nginx in Docker, its dev-server proxy under `ng serve`); there is no gateway. Paths under `/internal/**` exist only service-to-service and neither app forwards them. See [Which web app routes which paths](#which-web-app-routes-which-paths).
-- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` calls are never refused this way. The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff app the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
+- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` takes no cookie: it needs the shared internal token in the `X-Internal-Token` header ([internal endpoints](#internal-endpoints-service-to-service-only-never-through-a-web-app)). Besides health, `GET /api/market/**`, registration and sign-in, no endpoint answers without a credential (BR-02). The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff app the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
 - **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
 - **Validation failures** return `400 { "errors": { "<field>": "<message>" } }`. Other bad input returns `400 { "message": "..." }`.
@@ -885,6 +885,14 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 
 ## Internal endpoints (service-to-service only, never through a web app)
 
+- **`/internal/**` needs the shared internal token** (BR-02). The caller sends it in the
+  `X-Internal-Token` header ([InternalApiTokenFilter](../libs/common/src/main/java/com/lemarketjames/common/security/InternalApiTokenFilter.java)).
+  The setting is `internal.api-token` ([C5](C5-config.md#who-uses-each-setting)).
+  - No token or a wrong one gets `401`; a wrong one is logged as `INTERNAL_TOKEN_REJECTED`, without the token.
+  - A client or staff session gets `403`: settlement moves cash and shares for any account, so no person may call it.
+- **`GET /api/market/**` needs no credential.** Prices carry no user data, and orders-service reads them without a
+  cookie. Any other method there needs a session.
+
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
 | `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | orders-service → trading-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). trading-service's own features read the same quotes in-process, and see an UNAVAILABLE feed the same way: no quote, and an outage recorded. |
@@ -893,6 +901,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 | `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement |
 | `/internal/market/control/**` | tests → trading-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
 | `/internal/holdings/control/settlement-faults/{accountId}` | tests → trading-service | [The settlement test control](#the-settlement-test-control), only when enabled |
+| `GET`, `PUT /internal/execution/control` | tests → orders-service | Pauses execution or makes settlement unavailable, only when `lmj.execution.control-enabled` is on ([C5](C5-config.md#order-execution)) |
 
 ### The settlement test control
 
@@ -900,12 +909,13 @@ Makes the settlements of one account fail part-way, so a test can show on a runn
 failed settlement changes nothing and settles once when retried
 ([Automatic execution and recovery](#automatic-execution-and-recovery)). It exists only where its
 setting is on ([C5](C5-config.md#settlement-test-control)), and is served by trading-service
-itself on port 8084.
+itself on port 8084. Like every `/internal/**` call it needs the internal token, which the examples
+read from `INTERNAL_API_TOKEN` ([C5](C5-config.md#who-uses-each-setting)).
 
 ```bash
-curl -X PUT    localhost:8084/internal/holdings/control/settlement-faults/7   # account 7's settlements fail from now on
-curl           localhost:8084/internal/holdings/control/settlement-faults/7   # { "accountId": 7, "failing": true, "failures": 2 }
-curl -X DELETE localhost:8084/internal/holdings/control/settlement-faults/7   # they work again
+curl -X PUT    -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # account 7's settlements fail from now on
+curl           -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # { "accountId": 7, "failing": true, "failures": 2 }
+curl -X DELETE -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # they work again
 ```
 
 - While an account is failing, `POST /internal/holdings/settle` for it answers `500` after the

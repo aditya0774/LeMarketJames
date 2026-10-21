@@ -106,9 +106,9 @@ async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: s
   expect(await settlementPending(db, order.orderId)).toBe(false);
   // The refusal is the order's one stored outcome, so a repeated request gets it again (C6).
   expect((await settlementReceipts(db, order.orderId)).map(receipt => receipt.rejection_reason)).toEqual([reason]);
-  // Accepted and priced, then refused: nothing was settled, so nothing is audited as settled.
+  // Accepted and priced (PENDING, BR-15), then refused: nothing was settled, so nothing is audited as settled.
   const trail = await auditTrail(db, order.orderId);
-  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'REJECTED']);
+  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'REJECTED']);
   expect(trail[trail.length - 1].details).toEqual({ reason });
 }
 
@@ -157,7 +157,7 @@ async function expectUnsettledAndRecoverable(request: APIRequestContext, db: Cli
   // None of the three changes, and no record that there was a settlement.
   expect(await positionOf(request, accountId)).toEqual(before);
   expect(await settlementReceipts(db, orderId)).toEqual([]);
-  expect(lifecycleSteps(await auditTrail(db, orderId))).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED']);
+  expect(lifecycleSteps(await auditTrail(db, orderId))).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING']);
   return waiting;
 }
 
@@ -170,8 +170,8 @@ async function expectSettledOnce(db: Client, order: OrderDto, cashDelta: number,
   expect(Number(receipts[0].quantity)).toBe(order.quantity);
   expect(Number(receipts[0].price_per_unit)).toBe(order.pricePerUnit);
   const trail = await auditTrail(db, order.orderId);
-  // One SETTLED and one FILLED, however many attempts there were.
-  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+  // One PENDING, one SETTLED and one FILLED, however many attempts there were.
+  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'SETTLED', 'FILLED']);
   const settled = trail.find(event => event.action === 'SETTLED')!.details;
   expect(Number(settled.cashDelta)).toBeCloseTo(cashDelta, 6);
   expect(Number(settled.quantityDelta)).toBe(quantityDelta);

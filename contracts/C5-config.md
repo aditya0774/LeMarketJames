@@ -26,6 +26,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 | Overnight report time: `PlatformSettings.Reports` (`lmj.reports.overnight-run-time`) | staff-ops-service's overnight scheduler: when each night's overnight reports start, in the reports time zone. Keep it outside trading hours ([C6](C6-api.md#get-apiv1reportsovernight)). |
 | Overnight ready-by time: `PlatformSettings.Reports` (`lmj.reports.ready-by`) | staff-ops-service's overnight scheduler: when a successful run must be ready by, the same night. A run not finished by then is marked late, so the Analyst dashboard shows it; one that finishes after it stays late. Must be after the overnight report time; the service refuses to start otherwise. |
 | Large-order quantity: `PlatformSettings.Surveillance` (`lmj.surveillance.large-order-quantity`) | staff-ops-service's surveillance: an order placed for at least this many shares raises an alert for Trading Ops ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). The alerts endpoint returns the value in use. |
+| Internal API token: `internal.api-token` (`INTERNAL_API_TOKEN`), in trading- and orders-service's `application.properties` | Both services require it on their `/internal/**` endpoints, through `InternalApiTokenFilter`. orders-service sends it to trading-service when it settles a fill or checks a SELL. Both must have the same value: Docker Compose passes one variable to both, and `start-all.ps1` leaves both on the same development default. Set a real secret outside development ([C6](C6-api.md#internal-endpoints-service-to-service-only-never-through-a-web-app)). |
 | Cash movement limit: `PlatformSettings.Cash` (`lmj.cash.movement-limit`, default `$50,000.00`) | trading-service: the largest amount accepted by one deposit or withdrawal ([C6](C6-api.md#deposit-and-withdraw-cash)). |
 
 ## Changing a value
@@ -50,7 +51,8 @@ are is defined once per app and per way of running it, and nowhere else:
 - Services that call each other find each other through settings with `localhost` defaults,
   which Docker Compose sets to the container names ([docker-compose.yml](../docker-compose.yml)):
   orders-service's `MARKET_SERVICE_URL` and `HOLDINGS_SERVICE_URL` (both trading-service) and
-  trading-service's `ORDERS_SERVICE_URL`.
+  trading-service's `ORDERS_SERVICE_URL`. A call to `/internal/**` also carries the shared
+  `INTERNAL_API_TOKEN` (see the internal API token row above).
 - Both apps call `/api` on their own origin, so CORS only matters to a browser that calls a
   service's port directly. Services that accept browser POSTs allow `APP_CORS_ALLOWED_ORIGIN`,
   the trading app's origin.

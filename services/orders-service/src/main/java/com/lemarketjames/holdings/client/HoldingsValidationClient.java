@@ -1,5 +1,6 @@
 package com.lemarketjames.holdings.client;
 
+import com.lemarketjames.common.security.InternalApiTokenFilter;
 import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,11 @@ public class HoldingsValidationClient {
 
     private final RestClient restClient;
 
-    public HoldingsValidationClient(@Value("${holdings.service.url}") String holdingsServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(holdingsServiceUrl).build();
+    public HoldingsValidationClient(@Value("${holdings.service.url}") String holdingsServiceUrl,
+            @Value("${internal.api-token}") String internalApiToken) {
+        // trading-service answers /internal/** only to a holder of the shared token (BR-02).
+        this.restClient = RestClient.builder().baseUrl(holdingsServiceUrl)
+                .defaultHeader(InternalApiTokenFilter.HEADER, internalApiToken).build();
     }
 
     public void validateSufficientHoldings(Integer accountId, String username,

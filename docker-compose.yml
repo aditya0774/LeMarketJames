@@ -76,6 +76,8 @@ services:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      # orders-service calls trading-service's /internal/**, which needs this shared token (BR-02, C5).
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-development-only-internal-token}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
@@ -113,6 +115,8 @@ services:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      # orders-service calls trading-service's /internal/**, which needs this shared token (BR-02, C5).
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-development-only-internal-token}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}

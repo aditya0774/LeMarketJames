@@ -1,5 +1,7 @@
 package com.lemarketjames.holdings;
 
+import org.springframework.context.annotation.Import;
+import com.lemarketjames.security.InternalTokenMockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lemarketjames.holdings.dto.InternalHoldingsValidationRequest;
 import com.lemarketjames.holdings.exception.InsufficientHoldingsException;
@@ -35,6 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+// Calls /internal/** as orders-service does, with the shared token (BR-02).
+@Import(InternalTokenMockMvc.class)
 @DisplayName("HoldingsValidationInternalController Tests")
 class HoldingsValidationInternalControllerTest {
 

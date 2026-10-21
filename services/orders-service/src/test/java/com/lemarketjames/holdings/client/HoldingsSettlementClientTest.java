@@ -32,7 +32,7 @@ class HoldingsSettlementClientTest {
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsSettlementClient(TEST_SERVICE_URL, new ExecutionSettings());
+        client = new HoldingsSettlementClient(TEST_SERVICE_URL, "test-token", new ExecutionSettings());
     }
 
     // ========== Contract Validation Tests ==========

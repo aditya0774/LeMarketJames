@@ -20,18 +20,19 @@ The feed prices only the stocks in `instruments`: US equities in US dollars, on 
 
 ## Controlling the feed
 
-The controls exist only where `sim.control.enabled` is on. It is on in the Docker stack (`SIM_CONTROL_ENABLED` in `docker-compose.yml`) and in `scripts/windows/start-all.ps1`, and off otherwise. They are served by trading-service itself on port 8084, under `/internal`, which neither web app routes.
+The controls exist only where `sim.control.enabled` is on. It is on in the Docker stack (`SIM_CONTROL_ENABLED` in `docker-compose.yml`) and in `scripts/windows/start-all.ps1`, and off otherwise. They are served by trading-service itself on port 8084, under `/internal`, which neither web app routes. Like every `/internal/**` call they need the internal token in the `X-Internal-Token` header ([C6](C6-api.md#internal-endpoints-service-to-service-only-never-through-a-web-app)); the examples read it from `INTERNAL_API_TOKEN` ([C5](C5-config.md#who-uses-each-setting)).
 
 ```bash
-curl localhost:8084/internal/market/control                    # current mode and pinned stocks
-curl -X PUT localhost:8084/internal/market/control/prices/AAPL \
+T="X-Internal-Token: $INTERNAL_API_TOKEN"
+curl -H "$T" localhost:8084/internal/market/control                    # current mode and pinned stocks
+curl -H "$T" -X PUT localhost:8084/internal/market/control/prices/AAPL \
      -H 'Content-Type: application/json' -d '{"price": 150}'   # set AAPL to 150 and hold it there
-curl -X PUT localhost:8084/internal/market/control/prices/AAPL \
+curl -H "$T" -X PUT localhost:8084/internal/market/control/prices/AAPL \
      -H 'Content-Type: application/json' -d '{"price": 150, "pinned": false}'  # set it, then let it move
-curl -X DELETE localhost:8084/internal/market/control/prices/AAPL   # let a held price move again
-curl -X PUT localhost:8084/internal/market/control/feed \
+curl -H "$T" -X DELETE localhost:8084/internal/market/control/prices/AAPL   # let a held price move again
+curl -H "$T" -X PUT localhost:8084/internal/market/control/feed \
      -H 'Content-Type: application/json' -d '{"mode": "STALE"}' # or UNAVAILABLE, or LIVE
-curl -X POST localhost:8084/internal/market/control/reset       # LIVE, nothing held
+curl -H "$T" -X POST localhost:8084/internal/market/control/reset       # LIVE, nothing held
 ```
 
 An unknown ticker or a non-positive price gets `400 { message }`.

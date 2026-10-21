@@ -1,5 +1,6 @@
 package com.lemarketjames.holdings.client;
 
+import com.lemarketjames.common.security.InternalApiTokenFilter;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.execution.ExecutionSettings;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,12 +21,14 @@ public class HoldingsSettlementClient {
     private final ExecutionSettings settings;
 
     public HoldingsSettlementClient(@Value("${holdings.service.url}") String holdingsServiceUrl,
-            ExecutionSettings settings) {
+            @Value("${internal.api-token}") String internalApiToken, ExecutionSettings settings) {
         this.settings = settings;
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(java.time.Duration.ofSeconds(3));
         factory.setReadTimeout(java.time.Duration.ofSeconds(5));
-        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(holdingsServiceUrl).build();
+        // trading-service lets only a holder of the shared token settle (BR-02).
+        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(holdingsServiceUrl)
+                .defaultHeader(InternalApiTokenFilter.HEADER, internalApiToken).build();
     }
 
     private record Outcome(String rejectionReason) {}

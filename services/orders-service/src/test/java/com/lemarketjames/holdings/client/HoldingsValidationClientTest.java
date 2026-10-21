@@ -31,7 +31,7 @@ class HoldingsValidationClientTest {
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsValidationClient(TEST_SERVICE_URL);
+        client = new HoldingsValidationClient(TEST_SERVICE_URL, "test-token");
     }
 
     // ========== Contract Validation Tests ==========
@@ -117,7 +117,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_ServiceUnreachable() {
         // Client points to non-existent service
         HoldingsValidationClient unreachableClient = 
-            new HoldingsValidationClient(TEST_SERVICE_URL);
+            new HoldingsValidationClient(TEST_SERVICE_URL, "test-token");
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
             unreachableClient.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
@@ -132,7 +132,7 @@ class HoldingsValidationClientTest {
     void testEndpointConfiguration() {
         // Verify RestClient is created with correct base URL
         HoldingsValidationClient testClient = 
-            new HoldingsValidationClient("http://trading-service:8084");
+            new HoldingsValidationClient("http://trading-service:8084", "test-token");
         
         RestClient restClient = (RestClient) ReflectionTestUtils
             .getField(testClient, "restClient");

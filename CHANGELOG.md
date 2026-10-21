@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- BR-02: No endpoint answers without a credential, except health, registration, sign-in and
+  `GET /api/market/**`. `/internal/**` in trading- and orders-service (settlement, the SELL check
+  and the test controls) now needs the shared `INTERNAL_API_TOKEN` in the `X-Internal-Token`
+  header. Without it the answer is `401`, and with a client or staff session `403`
+  (`InternalApiTokenFilter` in `libs/common`). orders-service sends the token, and Docker Compose
+  gives both services the same value. `/api/market/**` is open for `GET` only. A stack outside
+  development must set `INTERNAL_API_TOKEN` ([C6](contracts/C6-api.md#internal-endpoints-service-to-service-only-never-through-a-web-app),
+  [C5](contracts/C5-config.md#who-uses-each-setting)).
+- BR-15 follow-up: the e2e audit-trail expectations now include the `PENDING` step, and the quote
+  on a `STALE_QUOTE` rejection.
+
 - LMKT-28: Holdings and buying power on the Overview update live when an order settles, and
   catch up after the connection drops. trading-service adds `GET /api/v1/portfolio/stream`
   (SSE, `balance-changed`), sent only after a settlement commits; the trading app's Nginx routes

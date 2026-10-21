@@ -1,5 +1,6 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 import { OrderDto } from './orders';
+import { INTERNAL_HEADERS } from './internal-api';
 
 // trading-service serves its test control and its settlement endpoint itself, never through a
 // web app (C6), so they need their own address when the stack isn't on this machine.
@@ -15,20 +16,20 @@ const faultsOf = (accountId: number) =>
  * on the failure cannot continue without it.
  */
 export async function failSettlementsFor(request: APIRequestContext, accountId: number): Promise<void> {
-  const response = await request.put(faultsOf(accountId));
+  const response = await request.put(faultsOf(accountId), { headers: INTERNAL_HEADERS });
   expect(response.status(),
     `fail settlements: is lmj.settlement.control-enabled on? ${await response.text()}`).toBe(200);
 }
 
 /** Lets the account's settlements work again. */
 export async function restoreSettlementsFor(request: APIRequestContext, accountId: number): Promise<void> {
-  const response = await request.delete(faultsOf(accountId));
+  const response = await request.delete(faultsOf(accountId), { headers: INTERNAL_HEADERS });
   expect(response.status(), await response.text()).toBe(200);
 }
 
 /** How many settlements have been failed for the account since failSettlementsFor. */
 export async function settlementFailuresOf(request: APIRequestContext, accountId: number): Promise<number> {
-  const response = await request.get(faultsOf(accountId));
+  const response = await request.get(faultsOf(accountId), { headers: INTERNAL_HEADERS });
   expect(response.status(), await response.text()).toBe(200);
   return (await response.json()).failures;
 }
@@ -40,6 +41,7 @@ export async function settlementFailuresOf(request: APIRequestContext, accountId
 export async function resendSettlement(request: APIRequestContext, accountId: number, instrumentId: number,
     order: OrderDto): Promise<APIResponse> {
   return request.post(`${HOLDINGS_SERVICE_URL}/internal/holdings/settle`, {
+    headers: INTERNAL_HEADERS,
     data: {
       orderId: order.orderId, accountId, instrumentId,
       orderType: order.orderType, quantity: order.quantity, pricePerUnit: order.pricePerUnit,

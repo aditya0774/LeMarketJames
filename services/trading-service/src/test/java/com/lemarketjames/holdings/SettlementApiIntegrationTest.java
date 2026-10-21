@@ -1,5 +1,7 @@
 package com.lemarketjames.holdings;
 
+import org.springframework.context.annotation.Import;
+import com.lemarketjames.security.InternalTokenMockMvc;
 import com.lemarketjames.common.audit.AuditEventEntity;
 import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.audit.AuditEventType;
@@ -40,6 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:settlementApi;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
 @AutoConfigureMockMvc
+// Calls /internal/** as orders-service does, with the shared token (BR-02).
+@Import(InternalTokenMockMvc.class)
 class SettlementApiIntegrationTest {
 
     private static final String SETTLE = "/internal/holdings/settle";
