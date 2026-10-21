@@ -2,6 +2,10 @@
 
 Pricing, failure handling and the indicative price can be tested without a live provider. trading-service's market simulator prices every stock; tests can set prices and break the feed on demand.
 
+## Market scope
+
+The feed prices only the stocks in `instruments`: US equities in US dollars, on US hours. That is the whole market for this phase (BR-12; the README's [Market coverage](../README.md#market-coverage-br-12) has the scope, how freshness is enforced, and where clients see a quote's time). The feed isn't tied to the US. The simulator takes each stock's hours from its `asset_class` and `location` through `MarketHours.forInstrument`, so a stock from another market would get that market's hours. The one exception is the holiday list, `sim.holidays`, which every market shares.
+
 ## Where it's defined
 
 | What | Code |

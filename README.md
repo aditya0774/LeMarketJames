@@ -22,6 +22,7 @@ A full-stack trading application of seven services: two **Angular 21** web apps 
    - [Technology Stack](#technology-stack)
    - [Current Features & Endpoints](#current-features--endpoints)
    - [Additional capability (BR-18): Learn and simulator](#additional-capability-br-18-learn-and-simulator)
+   - [Market coverage (BR-12)](#market-coverage-br-12)
    - [Design Principles](#design-principles)
 3. [Prerequisites](#prerequisites)
 4. [Running the Application](#running-the-application)
@@ -294,6 +295,44 @@ The BRS asks for one additional capability that adds value for clients or the bu
 - `learn-progress.spec.ts` covers which lessons are marked read.
 
 No Playwright end-to-end spec covers the Learn tab yet; the end-to-end nav helper only knows its tab name.
+
+### Market coverage (BR-12)
+
+**The requirement.** BR-12 in the BRS reads: "The platform must price orders using current market quotes across the instrument classes the firm supports at launch: equities (UK/US and Indian markets), foreign exchange, and crypto assets." The BRS notes column adds "Targeting US market initially then rolling out to Indian". For BR-10 it adds "All US Currency initially as that is our market".
+
+<!-- TEAM: confirm the revised BR-12 wording and where it was agreed -->
+
+**Scope for this phase: US equities only, agreed with the business.** At launch the firm supports US-listed equities priced in US dollars. UK and Indian equities, foreign exchange and crypto are later phases. Every client has a single cash balance, in US dollars.
+
+**The market.** 51 US equities, all with `asset_class` `EQUITY`, `location` `US` and `currency` `USD`. Fifty are tradable stocks, from [migration 009](database/schema/009_full_lebron_market.sql). The fifty-first is `CAVS`, a suspended stock added by 010 that clients can't trade; it is there to test the `NOT_TRADABLE` rejection. Non-US companies are listed through their US listing (ADR), in dollars and on US hours. The [database README](database/README.md) lists every stock.
+
+**How quotes are produced.** There is no live data provider. trading-service's market simulator ([C4](contracts/C4-quote-feed.md)) moves every price by Geometric Brownian Motion, using per-stock drift, volatility and spread (`instrument_market_params`), one step per tick (`sim.tick-ms`). A stock's price moves only while its exchange is open: on weekdays during the New York session (`MarketHours.US_EQUITY`), outside the configured holidays. Each quote carries a bid, an ask, a last price and the time it was produced (`lastUpdated`). The quotes are also saved as minute candles and daily bars, which the charts read.
+
+**How freshness is enforced.** When it executes an order, orders-service fetches the stock's current quote from trading-service. [`MarketOrderExecutor`](services/orders-service/src/main/java/com/lemarketjames/orders/execution/MarketOrderExecutor.java) then decides:
+
+- **Exchange closed:** the order waits as `DELAYED` (or stays `PENDING`) and runs once the market opens ([C1](contracts/C1-orders.md)).
+- **No quote, or a price that isn't positive:** the order is rejected with `PRICE_UNAVAILABLE`.
+- **A quote older than the staleness limit** (`PlatformSettings.Market`, [C5](contracts/C5-config.md)): the order is rejected with `STALE_QUOTE`, so nothing ever fills at an old price. BUY placement also refuses a stale quote up front.
+- **Otherwise:** the order fills at the ask (BUY) or the bid (SELL). The price, its source and the quote's time are stored on the order (`price_per_unit`, `quote_source`, `quote_time`, [migration 013](database/schema/013_execution_quote.sql)), so every fill can be traced back to the quote it used.
+
+The feed controls in [C4](contracts/C4-quote-feed.md#controlling-the-feed) can make the feed stale or unavailable on demand. The end-to-end `feed-failure` project uses them to test both rejections.
+
+**Where clients see the quote and its time.**
+
+- The Market tab lists every stock with its live price, refreshed by polling.
+- Before an order is submitted, the trade page shows the price with "Indicative – your fill price may differ · Price as of *time*" (BR-13).
+- The Orders tab shows the price each order filled at.
+
+**How the design extends to more markets.** The groundwork is already in place:
+
+- `instruments` has `asset_class` (its check constraint already allows `EQUITY`, `FOREX` and `CRYPTO`), `location` and `currency`.
+- [`MarketHours.forInstrument`](libs/market-client/src/main/java/com/lemarketjames/market/model/MarketHours.java) already returns UK and Indian equity sessions, a 24-hour weekday session for FX and a 24/7 session for crypto. Both the simulator and the executor use it.
+
+So an Indian stock added with `location` `INDIA` would already be priced and executed on Indian hours. Three pieces are not built:
+
+- multi-currency cash: balances per currency, and conversion;
+- prices shown in currencies other than US dollars in the apps;
+- holidays per exchange: `sim.holidays` is one list today.
 
 ### Design Principles
 
