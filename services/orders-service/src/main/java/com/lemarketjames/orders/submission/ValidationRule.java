@@ -12,16 +12,19 @@ public enum ValidationRule {
     ACCOUNT_ACCESS,
     /** Trading is enabled on the account and the client is ACTIVE. Fails with {@code ACCOUNT_RESTRICTED}. */
     ACCOUNT_STATUS,
-    /** The client doesn't live somewhere trading is restricted. Fails with {@code LOCATION_RESTRICTED}. */
+    /**
+     * The client doesn't live where this instrument, or every instrument, may not be traded
+     * (instrument_location_restrictions, lmj.orders.restricted-locations). Fails with {@code LOCATION_RESTRICTED}.
+     */
     LOCATION,
     /** The instrument exists and isn't suspended. Fails with {@code NOT_TRADABLE}. */
     TRADABLE,
-    /** SELL only: the account holds enough shares. Fails with {@code INSUFFICIENT_HOLDINGS}. */
+    /** SELL only: the account holds enough shares not already in open SELLs. Fails with {@code INSUFFICIENT_HOLDINGS}. */
     HOLDINGS,
     /** BUY only: the feed has a usable ask price. Fails with {@code PRICE_UNAVAILABLE}. */
     PRICE_AVAILABLE,
     /** BUY only: that quote is within the staleness limit. Fails with {@code STALE_QUOTE}. */
     QUOTE_FRESH,
-    /** BUY only: the account has enough cash at that price. Fails with {@code INSUFFICIENT_CASH}. */
+    /** BUY only: the cash not reserved by open BUYs covers the order at that price. Fails with {@code INSUFFICIENT_CASH}. */
     CASH
 }

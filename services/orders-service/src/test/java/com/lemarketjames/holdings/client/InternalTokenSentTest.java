@@ -62,7 +62,7 @@ class InternalTokenSentTest {
 
     @Test
     void theSellCheckSendsTheToken() {
-        new HoldingsValidationClient(baseUrl, TOKEN).validateSufficientHoldings(7, "alice", 5, BigDecimal.ONE);
+        new HoldingsValidationClient(baseUrl, TOKEN).validateSufficientHoldings(7, "alice", 5, BigDecimal.ONE, BigDecimal.ZERO);
 
         assertEquals(TOKEN, tokenByPath.get("/internal/holdings/validate"));
     }

@@ -141,7 +141,8 @@ public class PlatformSettings {
     public static class Orders {
         /**
          * Client residence locations (US state names as stored in addresses.state, or ISO country
-         * codes) that may not place orders. Empty means no restriction.
+         * codes) that may not trade any instrument. Empty means no platform-wide restriction.
+         * Restrictions on single instruments are rows of instrument_location_restrictions (028).
          */
         private List<String> restrictedLocations = new ArrayList<>();
 

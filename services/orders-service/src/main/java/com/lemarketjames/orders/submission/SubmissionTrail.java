@@ -32,6 +32,7 @@ public class SubmissionTrail {
     private final List<Check> checks = new ArrayList<>();
     private ValidationRule open;
     private BigDecimal price;
+    private boolean passed;
 
     /**
      * @param requestId the server-generated ID of this submission
@@ -66,6 +67,16 @@ public class SubmissionTrail {
     private void close(Result result, String reason) {
         checks.add(new Check(Objects.requireNonNull(open, "no check was started"), result, reason));
         open = null;
+    }
+
+    /** Marks every check as passed: what follows is saving the order, not checking it. */
+    public void passedAll() {
+        passed = true;
+    }
+
+    /** Whether every check passed, so a failure from here on is in saving the order, not a refusal. */
+    public boolean hasPassedAll() {
+        return passed;
     }
 
     /** The price the order was valued at, once the market has been asked. */

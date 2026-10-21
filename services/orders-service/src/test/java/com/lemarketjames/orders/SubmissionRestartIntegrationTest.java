@@ -15,8 +15,8 @@ import com.lemarketjames.orders.execution.OrderTransitions;
 import com.lemarketjames.orders.repository.OrderRepository;
 import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.OrderService;
+import com.lemarketjames.orders.submission.OrderPlacement;
 import com.lemarketjames.orders.submission.SubmissionRecorder;
-import com.lemarketjames.orders.submission.SubmissionValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +65,7 @@ class SubmissionRestartIntegrationTest {
     @Autowired AddressRepository addresses;
     @Autowired InstrumentRepository instruments;
     @Autowired AccountAccess accountAccess;
-    @Autowired SubmissionValidator validator;
+    @Autowired OrderPlacement placement;
     @Autowired SubmissionRecorder submissions;
     @Autowired OrderTransitions transitions;
     @Autowired JdbcTemplate jdbc;
@@ -156,7 +156,7 @@ class SubmissionRestartIntegrationTest {
 
     /** A coordinator with nothing in memory from an earlier attempt, as after a restart. */
     private OrderService restartedService() {
-        return new OrderService(orders, accountAccess, validator, submissions, transitions, events, instruments);
+        return new OrderService(orders, accountAccess, placement, submissions, transitions, events, instruments);
     }
 
     /** Fails the write of one event, as if the process stopped there; every other write is real. */

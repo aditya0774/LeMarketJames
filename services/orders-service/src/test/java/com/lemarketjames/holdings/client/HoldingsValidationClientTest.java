@@ -44,7 +44,7 @@ class HoldingsValidationClientTest {
             // Just verify the method exists and can be accessed
             var method = HoldingsValidationClient.class
                 .getDeclaredMethod("validateSufficientHoldings", 
-                    Integer.class, String.class, Integer.class, BigDecimal.class);
+                    Integer.class, String.class, Integer.class, BigDecimal.class, BigDecimal.class);
             assertNotNull(method);
         });
     }
@@ -54,7 +54,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullAccountId() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(null, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -63,7 +63,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullUsername() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, null,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -72,7 +72,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullInstrumentId() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                null, TEST_QUANTITY)
+                null, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -81,7 +81,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullQuantity() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, null)
+                TEST_INSTRUMENT_ID, null, BigDecimal.ZERO)
         );
     }
 
@@ -94,7 +94,7 @@ class HoldingsValidationClientTest {
         // (Will throw when actually connecting to non-existent service, but that's a network error)
         assertThrows(IllegalStateException.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, BigDecimal.ZERO)
+                TEST_INSTRUMENT_ID, BigDecimal.ZERO, BigDecimal.ZERO)
         );
     }
 
@@ -106,7 +106,7 @@ class HoldingsValidationClientTest {
         // Should not throw on construction/validation
         assertThrows(IllegalStateException.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, largeQty)
+                TEST_INSTRUMENT_ID, largeQty, BigDecimal.ZERO)
         );
     }
 
@@ -121,7 +121,7 @@ class HoldingsValidationClientTest {
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
             unreachableClient.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
         
         assertTrue(exception.getMessage().contains("Failed to validate holdings"));

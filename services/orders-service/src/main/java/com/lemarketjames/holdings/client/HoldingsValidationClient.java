@@ -28,9 +28,14 @@ public class HoldingsValidationClient {
                 .defaultHeader(InternalApiTokenFilter.HEADER, internalApiToken).build();
     }
 
-    public void validateSufficientHoldings(Integer accountId, String username,
-                                           Integer instrumentId, BigDecimal sellQuantity) {
-        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId, sellQuantity);
+    /**
+     * @param reservedQuantity shares of the stock already in the account's open SELL orders
+     * @throws InsufficientHoldingsException if the holding less {@code reservedQuantity} is below {@code sellQuantity}
+     */
+    public void validateSufficientHoldings(Integer accountId, String username, Integer instrumentId,
+                                           BigDecimal sellQuantity, BigDecimal reservedQuantity) {
+        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId,
+            sellQuantity, reservedQuantity);
         try {
             restClient.post()
                     .uri("/internal/holdings/validate")

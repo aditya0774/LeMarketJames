@@ -138,6 +138,17 @@ public class HoldingsService {
      */
     public void validateSufficientHoldings(Integer accountId, String username,
                                           Integer instrumentId, BigDecimal sellQuantity) {
+        validateSufficientHoldings(accountId, username, instrumentId, sellQuantity, BigDecimal.ZERO);
+    }
+
+    /**
+     * As above, less the shares the account's open SELL orders already promise (BR-05), so the same
+     * shares can't be sold twice before the first sale settles.
+     *
+     * @param reservedQuantity shares of this stock in open SELL orders; null means none
+     */
+    public void validateSufficientHoldings(Integer accountId, String username, Integer instrumentId,
+                                          BigDecimal sellQuantity, BigDecimal reservedQuantity) {
         // AC1: Validate user owns this account before proceeding
         validateAccountOwnership(accountId, username);
         
@@ -146,10 +157,15 @@ public class HoldingsService {
             .orElseThrow(() -> new InsufficientHoldingsException(
                 "No holdings found for this instrument"));
 
-        if (!holding.canSell(sellQuantity)) {
+        BigDecimal reserved = reservedQuantity == null ? BigDecimal.ZERO : reservedQuantity;
+        if (sellQuantity == null || !holding.canSell(sellQuantity.add(reserved))) {
+            BigDecimal available = holding.getQuantity().subtract(reserved).max(BigDecimal.ZERO);
+            String inOpenOrders = reserved.signum() > 0
+                ? String.format(" (%s already in open sell orders)", reserved.stripTrailingZeros().toPlainString())
+                : "";
             throw new InsufficientHoldingsException(
-                String.format("Insufficient holdings. Available: %s, Requested: %s",
-                    holding.getQuantity(), sellQuantity));
+                String.format("Insufficient holdings. Available: %s%s, Requested: %s",
+                    available, inOpenOrders, sellQuantity));
         }
     }
 }

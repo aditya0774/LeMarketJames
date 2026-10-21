@@ -179,7 +179,7 @@ class OrderSubmissionAuditIntegrationTest {
     @Test
     void aSellRefusedForHoldingsLeavesItsTrailAndNoOrder() throws Exception {
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
+            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any(), any());
 
         // Refused by an exception handler, not a returned response: the trail and the ID still get out.
         MvcResult result = submit("SELL", accountId, instrumentId, 4)
@@ -249,7 +249,7 @@ class OrderSubmissionAuditIntegrationTest {
     @Test
     void aCheckThatCannotCompleteStillLeavesItsTrail() {
         doThrow(new IllegalStateException("trading-service unreachable"))
-            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
+            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any(), any());
 
         // Nothing maps this failure to a response, so it surfaces from the request itself.
         assertThrows(Exception.class, () -> submit("SELL", accountId, instrumentId, 1));

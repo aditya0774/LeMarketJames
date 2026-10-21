@@ -94,6 +94,7 @@ class OrderServiceTest {
     private ApplicationEventPublisher events;
 
     @Mock private TradingRestrictions restrictions;
+    @Mock private OpenOrderReservations reservations;
     private OrderService orderService;
 
     private static final String REQUEST_ID = "req-1";
@@ -101,14 +102,17 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(orderRepository.findLockedById(any())).thenAnswer(inv -> orderRepository.findById(inv.getArgument(0)));
+        lenient().when(accountRepository.findLockedById(any())).thenAnswer(inv -> accountRepository.findById(inv.getArgument(0)));
+        lenient().when(reservations.reservedShares(anyInt(), anyInt())).thenReturn(BigDecimal.ZERO);
         // The real checks and the real recorder run against the mocks below, so these tests cover
         // placement end to end, down to the audit events handed to AuditRecorder.
         AccountAccess accountAccess = new AccountAccess(accountRepository, clientRepository);
         var validator = new com.lemarketjames.orders.submission.SubmissionValidator(accountAccess, accountRepository,
             clientRepository, instrumentRepository, restrictions, holdingsValidationClient, marketDataService,
-            cashValidationService);
-        orderService = new OrderService(orderRepository, accountAccess, validator,
-            new SubmissionRecorder(orderRepository, auditRecorder, events),
+            cashValidationService, reservations);
+        var submissions = new SubmissionRecorder(orderRepository, auditRecorder, events);
+        orderService = new OrderService(orderRepository, accountAccess,
+            new com.lemarketjames.orders.submission.OrderPlacement(validator, submissions), submissions,
             new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events),
             auditEventRepository,
             instrumentRepository);
@@ -130,7 +134,7 @@ class OrderServiceTest {
         when(orderRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         var response = orderService.createOrder(request, REQUEST_ID);
         var sequence = inOrder(holdingsValidationClient, orderRepository);
-        sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+        sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         sequence.verify(orderRepository).save(any());
         verifyNoInteractions(cashValidationService);
         assertTrue(response.isSuccess());
@@ -141,7 +145,7 @@ class OrderServiceTest {
     void insufficientHoldingsNeverSavesSell() {
         var request = validSell();
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         assertThrows(InsufficientHoldingsException.class, () -> orderService.createOrder(request, REQUEST_ID));
         verifyNoInteractions(orderRepository, cashValidationService);
     }
@@ -215,7 +219,7 @@ class OrderServiceTest {
         callerIsClient(42);
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
         when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
-        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+        when(cashValidationService.availableCash(1)).thenReturn(BigDecimal.ONE);
 
         assertEquals("INSUFFICIENT_CASH", orderService.createOrder(request, REQUEST_ID).getCode());
 
@@ -271,7 +275,7 @@ class OrderServiceTest {
         var request = validSell();
         var unreachable = new IllegalStateException("trading-service unreachable");
         doThrow(unreachable).when(holdingsValidationClient)
-            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
 
         assertSame(unreachable, assertThrows(IllegalStateException.class,
             () -> orderService.createOrder(request, REQUEST_ID)));
@@ -287,7 +291,7 @@ class OrderServiceTest {
         var request = validSell();
         var refusal = new InsufficientHoldingsException("Insufficient holdings");
         doThrow(refusal).when(holdingsValidationClient)
-            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         var auditDown = new IllegalStateException("audit store unavailable");
         doThrow(auditDown).when(auditRecorder).recordSubmission(any());
 
@@ -453,7 +457,7 @@ class OrderServiceTest {
         var request = validBuy();
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
         when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
-        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+        when(cashValidationService.availableCash(1)).thenReturn(BigDecimal.ONE);
 
         var response = orderService.createOrder(request, REQUEST_ID);
 

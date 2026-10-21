@@ -309,6 +309,8 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/026_audit_waiting_steps.sql
                     # auth-service validates its entities at startup, the account status history included (BR-03).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/027_account_status_changes.sql
+                    # orders-service validates its entities at startup, the per-stock location rules included (BR-05).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/028_instrument_location_restrictions.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests
@@ -316,7 +318,7 @@ pipeline {
                     # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
                     mvn -B -pl services/orders-service,services/auth-service,services/trading-service,services/staff-ops-service -am \
                         -Dspring.profiles.active=postgres-test,kafka-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,AccountStatusPostgresIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OpenOrderReservationIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,AccountStatusPostgresIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
 
                     # The Kafka test skips itself when the kafka-test profile is missing, and a

@@ -14,6 +14,7 @@ import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.CashValidationService;
+import com.lemarketjames.orders.service.OpenOrderReservations;
 import com.lemarketjames.orders.service.TradingRestrictions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 /**
@@ -50,12 +52,16 @@ class SubmissionValidatorTest {
     @Mock HoldingsValidationClient holdings;
     @Mock MarketDataService market;
     @Mock CashValidationService cash;
+    @Mock OpenOrderReservations reservations;
     SubmissionValidator validator;
 
     @BeforeEach
     void setUp() {
         validator = new SubmissionValidator(new AccountAccess(accountRepository, clientRepository), accountRepository,
-            clientRepository, instrumentRepository, restrictions, holdings, market, cash);
+            clientRepository, instrumentRepository, restrictions, holdings, market, cash, reservations);
+        // The validator locks the account; these tests stub the plain read.
+        lenient().when(accountRepository.findLockedById(any())).thenAnswer(inv -> accountRepository.findById(inv.getArgument(0)));
+        lenient().when(reservations.reservedShares(anyInt(), anyInt())).thenReturn(BigDecimal.ZERO);
         SecurityContextHolder.getContext()
             .setAuthentication(new TestingAuthenticationToken("testuser", "n/a", "ROLE_USER"));
     }
@@ -130,7 +136,7 @@ class SubmissionValidatorTest {
         assertFalse(outcome.isRefused());
         assertNull(outcome.price());
         assertEquals(commonChecksThen("HOLDINGS:PASS"), results(trail));
-        verify(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"));
+        verify(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"), BigDecimal.ZERO);
         verifyNoInteractions(market, cash);
     }
 
@@ -168,7 +174,7 @@ class SubmissionValidatorTest {
     @Test
     void aRestrictedResidenceFailsLocation() {
         ownsAccount();
-        when(restrictions.locationRestricted(1)).thenReturn(true);
+        when(restrictions.locationRestricted(1, 1)).thenReturn(true);
         var request = order(Order.OrderType.SELL);
         var trail = trailFor(request);
 
@@ -212,7 +218,7 @@ class SubmissionValidatorTest {
         ownsAccount();
         instrumentIsTradable(true);
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"));
+            .when(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"), BigDecimal.ZERO);
         var request = order(Order.OrderType.SELL);
         var trail = trailFor(request);
 
@@ -275,7 +281,7 @@ class SubmissionValidatorTest {
         instrumentIsTradable(true);
         quoted(250);
         when(cash.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
-        when(cash.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+        when(cash.availableCash(1)).thenReturn(BigDecimal.ONE);
         var request = order(Order.OrderType.BUY);
         var trail = trailFor(request);
 
@@ -292,7 +298,7 @@ class SubmissionValidatorTest {
         ownsAccount();
         instrumentIsTradable(true);
         doThrow(new IllegalStateException("trading-service unreachable"))
-            .when(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"));
+            .when(holdings).validateSufficientHoldings(1, "testuser", 1, new BigDecimal("2"), BigDecimal.ZERO);
         var request = order(Order.OrderType.SELL);
         var trail = trailFor(request);
 

@@ -2,7 +2,7 @@ import { test, expect, APIRequestContext, Browser } from '@playwright/test';
 import { Client } from 'pg';
 import { signIn, TRADING_OPS } from '../tests-staff/support/staff';
 import {
-  auditTrail, connectDatabase, lifecycleSteps, settlementPending, settlementReceipts,
+  auditTrail, connectDatabase, lifecycleSteps, setHoldingQuantity, settlementPending, settlementReceipts,
 } from './support/database';
 import { setExecutionControl } from './support/execution-control';
 import { getQuote, pinPrice, releasePrice } from './support/market-control';
@@ -235,25 +235,29 @@ test.describe('A settlement that would overdraw the account is refused (S17 and 
       const held = await positionOf(request, accountId);
       expect(held.shares).toBe(3);
 
-      // Two sells of 2 from a holding of 3. Placement reserves nothing (C6), so both are saved;
-      // the worker takes them in the order they were placed.
+      // A sell of 2 from a holding of 3 is saved. A second sell of 2 is refused at placement: the
+      // open sell already holds 2 of the 3 shares (BR-05, C6).
       await setExecutionControl(request, false, true);
-      const first = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
-      const second = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
-      await setExecutionControl(request, true, true);
+      const placed = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
+      const second = await request.post('/api/v1/orders',
+        { data: { accountId, instrumentId, orderType: 'SELL', quantity: 2 } });
+      expect(second.status()).toBe(400);
+      expect((await second.json()).code).toBe('INSUFFICIENT_HOLDINGS');
 
-      const sold = await waitForFinalStatus(request, first.orderId);
-      expect(sold.orderStatus, `rejected: ${sold.rejectionReason}`).toBe('FILLED');
-      const rejected = await waitForFinalStatus(request, second.orderId);
+      // Orders can no longer oversell, so the shares go another way before the fill: settlement
+      // must still refuse the sale rather than leave -1 shares.
+      await setHoldingQuantity(db, accountId, instrumentId, 1);
+      await setExecutionControl(request, true, true);
+      const rejected = await waitForFinalStatus(request, placed.orderId);
       await expectRefusedAndNotApplied(db, rejected, 'INSUFFICIENT_HOLDINGS');
 
-      // Only the first sell was applied (S18 AC1, a holding reduced by Q): 1 share is left, not
-      // -1, the cash rose by one sale, and one SELL is in the trade history.
+      // Nothing of the sale was applied: the 1 share is left, the cash is unchanged, and the trade
+      // history has only the buy.
       const after = await positionOf(request, accountId);
       expect(after.shares).toBe(1);
       expect(after.averageCost).toBe(held.averageCost);
-      expect(after.cash).toBeCloseTo(held.cash + amountOf(2, sold.pricePerUnit!), 6);
-      expect(after.trades).toEqual(['BUY', 'SELL']);
+      expect(after.cash).toBeCloseTo(held.cash, 6);
+      expect(after.trades).toEqual(['BUY']);
       await expectTradingOpsAlerted(browser, rejected, accountId, 'INSUFFICIENT_HOLDINGS');
     } finally {
       await setExecutionControl(request, true, true);

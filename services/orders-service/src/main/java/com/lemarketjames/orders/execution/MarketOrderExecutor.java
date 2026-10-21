@@ -44,7 +44,7 @@ public class MarketOrderExecutor implements OrderExecutor {
                 || !clients.findById(account.get().getClientId()).map(c -> c.getAccountStatus().canTrade()).orElse(false)) {
             return ExecutionResult.rejected(RejectionReason.ACCOUNT_RESTRICTED);
         }
-        if (restrictions.locationRestricted(order.getAccountId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);
+        if (restrictions.locationRestricted(order.getAccountId(), order.getInstrumentId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);
         var instrument = instruments.findById(order.getInstrumentId());
         if (instrument.isEmpty() || !instrument.get().isTradable()) {
             return ExecutionResult.rejected(RejectionReason.NOT_TRADABLE);

@@ -114,9 +114,9 @@ class MarketOrderExecutorTest {
         assertEquals(Order.OrderStatus.FILLED, executor.execute(order).nextStatus());
     }
     @Test void rechecksTradabilityAndLocation() {
-        when(restrictions.locationRestricted(1)).thenReturn(true);
+        when(restrictions.locationRestricted(1, 1)).thenReturn(true);
         assertEquals(RejectionReason.LOCATION_RESTRICTED, executor.execute(order).reason());
-        when(restrictions.locationRestricted(1)).thenReturn(false);
+        when(restrictions.locationRestricted(1, 1)).thenReturn(false);
         instruments.findById(1).orElseThrow().setTradable(false);
         assertEquals(RejectionReason.NOT_TRADABLE, executor.execute(order).reason());
     }

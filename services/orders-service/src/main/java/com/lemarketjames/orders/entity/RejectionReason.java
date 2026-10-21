@@ -5,9 +5,9 @@ package com.lemarketjames.orders.entity;
  * response and as the value stored in {@code orders.rejection_reason} when an order is rejected.
  */
 public enum RejectionReason {
-    /** A BUY costs more than the account's cash. */
+    /** A BUY costs more than the account's cash less what its open BUYs reserve. */
     INSUFFICIENT_CASH,
-    /** A SELL is for more shares than the account holds. */
+    /** A SELL is for more shares than the account holds outside its open SELLs. */
     INSUFFICIENT_HOLDINGS,
     /** The stock is suspended (instruments.tradable = false). */
     NOT_TRADABLE,
@@ -22,7 +22,10 @@ public enum RejectionReason {
     MARKET_CLOSED,
     /** The client or account may not trade: status isn't ACTIVE, or trading is disabled on the account. */
     ACCOUNT_RESTRICTED,
-    /** The client lives somewhere trading isn't allowed (lmj.orders.restricted-locations). */
+    /**
+     * The client lives where this stock may not be traded: a location in lmj.orders.restricted-locations
+     * (every stock) or in the stock's instrument_location_restrictions rows.
+     */
     LOCATION_RESTRICTED,
     /** Operations rejected the order by hand. */
     REJECTED_BY_OPERATIONS

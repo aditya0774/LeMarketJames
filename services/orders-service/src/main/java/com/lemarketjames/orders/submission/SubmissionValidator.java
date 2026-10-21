@@ -16,11 +16,14 @@ import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.CashValidationService;
+import com.lemarketjames.orders.service.OpenOrderReservations;
 import com.lemarketjames.orders.service.TradingRestrictions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
@@ -33,6 +36,11 @@ import java.util.Optional;
  *
  * <p>Every check that runs is noted on the {@link SubmissionTrail}, pass or fail, before its
  * result is acted on, so the trail is complete however the submission ends.
+ *
+ * <p>Cash and holdings are checked net of the account's open orders (BR-05). The account row is
+ * locked from the account status check until the caller's transaction ends ({@link OrderPlacement}
+ * saves the order in it), so two orders on one account are checked one after the other: the second
+ * sees the first as open and can't spend what it reserves.
  */
 @Service
 public class SubmissionValidator {
@@ -47,6 +55,7 @@ public class SubmissionValidator {
     private final HoldingsValidationClient holdingsValidationClient;
     private final MarketDataService marketDataService;
     private final CashValidationService cashValidationService;
+    private final OpenOrderReservations reservations;
 
     public SubmissionValidator(AccountAccess accountAccess,
                                AccountRepository accountRepository,
@@ -55,7 +64,8 @@ public class SubmissionValidator {
                                TradingRestrictions restrictions,
                                HoldingsValidationClient holdingsValidationClient,
                                MarketDataService marketDataService,
-                               CashValidationService cashValidationService) {
+                               CashValidationService cashValidationService,
+                               OpenOrderReservations reservations) {
         this.accountAccess = accountAccess;
         this.accountRepository = accountRepository;
         this.clientRepository = clientRepository;
@@ -64,6 +74,7 @@ public class SubmissionValidator {
         this.holdingsValidationClient = holdingsValidationClient;
         this.marketDataService = marketDataService;
         this.cashValidationService = cashValidationService;
+        this.reservations = reservations;
     }
 
     /**
@@ -74,8 +85,11 @@ public class SubmissionValidator {
      * @param trail receives the result of every check that runs
      * @throws AccessDeniedException if the account isn't the caller's
      * @throws NotTradableException if the instrument is suspended
-     * @throws InsufficientHoldingsException if a SELL exceeds the holding
+     * @throws InsufficientHoldingsException if a SELL exceeds the holding less open SELLs
      */
+    // MANDATORY: the account lock taken here only protects anything while the order is saved in the
+    // same transaction.
+    @Transactional(propagation = Propagation.MANDATORY)
     public ValidationOutcome validate(CreateOrderRequest request, SubmissionTrail trail) {
         requireOwnAccount(request.getAccountId(), trail);
 
@@ -88,7 +102,7 @@ public class SubmissionValidator {
         trail.pass();
 
         trail.begin(ValidationRule.LOCATION);
-        if (restrictions.locationRestricted(request.getAccountId())) {
+        if (restrictions.locationRestricted(request.getAccountId(), request.getInstrumentId())) {
             return refuse(trail, "Trading is restricted in your location", RejectionReason.LOCATION_RESTRICTED);
         }
         trail.pass();
@@ -134,8 +148,10 @@ public class SubmissionValidator {
     private void requireHoldings(CreateOrderRequest request, SubmissionTrail trail) {
         trail.begin(ValidationRule.HOLDINGS);
         try {
+            // Shares already promised to open SELLs can't be sold again.
             holdingsValidationClient.validateSufficientHoldings(request.getAccountId(),
-                accountAccess.authenticatedUsername(), request.getInstrumentId(), request.getQuantity());
+                accountAccess.authenticatedUsername(), request.getInstrumentId(), request.getQuantity(),
+                reservations.reservedShares(request.getAccountId(), request.getInstrumentId()));
         } catch (InsufficientHoldingsException insufficient) {
             trail.fail(RejectionReason.INSUFFICIENT_HOLDINGS.name());
             throw insufficient;
@@ -168,7 +184,7 @@ public class SubmissionValidator {
         trail.begin(ValidationRule.CASH);
         BigDecimal orderCost = request.getQuantity().multiply(price);
         if (!cashValidationService.validateSufficientCash(request.getAccountId(), orderCost)) {
-            BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
+            BigDecimal availableCash = cashValidationService.availableCash(request.getAccountId());
             return refuse(trail,
                 String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", orderCost, availableCash),
                 RejectionReason.INSUFFICIENT_CASH);
@@ -186,9 +202,10 @@ public class SubmissionValidator {
     /**
      * Whether the account may trade: trading enabled on the account and the client ACTIVE (an
      * EXPIRED client may log in but not trade). Runs after the ownership check, so the account exists.
+     * Its first read of the account, so the lock it takes also makes every later read current.
      */
     private boolean accountMayTrade(Integer accountId) {
-        return accountRepository.findById(accountId)
+        return accountRepository.findLockedById(accountId)
             .map(account -> account.isTradingEnabled() && clientMayTrade(account))
             .orElse(true);
     }

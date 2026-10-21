@@ -1,6 +1,6 @@
 # C3 – Seed / test data set
 
-Read-side stories (portfolio, audit, reporting) can be built and demoed before the write side exists, because every environment starts with the same people, stocks and history. This page is the only description of the seed personas. The data itself is [011_seed_test_data.sql](../database/schema/011_seed_test_data.sql); [010](../database/schema/010_shared_contracts.sql) adds the suspended stock, and [015](../database/schema/015_seed_submission_audit.sql) adds the submission audit trail to the seeded orders.
+Read-side stories (portfolio, audit, reporting) can be built and demoed before the write side exists, because every environment starts with the same people, stocks and history. This page is the only description of the seed personas. The data itself is [011_seed_test_data.sql](../database/schema/011_seed_test_data.sql); [010](../database/schema/010_shared_contracts.sql) adds the suspended stock, [015](../database/schema/015_seed_submission_audit.sql) adds the submission audit trail to the seeded orders, and [028](../database/schema/028_instrument_location_restrictions.sql) adds `seed_restricted`.
 
 ## Logging in
 
@@ -17,6 +17,7 @@ Every seed login, client or staff, uses the password **`Pass123!`**. Log in with
 | `seed_expired@seed.lemarket.com` | `EXPIRED` | Login is refused, like a closed account (LMKT-57); the history of an account whose documents lapsed |
 | `seed_locked@seed.lemarket.com` | Locked out (lock never expires) | The lockout message, even with the right password |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled on the account | Orders refused with `ACCOUNT_RESTRICTED`; has one such rejected order, and one refused submission in the audit trail |
+| `seed_restricted@seed.lemarket.com` | Active, `RETAIL`, lives in New Jersey; $50,000 cash, no history | The per-stock location rule (BR-05): orders for the six non-US companies' stocks that [028](../database/README.md#028--per-instrument-location-restrictions) restricts (`TSM`, for example) are refused with `LOCATION_RESTRICTED`; every other stock can be traded. Added by 028, not 011 |
 
 The `CLOSED` and `EXPIRED` personas were seeded in those statuses, so they have no row in the status history (`account_status_changes`, [027](../database/README.md#027--account-status-history)); every change made since, by Trading Ops or by a client closing their own account, has one. To try the status panel, search for `seed_active`'s or `seed_trader`'s client in the staff app's trade search as `ops@seed.lemarket.com`, and make them active again afterwards.
 

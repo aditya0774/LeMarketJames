@@ -93,14 +93,14 @@ class SellOrderIntegrationTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.orderId").value(id));
         mvc.perform(get("/api/v1/orders/account/" + accountId).cookie(cookie))
             .andExpect(status().isOk()).andExpect(jsonPath("$[0].orderId").value(id));
-        verify(holdingsValidationClient).validateSufficientHoldings(accountId, username, instrumentId, new BigDecimal("3"));
+        verify(holdingsValidationClient).validateSufficientHoldings(accountId, username, instrumentId, new BigDecimal("3"), BigDecimal.ZERO);
         assertEquals(0, new BigDecimal("500").compareTo(accounts.findById(accountId).orElseThrow().getCashBalance()));
     }
 
     @Test
     void directRequestsCannotBypassHoldingsValidation() throws Exception {
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdingsValidationClient).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
+            .when(holdingsValidationClient).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any(), any());
         mvc.perform(post("/api/v1/orders").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
             .content(request(accountId, instrumentId, 4)))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS"));

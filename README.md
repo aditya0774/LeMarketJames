@@ -861,6 +861,7 @@ All test accounts are loaded automatically when the database is initialized (see
 | `seed_expired@seed.lemarket.com` | Expired | Login refused, like a closed account |
 | `seed_locked@seed.lemarket.com` | Locked out | Demonstrates account lockout message |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled | Orders refused with `ACCOUNT_RESTRICTED` |
+| `seed_restricted@seed.lemarket.com` | Active, lives in New Jersey | The non-US companies' stocks (e.g. `TSM`) refused with `LOCATION_RESTRICTED`; every other stock can be traded |
 
 ### Staff App Test Logins (port 4201)
 
@@ -1410,6 +1411,7 @@ sequenceDiagram
     participant WebApp as Trading app (Nginx)
     participant OrderController
     participant OrderService
+    participant OrderPlacement
     participant SubmissionValidator
     participant Holdings as trading-service<br/>holdings
     participant Market as trading-service<br/>market
@@ -1421,39 +1423,42 @@ sequenceDiagram
     WebApp->>OrderController: forward to orders-service with the jwt cookie
     Note over OrderController: JwtAuthenticationFilter has validated the token.<br/>SubmissionRequestId sets the X-Request-Id response header.
     OrderController->>OrderService: createOrder(request, requestId)
-    OrderService->>SubmissionValidator: validate(request, trail)
+    OrderService->>OrderPlacement: place(request, trail)
+    Note over OrderPlacement,Database: One transaction, holding the account lock (BR-05)
+    OrderPlacement->>SubmissionValidator: validate(request, trail)
 
-    SubmissionValidator->>Database: Account is the caller's and may trade,<br/>location not restricted, instrument tradable
+    SubmissionValidator->>Database: Lock the account; it is the caller's and may trade,<br/>location not restricted for this stock, instrument tradable
     opt SELL order
-        SubmissionValidator->>Holdings: POST /internal/holdings/validate
+        SubmissionValidator->>Holdings: POST /internal/holdings/validate<br/>(with the shares in open SELLs)
         Holdings-->>SubmissionValidator: Enough shares, or InsufficientHoldingsException
     end
     opt BUY order
         SubmissionValidator->>Market: GET /api/market/quotes/by-instrument/{id}
         Market-->>SubmissionValidator: Quote (ask price, time)
         SubmissionValidator->>SubmissionValidator: Price available and quote fresh
-        SubmissionValidator->>Database: Cash balance covers quantity x ask price
+        SubmissionValidator->>Database: Cash less open BUYs covers quantity x ask price
     end
-    SubmissionValidator-->>OrderService: ValidationOutcome (passed, or refused with a reason)
+    SubmissionValidator-->>OrderPlacement: ValidationOutcome (passed, or refused with a reason)
 
     alt A check failed
+        OrderPlacement-->>OrderService: Refused (the transaction only releases the lock)
         OrderService->>SubmissionRecorder: refuse(trail)
         SubmissionRecorder->>Database: INSERT INTO audit_log<br/>SUBMITTED, RULE_CHECKED for each check that ran
         OrderService-->>OrderController: Refusal
         OrderController-->>Client: 400 Bad Request<br/>{success: false, reason, code}
     else Every check passed
-        OrderService->>SubmissionRecorder: accept(order, trail)
-        Note over SubmissionRecorder,Database: One transaction
+        OrderPlacement->>SubmissionRecorder: accept(order, trail)
         SubmissionRecorder->>Database: INSERT INTO orders (status SUBMITTED)
         SubmissionRecorder->>Database: INSERT INTO audit_log<br/>SUBMITTED, RULE_CHECKED for each check, VALIDATED
-        SubmissionRecorder-->>OrderService: Saved Order
+        SubmissionRecorder-->>OrderPlacement: Saved Order
+        OrderPlacement-->>OrderService: Saved Order (the commit releases the lock)
         SubmissionRecorder-)Kafka: After the commit, OrderSubmitted<br/>on lemarket.orders.submitted
         OrderService-->>OrderController: OrderResponse
         OrderController-->>Client: 201 Created<br/>{orderId, orderStatus: "SUBMITTED"}
     end
 ```
 
-Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; staff-ops-service's surveillance consumer reads it.
+Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). Cash and shares are checked net of the account's open orders, and the account lock means two orders sent at once are checked one after the other ([C6](contracts/C6-api.md#post-apiv1orders)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; staff-ops-service's surveillance consumer reads it.
 
 ---
 

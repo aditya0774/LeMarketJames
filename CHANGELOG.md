@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- BR-05: Open orders now reserve what they will spend. A BUY must fit the cash less the cost of the
+  account's open BUYs (the buying power the balance shows), and a SELL the holding less the shares in
+  its open SELLs of that stock; trading-service's `POST /internal/holdings/validate` takes the new
+  `reservedQuantity` for that. Placement locks the account until the order is saved, so two orders
+  sent at once are checked one after the other (`OrderPlacement`). Location rules can now name single
+  stocks: `instrument_location_restrictions` (migration 028) blocks the six non-US companies' stocks
+  for clients living in New Jersey, shown by the new persona `seed_restricted`; the platform-wide
+  `lmj.orders.restricted-locations` list still blocks every stock ([C6](contracts/C6-api.md#post-apiv1orders),
+  [C5](contracts/C5-config.md#who-uses-each-setting), [C3](contracts/C3-seed-data.md#clients)).
 - BR-03: Accounts can be suspended, reinstated, closed and expired. Trading Ops do it from trade
   search in the staff app: once a client is chosen, an "Account status" card shows their status and
   its history, and changes it with a reason and a confirmation step

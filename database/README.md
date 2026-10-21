@@ -550,3 +550,24 @@ Get-Content database/schema/027_account_status_changes.sql | psql -v ON_ERROR_ST
 History is insert-only for the services: the migration takes back the `UPDATE` and `DELETE` that
 016's default privileges gave `lemarket_app`, leaving `SELECT` and `INSERT`, as on the audit tables.
 auth-service validates the table at startup, so apply it before starting a new auth-service.
+
+## 028 — Per-instrument location restrictions
+
+`schema/028_instrument_location_restrictions.sql` adds `instrument_location_restrictions`: one row
+per stock and residence location whose clients may not trade it (BR-05). `location` is a US state
+name as the sign-up form stores it in `addresses.state` (`New Jersey`), or an ISO country code; it
+is matched against a client's residential address, ignoring case. The platform-wide list
+(`lmj.orders.restricted-locations`, [C5](../contracts/C5-config.md#who-uses-each-setting)) still
+blocks every stock; this table narrows a rule to the stocks it concerns. orders-service checks both
+at placement and at execution ([C6](../contracts/C6-api.md#post-apiv1orders)).
+
+The migration blocks the six non-US companies' stocks for New Jersey and adds the persona
+`seed_restricted`, who lives there ([C3](../contracts/C3-seed-data.md#clients)). No other seeded
+client lives in New Jersey.
+
+```powershell
+Get-Content database/schema/028_instrument_location_restrictions.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+Rules are configuration kept in migrations: `lemarket_app` may only read the table. orders-service
+validates it at startup, so apply it before starting a new orders-service.

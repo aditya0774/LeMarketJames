@@ -107,6 +107,20 @@ export async function setClientStatus(db: Client, username: string, status: stri
 }
 
 /**
+ * Sets how many shares an account holds, as an operations correction would, without any order.
+ * Orders can't take shares that open SELLs already promise (BR-05), so this is how a test makes
+ * shares disappear between a SELL's placement and its fill.
+ */
+export async function setHoldingQuantity(db: Client, accountId: number, instrumentId: number,
+    quantity: number): Promise<void> {
+  const result = await db.query('UPDATE holdings SET quantity=$3 WHERE account_id=$1 AND instrument_id=$2',
+    [accountId, instrumentId, quantity]);
+  if (result.rowCount !== 1) {
+    throw new Error(`Account ${accountId} holds no instrument ${instrumentId}.`);
+  }
+}
+
+/**
  * Adds a throwaway staff login, since staff cannot register (LMKT-58). It reuses the password hash
  * of the existing login `sameHashAs`, so it signs in with that login's password.
  */

@@ -78,7 +78,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_SufficientHoldings() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -99,7 +99,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_CallsServiceWithCorrectParams() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            TEST_ACCOUNT_ID, TEST_USERNAME, TEST_INSTRUMENT_ID, TEST_QUANTITY);
+            TEST_ACCOUNT_ID, TEST_USERNAME, TEST_INSTRUMENT_ID, TEST_QUANTITY, null);
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -115,7 +115,26 @@ class HoldingsValidationInternalControllerTest {
 
         // Assert - verify service was called with exact parameters
         verify(holdingsService).validateSufficientHoldings(
-            TEST_ACCOUNT_ID, TEST_USERNAME, TEST_INSTRUMENT_ID, TEST_QUANTITY);
+            TEST_ACCOUNT_ID, TEST_USERNAME, TEST_INSTRUMENT_ID, TEST_QUANTITY, null);
+    }
+
+    @Test
+    @DisplayName("Should pass the open SELL orders' reserved quantity on to HoldingsService (BR-05)")
+    void testValidate_PassesReservedQuantity() throws Exception {
+        InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
+        request.setAccountId(TEST_ACCOUNT_ID);
+        request.setUsername(TEST_USERNAME);
+        request.setInstrumentId(TEST_INSTRUMENT_ID);
+        request.setSellQuantity(TEST_QUANTITY);
+        request.setReservedQuantity(new BigDecimal("3"));
+
+        mockMvc.perform(post(ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(request)))
+            .andExpect(status().isOk());
+
+        verify(holdingsService).validateSufficientHoldings(
+            TEST_ACCOUNT_ID, TEST_USERNAME, TEST_INSTRUMENT_ID, TEST_QUANTITY, new BigDecimal("3"));
     }
 
     // ========== Error Handling Tests ==========
@@ -126,7 +145,7 @@ class HoldingsValidationInternalControllerTest {
         // Arrange
         doThrow(new InsufficientHoldingsException("Not enough shares"))
             .when(holdingsService).validateSufficientHoldings(
-                anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+                anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -151,7 +170,7 @@ class HoldingsValidationInternalControllerTest {
         String errorMsg = "Insufficient holdings for AAPL";
         doThrow(new InsufficientHoldingsException(errorMsg))
             .when(holdingsService).validateSufficientHoldings(
-                anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+                anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -175,7 +194,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_AllRequiredFields() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(123);
@@ -198,7 +217,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_ZeroQuantity() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -219,7 +238,7 @@ class HoldingsValidationInternalControllerTest {
         // Arrange
         BigDecimal largeQty = BigDecimal.valueOf(999999999.9999);
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -240,7 +259,7 @@ class HoldingsValidationInternalControllerTest {
         // Arrange
         BigDecimal fractional = BigDecimal.valueOf(0.5);
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -260,7 +279,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_EndpointPath() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -291,7 +310,7 @@ class HoldingsValidationInternalControllerTest {
     void testValidate_ResponseStructure_Success() throws Exception {
         // Arrange
         doNothing().when(holdingsService).validateSufficientHoldings(
-            anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+            anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);
@@ -315,7 +334,7 @@ class HoldingsValidationInternalControllerTest {
         // Arrange
         doThrow(new InsufficientHoldingsException("Error message"))
             .when(holdingsService).validateSufficientHoldings(
-                anyInt(), anyString(), anyInt(), any(BigDecimal.class));
+                anyInt(), anyString(), anyInt(), any(BigDecimal.class), any());
 
         InternalHoldingsValidationRequest request = new InternalHoldingsValidationRequest();
         request.setAccountId(TEST_ACCOUNT_ID);

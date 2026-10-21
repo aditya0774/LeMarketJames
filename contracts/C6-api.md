@@ -118,7 +118,10 @@ Places a market order for one of the caller's accounts.
 - `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
 - For a SELL, trading-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
-- Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
+- **Open orders reserve what they will spend (BR-05).** A BUY must fit the account's cash less the cost of its open BUYs (quantity × the ask each was placed at), which is the `buyingPower` the balance endpoints show. A SELL must fit the holding less the shares in the account's open SELLs of that stock. Open means not yet `FILLED` or `REJECTED` ([C1](C1-orders.md)). Cash and shares only move at settlement; the reservation is just this check.
+- **Orders on one account are checked one at a time.** Placement locks the account row from the account-status check until the order is saved, so of two orders sent at once the second is checked with the first already open. Settlement still locks the account and rechecks availability, since the fill price can differ from the placement ask.
+- **Location rules (BR-05).** An order is refused with `LOCATION_RESTRICTED` when the client's residential state or country is in the platform-wide list (every stock, [C5](C5-config.md#who-uses-each-setting)) or in the stock's own rules (`instrument_location_restrictions`, [028](../database/README.md#028--per-instrument-location-restrictions)). Execution checks again before it fills.
+- Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order.
 
 **Response `201`** (the order DTO, also returned by every read below):
 
@@ -145,11 +148,11 @@ Places a market order for one of the caller's accounts.
 |---|---|---|
 | 400 | The client or account may not trade | `success: false, code: ACCOUNT_RESTRICTED, reason` |
 | 400 | Suspended stock | `success: false, code: NOT_TRADABLE, error` |
-| 400 | Not enough shares (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
-| 400 | Not enough cash (BUY) | `success: false, code: INSUFFICIENT_CASH, reason` |
+| 400 | Not enough shares outside open SELLs (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
+| 400 | Not enough cash outside open BUYs (BUY); `reason` names the cost and the available cash | `success: false, code: INSUFFICIENT_CASH, reason` |
 | 400 | No usable quote (BUY) | `success: false, code: PRICE_UNAVAILABLE, reason` |
 | 400 | Stale quote (BUY) | `success: false, code: STALE_QUOTE, reason` |
-| 400 | Residence restricted by platform settings | `success: false, code: LOCATION_RESTRICTED, reason` |
+| 400 | Residence restricted for this stock, or for every stock | `success: false, code: LOCATION_RESTRICTED, reason` |
 | 400 | Invalid fields / unknown instrument | `errors` / `message` |
 | 401 / 403 | Not logged in / not the caller's account | see rules above |
 
@@ -933,7 +936,7 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 | `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | orders-service → trading-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). trading-service's own features read the same quotes in-process, and see an UNAVAILABLE feed the same way: no quote, and an outage recorded. |
 | `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | any service → trading-service (none today: its own charts read in-process) | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
 | `POST /internal/holdings/settle` | orders-service → trading-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
-| `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement |
+| `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement. Body `{ accountId, username, instrumentId, sellQuantity, reservedQuantity }`; `reservedQuantity` is the shares already in the account's open SELLs of the stock (missing means none), and the sale must fit the holding less that. `400 { success: false, error }` when it doesn't |
 | `/internal/market/control/**` | tests → trading-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
 | `/internal/holdings/control/settlement-faults/{accountId}` | tests → trading-service | [The settlement test control](#the-settlement-test-control), only when enabled |
 | `GET`, `PUT /internal/execution/control` | tests → orders-service | Pauses execution or makes settlement unavailable, only when `lmj.execution.control-enabled` is on ([C5](C5-config.md#order-execution)) |
