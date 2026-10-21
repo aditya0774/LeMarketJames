@@ -184,7 +184,7 @@ class AuthServiceLoggingTest {
         request.setZipCode("62701");
         request.setCountry("US");
         request.setSsn("123-45-6789");
-        request.setInitialDeposit(BigDecimal.valueOf(500));
+        request.setInitialDeposit(BigDecimal.valueOf(5000));
         request.setInvestmentExperience("beginner");
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));

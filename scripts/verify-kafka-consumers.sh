@@ -74,7 +74,7 @@ echo "An order of $large_quantity shares or more counts as large."
 # The deposit is big enough to buy that many shares of any stock in the market.
 curl --fail --silent --show-error "$trading/api/auth/register" \
     -H 'Content-Type: application/json' \
-    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Kafka CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":10000000,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"5551234567\",\"termsAccepted\":true}" >/dev/null
+    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Kafka CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":10000000,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"(555) 123-4567\",\"termsAccepted\":true}" >/dev/null
 curl --fail --silent --show-error "$trading/api/auth/login" \
     -c "$scratch/cookies" -H 'Content-Type: application/json' \
     --data "{\"username\":\"$username@example.com\",\"password\":\"Pass123!\"}" > "$scratch/login.json"

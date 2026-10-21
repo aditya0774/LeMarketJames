@@ -29,7 +29,7 @@ export async function registerViaApi(request: APIRequestContext, user: TestUser)
       username: user.username,
       email: user.email,
       password: user.password,
-      fullName: 'E2E Tester',
+      fullName: 'Endtoend Tester',
       streetAddress: '123 Main St',
       city: 'Springfield',
       state: 'Illinois',

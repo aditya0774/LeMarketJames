@@ -55,6 +55,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PlatformSettings.Auth.Lockout lockout;
     private final Clock clock;
+    private final RegistrationRules registrationRules;
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
@@ -114,6 +115,8 @@ public class AuthService {
         this.jwtService = jwtService;
         this.lockout = settings.getAuth().getLockout();
         this.clock = clock;
+        // Built here, not injected: the rules hold no state but the clock the age is counted on.
+        this.registrationRules = new RegistrationRules(clock);
     }
 
     /**
@@ -122,8 +125,11 @@ public class AuthService {
      *
      * @param request the registration request containing user details
      * @return an AuthResponse with the registered username and success message
-     * @throws IllegalArgumentException if validation fails or username is already taken
+     * @throws ValidationException if a field breaks a registration rule ({@link RegistrationRules})
+     * @throws IllegalArgumentException if the username or email is already taken
      */
+    // One transaction for the client, address and account: a failure part-way leaves no half-registered client.
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         validateRegisterRequest(request);
 
@@ -357,36 +363,17 @@ public class AuthService {
     }
 
     /**
-     * Validates a registration request ensuring all required fields are present and non-empty.
+     * Applies the registration rules (BR-01). The server is authoritative; the trading app's form
+     * mirrors the same rules so mistakes are caught before sending.
      *
      * @param request the registration request to validate
-     * @throws IllegalArgumentException if any required field is missing or invalid
+     * @throws ValidationException with every broken field and its message
      */
     private void validateRegisterRequest(RegisterRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request is required");
         }
-
-        Map<String, String> errors = new LinkedHashMap<>();
-        requireField(errors, "username", request.getUsername(), "Username is required");
-        requireField(errors, "password", request.getPassword(), "Password is required");
-        requireField(errors, "email", request.getEmail(), "Email is required");
-        requireField(errors, "fullName", request.getFullName(), "Full name is required");
-        requireField(errors, "streetAddress", request.getStreetAddress(), "Street address is required");
-        requireField(errors, "city", request.getCity(), "City is required");
-        requireField(errors, "state", request.getState(), "State is required");
-        requireField(errors, "zipCode", request.getZipCode(), "ZIP code is required");
-        requireField(errors, "ssn", request.getSsn(), "SSN is required");
-        requireField(errors, "phoneNumber", request.getPhoneNumber(), "Phone number is required");
-        requireField(errors, "investmentExperience", request.getInvestmentExperience(), "Investment experience is required");
-        requireField(errors, "employmentStatus", request.getEmploymentStatus(), "Employment status is required");
-        if (request.getInitialDeposit() == null) {
-            errors.put("initialDeposit", "Initial deposit amount is required");
-        }
-        if (request.getDateOfBirth() == null) {
-            errors.put("dateOfBirth", "Date of birth is required");
-        }
-
+        Map<String, String> errors = registrationRules.check(request);
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
@@ -404,12 +391,6 @@ public class AuthService {
         }
         validateRequired(request.getUsername(), "Email is required");
         validateRequired(request.getPassword(), "Password is required");
-    }
-
-    private void requireField(Map<String, String> errors, String field, String value, String message) {
-        if (value == null || value.isBlank()) {
-            errors.put(field, message);
-        }
     }
 
     private void validateRequired(String value, String message) {

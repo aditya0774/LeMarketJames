@@ -43,7 +43,15 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 - `email` and `fullName` are present only for staff logins: the staff member's own row in `staff_users`, read only, for the staff app's Employee information page (LMKT-144). Clients never get them here; their details come from `/api/v1/profile`.
 - Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).
 - The right password for a login that may no longer be used gets `403 { "success": false, "code": "ACCOUNT_INACTIVE", "error", "message" }`, with both texts "This account is no longer active. Please contact the firm." That is any client that isn't `ACTIVE` ([AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)) or a staff login whose `active` flag is off. Match on `code` ([AccountInactiveException](../libs/common/src/main/java/com/lemarketjames/common/security/AccountInactiveException.java)), not the text. A wrong password never gets this response, so it never reveals an account's status, and an account that no longer exists gets the wrong-password `400`.
-- Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
+- **Registration rules are the server's** (BR-01), defined once in [RegistrationRules](../services/auth-service/src/main/java/com/lemarketjames/auth/RegistrationRules.java). Every caller gets them, the form or not. The trading app's form mirrors them, with the same messages, in `register.schema.ts`. They cover:
+  - the formats of username, email, phone number, SSN and ZIP code;
+  - password strength;
+  - the characters allowed in names and addresses;
+  - a minimum age and a minimum initial deposit, and a higher deposit for `experienced`;
+  - the allowed `investmentExperience` and `employmentStatus` values (any case).
+- `username` is the one the user chose, not the email; sign-in uses the email.
+- A registration saves the client, address and account in one transaction: a failure part-way leaves nothing behind.
+- Registration errors are `400 { "errors": { "<field>": "<message>" } }`, with one message per broken field (the first rule it breaks), keyed by the request's field names. A duplicate username or email gets `400 { message }`.
 
 ## Instruments (trading-service)
 

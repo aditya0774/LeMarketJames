@@ -80,7 +80,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6789",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -192,6 +192,43 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errors.streetAddress").exists());
     }
 
+    // BR-01: the form's rules hold for any caller, with one message per field the form can show.
+    @Test
+    void registerEnforcesTheFormsRulesForAnyCaller() throws Exception {
+        String weakJson = """
+                {
+                  "username": "rulesuser",
+                  "password": "password",
+                  "email": "rules@example.org",
+                  "fullName": "Rules User",
+                  "streetAddress": "123 Main St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "US",
+                  "ssn": "123-45-6789",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "5551234567"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(weakJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.password").value(
+                        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character."))
+                .andExpect(jsonPath("$.errors.email").value("Email must contain @ and end in .com."))
+                .andExpect(jsonPath("$.errors.initialDeposit").value("Initial deposit must be at least $5,000."))
+                .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number must be 10 digits."))
+                .andExpect(jsonPath("$.errors.username").doesNotExist());
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM clients WHERE username = 'rulesuser'", Integer.class));
+    }
+
     @Test
     void registerRejectsDuplicateUsername() throws Exception {
         String registerJson = """
@@ -206,7 +243,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6789",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -240,7 +277,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6780",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -259,7 +296,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6781",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -326,7 +363,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6799",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -367,7 +404,7 @@ class AuthControllerTest {
         request.setZipCode("62701");
         request.setCountry("US");
         request.setSsn("123-45-6789");
-        request.setInitialDeposit(BigDecimal.valueOf(500));
+        request.setInitialDeposit(BigDecimal.valueOf(5000));
         request.setInvestmentExperience("beginner");
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));

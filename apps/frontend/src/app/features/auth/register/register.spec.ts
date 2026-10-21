@@ -183,6 +183,18 @@ describe('Register', () => {
       httpMock.expectOne(`${environment.apiBaseUrl}/api/auth/register`).flush({ success: true });
     });
 
+    // BR-01: the account gets the username the user chose, not their email.
+    it('registers with the username typed on the last step', () => {
+      component.registerData = { ...validFormData, username: 'jane_doe' };
+      (component as any).step.set(4);
+
+      component.onSubmit();
+      const request = httpMock.expectOne(`${environment.apiBaseUrl}/api/auth/register`);
+      expect(request.request.body.username).toBe('jane_doe');
+      expect(request.request.body.email).toBe(validFormData.email);
+      request.flush({ success: true });
+    });
+
     it('sends the user back to the first step with a schema error', () => {
       component.registerData = { ...validFormData, username: 'jane_doe', zipCode: '12' };
       (component as any).step.set(4);
