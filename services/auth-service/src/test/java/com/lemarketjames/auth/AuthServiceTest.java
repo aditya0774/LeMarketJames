@@ -15,6 +15,7 @@ import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.AccountInactiveException;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.common.security.Role;
+import com.lemarketjames.common.security.TokenClaims;
 import com.lemarketjames.common.error.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +51,8 @@ class AuthServiceTest {
     private AccountRepository accountRepository;
     private StaffUserRepository staffUserRepository;
     private final MutableClock clock = new MutableClock();
+    // Issues and checks tokens on the test's clock, so moving the clock expires them.
+    private final JwtService jwtService = new JwtService(JWT_KEY, 3600000, clock);
     // Stand in for the clients and staff_users tables: keyed by email, as login looks both up by email.
     private Map<String, ClientEntity> clientsByEmail;
     private Map<String, StaffUserEntity> staffByEmail;
@@ -101,7 +105,7 @@ class AuthServiceTest {
     // Every service in a test shares one clock, as restarted instances share real time.
     private AuthService newAuthService(PlatformSettings settings) {
         return new AuthService(
-                new JwtService(JWT_KEY, 3600000),
+                jwtService,
                 clientRepository,
                 addressRepository,
                 accountRepository,
@@ -315,7 +319,7 @@ class AuthServiceTest {
         AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
 
         assertEquals(Set.of(Role.CLIENT), result.getRoles());
-        assertEquals(Set.of(Role.CLIENT), new JwtService(JWT_KEY, 3600000).extractClaims(result.getToken()).orElseThrow().roles());
+        assertEquals(Set.of(Role.CLIENT), jwtService.extractClaims(result.getToken()).orElseThrow().roles());
     }
 
     @Test
@@ -419,6 +423,98 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("gone@example.com", "Pass123!");
         IllegalArgumentException refused = assertThrows(IllegalArgumentException.class, () -> authService.login(request));
         assertEquals("Invalid email or password", refused.getMessage());
+    }
+
+    // BR-03: a session token lasts only the inactivity timeout (1 minute by default), so a session
+    // nobody uses ends at every service on its own.
+    @Test
+    void loginTokenLastsTheInactivityTimeout() {
+        authService.register(validRegisterRequest("alice"));
+
+        AuthService.LoginResult result = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+
+        assertEquals(clock.instant().plus(Duration.ofMinutes(1)), result.getExpiresAt());
+        clock.advance(Duration.ofSeconds(59));
+        assertTrue(jwtService.extractClaims(result.getToken()).isPresent());
+        clock.advance(Duration.ofSeconds(2));
+        assertTrue(jwtService.extractClaims(result.getToken()).isEmpty());
+    }
+
+    // Refreshing an active session gives another full timeout from now and keeps the sign-in time.
+    @Test
+    void refreshExtendsTheSessionByTheTimeoutFromNow() {
+        authService.register(validRegisterRequest("alice"));
+        AuthService.LoginResult login = authService.login(new LoginRequest("alice@example.com", "Pass123!"));
+        Instant signedIn = clock.instant();
+
+        clock.advance(Duration.ofSeconds(50));
+        SessionTokens.SessionToken refreshed = authService.refresh(login.getToken()).orElseThrow();
+
+        assertEquals(clock.instant().plus(Duration.ofMinutes(1)), refreshed.expiresAt());
+        clock.advance(Duration.ofSeconds(30));
+        TokenClaims claims = jwtService.extractClaims(refreshed.value()).orElseThrow();
+        assertEquals(signedIn, claims.authTime());
+        assertEquals(Set.of(Role.CLIENT), claims.roles());
+        // The old token still runs out when it always would have; only the new one lasts longer.
+        assertTrue(jwtService.extractClaims(login.getToken()).isEmpty());
+    }
+
+    // Signing in again within the second of a sign-out stamps the token a second later, so the
+    // sign-out doesn't refuse it; a refresh must keep it after the sign-out too.
+    @Test
+    void refreshKeepsASignInRightAfterSignOutAfterTheSignOut() {
+        authService.register(validRegisterRequest("alice"));
+        authService.logout(authService.login(new LoginRequest("alice@example.com", "Pass123!")).getToken());
+        Instant signedOut = clientsByEmail.get("alice@example.com").getSessionInvalidatedAt();
+        String token = authService.login(new LoginRequest("alice@example.com", "Pass123!")).getToken();
+
+        SessionTokens.SessionToken refreshed = authService.refresh(token).orElseThrow();
+
+        assertTrue(jwtService.extractClaims(refreshed.value()).orElseThrow().issuedAt().isAfter(signedOut));
+    }
+
+    // Once the timeout has passed with no refresh, the session is over: it can't be revived.
+    @Test
+    void refreshRefusesATokenThatAlreadyTimedOut() {
+        authService.register(validRegisterRequest("alice"));
+        String token = authService.login(new LoginRequest("alice@example.com", "Pass123!")).getToken();
+
+        clock.advance(Duration.ofSeconds(61));
+
+        assertTrue(authService.refresh(token).isEmpty());
+    }
+
+    // However often it is refreshed, a session ends at the cap (jwt.expiration-ms) after sign-in.
+    @Test
+    void refreshNeverExtendsASessionPastTheCap() {
+        authService.register(validRegisterRequest("alice"));
+        String token = authService.login(new LoginRequest("alice@example.com", "Pass123!")).getToken();
+        Instant cap = clock.instant().plus(Duration.ofHours(1));
+
+        SessionTokens.SessionToken last = null;
+        while (clock.instant().isBefore(cap.minusSeconds(40))) {
+            clock.advance(Duration.ofSeconds(40));
+            last = authService.refresh(token).orElseThrow();
+            token = last.value();
+        }
+        assertEquals(cap, last.expiresAt());
+
+        clock.advance(Duration.between(clock.instant(), cap));
+        assertTrue(authService.refresh(token).isEmpty());
+    }
+
+    // The timeout is a business setting (C5), so changing it changes the token's lifetime.
+    @Test
+    void tokenLifetimeFollowsTheConfiguredTimeout() {
+        PlatformSettings settings = new PlatformSettings();
+        settings.getSession().setInactivityTimeout(Duration.ofMinutes(30));
+        AuthService longIdle = newAuthService(settings);
+        longIdle.register(validRegisterRequest("alice"));
+
+        AuthService.LoginResult result = longIdle.login(new LoginRequest("alice@example.com", "Pass123!"));
+
+        assertEquals(clock.instant().plus(Duration.ofMinutes(30)), result.getExpiresAt());
+        assertEquals(Duration.ofMinutes(30), longIdle.inactivityTimeout());
     }
 
     private RegisterRequest validRegisterRequest(String username) {

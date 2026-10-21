@@ -57,6 +57,9 @@ services:
       # Both web apps are HTTPS, so the session cookie is only ever sent over HTTPS.
       AUTH_COOKIE_SECURE: "true"
       LMJ_AUTH_LOCKOUT_DURATION: ${AUTH_LOCKOUT_DURATION:-15m}
+      # BR-03: an idle session ends after this (ISO-8601). Test runs that pause longer than a minute
+      # without input (the e2e and load suites, Jenkins) set SESSION_INACTIVITY_TIMEOUT=PT30M.
+      LMJ_SESSION_INACTIVITYTIMEOUT: ${SESSION_INACTIVITY_TIMEOUT:-PT1M}
 
   # Order placement, lifecycle, automatic execution and history, and the Trading Ops trade search
   # and order timeline. Publishes the order events to Kafka.

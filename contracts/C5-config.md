@@ -15,7 +15,7 @@ Open product questions (how many login attempts, how stale a quote may be, ...) 
 
 | Setting (see the class for key and default) | Used by |
 |---|---|
-| Inactivity timeout: `PlatformSettings.Session` | Not yet. For the session-timeout story; today a session ends when its JWT expires. |
+| Inactivity timeout: `PlatformSettings.Session` (`LMJ_SESSION_INACTIVITYTIMEOUT`, ISO-8601 such as `PT1M`) | auth-service (BR-03): a session token lasts only this long, so an idle session ends at every service on its own. `POST /api/auth/refresh` extends it while the user is active, never past `jwt.expiration-ms` from sign-in, which caps a session however busy ([C6](C6-api.md#auth-auth-service)). Both web apps (`@lemarket/shared-ui` `SessionTimeout`) warn 30 seconds before the end and then sign out to the login page. Docker Compose reads it from `SESSION_INACTIVITY_TIMEOUT` and `start-all.ps1` from `-SessionTimeout`, both `PT1M` by default; the e2e and load runs and Jenkins use `PT30M`, since their tests pause longer than a minute without input. |
 | Lockout attempts and duration: `PlatformSettings.Auth.Lockout` | auth-service login, for clients and staff |
 | Quote staleness limit: `PlatformSettings.Market` | orders-service, through `QuoteFreshness`: BUY placement refuses a stale quote, and execution rejects the order instead of filling at one ([C6](C6-api.md#automatic-execution-and-recovery)). |
 | Market hours and holidays: `MarketHours`, `sim.respect-market-hours`, `sim.holidays` | trading-service's market simulator |

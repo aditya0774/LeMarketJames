@@ -124,4 +124,24 @@ describe('Auth', () => {
     expect(auth.currentUser()).toBeNull();
     expect(auth.roles()).toEqual([]);
   });
+
+  // BR-03: the inactivity timeout starts from what sign-in or /me says the session has left.
+  it('keeps the session timing from sign-in and extends it through this app\'s origin', async () => {
+    const signedIn = auth.login('ops@seed.lemarket.com', 'Pass123!');
+    http.expectOne('/api/auth/login').flush({
+      username: 'ops', roles: ['TRADING_OPS'], message: 'Login successful', expiresInSeconds: 60, inactivityTimeoutSeconds: 60,
+    });
+    await signedIn;
+    expect(auth.sessionLease()).toEqual({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+
+    const refreshed = auth.refresh();
+    const request = http.expectOne('/api/auth/refresh');
+    expect(request.request.method).toBe('POST');
+    request.flush({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+    expect(await refreshed).toEqual({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+
+    auth.clearSession();
+    expect(auth.sessionLease()).toBeNull();
+  });
+
 });

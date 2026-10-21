@@ -16,6 +16,9 @@ pipeline {
         // CI exercises fills regardless of the wall-clock time; production defaults still respect sessions.
         SIM_RESPECT_MARKET_HOURS = 'false'
         AUTH_LOCKOUT_DURATION = '2s'
+        // BR-03's one-minute inactivity timeout would sign the e2e and load tests out while they
+        // wait on API calls; they test the timeout itself with a faked browser clock instead.
+        SESSION_INACTIVITY_TIMEOUT = 'PT30M'
         CI_HEALTH_RETRIES = '180'
         CI_HEALTH_SLEEP_SECONDS = '1'
     }

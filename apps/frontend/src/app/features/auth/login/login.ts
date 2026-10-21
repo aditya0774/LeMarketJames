@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 import { Brand } from '../../../shared/components/brand/brand';
+import { sessionEndMessage } from '@lemarket/shared-ui';
 
 /** Shown, with the heading "Account not active", for an account the firm has closed or suspended (C6). */
 export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
@@ -48,8 +49,14 @@ export class Login {
       password: ['', Validators.required],
     });
     // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
-    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+    const reason = route.snapshot.queryParamMap.get('reason');
+    if (reason === INACTIVE_REASON) {
       this.showAccountInactive();
+    }
+    // Sent here by the inactivity timeout (BR-03, SessionTimeout) when the session ended.
+    const ended = sessionEndMessage(reason);
+    if (ended) {
+      this.showAlert('info', ended.heading, ended.message);
     }
   }
 

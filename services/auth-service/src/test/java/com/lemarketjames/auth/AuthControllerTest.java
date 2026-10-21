@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -394,6 +395,53 @@ class AuthControllerTest {
         assertTrue(setCookieHeader.contains("HttpOnly"));
         assertTrue(setCookieHeader.contains("Secure"));
         assertTrue(setCookieHeader.contains("SameSite=Lax"));
+    }
+
+    // BR-03: login, /me and refresh say when the session ends; refresh sets a new cookie for
+    // another timeout; a signed-out session can't be refreshed, nor can a request with no cookie.
+    @Test
+    void refreshExtendsTheSessionUntilSignOut() throws Exception {
+        authService.register(validRegisterRequest("refreshuser"));
+        MockHttpServletResponse login = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "username": "refreshuser@example.com", "password": "Pass123!" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.lessThanOrEqualTo(60)))
+                .andReturn().getResponse();
+        Cookie loginCookie = login.getCookie(JwtAuthenticationFilter.COOKIE_NAME);
+        assertNotNull(loginCookie);
+        // The cookie goes when the token does, so a browser left alone forgets the session too.
+        assertTrue(login.getHeader("Set-Cookie").matches(".*Max-Age=(59|60);.*"), login.getHeader("Set-Cookie"));
+
+        mockMvc.perform(get("/api/auth/me").cookie(loginCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.lessThanOrEqualTo(60)));
+
+        MockHttpServletResponse refreshed = mockMvc.perform(post("/api/auth/refresh").cookie(loginCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.greaterThanOrEqualTo(59)))
+                .andReturn().getResponse();
+        Cookie refreshedCookie = refreshed.getCookie(JwtAuthenticationFilter.COOKIE_NAME);
+        assertNotNull(refreshedCookie);
+        assertTrue(refreshed.getHeader("Set-Cookie").contains("HttpOnly"));
+        mockMvc.perform(get("/api/auth/me").cookie(refreshedCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("refreshuser"));
+
+        mockMvc.perform(post("/api/auth/refresh"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh").cookie(new Cookie(JwtAuthenticationFilter.COOKIE_NAME, "not-a-token")))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/logout").cookie(refreshedCookie))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshedCookie))
+                .andExpect(status().isUnauthorized());
     }
 
     private RegisterRequest validRegisterRequest(String username) {

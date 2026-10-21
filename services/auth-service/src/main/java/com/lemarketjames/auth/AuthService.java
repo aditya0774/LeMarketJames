@@ -56,6 +56,7 @@ public class AuthService {
     private final PlatformSettings.Auth.Lockout lockout;
     private final Clock clock;
     private final RegistrationRules registrationRules;
+    private final SessionTokens sessionTokens;
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
@@ -84,7 +85,7 @@ public class AuthService {
      * @param addressRepository repository for client addresses
      * @param accountRepository repository for trading accounts
      * @param staffUserRepository repository for staff logins
-     * @param settings platform settings; supplies the lockout rule (contract C5)
+     * @param settings platform settings; supplies the lockout rule and the inactivity timeout (contract C5)
      */
     @Autowired
     public AuthService(
@@ -98,7 +99,11 @@ public class AuthService {
                 Clock.systemUTC());
     }
 
-    /** Takes the clock the lockout is timed with, so tests can move time instead of sleeping. */
+    /**
+     * Takes the clock the lockout and session tokens are timed with, so tests can move time
+     * instead of sleeping. Give the JwtService the same clock, or the tokens it checks will look
+     * expired or not yet issued.
+     */
     AuthService(
             JwtService jwtService,
             ClientRepository clientRepository,
@@ -117,6 +122,8 @@ public class AuthService {
         this.clock = clock;
         // Built here, not injected: the rules hold no state but the clock the age is counted on.
         this.registrationRules = new RegistrationRules(clock);
+        this.sessionTokens = new SessionTokens(jwtService, settings.getSession().getInactivityTimeout(),
+                Duration.ofSeconds(jwtService.getExpirationSeconds()), clock);
     }
 
     /**
@@ -248,12 +255,36 @@ public class AuthService {
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
         String username = account.getUsername();
         Set<Role> roles = account.roles();
-        Instant issuedAt = loginIssuedAt(account);
-        String token = issuedAt == null
-            ? jwtService.generateToken(username, roles)
-            : jwtService.generateToken(username, roles, issuedAt);
+        SessionTokens.SessionToken token = sessionTokens.signIn(username, roles, loginIssuedAt(account));
         log.info("Login succeeded for username={} roles={}", username, roles);
-        return new LoginResult(username, "Login successful", token, roles);
+        return new LoginResult(username, "Login successful", token.value(), roles, token.expiresAt());
+    }
+
+    /**
+     * Extends a session the user is still using (BR-03): a new token for another inactivity
+     * timeout, never past the session cap. The web apps call it on user activity only, so a
+     * session left open with nobody at it still ends.
+     *
+     * @param token the current session token
+     * @return the new token and its expiry, or empty if the token is expired, invalid or past the cap
+     */
+    public Optional<SessionTokens.SessionToken> refresh(String token) {
+        return sessionTokens.refresh(token);
+    }
+
+    /** When the given session token stops being accepted; empty if it is not valid now. */
+    public Optional<Instant> sessionExpiry(String token) {
+        return sessionTokens.expiryOf(token);
+    }
+
+    /** How long a session may sit idle before it ends (contract C5). */
+    public Duration inactivityTimeout() {
+        return sessionTokens.inactivityTimeout();
+    }
+
+    /** The time sessions are measured on, so a reply's "expires in" matches the token. */
+    public Instant now() {
+        return clock.instant();
     }
 
         private Instant loginIssuedAt(LoginAccount account) {
@@ -354,15 +385,6 @@ public class AuthService {
     }
 
     /**
-     * Retrieves the JWT token expiration time in seconds.
-     *
-     * @return the token expiration time in seconds
-     */
-    public long getTokenExpirySeconds() {
-        return jwtService.getExpirationSeconds();
-    }
-
-    /**
      * Applies the registration rules (BR-01). The server is authoritative; the trading app's form
      * mirrors the same rules so mistakes are caught before sending.
      *
@@ -430,12 +452,19 @@ public class AuthService {
         private final String message;
         private final String token;
         private final Set<Role> roles;
+        private final Instant expiresAt;
 
-        public LoginResult(String username, String message, String token, Set<Role> roles) {
+        public LoginResult(String username, String message, String token, Set<Role> roles, Instant expiresAt) {
             this.username = username;
             this.message = message;
             this.token = token;
             this.roles = roles;
+            this.expiresAt = expiresAt;
+        }
+
+        /** When the token stops being accepted unless it is refreshed (BR-03); the cookie lasts as long. */
+        public Instant getExpiresAt() {
+            return expiresAt;
         }
 
         /** The roles written into the token; tells the controller whether this login has an account. */

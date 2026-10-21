@@ -1,3 +1,4 @@
+import { provideSessionKeeperStub } from '@lemarket/shared-ui';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -10,7 +11,7 @@ describe('Staff routes', () => {
   /** Opens an address as an account with these roles (none: signed out); returns where it ends up. */
   const open = async (url: string, ...roles: Role[]) => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter(routes)],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter(routes), provideSessionKeeperStub()],
     });
     if (roles.length) {
       const auth = TestBed.inject(Auth);

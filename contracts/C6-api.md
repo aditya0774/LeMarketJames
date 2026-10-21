@@ -18,7 +18,7 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 
 | Paths | Service | Trading app ([nginx.conf](../apps/frontend/nginx.conf), [proxy.conf.json](../apps/frontend/proxy.conf.json)) | Staff app ([nginx.conf](../apps/frontend/projects/staff/nginx.conf), [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs)) |
 |---|---|---|---|
-| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | auth-service | yes | yes |
+| `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/refresh`, `GET /api/auth/me` | auth-service | yes | yes |
 | `POST /api/auth/register` | auth-service | yes | no: staff logins are not self-service |
 | `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
 | The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
@@ -34,11 +34,15 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | Method & path | Request | Success |
 |---|---|---|
 | `POST /api/auth/register` | `username, password, email, fullName, streetAddress, apartment?, city, state, zipCode, country, ssn, initialDeposit, investmentExperience ("beginner" / "experienced"), employmentStatus, dateOfBirth (yyyy-MM-dd), phoneNumber` | `201 { username, message }` |
-| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, email?, fullName?, message }` and the `jwt` cookie |
+| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, email?, fullName?, expiresInSeconds, inactivityTimeoutSeconds, message }` and the `jwt` cookie |
 | `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
-| `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName? }` |
+| `POST /api/auth/refresh` | none (the cookie) | `200 { expiresInSeconds, inactivityTimeoutSeconds }` and a new `jwt` cookie; `401` if the session has already ended |
+| `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName?, expiresInSeconds, inactivityTimeoutSeconds }` |
 
-- Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
+- Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout, refresh and `/me` only, and the cookie it sets and clears is `staff_jwt`.
+- **Sessions end when idle (BR-03).** A session token, and its cookie, last the inactivity timeout only ([C5](C5-config.md#who-uses-each-setting), one minute by default). `POST /api/auth/refresh` gives a still-valid session another full timeout from now. It keeps the sign-in time (the token's `auth_time`), so no session outlives `jwt.expiration-ms` (one hour) from sign-in, however often it is refreshed. A session that was signed out or cut off gets the usual `401 ACCOUNT_INACTIVE`; an expired one, or one past the cap, gets a plain `401`.
+- The web apps call refresh on user input only (mouse, keys, touch, returning to the tab), at most every 20 seconds. Background polling and SSE never refresh, so a page left open still times out. 30 seconds before the end they show "Are you still there?"; with no answer they sign out to `/login?reason=timeout` (or `?reason=expired` at the cap).
+- `expiresInSeconds` is how long the session has left; `inactivityTimeoutSeconds` is the setting. Both are durations, so a browser clock that is off doesn't matter.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
 - `email` and `fullName` are present only for staff logins: the staff member's own row in `staff_users`, read only, for the staff app's Employee information page (LMKT-144). Clients never get them here; their details come from `/api/v1/profile`.
 - Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).

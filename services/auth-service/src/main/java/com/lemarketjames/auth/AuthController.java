@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +27,8 @@ import java.util.stream.Collectors;
 
 /**
  * REST controller for handling authentication-related endpoints.
- * Provides endpoints for user registration, login, logout, and retrieving current user information.
+ * Provides endpoints for user registration, login, logout, session refresh, and retrieving current
+ * user information.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -68,9 +71,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request);
-        ResponseCookie cookie = buildAuthCookie(result.getToken(), authService.getTokenExpirySeconds());
+        ResponseCookie cookie = buildAuthCookie(result.getToken(), secondsUntil(result.getExpiresAt()));
 
         Map<String, Object> body = sessionBody(result.getUsername(), result.getRoles());
+        putSessionTiming(body, result.getExpiresAt());
         body.put("message", result.getMessage());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -95,18 +99,63 @@ public class AuthController {
     }
 
     /**
+     * Extends the session the cookie belongs to by another inactivity timeout (BR-03) and sets the
+     * new cookie. The web apps call it while the user is active, never from background polling, so
+     * an unattended session still ends. A signed-out or cut-off session is refused before this
+     * runs (JwtAuthenticationFilter); an expired one, or one past the session cap, gets 401 here.
+     *
+     * @param token the current session cookie
+     * @return the session's new timing, with the new cookie; 401 if it can't be extended
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(
+            @CookieValue(name = JwtAuthenticationFilter.COOKIE_NAME, required = false) String token) {
+        return java.util.Optional.ofNullable(token)
+                .flatMap(authService::refresh)
+                .<ResponseEntity<?>>map(session -> {
+                    Map<String, Object> body = new LinkedHashMap<>();
+                    putSessionTiming(body, session.expiresAt());
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.SET_COOKIE,
+                                    buildAuthCookie(session.value(), secondsUntil(session.expiresAt())).toString())
+                            .body(body);
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
+    /**
      * Retrieves information about the currently authenticated user.
      *
      * @param authentication the current user's authentication principal
+     * @param token the session cookie, read for when it runs out
      * @return a response entity containing the username of the current user
      */
     @GetMapping("/me")
-    public ResponseEntity<?> me(Authentication authentication) {
+    public ResponseEntity<?> me(Authentication authentication,
+            @CookieValue(name = JwtAuthenticationFilter.COOKIE_NAME, required = false) String token) {
         Set<Role> roles = authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority().substring("ROLE_".length()))
                 .map(Role::valueOf)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
-        return ResponseEntity.ok(sessionBody(authentication.getName(), roles));
+        Map<String, Object> body = sessionBody(authentication.getName(), roles);
+        if (token != null) {
+            authService.sessionExpiry(token).ifPresent(expiresAt -> putSessionTiming(body, expiresAt));
+        }
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * When the session ends unless it is refreshed, and how long the idle limit is (BR-03): the web
+     * apps time their "Stay signed in" warning from these. Sent as durations rather than times so
+     * the browser's clock being off doesn't matter.
+     */
+    private void putSessionTiming(Map<String, Object> body, Instant expiresAt) {
+        body.put("expiresInSeconds", secondsUntil(expiresAt));
+        body.put("inactivityTimeoutSeconds", authService.inactivityTimeout().toSeconds());
+    }
+
+    private long secondsUntil(Instant expiresAt) {
+        return Math.max(0, Duration.between(authService.now(), expiresAt).toSeconds());
     }
 
     /**

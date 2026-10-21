@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { AppShell } from './app-shell';
 import { Auth } from '../../../core/auth/auth';
+import { provideSessionKeeperStub } from '@lemarket/shared-ui';
 import { expect, vi } from 'vitest';
 
 describe('AppShell', () => {
@@ -20,6 +21,7 @@ describe('AppShell', () => {
 			imports: [AppShell],
 			providers: [
 				provideRouter([]),
+				provideSessionKeeperStub(),
 				{ provide: Auth, useValue: auth },
 			],
 		}).compileComponents();
@@ -32,6 +34,10 @@ describe('AppShell', () => {
 
 	it('names the signed-in user in the account menu', () => {
 		expect(fixture.nativeElement.querySelector('.avatar-btn').textContent.trim()).toBe('J');
+	});
+
+	it('hosts the inactivity timeout on every signed-in page', () => {
+		expect(fixture.nativeElement.querySelector('lm-session-timeout')).not.toBeNull();
 	});
 
 	it('puts the Learn tab right after Orders', () => {

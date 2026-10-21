@@ -70,8 +70,13 @@ public class PlatformSettings {
 
     /** Logged-in sessions. */
     public static class Session {
-        /** How long a session may sit idle before the user must log in again. */
-        private Duration inactivityTimeout = Duration.ofMinutes(30);
+        /**
+         * How long a session may sit idle before the user must log in again (BR-03). A session
+         * token lasts only this long; the web apps refresh it while the user is active and warn
+         * 30 seconds before it runs out. One minute is the business's choice, short because the
+         * apps show money and trades on screen; tests that pause longer set it higher.
+         */
+        private Duration inactivityTimeout = Duration.ofMinutes(1);
 
         public Duration getInactivityTimeout() {
             return inactivityTimeout;

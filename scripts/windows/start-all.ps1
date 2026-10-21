@@ -21,13 +21,17 @@
     .\scripts\windows\start-all.ps1
     .\scripts\windows\start-all.ps1 -SkipBuild
     .\scripts\windows\start-all.ps1 -Kafka
+    .\scripts\windows\start-all.ps1 -SessionTimeout PT30M
 #>
 param(
     # Skip `mvn install` when nothing under libs/ or services/ changed since the last run.
     [switch]$SkipBuild,
     # Publish order events to a Kafka broker you already have running on localhost:9092, and have
     # the consumers in trading-service and staff-ops-service read them from it.
-    [switch]$Kafka
+    [switch]$Kafka,
+    # How long a session may sit idle before it is signed out (BR-03), ISO-8601. Running the e2e
+    # or load tests against this stack needs PT30M: they pause longer than a minute without input.
+    [string]$SessionTimeout = 'PT1M'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,7 +64,9 @@ $trading = '$env:SIM_CONTROL_ENABLED = ''true''; $env:LMJ_SETTLEMENT_CONTROL_ENA
 if ($Kafka) { $trading = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $trading }
 Start-Window 'trading-service :8084' $repoRoot $trading
 # The web apps below run over HTTPS (BR-02), so the session cookie is marked Secure, as in Docker Compose.
+# The inactivity timeout is passed on as Docker Compose passes SESSION_INACTIVITY_TIMEOUT.
 Start-Window 'auth-service :8082'     $repoRoot ('$env:AUTH_COOKIE_SECURE = ''true''; ' +
+    "`$env:LMJ_SESSION_INACTIVITYTIMEOUT = '$SessionTimeout'; " +
     'mvn -B -pl services/auth-service spring-boot:run')
 # The same setting Docker Compose gives it; the broker address defaults to localhost:9092.
 $orders = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +

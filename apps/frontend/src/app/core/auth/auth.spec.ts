@@ -150,4 +150,36 @@ describe('Auth', () => {
     expect(auth.roles()).toEqual([]);
   });
 
+  // BR-03: the inactivity timeout starts from what sign-in or /me says the session has left.
+  it('keeps the session timing from sign-in and the page load, and forgets it on sign-out', async () => {
+    const loginPromise = auth.login({ username: 'alice', password: 'Pass123!' });
+    httpMock.expectOne(`${baseUrl}/login`).flush({
+      username: 'alice', message: 'Login successful', accountId: 7, expiresInSeconds: 60, inactivityTimeoutSeconds: 60,
+    });
+    await loginPromise;
+    expect(auth.sessionLease()).toEqual({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+
+    const restorePromise = auth.restoreSession();
+    httpMock.expectOne(`${baseUrl}/me`).flush({
+      username: 'alice', accountId: 7, expiresInSeconds: 41, inactivityTimeoutSeconds: 60,
+    });
+    await restorePromise;
+    expect(auth.sessionLease()).toEqual({ expiresInSeconds: 41, inactivityTimeoutSeconds: 60 });
+
+    const logoutPromise = auth.logout();
+    httpMock.expectOne(`${baseUrl}/logout`).flush({ message: 'Logged out' });
+    await logoutPromise;
+    expect(auth.sessionLease()).toBeNull();
+  });
+
+  it('extends the session with POST /refresh', async () => {
+    const refreshed = auth.refresh();
+
+    const request = httpMock.expectOne(`${baseUrl}/refresh`);
+    expect(request.request.method).toBe('POST');
+    request.flush({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+
+    expect(await refreshed).toEqual({ expiresInSeconds: 60, inactivityTimeoutSeconds: 60 });
+  });
+
 });

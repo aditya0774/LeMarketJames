@@ -4,17 +4,18 @@ import { Auth } from '../../../core/auth/auth';
 import { roleLabel } from '../../../core/auth/role-label';
 import { EMPLOYEE_INFORMATION } from '../../../features/employee-information/employee-information.route';
 import { Brand } from '../../components/brand/brand';
-import { AccountMenu } from '@lemarket/shared-ui';
+import { AccountMenu, SessionTimeout } from '@lemarket/shared-ui';
 
 /**
  * Layout of every staff page, from the redesign's staff boards: a header with the lemarket brand,
  * the "Courtside View" badge, the signed-in role and the account menu (Employee information, theme
  * and log out), above the page content. Being in the header of every page is what makes Employee
- * information reachable from both the Trading Ops and the Analyst dashboards (LMKT-144).
+ * information reachable from both the Trading Ops and the Analyst dashboards (LMKT-144). Every
+ * staff page also gets the inactivity timeout (BR-03), which signs an idle session out.
  */
 @Component({
   selector: 'staff-shell',
-  imports: [RouterOutlet, Brand, AccountMenu],
+  imports: [RouterOutlet, Brand, AccountMenu, SessionTimeout],
   templateUrl: './staff-shell.html',
   styleUrl: './staff-shell.css',
 })

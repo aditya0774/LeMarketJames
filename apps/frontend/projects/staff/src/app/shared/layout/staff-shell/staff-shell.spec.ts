@@ -1,3 +1,4 @@
+import { provideSessionKeeperStub } from '@lemarket/shared-ui';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { StaffShell } from './staff-shell';
@@ -9,7 +10,7 @@ describe('StaffShell', () => {
   it('renders the logout button and hosts the page', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
-      providers: [provideRouter([]), provideHttpClient()],
+      providers: [provideRouter([]), provideSessionKeeperStub(), provideHttpClient()],
     }).compileComponents();
     TestBed.inject(Auth).roles.set(['TRADING_OPS']);
     const fixture = TestBed.createComponent(StaffShell);
@@ -17,6 +18,8 @@ describe('StaffShell', () => {
 
     const page = fixture.nativeElement as HTMLElement;
     expect(page.querySelector('.staff-role')?.textContent?.trim()).toBe('Trading Operations');
+    // Every staff page gets the inactivity timeout (BR-03).
+    expect(page.querySelector('lm-session-timeout')).not.toBeNull();
     // Log out sits in the account menu behind the avatar.
     page.querySelector<HTMLButtonElement>('.avatar-btn')!.click();
     fixture.detectChanges();
@@ -32,7 +35,7 @@ describe('StaffShell', () => {
     it(`links ${role} to Employee information from the account menu`, async () => {
       await TestBed.configureTestingModule({
         imports: [StaffShell],
-        providers: [provideRouter([]), provideHttpClient()],
+        providers: [provideRouter([]), provideSessionKeeperStub(), provideHttpClient()],
       }).compileComponents();
       TestBed.inject(Auth).roles.set([role]);
       const fixture = TestBed.createComponent(StaffShell);
@@ -51,7 +54,7 @@ describe('StaffShell', () => {
   it('signs out through the API and returns to the staff login', async () => {
     await TestBed.configureTestingModule({
       imports: [StaffShell],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideSessionKeeperStub(), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     const auth = TestBed.inject(Auth);
     auth.currentUser.set('seed_analyst');

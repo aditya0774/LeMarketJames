@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- BR-03: Sessions end after one minute without input (`lmj.session.inactivity-timeout`, `PT1M`).
+  A session token, and its cookie, last only that long. `POST /api/auth/refresh` extends an active
+  session, never past `jwt.expiration-ms` from sign-in (the token's new `auth_time` claim). Login
+  and `/api/auth/me` now also return `expiresInSeconds` and `inactivityTimeoutSeconds`. Both web
+  apps refresh on user input only, at most every 20 seconds, warn 30 seconds before the end ("Are
+  you still there?", `@lemarket/shared-ui` `SessionTimeout`) and then sign out to
+  `/login?reason=timeout`. The staff app routes the refresh. Test stacks set
+  `SESSION_INACTIVITY_TIMEOUT=PT30M` (Docker Compose; Jenkins does), or `-SessionTimeout PT30M` in
+  `start-all.ps1` ([C5](contracts/C5-config.md#who-uses-each-setting),
+  [C6](contracts/C6-api.md#auth-auth-service)).
 - BR-02 hardening: both web apps are HTTPS only in Docker: `https://localhost:4200` and `:4201`,
   with a self-signed certificate made at image build (accept the browser warning once). Plain HTTP
   on those ports is redirected. The session cookie is `Secure` (`AUTH_COOKIE_SECURE=true`). The

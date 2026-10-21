@@ -2,10 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import type { SessionLease } from '@lemarket/shared-ui';
 
 export type Role = 'CLIENT' | 'TRADING_OPS' | 'ANALYST';
 
-interface SessionResponse {
+/** What /login and /me say about the session; the timing (BR-03) is what the inactivity timeout counts down from. */
+interface SessionResponse extends Partial<SessionLease> {
   username: string;
   roles?: Role[];
   accountId?: number;
@@ -28,6 +30,9 @@ export class Auth {
   readonly email = signal<string | null>(null);
   readonly fullName = signal<string | null>(null);
 
+  // How long the session has left as of sign-in or the page load; the inactivity timeout starts from it.
+  private lease: SessionLease | null = null;
+
   constructor(private readonly http: HttpClient) {}
 
   async login(username: string, password: string): Promise<AuthResponse> {
@@ -49,6 +54,16 @@ export class Auth {
     }
   }
 
+  /** Extends the session while the user is active (BR-03); the new cookie replaces the old one. */
+  refresh(): Promise<SessionLease> {
+    return firstValueFrom(this.http.post<SessionLease>(`${this.baseUrl}/refresh`, {}));
+  }
+
+  /** The session's timing as of sign-in or the page load, or null when signed out. */
+  sessionLease(): SessionLease | null {
+    return this.lease;
+  }
+
   // Forgets the session locally when the server has already ended it (an account cut off
   // mid-use, LMKT-56); there is nothing left to log out of, so no request is sent.
   clearSession(): void {
@@ -64,5 +79,8 @@ export class Auth {
     this.roles.set(session?.roles ?? []);
     this.email.set(session?.email ?? null);
     this.fullName.set(session?.fullName ?? null);
+    this.lease = session?.expiresInSeconds !== undefined && session.inactivityTimeoutSeconds !== undefined
+      ? { expiresInSeconds: session.expiresInSeconds, inactivityTimeoutSeconds: session.inactivityTimeoutSeconds }
+      : null;
   }
 }

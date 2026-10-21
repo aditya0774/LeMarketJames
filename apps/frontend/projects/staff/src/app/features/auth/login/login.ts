@@ -6,6 +6,7 @@ import { Auth } from '../../../core/auth/auth';
 import { homeFor } from '../../../core/auth/staff-home';
 import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 import { Brand } from '../../../shared/components/brand/brand';
+import { sessionEndMessage } from '@lemarket/shared-ui';
 
 /** Shown to a client who signs in here; their session is ended before it is shown. */
 export const STAFF_ONLY_MESSAGE = 'This login is for staff only';
@@ -51,8 +52,14 @@ export class Login {
       password: ['', Validators.required],
     });
     // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
-    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+    const reason = route.snapshot.queryParamMap.get('reason');
+    if (reason === INACTIVE_REASON) {
       this.showAccountInactive();
+    }
+    // Sent here by the inactivity timeout (BR-03, SessionTimeout) when the session ended.
+    const ended = sessionEndMessage(reason);
+    if (ended) {
+      this.showAlert('info', ended.heading, ended.message);
     }
   }
 

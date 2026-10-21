@@ -6,6 +6,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
@@ -95,5 +99,39 @@ class JwtServiceTest {
                 .compact();
 
         assertEquals(Set.of(Role.CLIENT), jwtService.extractClaims(legacyToken).orElseThrow().roles());
+    }
+
+    // A session token states its own sign-in time and expiry (BR-03), and is checked against the
+    // service's clock: accepted up to its expiry and refused after it.
+    @Test
+    void sessionTokenCarriesItsSignInTimeAndExpiresWhenItSays() {
+        Instant signIn = Instant.parse("2026-10-21T09:00:00Z");
+        Instant issued = signIn.plusSeconds(40);
+        Instant expires = issued.plusSeconds(60);
+        String token = new JwtService(SECRET, 3600000, Clock.fixed(issued, ZoneOffset.UTC))
+                .generateToken("alice", Set.of(Role.CLIENT), issued, signIn, expires);
+
+        TokenClaims claims = new JwtService(SECRET, 3600000, Clock.fixed(expires.minusSeconds(1), ZoneOffset.UTC))
+                .extractClaims(token).orElseThrow();
+        assertEquals(signIn, claims.authTime());
+        assertEquals(issued, claims.issuedAt());
+        assertEquals(expires, claims.expiresAt());
+
+        assertTrue(new JwtService(SECRET, 3600000, Clock.fixed(expires.plusSeconds(1), ZoneOffset.UTC))
+                .extractClaims(token).isEmpty());
+    }
+
+    // Tokens issued before auth_time existed were issued at sign-in.
+    @Test
+    void tokenWithoutAuthTimeWasIssuedAtSignIn() {
+        Instant issued = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        String legacyToken = Jwts.builder()
+                .subject("alice")
+                .issuedAt(Date.from(issued))
+                .expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        assertEquals(issued, jwtService.extractClaims(legacyToken).orElseThrow().authTime());
     }
 }

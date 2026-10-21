@@ -1,3 +1,4 @@
+import { provideSessionKeeperStub } from '@lemarket/shared-ui';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, provideRouter, UrlTree } from '@angular/router';
@@ -6,7 +7,7 @@ import { tradingOpsGuard } from './trading-ops.guard';
 import { AppShell } from '../../shared/layout/app-shell/app-shell';
 
 describe('Trading Operations access', () => {
-  beforeEach(() => TestBed.configureTestingModule({ imports: [AppShell], providers: [provideHttpClient(), provideRouter([])] }));
+  beforeEach(() => TestBed.configureTestingModule({ imports: [AppShell], providers: [provideHttpClient(), provideRouter([]), provideSessionKeeperStub()] }));
   const run = () => TestBed.runInInjectionContext(() => tradingOpsGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
   it('redirects signed-out visitors to login', () => {
     expect(TestBed.inject(Router).serializeUrl(run() as UrlTree)).toBe('/login');

@@ -199,14 +199,20 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
    - auth-service looks the email up among clients first, then staff, refuses a locked or inactive login, and verifies the password
    - Repeated wrong passwords lock the login for a while (the limit and duration are settings, [C5](contracts/C5-config.md))
    - Returns the JWT in an HTTP-only cookie named `jwt`, and the username, roles and (for clients) account ID in the body
-   - The token carries the username as subject, the roles, the issued-at time and the expiration time
+   - The token carries the username as subject, the roles, the sign-in time (`auth_time`), the issued-at time and the expiration time
+   - The token and its cookie last only the inactivity timeout, one minute by default (BR-03, [C5](contracts/C5-config.md#who-uses-each-setting))
 
 3. **Authenticated Requests:** Subsequent requests include the cookie automatically
    - The web app's Nginx forwards it; each service's `JwtAuthenticationFilter` extracts the token
    - `JwtService` validates the signature and expiration and reads the roles
    - A missing or invalid token gets `401`; a valid token without the role an endpoint needs gets `403`
 
-4. **Logout:** `/api/auth/logout` answers with an expired `jwt` cookie, which clears it in the browser
+4. **Staying signed in (BR-03):** while the user is using the app (mouse, keys, touch), the web app calls `POST /api/auth/refresh` at most every 20 seconds for a new token that lasts another timeout
+   - Background polling and live updates never refresh, so a page left open still ends
+   - 30 seconds before the end, an "Are you still there?" warning offers "Stay signed in"; with no answer the app signs out to the login page, which says why
+   - However often it is refreshed, a session ends one hour after sign-in (`jwt.expiration-ms`)
+
+5. **Logout:** `/api/auth/logout` answers with an expired `jwt` cookie, which clears it in the browser
 
 The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagram-backend-login-flow).
 
@@ -796,6 +802,8 @@ npm run report:staff              # open the HTML report from the last staff run
 
 Jenkins runs the trading suite in the stage **Run Playwright E2E tests**, right after the smoke test, and the staff suite in **Run staff app Playwright E2E tests**, right after that. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
 
+**The inactivity timeout and the tests.** A session ends after one minute without input (BR-03), and many tests wait longer than that on an order or a report without touching the page. Start the stack for the e2e and load suites with a longer timeout, as Jenkins does: `SESSION_INACTIVITY_TIMEOUT=PT30M docker compose up -d`, or `start-all.ps1 -SessionTimeout PT30M` on Windows. Restore the default afterwards with a plain `docker compose up -d`. The timeout itself is tested by `session-timeout.spec.ts` and `tests-staff/staff-session-timeout.spec.ts`, which fake the browser's clock and so pass with either setting.
+
 ---
 
 ## API & Frontend Access
@@ -862,6 +870,8 @@ All test accounts are loaded automatically when the database is initialized (see
 | `analyst@seed.lemarket.com` | `ANALYST` | Reports dashboard, read-only aggregate reports |
 
 **Password for all staff logins:** `Pass123!`
+
+Both apps sign you out after **one minute without input** (BR-03), with a warning 30 seconds before. To look around at leisure, start the stack with `SESSION_INACTIVITY_TIMEOUT=PT30M docker compose up -d`.
 
 ---
 

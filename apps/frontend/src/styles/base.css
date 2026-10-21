@@ -1265,6 +1265,57 @@ input[type='number']::-webkit-inner-spin-button {
   height: 16px;
 }
 
+/* ---------- Session timeout ----------
+   The "Are you still there?" warning shown 30 seconds before an idle session ends (BR-03,
+   @lemarket/shared-ui SessionTimeout). Above everything else, the account menu included. */
+
+.session-timeout-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--scrim);
+}
+
+.session-timeout {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--line5);
+  border-radius: 18px;
+  box-shadow: var(--shadow-overlay);
+}
+
+.session-timeout h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.session-timeout p {
+  margin: 0;
+  color: var(--dim);
+}
+
+.session-timeout-count {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.session-timeout-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /* ---------- Loading and empty states ---------- */
 
 .skeleton {
