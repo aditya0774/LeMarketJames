@@ -94,6 +94,10 @@ describe('Staff order and client search', () => {
       const {el, refresh} = render();
       component.mode = 'client'; component.term = '42'; component.search(); client().flush([]); refresh();
       expect(status(el)).toBe('No trades found for these search criteria.');
+      // The client's account status shows even without trades (BR-03).
+      http.expectOne(r => r.url.endsWith('/api/v1/clients/42/status'))
+        .flush({clientId: 42, fullName: 'Bronny James', status: 'ACTIVE', changes: []}); refresh();
+      expect(el.querySelector('staff-client-status')?.textContent).toContain('Bronny James (Client ID 42)');
       expect(el.querySelector('label[for="ts-term"]')?.textContent).toBe('Client ID or client name');
 
       component.term = ''; component.search(); refresh();
@@ -115,6 +119,23 @@ describe('Staff order and client search', () => {
       component.term = 'Nobody'; component.search();
       http.expectOne(r => r.params.has('name')).flush([]); refresh();
       expect(el.querySelector('.ts-clients p')?.textContent).toBe('No matching clients found.');
+    });
+
+    it("shows the chosen client's account status, and none for an order search", () => {
+      const {el, refresh} = render();
+      component.term = '42'; component.search(); order().flush([trade]); refresh();
+      expect(el.querySelector('staff-client-status')).toBeNull();
+      http.expectNone(r => r.url.includes('/api/v1/clients/'));
+
+      component.term = 'Alex'; component.search();
+      http.expectOne(r => r.params.has('name')).flush([{clientId: 7, fullName: 'Alex A'}]);
+      client().flush([trade]); refresh();
+      http.expectOne(r => r.url.endsWith('/api/v1/clients/7/status'))
+        .flush({clientId: 7, fullName: 'Alex A', status: 'SUSPENDED', changes: []}); refresh();
+      expect(el.querySelector('staff-client-status .cs-head .pill')?.textContent).toContain('Suspended');
+
+      component.clearResults(); refresh();
+      expect(el.querySelector('staff-client-status')).toBeNull();
     });
 
     it('says when only the first 50 matching clients are shown', () => {

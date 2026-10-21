@@ -78,6 +78,8 @@ export function staffProxy(host) {
     '^/api/auth/(login|logout|me|refresh)(\\?|$)': staffRoute(at(8082)),
     // The Trading Ops reads: trade search, its client list and an order's timeline: orders-service.
     '^/api/v1/orders/(trades/search|trades/clients|[^/?]+/timeline)(\\?|$)': staffRoute(at(8085)),
+    // Trading Ops' view and change of a client's account status (BR-03): auth-service.
+    '^/api/v1/clients/[0-9]+/status(\\?|$)': staffRoute(at(8082)),
     // Any other /api path does not exist for staff; returning false makes the dev server answer 404.
     '^/api/': { target: at(8086), bypass: () => false },
   };

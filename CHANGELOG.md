@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- BR-03: Accounts can be suspended, reinstated, closed and expired. Trading Ops do it from trade
+  search in the staff app: once a client is chosen, an "Account status" card shows their status and
+  its history, and changes it with a reason and a confirmation step
+  (`GET`/`PUT /api/v1/clients/{clientId}/status`, auth-service, `TRADING_OPS` only, routed by the staff
+  app). A client closes their own account from the new account page in the trading app's account
+  menu (`GET`/`POST /api/auth/close-account`): only with no stocks and no open orders, after
+  re-entering the password; any cash stays on the closed account for operations to pay out. Every
+  change is kept in the new `account_status_changes` table (migration 027, insert-only for the
+  services), logged as `ACCOUNT_STATUS_CHANGED`, and ends the client's sessions: their next request
+  gets `401 ACCOUNT_INACTIVE` ([C6](contracts/C6-api.md#account-status-trading_ops-only),
+  [C7](contracts/C7-roles.md#who-may-use-what)).
 - BR-03: Sessions end after one minute without input (`lmj.session.inactivity-timeout`, `PT1M`).
   A session token, and its cookie, last only that long. `POST /api/auth/refresh` extends an active
   session, never past `jwt.expiration-ms` from sign-in (the token's new `auth_time` claim). Login

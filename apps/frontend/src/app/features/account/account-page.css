@@ -1,0 +1,69 @@
+/* The client's account page: one card for now, "Close my account" (BR-03). */
+
+.acct {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+}
+
+.acct-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.acct-title h1,
+.acct-title p,
+.acct-close h2,
+.acct-close p {
+  margin: 0;
+}
+
+.acct-title p {
+  color: var(--dim);
+}
+
+.acct-close {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.acct-left {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.acct-cash {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+
+.acct-cash dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.acct-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.acct-confirm .field {
+  margin: 0;
+}
+
+.acct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.acct-start {
+  align-self: flex-start;
+}

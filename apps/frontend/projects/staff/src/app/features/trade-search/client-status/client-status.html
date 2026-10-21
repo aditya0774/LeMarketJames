@@ -1,0 +1,90 @@
+<section class="card cs" aria-labelledby="cs-title">
+  <div class="cs-head">
+    <h2 id="cs-title">Account status</h2>
+    @if (client(); as c) {
+      <span class="pill" [class]="'pill cs-' + c.status.toLowerCase()">
+        <span aria-hidden="true">{{ c.status === 'ACTIVE' ? '●' : '■' }}</span>{{ label(c.status) }}
+      </span>
+    }
+  </div>
+
+  @if (loading()) {
+    <output class="loading"><span class="spinner"></span>Loading the account status…</output>
+  } @else if (client(); as c) {
+    <p class="hint">{{ c.fullName }} (Client ID {{ c.clientId }})</p>
+
+    @if (confirming()) {
+      <!-- The second step: says what the change does before anything is sent. -->
+      <div class="alert warn cs-confirm" role="alertdialog" aria-labelledby="cs-confirm-title" aria-describedby="cs-confirm-text">
+        <div>
+          <b id="cs-confirm-title">Change {{ c.fullName }}'s account to {{ next ? label(next) : '' }}?</b>
+          <p id="cs-confirm-text">{{ next ? effectOf(next) : '' }}</p>
+          <div class="cs-actions">
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="saving()" (click)="confirm()">
+              {{ saving() ? 'Changing…' : 'Yes, change status' }}
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" [disabled]="saving()" (click)="cancel()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <form class="cs-form" (ngSubmit)="review()" novalidate>
+        <fieldset>
+          <legend>Change account status</legend>
+          <div class="field">
+            <label for="cs-status">New status</label>
+            <select id="cs-status" name="status" [(ngModel)]="next">
+              <option value="" disabled>Choose a status</option>
+              @for (status of choices(); track status) {
+                <option [value]="status">{{ label(status) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="cs-reason">Reason</label>
+            <textarea id="cs-reason" name="reason" rows="2" [(ngModel)]="reason" [maxlength]="maxReasonLength"
+                      placeholder="e.g. Identity documents under review" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-outline btn-sm">Change status</button>
+        </fieldset>
+      </form>
+    }
+
+    @if (saved()) {
+      <output class="alert ok" aria-live="polite"><div>{{ saved() }}</div></output>
+    }
+
+    <h3 class="cs-history-title">Status history</h3>
+    @if (c.changes.length) {
+      <div class="table-scroll">
+        <table class="t cs-history">
+          <caption class="sr-only">Status changes, newest first · Times in UTC</caption>
+          <thead>
+            <tr>
+              <th scope="col">When (UTC)</th>
+              <th scope="col">Change</th>
+              <th scope="col">By</th>
+              <th scope="col">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (change of c.changes; track $index) {
+              <tr>
+                <td class="mono">{{ utcTime(change.changedAt) }}</td>
+                <td>{{ label(change.oldStatus) }} → {{ label(change.newStatus) }}</td>
+                <td class="mono">{{ change.changedBy }}</td>
+                <td>{{ change.reason }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="hint">No status changes since the account was opened.</p>
+    }
+  }
+
+  @if (error()) {
+    <div class="alert err" role="alert"><div>{{ error() }}</div></div>
+  }
+</section>

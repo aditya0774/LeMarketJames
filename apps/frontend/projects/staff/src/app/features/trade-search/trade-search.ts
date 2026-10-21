@@ -7,13 +7,15 @@ import { ClientSearchResult, TradeSearchResult, TradeSearchService } from '../..
 import { TradeTimelineComponent } from '../trading-ops/trade-timeline/trade-timeline';
 import { TradeTimelineService } from '../trading-ops/trade-timeline/trade-timeline.service';
 import { AuditEvent } from '../../shared/models/audit-event.model';
+import { ClientStatusPanel } from './client-status/client-status';
 
 /**
  * Trading Ops trade search, laid out like the redesign's Trade search board: the search form on
  * the left, the completed trades on the right, and below them the selected order's timeline from
- * the audit trail (C6, GET /api/v1/orders/{orderId}/timeline).
+ * the audit trail (C6, GET /api/v1/orders/{orderId}/timeline). Once a client is chosen, by ID or
+ * by name, their account status and its history show too, with the form to change it (BR-03).
  */
-@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe, TradeTimelineComponent],
+@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe, TradeTimelineComponent, ClientStatusPanel],
   templateUrl: './trade-search.html', styleUrl: './trade-search.css' })
 export class TradeSearch implements OnDestroy {
   private readonly api = inject(TradeSearchService);
@@ -36,12 +38,14 @@ export class TradeSearch implements OnDestroy {
   readonly timeline = signal<AuditEvent[]>([]);
   readonly timelineLoading = signal(false);
   readonly timelineError = signal('');
+  /** The client searched for, whose account status is shown; null for an order search. */
+  readonly selectedClient = signal<number | null>(null);
 
   clearResults(): void {
     this.request?.unsubscribe();
     this.loading.set(false); this.searched.set(false); this.results.set([]);
     this.error.set(''); this.clients.set([]); this.clientsSearched.set(false);
-    this.selected.set('');
+    this.selected.set(''); this.selectedClient.set(null);
     this.clearTimeline();
   }
 
@@ -82,6 +86,7 @@ export class TradeSearch implements OnDestroy {
       if (id < 1 || id > 2147483647) { this.error.set('Enter a valid positive ID.'); return; }
       this.loading.set(true);
       const query = this.mode === 'order' ? {orderId: id} : this.clientQuery(id);
+      if (this.mode === 'client') { this.selectedClient.set(id); }
       this.request = this.api.search(query).subscribe({next: trades => {
         this.show({label: `${this.mode === 'order' ? 'Order' : 'Client'} ID ${id}`, trades});
       }, error: error => this.failed(error)});
@@ -99,6 +104,7 @@ export class TradeSearch implements OnDestroy {
 
   selectClient(client: ClientSearchResult): void {
     this.request?.unsubscribe(); this.error.set(''); this.loading.set(true);
+    this.selectedClient.set(client.clientId);
     this.request = this.api.search(this.clientQuery(client.clientId)).subscribe({next: trades => {
       this.show({label: `${client.fullName} (Client ID ${client.clientId})`, trades});
     }, error: error => this.failed(error)});

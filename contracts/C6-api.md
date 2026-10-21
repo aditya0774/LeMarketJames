@@ -20,6 +20,8 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 |---|---|---|---|
 | `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/refresh`, `GET /api/auth/me` | auth-service | yes | yes |
 | `POST /api/auth/register` | auth-service | yes | no: staff logins are not self-service |
+| `GET /api/auth/close-account`, `POST /api/auth/close-account` | auth-service | yes, as part of `/api/auth/**` | no: a client closes their own account |
+| `GET /api/v1/clients/{clientId}/status`, `PUT /api/v1/clients/{clientId}/status` | auth-service | no: these paths reach trading-service, which has no such endpoint | yes |
 | `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
 | The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
 | `/api/v1/reports/**`, `/api/v1/surveillance/**` | staff-ops-service | no: these paths reach trading-service, which has no such endpoint | yes |
@@ -38,6 +40,8 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
 | `POST /api/auth/refresh` | none (the cookie) | `200 { expiresInSeconds, inactivityTimeoutSeconds }` and a new `jwt` cookie; `401` if the session has already ended |
 | `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName?, expiresInSeconds, inactivityTimeoutSeconds }` |
+| `GET /api/auth/close-account` | none (`CLIENT` only) | `200 { closable, cashBalance, currency, holdings, openOrders }`: what is left on the caller's account ([closing an account](#closing-an-account-client-only)) |
+| `POST /api/auth/close-account` | `{ "password": "..." }` (`CLIENT` only) | `200 { message, cashBalance, currency }`; the account is `CLOSED` and the cookie cleared |
 
 - Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout, refresh and `/me` only, and the cookie it sets and clears is `staff_jwt`.
 - **Sessions end when idle (BR-03).** A session token, and its cookie, last the inactivity timeout only ([C5](C5-config.md#who-uses-each-setting), one minute by default). `POST /api/auth/refresh` gives a still-valid session another full timeout from now. It keeps the sign-in time (the token's `auth_time`), so no session outlives `jwt.expiration-ms` (one hour) from sign-in, however often it is refreshed. A session that was signed out or cut off gets the usual `401 ACCOUNT_INACTIVE`; an expired one, or one past the cap, gets a plain `401`.
@@ -56,6 +60,33 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 - `username` is the one the user chose, not the email; sign-in uses the email.
 - A registration saves the client, address and account in one transaction: a failure part-way leaves nothing behind.
 - Registration errors are `400 { "errors": { "<field>": "<message>" } }`, with one message per broken field (the first rule it breaks), keyed by the request's field names. A duplicate username or email gets `400 { message }`.
+
+### Closing an account (CLIENT only)
+
+A client closes their own account from the trading app's account page (BR-03). Closing is final for the client: only Trading Ops can make the account active again ([account status](#account-status-trading_ops-only)).
+
+- `GET` says whether the account may be closed now and what is on it. `holdings` counts the stocks the account holds shares of; `openOrders` counts its orders that are not final (anything but `FILLED` or `REJECTED`, [C1](C1-orders.md)). `closable` is true when both are 0. Cash may remain.
+- `POST` checks the password again, then the same rule, in one transaction with the client row locked:
+  - wrong or missing password: `400 { "errors": { "password": "The password is not correct." } }`, nothing changes;
+  - stocks or open orders left: `409 { "success": false, "code": "ACCOUNT_NOT_EMPTY", "error", "holdings", "openOrders" }`, with `error` saying what to do first;
+  - otherwise the status becomes `CLOSED`, a history row is written (`changedBy` is the client's username, reason "Closed by the client"), every earlier session is ended and the reply clears the cookie. The client's next request with an old cookie gets `401 ACCOUNT_INACTIVE`, and sign-in gets `403 ACCOUNT_INACTIVE`.
+- Remaining cash stays in `accounts.cash_balance` of the closed account. It is never deleted; operations pay it out outside the platform (BRS 4.2).
+- Staff get `403`; the staff app doesn't route the path.
+
+### Account status (TRADING_OPS only)
+
+Trading Ops see and change a client's account status, with its history, from trade search in the staff app (BR-03). Served by auth-service; routed by the staff app only.
+
+| Method & path | Request | Success |
+|---|---|---|
+| `GET /api/v1/clients/{clientId}/status` | none | `200 { clientId, fullName, status, changes: [{ oldStatus, newStatus, reason, changedBy, changedAt }] }`, newest change first |
+| `PUT /api/v1/clients/{clientId}/status` | `{ "status": "SUSPENDED", "reason": "..." }` | `200`, the same body after the change |
+
+- `status` is an [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) name, any case. Any status may follow any other; `ACTIVE` reinstates an account. `changedAt` is ISO-8601 UTC; `changedBy` is the staff member's username.
+- `reason` is required, at most 500 characters, kept in the history (`account_status_changes`, [027](../database/README.md#027--account-status-history)). History rows are never changed or deleted.
+- Validation failures are `400 { "errors": { "status" | "reason": "<message>" } }`, including a change to the status the account already has. An unknown client is `404 { "success": false, "code": "CLIENT_NOT_FOUND", "error": "Client not found" }`. Every role but `TRADING_OPS` gets `403`.
+- A change takes effect on the client's next request: every service checks the status on each request ([rules](#rules-for-every-public-endpoint)), so a suspended, closed or expired client's open session gets `401 ACCOUNT_INACTIVE`. Every change also ends the sessions issued before it, so reinstating an account never revives an old session: the client signs in again.
+- auth-service logs `ACCOUNT_STATUS_CHANGED username=… from=… to=… changedBy=… at=…` for each change, the client's own closing included; the reason stays out of the log.
 
 ## Instruments (trading-service)
 

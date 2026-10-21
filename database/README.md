@@ -533,3 +533,20 @@ Get-Content database/schema/026_audit_waiting_steps.sql | psql -v ON_ERROR_STOP=
 ```
 
 It only redefines a constraint; no rows are written or changed.
+
+## 027 — Account status history
+
+`schema/027_account_status_changes.sql` adds `account_status_changes`: one row for every change to
+`clients.account_status` after registration, written in the same transaction as the change (BR-03).
+A row holds the old and new status, the reason, who changed it (a Trading Ops username, or the
+client's own when they close their account) and when ([C6](../contracts/C6-api.md#account-status-trading_ops-only),
+[C7](../contracts/C7-roles.md#who-may-use-what)). No expiry date is stored: Trading Ops expire an
+account, nothing does it automatically.
+
+```powershell
+Get-Content database/schema/027_account_status_changes.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+History is insert-only for the services: the migration takes back the `UPDATE` and `DELETE` that
+016's default privileges gave `lemarket_app`, leaving `SELECT` and `INSERT`, as on the audit tables.
+auth-service validates the table at startup, so apply it before starting a new auth-service.

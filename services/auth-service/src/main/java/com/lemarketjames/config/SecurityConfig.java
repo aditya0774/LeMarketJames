@@ -3,6 +3,7 @@ package com.lemarketjames.config;
 import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import java.util.List;
 /**
  * Spring Security configuration for the auth service.
  * Register and login are public; everything else (e.g. /api/auth/me) needs a valid JWT cookie.
+ * Account status changes are Trading Ops' and closing an account is the client's own (contract C7).
  */
 @Configuration
 @EnableWebSecurity
@@ -53,6 +55,8 @@ public class SecurityConfig {
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
+                .requestMatchers("/api/v1/clients/*/status").hasRole(Role.TRADING_OPS.name())
+                .requestMatchers("/api/auth/close-account").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
 

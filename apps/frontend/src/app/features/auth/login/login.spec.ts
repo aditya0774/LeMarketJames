@@ -4,6 +4,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { ACCOUNT_CLOSED_MESSAGE } from '../../../core/account/account-closure.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
@@ -224,4 +225,13 @@ describe('Login opened after the session was cut off', () => {
       expect(alert.textContent).toContain(SESSION_END_MESSAGES[reason].message);
     });
   }
+
+  // BR-03: the account page sends a client who closed their own account here with ?reason=closed.
+  it('confirms a closed account for ?reason=closed', async () => {
+    const alert = (await open('/login?reason=closed')).querySelector('[role="alert"]')!;
+
+    expect(alert.classList).toContain('info');
+    expect(alert.querySelector('b')!.textContent).toBe(ACCOUNT_CLOSED_MESSAGE.heading);
+    expect(alert.textContent).toContain(ACCOUNT_CLOSED_MESSAGE.message);
+  });
 });

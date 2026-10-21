@@ -130,5 +130,9 @@
         }
       </section>
     }
+
+    @if (selectedClient(); as clientId) {
+      <staff-client-status [clientId]="clientId" />
+    }
   </div>
 </div>

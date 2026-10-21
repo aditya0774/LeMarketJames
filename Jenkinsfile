@@ -307,6 +307,8 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/025_watchlist.sql
                     # The order tests now audit PENDING and DELAYED, which 026 adds to the action list.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/026_audit_waiting_steps.sql
+                    # auth-service validates its entities at startup, the account status history included (BR-03).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/027_account_status_changes.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests
@@ -314,7 +316,7 @@ pipeline {
                     # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
                     mvn -B -pl services/orders-service,services/auth-service,services/trading-service,services/staff-ops-service -am \
                         -Dspring.profiles.active=postgres-test,kafka-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,AccountStatusPostgresIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
 
                     # The Kafka test skips itself when the kafka-test profile is missing, and a
@@ -326,7 +328,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'services/trading-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/trading-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*OvernightRunsIntegrationTest.xml'
+                    junit 'services/trading-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AccountStatusPostgresIntegrationTest.xml, services/trading-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*OvernightRunsIntegrationTest.xml'
                 }
             }
         }

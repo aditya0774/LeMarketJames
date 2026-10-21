@@ -4,7 +4,7 @@ import { Theme, ThemeName } from '../theme/theme';
 
 /**
  * The avatar button at the right of each app's signed-in header and the panel it opens: who is
- * signed in (and, in the staff app, their role and a link to their Employee information), the
+ * signed in (and, in the staff app, their role), a link to a page about their account, the
  * Dark/Light theme switch and "Log out". Shared
  * by the trading and staff apps so the header looks and behaves the same in both.
  *
@@ -76,8 +76,8 @@ export class AccountMenu {
   /** The line under the name, e.g. the role. */
   readonly detail = input('');
   /**
-   * An optional page about the signed-in account, linked under the name (the staff app's Employee
-   * information, LMKT-144). Left unset, the menu shows no link, as in the trading app.
+   * An optional page about the signed-in account, linked under the name: the staff app's Employee
+   * information (LMKT-144), the trading app's account page (BR-03). Left unset, the menu shows no link.
    */
   readonly pageLink = input<string | null>(null);
   /** The text of that link. */

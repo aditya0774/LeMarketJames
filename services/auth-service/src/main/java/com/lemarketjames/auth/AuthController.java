@@ -5,10 +5,8 @@ import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.Role;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,18 +33,17 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AuthService authService;
-    private final boolean secureCookie;
+    private final SessionCookies cookies;
 
     /**
      * Constructs an AuthController with the given AuthService.
      *
      * @param authService the authentication service to use
-     * @param secureCookie whether the auth cookie is marked Secure (HTTPS-only); disable only for plain-HTTP environments
+     * @param cookies builds the session cookie
      */
-    public AuthController(AuthService authService,
-                          @Value("${auth.cookie.secure:true}") boolean secureCookie) {
+    public AuthController(AuthService authService, SessionCookies cookies) {
         this.authService = authService;
-        this.secureCookie = secureCookie;
+        this.cookies = cookies;
     }
 
     /**
@@ -71,13 +68,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request);
-        ResponseCookie cookie = buildAuthCookie(result.getToken(), secondsUntil(result.getExpiresAt()));
-
         Map<String, Object> body = sessionBody(result.getUsername(), result.getRoles());
         putSessionTiming(body, result.getExpiresAt());
         body.put("message", result.getMessage());
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE,
+                        cookies.issue(result.getToken(), secondsUntil(result.getExpiresAt())).toString())
                 .body(body);
     }
 
@@ -92,9 +88,8 @@ public class AuthController {
         if (token != null) {
             authService.logout(token);
         }
-        ResponseCookie cookie = buildAuthCookie("", 0);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, cookies.clear().toString())
                 .body(Map.of("message", "Logged out"));
     }
 
@@ -117,7 +112,7 @@ public class AuthController {
                     putSessionTiming(body, session.expiresAt());
                     return ResponseEntity.ok()
                             .header(HttpHeaders.SET_COOKIE,
-                                    buildAuthCookie(session.value(), secondsUntil(session.expiresAt())).toString())
+                                    cookies.issue(session.value(), secondsUntil(session.expiresAt())).toString())
                             .body(body);
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
@@ -176,22 +171,5 @@ public class AuthController {
             });
         }
         return body;
-    }
-
-    /**
-     * Builds an HTTP-only, secure authentication cookie containing the JWT token.
-     *
-     * @param token the JWT token to store in the cookie
-     * @param maxAgeSeconds the maximum age of the cookie in seconds
-     * @return a ResponseCookie configured with appropriate security settings
-     */
-    private ResponseCookie buildAuthCookie(String token, long maxAgeSeconds) {
-        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)
-                .httpOnly(true)
-                .secure(secureCookie)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(maxAgeSeconds)
-                .build();
     }
 }

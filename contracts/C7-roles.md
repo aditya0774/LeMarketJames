@@ -8,7 +8,7 @@ Internal views (audit, reports, insights) can enforce access now, without waitin
 |---|---|
 | The roles, and what each one is for | [Role.java](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) |
 | Staff logins | the `staff_users` table ([010](../database/schema/010_shared_contracts.sql)), [StaffUserEntity.java](../libs/common/src/main/java/com/lemarketjames/common/domain/StaffUserEntity.java) |
-| Who may log in at all | [AccountStatus.java](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for clients, the `active` flag for staff. Enforced at sign-in and again on every request by [JpaAccountAccessCheck](../libs/common/src/main/java/com/lemarketjames/common/security/JpaAccountAccessCheck.java), so an open session ends as soon as the login loses access ([C6](C6-api.md#rules-for-every-public-endpoint)) |
+| Who may log in at all | [AccountStatus.java](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for clients, the `active` flag for staff. Enforced at sign-in and again on every request by [JpaAccountAccessCheck](../libs/common/src/main/java/com/lemarketjames/common/security/JpaAccountAccessCheck.java), so an open session ends as soon as the login loses access ([C6](C6-api.md#rules-for-every-public-endpoint)). A client's status is changed only by Trading Ops or by the client closing their own account, each with a row in `account_status_changes` ([027](../database/README.md#027--account-status-history)) |
 
 ## How roles travel
 
@@ -39,6 +39,8 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Place orders; own dashboard, holdings, balance, profile, trades | `CLIENT` (own data only) | Enforced: needs the caller's own account |
 | Move an order through its lifecycle, reject orders | `TRADING_OPS` (any client's orders) | Enforced in orders-service `SecurityConfig` |
 | Search trades by order ID or client and date range | `TRADING_OPS` (any client's filled orders) | Enforced in orders-service `SecurityConfig`; [C6](C6-api.md#trade-search-trading_ops-only) |
+| See and change a client's account status (suspend, reinstate, close, expire), with a reason and its history | `TRADING_OPS` (any client) | Enforced in auth-service `SecurityConfig`; [C6](C6-api.md#account-status-trading_ops-only) |
+| Close one's own account | `CLIENT` (own account only, once no stocks or open orders remain) | Enforced in auth-service `SecurityConfig`; [C6](C6-api.md#closing-an-account-client-only) |
 | Audit trail | `TRADING_OPS` | Planned ([C6](C6-api.md#planned-agreed-not-built)); guard with this role |
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in staff-ops-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-staff-ops-service)) |
 | Insights (`/api/v1/reports/insights/**`) | `ANALYST` | Enforced by the same staff-ops-service rule as reports; every other role gets `403` ([C6](C6-api.md#get-apiv1reportsinsightsvolume), [active clients](C6-api.md#get-apiv1reportsinsightsactive-clients)) |
@@ -75,4 +77,7 @@ Employee information (`/employee-information`, LMKT-144) has no role guard: ever
 - The `staff_users.role` CHECK constraint ([010](../database/schema/010_shared_contracts.sql)); it lists every role except `CLIENT`.
 - The frontend `Role` type, once per app because each app keeps its own auth code (they share only UI building blocks, `projects/shared-ui`): the trading app's [auth.ts](../apps/frontend/src/app/core/auth/auth.ts) and the staff app's [auth.ts](../apps/frontend/projects/staff/src/app/core/auth/auth.ts).
 
-One more mirror, of the cookie name rather than of `Role`: the staff app's [nginx.conf](../apps/frontend/projects/staff/nginx.conf) and `SERVICE_COOKIE` in [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs) repeat `JwtAuthenticationFilter.COOKIE_NAME` (`jwt`), because neither can read Java. Change them together.
+Two more mirrors, not of `Role`:
+
+- The staff app's `AccountStatus` type ([client-status.service.ts](../apps/frontend/projects/staff/src/app/core/clients/client-status.service.ts)) repeats [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for its status panel, as do the CHECK constraints on `clients.account_status` (010) and `account_status_changes` (027). Change them together.
+- The cookie name: the staff app's [nginx.conf](../apps/frontend/projects/staff/nginx.conf) and `SERVICE_COOKIE` in [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs) repeat `JwtAuthenticationFilter.COOKIE_NAME` (`jwt`), because neither can read Java. Change them together.

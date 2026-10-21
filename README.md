@@ -602,7 +602,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Routes `/api` to |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | auth-service (`/api/auth/**`), orders-service (`/api/v1/orders/**`, `/api/v1/buy-orders/**`) and trading-service (everything else) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | auth-service (sign-in, sign-out and `/me`), orders-service (the Trading Ops trade search and order timeline) and [staff-ops-service](#staff-ops-service) (`/api/v1/reports/**`, `/api/v1/surveillance/**`); any other path answers 404 ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | auth-service (sign-in, sign-out, session refresh, `/me` and Trading Ops' client account status), orders-service (the Trading Ops trade search and order timeline) and [staff-ops-service](#staff-ops-service) (`/api/v1/reports/**`, `/api/v1/surveillance/**`); any other path answers 404 ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -858,7 +858,7 @@ All test accounts are loaded automatically when the database is initialized (see
 | `seed_trader@seed.lemarket.com` | Active, `ACTIVE_TRADER` | Frequent trading; second account for segment reports |
 | `seed_hnw@seed.lemarket.com` | Active, `HIGH_NET_WORTH` | Large positions and balances |
 | `seed_closed@seed.lemarket.com` | Closed | Login refused; demonstrates closed account error |
-| `seed_expired@seed.lemarket.com` | Expired | Can log in but orders refused with `ACCOUNT_RESTRICTED` |
+| `seed_expired@seed.lemarket.com` | Expired | Login refused, like a closed account |
 | `seed_locked@seed.lemarket.com` | Locked out | Demonstrates account lockout message |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled | Orders refused with `ACCOUNT_RESTRICTED` |
 
@@ -866,10 +866,12 @@ All test accounts are loaded automatically when the database is initialized (see
 
 | Email | Role | Access |
 |---|---|---|
-| `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline |
+| `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline, a client's account status (suspend, reinstate, close, expire) |
 | `analyst@seed.lemarket.com` | `ANALYST` | Reports dashboard, read-only aggregate reports |
 
 **Password for all staff logins:** `Pass123!`
+
+A client closes their own account from **Your account** in the trading app's account menu, once they hold no stocks and have no open orders (BR-03). That can't be undone from the trading app: make the account active again from the staff app's trade search as `ops@seed.lemarket.com`.
 
 Both apps sign you out after **one minute without input** (BR-03), with a warning 30 seconds before. To look around at leisure, start the stack with `SESSION_INACTIVITY_TIMEOUT=PT30M docker compose up -d`.
 

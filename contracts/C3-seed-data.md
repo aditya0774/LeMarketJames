@@ -18,6 +18,8 @@ Every seed login, client or staff, uses the password **`Pass123!`**. Log in with
 | `seed_locked@seed.lemarket.com` | Locked out (lock never expires) | The lockout message, even with the right password |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled on the account | Orders refused with `ACCOUNT_RESTRICTED`; has one such rejected order, and one refused submission in the audit trail |
 
+The `CLOSED` and `EXPIRED` personas were seeded in those statuses, so they have no row in the status history (`account_status_changes`, [027](../database/README.md#027--account-status-history)); every change made since, by Trading Ops or by a client closing their own account, has one. To try the status panel, search for `seed_active`'s or `seed_trader`'s client in the staff app's trade search as `ops@seed.lemarket.com`, and make them active again afterwards.
+
 ## Staff
 
 | Email | Role |

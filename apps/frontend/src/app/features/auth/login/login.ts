@@ -6,6 +6,7 @@ import { Auth } from '../../../core/auth/auth';
 import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 import { Brand } from '../../../shared/components/brand/brand';
 import { sessionEndMessage } from '@lemarket/shared-ui';
+import { ACCOUNT_CLOSED_MESSAGE, ACCOUNT_CLOSED_REASON } from '../../../core/account/account-closure.service';
 
 /** Shown, with the heading "Account not active", for an account the firm has closed or suspended (C6). */
 export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
@@ -57,6 +58,10 @@ export class Login {
     const ended = sessionEndMessage(reason);
     if (ended) {
       this.showAlert('info', ended.heading, ended.message);
+    }
+    // Sent here by the account page after the client closed their own account (BR-03).
+    if (reason === ACCOUNT_CLOSED_REASON) {
+      this.showAlert('info', ACCOUNT_CLOSED_MESSAGE.heading, ACCOUNT_CLOSED_MESSAGE.message);
     }
   }
 
