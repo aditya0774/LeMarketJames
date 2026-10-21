@@ -185,6 +185,12 @@ public class PlatformSettings {
         private LocalTime readyBy = LocalTime.of(7, 0);
         /** Time zone overnightRunTime and readyBy are in. */
         private ZoneId timeZone = ZoneId.of("America/New_York");
+        /**
+         * How far, in percent of the previous period, an insight must move (up or down) to be
+         * flagged for analysts (BR-17). A move from nothing to something is always flagged.
+         * Must be above zero.
+         */
+        private BigDecimal insightFlagPercent = new BigDecimal("25");
 
         public LocalTime getOvernightRunTime() {
             return overnightRunTime;
@@ -208,6 +214,14 @@ public class PlatformSettings {
 
         public void setTimeZone(ZoneId timeZone) {
             this.timeZone = timeZone;
+        }
+
+        public BigDecimal getInsightFlagPercent() {
+            return insightFlagPercent;
+        }
+
+        public void setInsightFlagPercent(BigDecimal insightFlagPercent) {
+            this.insightFlagPercent = insightFlagPercent;
         }
     }
 

@@ -3,7 +3,7 @@ package com.lemarketjames.surveillance;
 import com.lemarketjames.common.config.PlatformSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +25,9 @@ public class SurveillanceService {
 
     /** How many alerts staff get back: the newest ones. */
     static final int LATEST = 100;
+
+    /** Newest first; the id breaks a tie between two alerts of the same instant. */
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("occurredAt"), Sort.Order.desc("alertId"));
 
     /** The status of a rejected order, as the event carries it (contract C1). */
     static final String REJECTED = "REJECTED";
@@ -99,10 +102,10 @@ public class SurveillanceService {
         return true;
     }
 
-    /** @return the newest alerts, newest first */
+    /** @return the newest alerts that match the filter, newest first, at most {@value #LATEST} */
     @Transactional(readOnly = true)
-    public List<OrderAlert> latest() {
-        return alerts.findAllByOrderByOccurredAtDescAlertIdDesc(PageRequest.of(0, LATEST));
+    public List<OrderAlert> latest(AlertFilter filter) {
+        return alerts.findBy(filter.toSpecification(), query -> query.sortBy(NEWEST_FIRST).limit(LATEST).all());
     }
 
     /** @return the number of shares at which an order counts as large in this environment */

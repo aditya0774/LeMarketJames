@@ -35,6 +35,7 @@ interface Comparison {
   current: Totals;
   previous: Totals;
   change: { shareVolume: number; shareVolumePercent: number | null; grossAmount: number; grossAmountPercent: number | null };
+  flag: { flagged: boolean; changePercent: number | null; direction: string; thresholdPercent: number };
   generatedAt: string;
 }
 interface Ranges { currentFrom: string; currentTo: string; previousFrom: string; previousTo: string }
@@ -128,7 +129,9 @@ async function expectCard(page: Page, db: Client, timeZone: string, key: string,
   const ranges = rangesOf(response);
 
   // An allowlist catches new identifiers as well as known personal-data fields.
-  expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'previous']);
+  expect(Object.keys(body).sort()).toEqual(['change', 'current', 'flag', 'generatedAt', 'previous']);
+  // BR-17: the flag on the share volume, percents only.
+  expect(Object.keys(body.flag).sort()).toEqual(['changePercent', 'direction', 'flagged', 'thresholdPercent']);
   for (const totals of [body.current, body.previous]) {
     expect(Object.keys(totals).sort()).toEqual(['endDate', 'grossAmount', 'shareVolume', 'startDate', 'tradeCount']);
   }
@@ -282,7 +285,7 @@ test.describe('LMKT-46 volume insight', () => {
       expect(response.status(), await response.text()).toBe(200);
       const body = await response.json();
       expect(body.periodType).toBe(periodType);
-      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'generatedAt', 'inProgress', 'periodType', 'previous']);
+      expect(Object.keys(body).sort()).toEqual(['change', 'current', 'flag', 'generatedAt', 'inProgress', 'periodType', 'previous']);
       // The running period is reported on its own and never feeds the change.
       expect(body.inProgress.endDate).toBe(today);
       expect(body.change.shareVolume).toBe(body.current.shareVolume - body.previous.shareVolume);

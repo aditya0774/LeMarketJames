@@ -115,8 +115,9 @@ async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: s
 
 /**
  * AC4: Trading Operations are alerted. Staff sign in on the staff app's own login page, and the
- * alert is read with that session through the staff app's origin: the staff app has no alerts
- * screen yet, so this is the staff app's answer to a signed-in TRADING_OPS browser (C6).
+ * alert is read with that session through the staff app's origin, the staff app's answer to a
+ * signed-in TRADING_OPS browser (C6). The Alerts page that shows it is tested in
+ * tests-staff/staff-alerts.spec.ts.
  */
 async function expectTradingOpsAlerted(browser: Browser, order: OrderDto, accountId: number, reason: string) {
   const context = await browser.newContext({ baseURL: STAFF, ...SELF_SIGNED });

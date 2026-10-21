@@ -43,8 +43,11 @@ class MostActiveStocksControllerTest {
     void analystGetsTheTopStocksAndRefreshTime() throws Exception {
         when(service.currentWeek()).thenReturn(new MostActiveStocksResponse(
                 LocalDate.parse("2026-10-12"), LocalDate.parse("2026-10-14"),
+                LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-07"),
                 List.of(new MostActiveStock(1, "AAPL", new BigDecimal("1000.00"), 4,
-                        new BigDecimal("10"))), Instant.parse("2026-10-14T14:00:00Z")));
+                        new BigDecimal("10"), new BigDecimal("500.00"),
+                        new InsightFlag(true, new BigDecimal("100.00"), InsightFlag.Direction.UP, new BigDecimal("25")))),
+                Instant.parse("2026-10-14T14:00:00Z")));
 
         mvc.perform(get(PATH).cookie(tokenFor(Role.ANALYST)))
                 .andExpect(status().isOk())
@@ -52,6 +55,11 @@ class MostActiveStocksControllerTest {
                 .andExpect(jsonPath("$.stocks[0].rank").value(1))
                 .andExpect(jsonPath("$.stocks[0].symbol").value("AAPL"))
                 .andExpect(jsonPath("$.stocks[0].tradedValue").value(1000.00))
+                .andExpect(jsonPath("$.previousStartDate").value("2026-10-05"))
+                .andExpect(jsonPath("$.stocks[0].previousTradedValue").value(500.00))
+                .andExpect(jsonPath("$.stocks[0].flag.flagged").value(true))
+                .andExpect(jsonPath("$.stocks[0].flag.changePercent").value(100.00))
+                .andExpect(jsonPath("$.stocks[0].flag.direction").value("UP"))
                 .andExpect(jsonPath("$.generatedAt").value("2026-10-14T14:00:00Z"));
     }
 

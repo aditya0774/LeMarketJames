@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- BR-17: Insights are flagged when they move. Every Analyst insight now carries a `flag`
+  (`flagged`, `changePercent`, `direction`, `thresholdPercent`): flagged when it moved by
+  `lmj.reports.insight-flag-percent` or more against the period it is compared with.
+  The most active stocks are compared with the same days of last week (`previousTradedValue`), and
+  the active-client trend's last seven days with the seven before (`lastWeek`, `weekBefore`). The
+  Analyst dashboard opens with a "What changed" list, flagged insights first, and each tile shows a
+  flag chip. Trading Ops get an Alerts page (`/alerts`, beside trade search on a new tab bar) listing
+  the surveillance alerts, filtered by reason and UTC days (`GET /api/v1/surveillance/alerts` takes
+  `reason`, `from` and `to`), each order linked to its timeline ([C6](contracts/C6-api.md#insight-flags),
+  [C5](contracts/C5-config.md#who-uses-each-setting), [C7](contracts/C7-roles.md)).
 - BR-04: Orders can be placed by amount. `POST /api/v1/orders` and `/api/v1/buy-orders` take
   `amount` (USD) instead of `quantity`, exactly one of the two; the server buys or sells as many whole
   shares as the amount covers at the ask (BUY) or bid (SELL) and keeps the amount on the order

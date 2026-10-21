@@ -2,13 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TradeSearch } from './trade-search';
+import { provideRouter } from '@angular/router';
 
 describe('Staff order and client search', () => {
   let component: TradeSearch;
   let http: HttpTestingController;
   const trade = {orderId: 42, clientId: 7, accountId: 9, instrumentId: 1, symbol: 'MSFT', side: 'BUY', quantity: 2, pricePerUnit: 123.4567, filledAt: '2026-01-10T12:00:00'};
   beforeEach(() => {
-    TestBed.configureTestingModule({imports: [TradeSearch], providers: [provideHttpClient(), provideHttpClientTesting()]});
+    TestBed.configureTestingModule({imports: [TradeSearch], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]});
     component = TestBed.createComponent(TradeSearch).componentInstance;
     http = TestBed.inject(HttpTestingController);
   });

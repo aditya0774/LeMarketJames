@@ -34,7 +34,12 @@ const HEADING = 'Most active stocks';
 const FIXTURE_SYMBOLS = ['AAPL', 'MSFT', 'NVDA'];
 
 interface Stock { rank: number; symbol: string; tradedValue: number; tradeCount: number; shareVolume: number }
-interface MostActive { startDate: string; endDate: string; stocks: Stock[]; generatedAt: string }
+/** A stock as the endpoint returns it: with last week's traded value and its BR-17 flag. */
+interface RankedStock extends Stock { previousTradedValue: number; flag: { flagged: boolean; changePercent: number | null; direction: string; thresholdPercent: number } }
+interface MostActive {
+  startDate: string; endDate: string; previousStartDate: string; previousEndDate: string;
+  stocks: RankedStock[]; generatedAt: string;
+}
 
 const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -100,9 +105,19 @@ function differences(actual: Stock[], expected: Stock[]): string[] {
 const card = (page: Page) => page.locator(TILE);
 const rows = (page: Page) => card(page).locator('tbody tr');
 
-/** The table as the app renders it: rank, symbol, trades, shares, traded value. */
-const rowTexts = (stocks: Stock[]) => stocks.map(s =>
-  [String(s.rank), s.symbol, number.format(s.tradeCount), number.format(s.shareVolume), money.format(s.tradedValue)]);
+const percent = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+/** The "vs last week" cell (BR-17): the move, or the flag chip with it when the server flagged it. */
+function vsLastWeek({ flag }: RankedStock): string {
+  const move = flag.changePercent === null ? (flag.direction === 'FLAT' ? 'no change' : 'new')
+    : flag.changePercent > 0 ? `+${percent.format(flag.changePercent)}%`
+    : flag.changePercent < 0 ? `−${percent.format(-flag.changePercent)}%` : '0%';
+  return flag.flagged ? `${flag.direction === 'DOWN' ? '▼' : '▲'} Flagged ${move}` : move;
+}
+
+/** The table as the app renders it: rank, symbol, trades, shares, traded value, vs last week. */
+const rowTexts = (stocks: RankedStock[]) => stocks.map(s =>
+  [String(s.rank), s.symbol, number.format(s.tradeCount), number.format(s.shareVolume), money.format(s.tradedValue), vsLastWeek(s)]);
 
 async function shownRows(page: Page): Promise<string[][]> {
   const texts: string[][] = [];
@@ -189,9 +204,11 @@ test.describe('LMKT-47 most active stocks', () => {
     expect(new URL(seen[0].url()).origin).toBe(new URL(page.url()).origin);
 
     // An allowlist catches new identifiers as well as known personal-data fields.
-    expect(Object.keys(body).sort()).toEqual(['endDate', 'generatedAt', 'startDate', 'stocks']);
+    expect(Object.keys(body).sort()).toEqual(['endDate', 'generatedAt', 'previousEndDate', 'previousStartDate', 'startDate', 'stocks']);
     for (const stock of body.stocks) {
-      expect(Object.keys(stock).sort()).toEqual(['rank', 'shareVolume', 'symbol', 'tradeCount', 'tradedValue']);
+      expect(Object.keys(stock).sort()).toEqual(['flag', 'previousTradedValue', 'rank', 'shareVolume', 'symbol', 'tradeCount', 'tradedValue']);
+      // BR-17: last week's figure and the flag on it are aggregates too.
+      expect(Object.keys(stock.flag).sort()).toEqual(['changePercent', 'direction', 'flagged', 'thresholdPercent']);
     }
 
     // This week: Monday to today, in the reports time zone.
@@ -216,7 +233,8 @@ test.describe('LMKT-47 most active stocks', () => {
     // The same figures, on screen, exactly as the tile received them.
     const tile = card(page);
     await expect(tile.getByRole('heading', { name: HEADING })).toBeVisible();
-    await expect(tile.locator('.range')).toHaveText(`This week: ${body.startDate} – ${body.endDate}`);
+    await expect(tile.locator('.range')).toHaveText(`This week: ${body.startDate} – ${body.endDate}, against the same `
+      + `days of last week (${body.previousStartDate} – ${body.previousEndDate})`);
     await expect(rows(page)).toHaveCount(body.stocks.length);
     await expect.poll(() => shownRows(page)).toEqual(rowTexts(body.stocks));
   });

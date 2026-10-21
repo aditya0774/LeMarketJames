@@ -255,7 +255,7 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
 - **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding. It is the platform's additional capability ([BR-18](#additional-capability-br-18-learn-and-simulator))
 - **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
-- **Staff app**: trade search and order timeline for Trading Ops; surveillance alerts for Trading Ops (staff-ops-service); aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs ([C6](contracts/C6-api.md#reports-staff-ops-service))
+- **Staff app**: trade search and order timeline for Trading Ops, and an Alerts page listing the surveillance alerts (staff-ops-service) by reason and date, each linked to its order's timeline; aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a "What changed" list of the insights below, flagged first when one moved by the configured percent or more (BR-17, `lmj.reports.insight-flag-percent`), then a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs ([C6](contracts/C6-api.md#reports-staff-ops-service), [insight flags](contracts/C6-api.md#insight-flags))
 
 **Architecture Notes:**
 - Feature-based organization: a service per area (auth, orders, trading, staff ops), and inside a service one package per feature (`orders/`, `holdings/`, `portfolio/`, `quotes/`, `market/`, ...)
@@ -649,12 +649,13 @@ Like the trading app, the staff app only ever calls `/api` on its own origin (`a
 |---|---|---|
 | `/login` | `features/auth/login/` | Anyone; it is the start page |
 | `/trade-search` | `features/trade-search/` | `TRADING_OPS`; it is where that role starts |
+| `/alerts` | `features/trading-ops/alerts/` | `TRADING_OPS`; linked from the Trading Ops tab bar ([trading-ops-nav.ts](apps/frontend/projects/staff/src/app/features/trading-ops/trading-ops-nav.ts)), which lists every Trading Ops page |
 | `/analyst` | `features/analyst/` | `ANALYST` |
 | `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) | `ANALYST` |
 
 The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell), which also holds the sign-out action.
 
-**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trade-search` (Trading Ops) and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
+**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trade-search` and `alerts` (Trading Ops) and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
 
 - A page for one role goes in as a child of that role's section and needs no guard of its own. A report added to `analyst-reports.ts` is such a child already.
 - A page outside the sections takes the guard itself. Several roles can share one: `requiresRole('TRADING_OPS', 'ANALYST')` lets either in.

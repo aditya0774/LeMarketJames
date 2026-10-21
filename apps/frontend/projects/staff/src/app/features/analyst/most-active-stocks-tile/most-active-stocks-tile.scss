@@ -23,3 +23,5 @@ tbody tr + tr { border-top: 1px solid #eceff1; }
   th, td { padding: .5rem .25rem; }
   th:nth-child(4), td:nth-child(4) { display: none; }
 }
+/* The move against the same days of last week (BR-17); a flagged one shows its chip. */
+.vs { white-space: nowrap; }

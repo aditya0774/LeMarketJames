@@ -33,6 +33,12 @@ export const routes: Routes = [
         canActivate: [requiresRole('TRADING_OPS')],
         children: [{ path: '', title: 'Trade search', loadComponent: () => import('./features/trade-search/trade-search').then(m => m.TradeSearch) }],
       },
+      // Surveillance alerts (BR-17); linked from the Trading Ops tab bar (trading-ops-nav.ts).
+      {
+        path: 'alerts',
+        canActivate: [requiresRole('TRADING_OPS')],
+        children: [{ path: '', title: 'Alerts', loadComponent: () => import('./features/trading-ops/alerts/alerts').then(m => m.Alerts) }],
+      },
       {
         path: 'analyst',
         canActivate: [requiresRole('ANALYST')],

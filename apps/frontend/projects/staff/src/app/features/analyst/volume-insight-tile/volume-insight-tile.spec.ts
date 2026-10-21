@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { VolumeComparisonResponse } from '../../../shared/models/volume-insight.model';
 import { VolumeInsightTile } from './volume-insight-tile';
+import { flagFor } from '../insight-flags/insight-flag.fixtures';
+import { InsightFlags } from '../insight-flags/insight-flags';
 
 const COMPARE = '/api/v1/reports/insights/volume/compare';
 const PING = '/api/v1/reports/ping';
@@ -13,6 +15,7 @@ function comparison(overrides: Partial<VolumeComparisonResponse> = {}): VolumeCo
     current: { startDate: '2026-10-05', endDate: '2026-10-11', tradeCount: 40, shareVolume: 1200, grossAmount: 54000 },
     previous: { startDate: '2026-09-28', endDate: '2026-10-04', tradeCount: 32, shareVolume: 1000, grossAmount: 41000 },
     change: { shareVolume: 200, shareVolumePercent: 20, grossAmount: 13000, grossAmountPercent: 31.71 },
+    flag: flagFor(20),
     generatedAt: '2026-10-12T14:00:00Z',
     ...overrides,
   };
@@ -31,7 +34,8 @@ describe('VolumeInsightTile', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [VolumeInsightTile],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // As on the dashboard, which provides the store the tile reports its flags to.
+      providers: [provideHttpClient(), provideHttpClientTesting(), InsightFlags],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(VolumeInsightTile);
@@ -88,6 +92,7 @@ describe('VolumeInsightTile', () => {
     const drop = comparison({
       current: { startDate: '2026-10-05', endDate: '2026-10-11', tradeCount: 5, shareVolume: 750, grossAmount: 10000 },
       change: { shareVolume: -250, shareVolumePercent: -25, grossAmount: -10000, grossAmountPercent: -50 },
+      flag: flagFor(-25),
     });
     await flushPresets(drop, drop, drop);
 
@@ -97,9 +102,32 @@ describe('VolumeInsightTile', () => {
     expect(change.classList).toContain('down');
   });
 
+  it('flags a card whose share volume moved by 25% or more, and only that one', async () => {
+    const drop = comparison({ flag: flagFor(-25) });
+    await flushPresets(comparison(), drop, comparison());
+
+    expect(card('TODAY').querySelector('staff-insight-flag .flag')).toBeNull();
+    const flag = card('THIS_WEEK').querySelector('staff-insight-flag .flag')!;
+    expect(flag.textContent!.replace(/\s+/g, ' ').trim()).toBe('▼ Flagged −25%');
+    expect(flag.classList).toContain('down');
+    expect(flag.getAttribute('title')).toBe('Moved by 25% or more against the period before');
+  });
+
+  it('reports the three presets, not a custom range, to the "What changed" strip', async () => {
+    await flushPresets(comparison(), comparison({ flag: flagFor(-25) }), comparison());
+
+    const flags = TestBed.inject(InsightFlags);
+    expect(flags.all().map((i) => i.key)).toEqual(['volume-THIS_WEEK', 'volume-TODAY', 'volume-LAST_WEEK']);
+    expect(flags.all()[0]).toEqual({
+      key: 'volume-THIS_WEEK', label: 'Shares traded · This week',
+      comparedWith: 'vs 2026-09-28 – 2026-10-04', flag: flagFor(-25),
+    });
+  });
+
   it('says there is nothing to compare with when the previous period had no trades', async () => {
     const none = comparison({
       change: { shareVolume: 100, shareVolumePercent: null, grossAmount: 500, grossAmountPercent: null },
+      flag: flagFor(null),
     });
     await flushPresets(none, none, none);
 
@@ -185,7 +213,8 @@ describe('VolumeInsightTile without the reports time zone', () => {
   it("still loads, using the browser's day, when the zone cannot be read", async () => {
     await TestBed.configureTestingModule({
       imports: [VolumeInsightTile],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // As on the dashboard, which provides the store the tile reports its flags to.
+      providers: [provideHttpClient(), provideHttpClientTesting(), InsightFlags],
     }).compileComponents();
     const httpMock = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(VolumeInsightTile);

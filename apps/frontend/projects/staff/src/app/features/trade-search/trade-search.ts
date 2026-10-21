@@ -8,6 +8,7 @@ import { TradeTimelineComponent } from '../trading-ops/trade-timeline/trade-time
 import { TradeTimelineService } from '../trading-ops/trade-timeline/trade-timeline.service';
 import { AuditEvent } from '../../shared/models/audit-event.model';
 import { ClientStatusPanel } from './client-status/client-status';
+import { TradingOpsNav } from '../trading-ops/trading-ops-nav';
 
 /**
  * Trading Ops trade search, laid out like the redesign's Trade search board: the search form on
@@ -15,7 +16,7 @@ import { ClientStatusPanel } from './client-status/client-status';
  * the audit trail (C6, GET /api/v1/orders/{orderId}/timeline). Once a client is chosen, by ID or
  * by name, their account status and its history show too, with the form to change it (BR-03).
  */
-@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe, TradeTimelineComponent, ClientStatusPanel],
+@Component({ selector: 'staff-trade-search', imports: [FormsModule, DecimalPipe, TradeTimelineComponent, ClientStatusPanel, TradingOpsNav],
   templateUrl: './trade-search.html', styleUrl: './trade-search.css' })
 export class TradeSearch implements OnDestroy {
   private readonly api = inject(TradeSearchService);

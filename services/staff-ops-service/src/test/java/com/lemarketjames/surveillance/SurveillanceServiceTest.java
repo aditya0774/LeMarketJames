@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -14,7 +13,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -198,14 +196,5 @@ class SurveillanceServiceTest {
         }
 
         verify(stored, never()).save(any());
-    }
-
-    @Test
-    void staffReadTheNewestAlerts() {
-        List<OrderAlert> newest = List.of(new OrderAlert(buy(large), AlertReason.LARGE_ORDER));
-        when(stored.findAllByOrderByOccurredAtDescAlertIdDesc(PageRequest.of(0, SurveillanceService.LATEST)))
-            .thenReturn(newest);
-
-        assertSame(newest, service.latest());
     }
 }

@@ -34,6 +34,9 @@ interface Trend {
   startDate: string;
   endDate: string;
   days: { date: string; activeClients: number }[];
+  lastWeek: { startDate: string; endDate: string; averageActiveClients: number };
+  weekBefore: { startDate: string; endDate: string; averageActiveClients: number };
+  flag: { flagged: boolean; changePercent: number | null; direction: string; thresholdPercent: number };
   generatedAt: string;
 }
 
@@ -177,8 +180,13 @@ test.describe('LMKT-48 active-client trend', () => {
     expect(new URL(seen[0].url()).origin).toBe(new URL(page.url()).origin);
 
     // An allowlist catches new identifiers as well as known personal-data fields.
-    expect(Object.keys(body).sort()).toEqual(['days', 'endDate', 'generatedAt', 'startDate']);
+    expect(Object.keys(body).sort()).toEqual(['days', 'endDate', 'flag', 'generatedAt', 'lastWeek', 'startDate', 'weekBefore']);
     for (const day of body.days) expect(Object.keys(day).sort()).toEqual(['activeClients', 'date']);
+    // BR-17: the two weeks the flag compares, and the flag, are counts and percents only.
+    for (const week of [body.lastWeek, body.weekBefore]) {
+      expect(Object.keys(week).sort()).toEqual(['averageActiveClients', 'endDate', 'startDate']);
+    }
+    expect(Object.keys(body.flag).sort()).toEqual(['changePercent', 'direction', 'flagged', 'thresholdPercent']);
 
     // Thirty consecutive days ending today, oldest first, quiet days included.
     expect(body.endDate).toBe(today);

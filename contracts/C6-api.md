@@ -651,11 +651,13 @@ Insight: the traded volume of the last completed period compared with the period
   "previous": { "startDate": "2026-09-28", "endDate": "2026-10-04", "tradeCount": 32, "shareVolume": 1000, "grossAmount": 41000.00 },
   "inProgress": { "startDate": "2026-10-12", "endDate": "2026-10-12", "tradeCount": 3, "shareVolume": 75, "grossAmount": 900.00 },
   "change":   { "shareVolume": 200, "shareVolumePercent": 20.00, "grossAmount": 13000.00, "grossAmountPercent": 31.71 },
+  "flag":     { "flagged": false, "changePercent": 20.00, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-12T14:00:00Z"
 }
 ```
 
 - `startDate` and `endDate` are both included, days in the reports time zone. For `inProgress`, `endDate` is today.
+- `flag` is the [insight flag](#insight-flags) on `shareVolume`, `current` against `previous`; like `change`, it leaves `inProgress` out.
 - `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-staff-ops-service)).
 - `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
 
@@ -671,8 +673,10 @@ Insight: the traded volume of the last completed period compared with the period
 
 Insight: the five stocks with the highest gross traded value in the current week, for `ANALYST`
 only. The current week starts on Monday in the configured reports time zone and includes trades
-through today. It is computed from `reporting_trades` on every request, so the dashboard can refresh
-it at least daily without a scheduled cache.
+through today. Each stock is compared with the same days of the week before (`previousStartDate` to
+`previousEndDate`: Monday to the same weekday), so a Tuesday is never set against a whole week. It is
+computed from `reporting_trades` on every request, so the dashboard can refresh it at least daily
+without a scheduled cache.
 
 **Response `200`:**
 
@@ -680,9 +684,15 @@ it at least daily without a scheduled cache.
 {
   "startDate": "2026-10-12",
   "endDate": "2026-10-14",
+  "previousStartDate": "2026-10-05",
+  "previousEndDate": "2026-10-07",
   "stocks": [
-    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530 },
-    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410 }
+    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530,
+      "previousTradedValue": 100000.00,
+      "flag": { "flagged": true, "changePercent": 25.00, "direction": "UP", "thresholdPercent": 25 } },
+    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410,
+      "previousTradedValue": 0,
+      "flag": { "flagged": true, "changePercent": null, "direction": "UP", "thresholdPercent": 25 } }
   ],
   "generatedAt": "2026-10-14T14:00:00Z"
 }
@@ -690,8 +700,10 @@ it at least daily without a scheduled cache.
 
 Rows are ordered by `tradedValue` descending, then symbol ascending for ties. `tradedValue` is the
 sum of `quantity × price` for both BUY and SELL fills. Fewer than five rows are returned when fewer
-than five symbols traded; no trades returns an empty `stocks` array. The response contains no
-client, account or order identifiers.
+than five symbols traded; no trades returns an empty `stocks` array. `previousTradedValue` is the
+same sum over the same days of last week, `0` when the stock did not trade then, and `flag` is the
+[insight flag](#insight-flags) on `tradedValue` against it. The response contains no client, account
+or order identifiers.
 
 | HTTP | When | Body |
 |---|---|---|
@@ -714,11 +726,12 @@ The traded volume of two date ranges the caller chooses, compared. The staff til
   "current":  { "startDate": "2026-10-12", "endDate": "2026-10-14", "tradeCount": 9, "shareVolume": 420, "grossAmount": 15000.00 },
   "previous": { "startDate": "2026-10-05", "endDate": "2026-10-07", "tradeCount": 6, "shareVolume": 300, "grossAmount": 11000.00 },
   "change":   { "shareVolume": 120, "shareVolumePercent": 40.00, "grossAmount": 4000.00, "grossAmountPercent": 36.36 },
+  "flag":     { "flagged": true, "changePercent": 40.00, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-14T14:00:00Z"
 }
 ```
 
-`current`, `previous` and `change` follow the rules of the insight above. A range that includes today counts the trades made so far, so a trade made now shows up on the next request.
+`current`, `previous`, `change` and `flag` follow the rules of the insight above. A range that includes today counts the trades made so far, so a trade made now shows up on the next request.
 
 **Failures:**
 
@@ -744,6 +757,9 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
     { "date": "2026-09-15", "activeClients": 12 },
     { "date": "2026-09-16", "activeClients": 0 }
   ],
+  "lastWeek":   { "startDate": "2026-10-07", "endDate": "2026-10-13", "averageActiveClients": 2.00 },
+  "weekBefore": { "startDate": "2026-09-30", "endDate": "2026-10-06", "averageActiveClients": 1.57 },
+  "flag": { "flagged": true, "changePercent": 27.27, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-14T14:00:00Z"
 }
 ```
@@ -751,6 +767,7 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 - The window is the 30 days ending today in the reports time zone, both ends included; `days` lists every one of them, oldest first, and a day without trades is `0`, not missing. Today counts the trades made so far.
 - `activeClients` is the number of distinct clients with at least one filled trade that day, counted across all of a client's accounts. Each day is a range from [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java).
 - Counts only: the response never contains a client, account or order identifier.
+- `lastWeek` is the seven whole days before today and `weekBefore` the seven before those; `averageActiveClients` is the mean of their daily counts, two decimals. `flag` is the [insight flag](#insight-flags) on `lastWeek` against `weekBefore`, worked out from the two weeks' totals (the same percent, without the rounding). Whole weeks, so a weekend is in both and today, still running, is in neither.
 
 **Failures:**
 
@@ -758,6 +775,19 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 |---|---|---|
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
+### Insight flags
+
+Every insight above says whether it moved enough to be brought to an analyst's attention (BR-17), with the same `flag` object, made by one rule ([InsightFlagRule](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/insight/InsightFlagRule.java)):
+
+| Field | Meaning |
+|---|---|
+| `flagged` | `true` when the figure moved by at least `thresholdPercent` of the period it is compared with, up or down, or when that period had none and this one has some. |
+| `changePercent` | The move as a percent of the previous figure, two decimals, half up; `null` when the previous figure was `0`. |
+| `direction` | `UP`, `DOWN` or `FLAT`. |
+| `thresholdPercent` | The setting in force, `lmj.reports.insight-flag-percent` ([C5](C5-config.md)), so the staff app shows what "flagged" means without its own copy. |
+
+Which figure each insight flags: the volume insights flag `shareVolume`, the most active stocks each stock's `tradedValue`, and the active-client trend the last seven days' average. The staff app's Analyst dashboard opens with a "What changed" list of them, flagged first, built from the tiles' own responses (no extra request).
 
 ### GET /api/v1/reports/overnight
 
@@ -853,7 +883,12 @@ The signed-in client's newest notifications (up to 50), newest first. There is n
 
 ### GET /api/v1/surveillance/alerts (TRADING_OPS only)
 
-The newest alerts (up to 100), newest first by `occurredAt`. Routed by the staff app only; the trading app has no route to it.
+The newest alerts (up to 100) that match the filters, newest first by `occurredAt`. Routed by the staff app only; the trading app has no route to it. The staff app's Alerts page (Trading Ops) lists them and links each order to its [timeline](#order-timeline-trading_ops-only).
+
+**Parameters** (all optional; one left out does not filter):
+
+- `reason`: an [AlertReason](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name, e.g. `LARGE_ORDER`.
+- `from`, `to`: `YYYY-MM-DD`, whole days in UTC, both included, compared with `occurredAt`; as in [trade search](#trade-search-trading_ops-only), since Trading Ops read every time in UTC.
 
 ```json
 {
@@ -883,7 +918,8 @@ The newest alerts (up to 100), newest first by `occurredAt`. Routed by the staff
 - An alert is not updated afterwards: a `LARGE_ORDER` alert shows the order as it was placed, whatever happens to it later.
 - A rejection for any other reason raises no alert. The two codes are the ones a refused settlement gives, so a Trading Ops rejection made by hand with one of them ([Changing an order's status](#changing-an-orders-status-trading_ops-only)) is alerted to as well. An order refused at placement is never saved and publishes no event, so it raises none.
 - A status change published before the event carried `rejectionReason` has none and raises no alert.
-- `rejectionReason` and `occurredAt` were added after the other fields (LMKT-71).
+- `rejectionReason` and `occurredAt` were added after the other fields (LMKT-71); the filters with BR-17.
+- An unknown `reason`, a day that is not `YYYY-MM-DD`, or `to` before `from` gets `400`.
 - A missing or expired cookie gets `401`; every role but `TRADING_OPS` gets `403`.
 
 ### GET /api/v1/market-activity

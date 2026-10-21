@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AnalystDashboard } from './analyst-dashboard';
+import { flagFor } from './insight-flags/insight-flag.fixtures';
 
 describe('AnalystDashboard', () => {
   async function create() {
@@ -14,6 +15,28 @@ describe('AnalystDashboard', () => {
     await fixture.whenStable();
     return fixture;
   }
+
+  it('opens with the "What changed" strip, which lists flagged insights first as the tiles load', async () => {
+    const fixture = await create();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.firstElementChild!.tagName.toLowerCase()).toBe('staff-what-changed');
+
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/v1/reports/insights/most-active-stocks').flush({
+      startDate: '2026-10-12', endDate: '2026-10-14', previousStartDate: '2026-10-05', previousEndDate: '2026-10-07',
+      stocks: [
+        { rank: 1, symbol: 'AAPL', tradedValue: 1000, tradeCount: 2, shareVolume: 5, previousTradedValue: 990, flag: flagFor(1.01) },
+        { rank: 2, symbol: 'TSLA', tradedValue: 900, tradeCount: 1, shareVolume: 3, previousTradedValue: 0, flag: flagFor(null) },
+      ],
+      generatedAt: '2026-10-14T14:00:00Z',
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const rows = Array.from(el.querySelectorAll('staff-what-changed li'));
+    expect(rows.map((r) => r.getAttribute('data-key'))).toEqual(['stock-TSLA', 'stock-AAPL']);
+    expect(rows[0].querySelector('staff-insight-flag .flag')).not.toBeNull();
+  });
 
   it('shows the volume insight tile, which asks for today, this week and last week', async () => {
     const fixture = await create();

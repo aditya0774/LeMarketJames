@@ -2,9 +2,11 @@ package com.lemarketjames.reports.insight;
 
 import com.lemarketjames.common.config.PlatformSettings;
 import com.lemarketjames.reports.insight.ActiveClientTrendResponse.DayCount;
+import com.lemarketjames.reports.insight.ActiveClientTrendResponse.WeekAverage;
 import com.lemarketjames.reports.period.ReportCalendar;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -37,7 +40,8 @@ class ActiveClientTrendServiceTest {
             rangesAsked.add(List.of(start, end));
             return countByRange.getOrDefault(List.of(start, end), 0L);
         };
-        return new ActiveClientTrendService(fake, new ReportCalendar(new PlatformSettings()),
+        PlatformSettings settings = new PlatformSettings();
+        return new ActiveClientTrendService(fake, new ReportCalendar(settings), new InsightFlagRule(settings),
                 Clock.fixed(now, ZoneOffset.UTC));
     }
 
@@ -95,6 +99,36 @@ class ActiveClientTrendServiceTest {
         ActiveClientTrendResponse response = serviceAt(Instant.parse("2026-11-01T18:00:00Z")).trend();
 
         assertEquals(new DayCount(LocalDate.parse("2026-11-01"), 5), response.days().get(29));
+    }
+
+    @Test
+    void theFlagComparesTheLastSevenWholeDaysWithTheSevenBefore() {
+        // Today, 14 Oct, is left out. Last week: 7-13 Oct; the week before: 30 Sep-6 Oct.
+        register("2026-10-14T04:00:00", "2026-10-15T04:00:00", 500);
+        register("2026-10-07T04:00:00", "2026-10-08T04:00:00", 10);
+        register("2026-10-13T04:00:00", "2026-10-14T04:00:00", 4);
+        register("2026-09-30T04:00:00", "2026-10-01T04:00:00", 7);
+        register("2026-10-06T04:00:00", "2026-10-07T04:00:00", 4);
+        register("2026-09-29T04:00:00", "2026-09-30T04:00:00", 100);
+
+        ActiveClientTrendResponse response = serviceAt(NOW).trend();
+
+        assertEquals(new WeekAverage(LocalDate.parse("2026-10-07"), LocalDate.parse("2026-10-13"), new BigDecimal("2.00")),
+                response.lastWeek());
+        assertEquals(new WeekAverage(LocalDate.parse("2026-09-30"), LocalDate.parse("2026-10-06"), new BigDecimal("1.57")),
+                response.weekBefore());
+        // 14 against 11 clients: +27.27 %, over the 25 % default.
+        assertTrue(response.flag().flagged());
+        assertEquals(new BigDecimal("27.27"), response.flag().changePercent());
+        assertEquals(InsightFlag.Direction.UP, response.flag().direction());
+    }
+
+    @Test
+    void twoQuietWeeksAreNotFlagged() {
+        ActiveClientTrendResponse response = serviceAt(NOW).trend();
+
+        assertFalse(response.flag().flagged());
+        assertEquals(InsightFlag.Direction.FLAT, response.flag().direction());
     }
 
     @Test

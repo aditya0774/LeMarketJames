@@ -1,3 +1,5 @@
+import { InsightFlag } from './insight-flag.model';
+
 /** The period types the volume insight accepts (C6, GET /api/v1/reports/insights/volume). */
 export type VolumeInsightPeriodType = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
 
@@ -25,6 +27,8 @@ export interface VolumeInsightResponse {
   /** The period still running, totalled up to today. Not part of `change`. */
   inProgress?: VolumePeriod;
   change: VolumeChange;
+  /** Whether the share volume moved enough to be flagged (BR-17). */
+  flag: InsightFlag;
   /** ISO instant at which the server computed the figures: the "last refreshed" time. */
   generatedAt: string;
 }
@@ -42,5 +46,7 @@ export interface VolumeComparisonResponse {
   current: VolumePeriod;
   previous: VolumePeriod;
   change: VolumeChange;
+  /** Whether the share volume moved enough to be flagged (BR-17). */
+  flag: InsightFlag;
   generatedAt: string;
 }

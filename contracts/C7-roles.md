@@ -45,14 +45,15 @@ A browser shares cookies between the ports of one host. The trading app and the 
 | Reports (`/api/v1/reports/**`) | `ANALYST` | Enforced in staff-ops-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#reports-staff-ops-service)) |
 | Insights (`/api/v1/reports/insights/**`) | `ANALYST` | Enforced by the same staff-ops-service rule as reports; every other role gets `403` ([C6](C6-api.md#get-apiv1reportsinsightsvolume), [active clients](C6-api.md#get-apiv1reportsinsightsactive-clients)) |
 | Notifications about one's own orders (`/api/v1/notifications/**`) | `CLIENT` (own account only) | Enforced in trading-service `SecurityConfig`; staff get `403` ([C6](C6-api.md#get-apiv1notifications-client-only)) |
-| Surveillance alerts: large orders and refused settlements (`/api/v1/surveillance/**`) | `TRADING_OPS` | Enforced in staff-ops-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)) |
+| Surveillance alerts: large orders and refused settlements (`/api/v1/surveillance/**`), shown on the staff app's Alerts page (`/alerts`) | `TRADING_OPS` | Enforced in staff-ops-service `SecurityConfig`; every other role gets `403` ([C6](C6-api.md#get-apiv1surveillancealerts-trading_ops-only)). The page's route is guarded with `requiresRole('TRADING_OPS')` too |
 | Market activity (`/api/v1/market-activity/**`) | every signed-in role | Enforced in trading-service `SecurityConfig`: signed in, any role. It holds aggregates only ([C6](C6-api.md#get-apiv1market-activity)) |
 
 When a story adds an internal view, add its row here and the `hasRole` rule in the owning service's `SecurityConfig`.
 
-The frontend trade-search route also checks `TRADING_OPS` with `tradingOpsGuard`; other signed-in
-roles see Access denied, and only operations see the search navigation link. This UI check
-supplements the owning service's authorization.
+The staff app's Trading Ops pages, trade search (`/trade-search`) and Alerts (`/alerts`), also check
+`TRADING_OPS` with `requiresRole('TRADING_OPS')`; other signed-in roles see Access denied. Only those
+two pages show the Trading Ops tab bar linking them ([trading-ops-nav.ts](../apps/frontend/projects/staff/src/app/features/trading-ops/trading-ops-nav.ts)),
+so no other role sees the links. This UI check supplements the owning service's authorization.
 
 ## The staff app
 
@@ -80,4 +81,5 @@ Employee information (`/employee-information`, LMKT-144) has no role guard: ever
 Two more mirrors, not of `Role`:
 
 - The staff app's `AccountStatus` type ([client-status.service.ts](../apps/frontend/projects/staff/src/app/core/clients/client-status.service.ts)) repeats [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) for its status panel, as do the CHECK constraints on `clients.account_status` (010) and `account_status_changes` (027). Change them together.
+- The staff app's `ALERT_REASONS` ([order-alert.model.ts](../apps/frontend/projects/staff/src/app/shared/models/order-alert.model.ts)) repeats [AlertReason](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) for the Alerts page's reason filter and labels. Change them together.
 - The cookie name: the staff app's [nginx.conf](../apps/frontend/projects/staff/nginx.conf) and `SERVICE_COOKIE` in [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs) repeat `JwtAuthenticationFilter.COOKIE_NAME` (`jwt`), because neither can read Java. Change them together.
