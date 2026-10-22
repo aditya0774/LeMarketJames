@@ -42,7 +42,9 @@ describe('Order creation holdings validation', () => {
   it('submits BUY orders without checking holdings', () => {
     service.createOrder({ ...sell, orderType: 'BUY' }).subscribe();
     http.expectNone('/api/v1/holdings/validate');
-    http.expectOne('/api/v1/orders').flush({ orderId: 8 });
+    const order = http.expectOne('/api/v1/orders');
+    expect(order.request.body).toEqual({ ...sell, orderType: 'BUY' });
+    order.flush({ orderId: 8 });
   });
 
   it('leaves a SELL by amount to the server, which knows its shares only once priced (BR-04)', () => {
