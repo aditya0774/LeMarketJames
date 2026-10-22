@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Deployment to the class AWS stack: `Jenkinsfile.aws` (run on the class Jenkins with a `TEAM_ID`,
+  us-east-1) builds the four backend images and both Angular apps, publishes them to ECR and S3, and
+  after an instructor's approval deploys the images to the team's existing ECS services, then checks
+  target health and the routes through CloudFront. [deploy/aws/README.md](deploy/aws/README.md) maps our
+  services onto the class stack (holdings = trading-service, reporting = staff-ops-service) and lists the
+  load balancer rules, CloudFront settings, task definition variables and database load the stack needs.
+  Every service now also answers `GET /health` (the class load balancer's health check; same result as
+  `/actuator/health`) and reads the JWT secret from `JWT_SHARED_SECRET` when `JWT_SECRET` is unset.
 - BR-16: A real overnight report and a separate read side. The overnight stub is replaced by the
   Monthly trading summary: each night it rebuilds the nightly trade summary (`reporting_daily_trades`,
   migration 030: one row per day, stock, segment and side, built only from `reporting_trades`) through

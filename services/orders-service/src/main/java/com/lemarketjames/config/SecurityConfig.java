@@ -64,7 +64,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/", "/actuator/health").permitAll()
+                .requestMatchers("/", "/actuator/health", "/health").permitAll()
                 // Only another service or a test run, by the shared token: a session gets 403 here.
                 .requestMatchers("/internal/**").hasAuthority(InternalApiTokenFilter.AUTHORITY)
                 // Dispute searches may read any client's fills, so only operations may call them.

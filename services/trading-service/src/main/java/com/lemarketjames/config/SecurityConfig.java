@@ -80,7 +80,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/", "/actuator/health").permitAll()
+                .requestMatchers("/", "/actuator/health", "/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/market/**").permitAll()
                 // Only another service, by the shared token: a client or staff session gets 403 here.
                 .requestMatchers("/internal/**").hasAuthority(InternalApiTokenFilter.AUTHORITY)

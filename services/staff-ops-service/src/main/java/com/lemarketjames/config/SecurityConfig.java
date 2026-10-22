@@ -49,7 +49,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/health", "/health").permitAll()
                 // Reports cover every client's trades, so only analysts may read them.
                 .requestMatchers(REPORTS_PATHS).hasRole(Role.ANALYST.name())
                 // An alert shows whose order it was and how big, so clients and analysts are refused.
