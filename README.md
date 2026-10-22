@@ -1097,9 +1097,231 @@ https://aditya0774.github.io/LeMarketJames/
 
 ## ER Diagram
 
-![ER Diagram](erd/lebron_erd_v2.png)
+The diagram shows the 25 physical tables in the shared database. Relationships shown with lines are declared foreign keys; event-consumer and reporting tables without foreign keys are kept separate by design.
 
-The diagram dates from 2026-10-08. Tables added since are drawn in the [class diagram](#class-diagram-backend-data-model) below where they have an entity, and each is described with its migration in [database/README.md](database/README.md): `price_history` (022), `report_runs` (023), `cash_movement_receipts` (024), `watchlist` (025), `account_status_changes` (027), `instrument_location_restrictions` (028), and `reporting_daily_trades`, `reporting_summary_state` and `report_outputs` (030).
+```mermaid
+erDiagram
+    CLIENTS {
+        int client_id PK
+        string username UK
+        string email UK
+        string account_status
+        string segment
+    }
+    ADDRESSES {
+        int address_id PK
+        int client_id FK
+        string address_type
+        string state
+        string country
+    }
+    ACCOUNTS {
+        int account_id PK
+        int client_id FK, UK
+        decimal cash_balance
+        string currency
+        boolean trading_enabled
+    }
+    STAFF_USERS {
+        int staff_id PK
+        string username UK
+        string email UK
+        string role
+        boolean active
+    }
+    INSTRUMENTS {
+        int instrument_id PK
+        string ticker UK
+        string name
+        string asset_class
+        boolean tradable
+        string location
+    }
+    MARKET_QUOTES {
+        int quote_id PK
+        int instrument_id FK, UK
+        decimal last_price
+        decimal bid_price
+        decimal ask_price
+        datetime last_updated
+    }
+    INSTRUMENT_MARKET_PARAMS {
+        int instrument_id PK, FK
+        decimal initial_price
+        decimal drift
+        decimal volatility
+        decimal spread_bps
+    }
+    PRICE_CANDLES {
+        int instrument_id PK, FK
+        datetime interval_start PK
+        decimal open_price
+        decimal high_price
+        decimal low_price
+        decimal close_price
+    }
+    PRICE_HISTORY {
+        int instrument_id PK, FK
+        date trading_date PK
+        decimal open_price
+        decimal high_price
+        decimal low_price
+        decimal close_price
+    }
+    ORDERS {
+        int order_id PK
+        int account_id FK
+        int instrument_id FK
+        string order_type
+        decimal quantity
+        decimal price_per_unit
+        string order_status
+        datetime submitted_at
+        datetime filled_at
+    }
+    ORDER_EVENTS {
+        int event_id PK
+        int order_id FK
+        string event_type
+        datetime event_timestamp
+    }
+    HOLDINGS {
+        int holding_id PK
+        int account_id FK
+        int instrument_id FK
+        decimal quantity
+        decimal average_cost
+    }
+    AUDIT_LOG {
+        bigint audit_id PK
+        int order_id FK
+        int account_id FK
+        int client_id FK
+        string action
+        datetime created_at
+    }
+    SETTLEMENT_RECEIPTS {
+        int order_id PK
+        int account_id
+        int instrument_id
+        string order_type
+        decimal quantity
+        decimal price_per_unit
+    }
+    NOTIFICATIONS {
+        int notification_id PK
+        int account_id
+        int order_id
+        string previous_status
+        string status
+        datetime occurred_at
+    }
+    ORDER_ALERTS {
+        int alert_id PK
+        int order_id UK
+        int account_id
+        int instrument_id
+        string reason
+        datetime submitted_at
+    }
+    TRADE_ACTIVITY {
+        int order_id PK
+        int instrument_id
+        string side
+        decimal quantity
+        decimal price
+        datetime filled_at
+    }
+    CASH_MOVEMENT_RECEIPTS {
+        uuid request_id PK
+        int account_id FK
+        string movement_type
+        decimal amount
+        decimal cash_balance_after
+    }
+    WATCHLIST {
+        int watchlist_id PK
+        int account_id FK
+        int instrument_id FK
+        datetime added_at
+    }
+    ACCOUNT_STATUS_CHANGES {
+        bigint change_id PK
+        int client_id FK
+        string old_status
+        string new_status
+        string changed_by
+        datetime changed_at
+    }
+    INSTRUMENT_LOCATION_RESTRICTIONS {
+        int instrument_id PK, FK
+        string location PK
+    }
+    REPORT_RUNS {
+        uuid run_id PK
+        string report_name
+        date run_date
+        string status
+        datetime ready_at
+    }
+    REPORT_OUTPUTS {
+        uuid run_id PK, FK
+        string file_name
+        string content_type
+        datetime created_at
+    }
+    REPORTING_DAILY_TRADES {
+        string time_zone PK
+        date trade_date PK
+        string symbol PK
+        string segment PK
+        string side PK
+        int trade_count
+        decimal quantity
+        decimal gross_amount
+    }
+    REPORTING_SUMMARY_STATE {
+        string time_zone PK
+        date summarized_through
+        datetime refreshed_at
+    }
+
+    CLIENTS ||--o{ ADDRESSES : has
+    CLIENTS ||--o| ACCOUNTS : owns
+    CLIENTS ||--o{ AUDIT_LOG : generates
+    CLIENTS ||--o{ ACCOUNT_STATUS_CHANGES : changes
+
+    INSTRUMENTS ||--o| MARKET_QUOTES : has_current_quote
+    INSTRUMENTS ||--o| INSTRUMENT_MARKET_PARAMS : configures
+    INSTRUMENTS ||--o{ PRICE_CANDLES : records
+    INSTRUMENTS ||--o{ PRICE_HISTORY : summarizes
+    INSTRUMENTS ||--o{ ORDERS : trades
+    INSTRUMENTS ||--o{ HOLDINGS : held_as
+    INSTRUMENTS ||--o{ WATCHLIST : watched
+    INSTRUMENTS ||--o{ INSTRUMENT_LOCATION_RESTRICTIONS : restricts
+
+    ACCOUNTS ||--o{ ORDERS : places
+    ACCOUNTS ||--o{ HOLDINGS : owns
+    ACCOUNTS ||--o{ AUDIT_LOG : affects
+    ACCOUNTS ||--o{ CASH_MOVEMENT_RECEIPTS : records
+    ACCOUNTS ||--o{ WATCHLIST : maintains
+
+    ORDERS ||--o{ ORDER_EVENTS : progresses_through
+    ORDERS ||--o{ AUDIT_LOG : records
+
+    REPORT_RUNS ||--o| REPORT_OUTPUTS : produces
+
+    ORDERS ||..o| SETTLEMENT_RECEIPTS : settles_to
+    ORDERS ||..o{ NOTIFICATIONS : emits_status_event
+    ACCOUNTS ||..o{ NOTIFICATIONS : receives
+    ORDERS ||..o| ORDER_ALERTS : emits_alert
+    ACCOUNTS ||..o{ ORDER_ALERTS : belongs_to
+    INSTRUMENTS ||..o{ ORDER_ALERTS : concerns
+    ORDERS ||..o| TRADE_ACTIVITY : emits_fill
+    INSTRUMENTS ||..o{ TRADE_ACTIVITY : concerns
+```
+
+Solid lines are declared foreign keys. Dotted lines are logical event-derived relationships only: the Kafka consumer tables (`notifications`, `order_alerts`, and `trade_activity`) and the durable execution table (`settlement_receipts`) retain IDs but deliberately declare no foreign keys, so delayed or redelivered events cannot block order cleanup. The aggregate reporting tables (`reporting_daily_trades` and `reporting_summary_state`) are intentionally independent.
 
 ---
 
