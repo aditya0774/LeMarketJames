@@ -26,21 +26,21 @@ public class LoadBalancerHealthController {
     private final ObjectProvider&lt;HealthEndpoint&gt; health;
     private final ObjectProvider&lt;HealthEndpointGroups&gt; groups;
 
-<span class="nc" id="L29">    public LoadBalancerHealthController(ObjectProvider&lt;HealthEndpoint&gt; health, ObjectProvider&lt;HealthEndpointGroups&gt; groups) {</span>
-<span class="nc" id="L30">        this.health = health;</span>
-<span class="nc" id="L31">        this.groups = groups;</span>
-<span class="nc" id="L32">    }</span>
+<span class="fc" id="L29">    public LoadBalancerHealthController(ObjectProvider&lt;HealthEndpoint&gt; health, ObjectProvider&lt;HealthEndpointGroups&gt; groups) {</span>
+<span class="fc" id="L30">        this.health = health;</span>
+<span class="fc" id="L31">        this.groups = groups;</span>
+<span class="fc" id="L32">    }</span>
 
     @GetMapping(&quot;/health&quot;)
     public ResponseEntity&lt;Map&lt;String, String&gt;&gt; health() {
-<span class="nc" id="L36">        HealthEndpoint endpoint = health.getIfAvailable();</span>
-<span class="nc" id="L37">        HealthEndpointGroups healthGroups = groups.getIfAvailable();</span>
-<span class="nc bnc" id="L38" title="All 4 branches missed.">        if (endpoint == null || healthGroups == null) {</span>
-<span class="nc" id="L39">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(&quot;status&quot;, Status.UNKNOWN.getCode()));</span>
+<span class="fc" id="L36">        HealthEndpoint endpoint = health.getIfAvailable();</span>
+<span class="fc" id="L37">        HealthEndpointGroups healthGroups = groups.getIfAvailable();</span>
+<span class="fc bfc" id="L38" title="All 4 branches covered.">        if (endpoint == null || healthGroups == null) {</span>
+<span class="fc" id="L39">            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(&quot;status&quot;, Status.UNKNOWN.getCode()));</span>
         }
-<span class="nc" id="L41">        Status status = endpoint.health().getStatus();</span>
-<span class="nc" id="L42">        int code = healthGroups.getPrimary().getHttpCodeStatusMapper().getStatusCode(status);</span>
-<span class="nc" id="L43">        return ResponseEntity.status(code).body(Map.of(&quot;status&quot;, status.getCode()));</span>
+<span class="fc" id="L41">        Status status = endpoint.health().getStatus();</span>
+<span class="fc" id="L42">        int code = healthGroups.getPrimary().getHttpCodeStatusMapper().getStatusCode(status);</span>
+<span class="fc" id="L43">        return ResponseEntity.status(code).body(Map.of(&quot;status&quot;, status.getCode()));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

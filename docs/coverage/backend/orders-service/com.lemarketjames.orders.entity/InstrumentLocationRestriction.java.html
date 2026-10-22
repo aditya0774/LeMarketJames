@@ -29,17 +29,17 @@ public class InstrumentLocationRestriction {
 <span class="nc" id="L29">    protected InstrumentLocationRestriction() {</span>
 <span class="nc" id="L30">    }</span>
 
-<span class="nc" id="L32">    public InstrumentLocationRestriction(Integer instrumentId, String location) {</span>
-<span class="nc" id="L33">        this.instrumentId = instrumentId;</span>
-<span class="nc" id="L34">        this.location = location;</span>
-<span class="nc" id="L35">    }</span>
+<span class="fc" id="L32">    public InstrumentLocationRestriction(Integer instrumentId, String location) {</span>
+<span class="fc" id="L33">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L34">        this.location = location;</span>
+<span class="fc" id="L35">    }</span>
 
     public Integer getInstrumentId() {
-<span class="nc" id="L38">        return instrumentId;</span>
+<span class="fc" id="L38">        return instrumentId;</span>
     }
 
     public String getLocation() {
-<span class="nc" id="L42">        return location;</span>
+<span class="fc" id="L42">        return location;</span>
     }
 
     /** The composite primary key (instrument_id, location). */
@@ -47,24 +47,24 @@ public class InstrumentLocationRestriction {
         private Integer instrumentId;
         private String location;
 
-<span class="nc" id="L50">        public Key() {</span>
-<span class="nc" id="L51">        }</span>
+<span class="fc" id="L50">        public Key() {</span>
+<span class="fc" id="L51">        }</span>
 
-<span class="nc" id="L53">        public Key(Integer instrumentId, String location) {</span>
-<span class="nc" id="L54">            this.instrumentId = instrumentId;</span>
-<span class="nc" id="L55">            this.location = location;</span>
-<span class="nc" id="L56">        }</span>
+<span class="fc" id="L53">        public Key(Integer instrumentId, String location) {</span>
+<span class="fc" id="L54">            this.instrumentId = instrumentId;</span>
+<span class="fc" id="L55">            this.location = location;</span>
+<span class="fc" id="L56">        }</span>
 
         @Override
         public boolean equals(Object other) {
-<span class="nc" id="L60">            return other instanceof Key key</span>
-<span class="nc bnc" id="L61" title="All 2 branches missed.">                &amp;&amp; Objects.equals(instrumentId, key.instrumentId)</span>
-<span class="nc bnc" id="L62" title="All 4 branches missed.">                &amp;&amp; Objects.equals(location, key.location);</span>
+<span class="fc" id="L60">            return other instanceof Key key</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                &amp;&amp; Objects.equals(instrumentId, key.instrumentId)</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">                &amp;&amp; Objects.equals(location, key.location);</span>
         }
 
         @Override
         public int hashCode() {
-<span class="nc" id="L67">            return Objects.hash(instrumentId, location);</span>
+<span class="fc" id="L67">            return Objects.hash(instrumentId, location);</span>
         }
     }
 }
