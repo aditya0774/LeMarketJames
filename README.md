@@ -1083,7 +1083,8 @@ four backend images and both Angular apps, pushes them to ECR and S3, and after 
 the image in each existing ECS service, then checks target health and the routes through CloudFront. It runs
 no tests; run the `Jenkinsfile` above on the same commit first.
 
-[deploy/aws/README.md](deploy/aws/README.md) has the rest: how our services map onto the class stack's
+[deploy/aws/TEAM-GUIDE.md](deploy/aws/TEAM-GUIDE.md) walks the team through a deployment step by step and lists
+the usual problems with their fixes. [deploy/aws/README.md](deploy/aws/README.md) has the reference: how our services map onto the class stack's
 (orders, auth, holdings = trading-service, reporting = staff-ops-service), the load balancer rules, CloudFront
 settings and task definition variables the stack must have, loading the schema with `run-leap-sql.sh`, and
 what differs from the local stack.

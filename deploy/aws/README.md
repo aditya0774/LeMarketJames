@@ -9,6 +9,9 @@ into them, through [Jenkinsfile.aws](../../Jenkinsfile.aws). Every team deploys 
 
 The local stack (Docker Compose) and the test pipeline ([Jenkinsfile](../../Jenkinsfile)) are unchanged.
 
+**Deploying for the first time, or something broke?** [TEAM-GUIDE.md](TEAM-GUIDE.md) walks through each step with the
+exact commands, and lists the problems you are likely to hit with their fixes. This page is the reference behind it.
+
 ## Contents
 
 1. [How it fits together](#how-it-fits-together)
@@ -161,7 +164,8 @@ Once, into the empty `leap` database, with the class script `run-leap-sql.sh` fr
 (see the class guide "Loading SQL with CloudShell"). The files in [database/schema](../../database/schema) are
 already named in run order; the script runs a directory's `*.sql` files in name order.
 
-1. Choose a strong password for `lemarket_app` and store it in Secrets Manager for the task definitions.
+1. Choose a strong password for `lemarket_app` and store it in Secrets Manager for the task definitions
+   (commands: [TEAM-GUIDE.md, Step 1](TEAM-GUIDE.md#step-1-create-the-database-password)).
 2. In the CloudShell VPC environment, with this repository's `database/schema` folder and `run-leap-sql.sh`:
 
    ```bash
@@ -236,3 +240,5 @@ After a green pipeline, by hand, on the two CloudFront domains:
 | Sign-in works, the next call is `401` | CloudFront not forwarding cookies on `/api/*` |
 | Orders stay PENDING | orders cannot reach holdings: `MARKET_SERVICE_URL`/`HOLDINGS_SERVICE_URL`, `INTERNAL_API_TOKEN`, or the security group between tasks |
 | Prices differ between page loads | holdings runs more than one task |
+
+Many more, with the commands to diagnose them: [TEAM-GUIDE.md, Hiccups and fixes](TEAM-GUIDE.md#hiccups-and-fixes).
