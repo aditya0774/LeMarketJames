@@ -1072,6 +1072,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/events/package-summary.html">com.lemarketjames.common.events</a> - package com.lemarketjames.common.events</dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/health/package-summary.html">com.lemarketjames.common.health</a> - package com.lemarketjames.common.health</dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/instruments/package-summary.html">com.lemarketjames.common.instruments</a> - package com.lemarketjames.common.instruments</dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/common/security/package-summary.html">com.lemarketjames.common.security</a> - package com.lemarketjames.common.security</dt>
@@ -3809,6 +3811,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/lemarketjames/orders/submission/SubmissionRequestId.html#HEADER" class="member-name-link">HEADER</a> - Static variable in class com.lemarketjames.orders.submission.<a href="com/lemarketjames/orders/submission/SubmissionRequestId.html" title="class in com.lemarketjames.orders.submission">SubmissionRequestId</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="com/lemarketjames/common/health/LoadBalancerHealthController.html#health()" class="member-name-link">health()</a> - Method in class com.lemarketjames.common.health.<a href="com/lemarketjames/common/health/LoadBalancerHealthController.html" title="class in com.lemarketjames.common.health">LoadBalancerHealthController</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/model/DailyBar.html#high()" class="member-name-link">high()</a> - Method in record class com.lemarketjames.market.model.<a href="com/lemarketjames/market/model/DailyBar.html" title="class in com.lemarketjames.market.model">DailyBar</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./com/lemarketjames/market/model/DailyBar.html#param-high"><code>high</code></a> record component.</div>
@@ -4431,6 +4435,13 @@ loadScripts(document, 'script');</script>
 <div class="block">Loads the universe, then simulates the trading time each instrument missed while the service
  was down, so today's minute candles start at the open instead of at boot.</div>
 </dd>
+<dt><a href="com/lemarketjames/common/health/LoadBalancerHealthController.html" class="type-name-link" title="class in com.lemarketjames.common.health">LoadBalancerHealthController</a> - Class in <a href="com/lemarketjames/common/health/package-summary.html">com.lemarketjames.common.health</a></dt>
+<dd>
+<div class="block"><code>GET /health</code>: the path the class AWS stack's load balancer checks on every service
+ (deploy/aws/README.md).</div>
+</dd>
+<dt><a href="com/lemarketjames/common/health/LoadBalancerHealthController.html#%3Cinit%3E(org.springframework.beans.factory.ObjectProvider,org.springframework.beans.factory.ObjectProvider)" class="member-name-link">LoadBalancerHealthController(ObjectProvider&lt;HealthEndpoint&gt;, ObjectProvider&lt;HealthEndpointGroups&gt;)</a> - Constructor for class com.lemarketjames.common.health.<a href="com/lemarketjames/common/health/LoadBalancerHealthController.html" title="class in com.lemarketjames.common.health">LoadBalancerHealthController</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketPersistenceService.html#loadInstruments()" class="member-name-link">loadInstruments()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketPersistenceService.html" title="class in com.lemarketjames.market.service">MarketPersistenceService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/lemarketjames/market/service/MarketPersistenceService.html#loadStoredQuotes()" class="member-name-link">loadStoredQuotes()</a> - Method in class com.lemarketjames.market.service.<a href="com/lemarketjames/market/service/MarketPersistenceService.html" title="class in com.lemarketjames.market.service">MarketPersistenceService</a></dt>
