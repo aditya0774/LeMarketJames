@@ -20,7 +20,10 @@
     -->
     <artifactId>trading-service</artifactId>
     <name>LeMarketJames Trading Service</name>
-    <description>Market simulator, quotes, instruments, sessions, holdings, portfolio, trade history, notifications and market activity</description>
+    <description>
+        Market simulator, quotes, instruments, sessions, holdings, portfolio, trade history,
+        notifications and market activity
+    </description>
 
     <dependencies>
         <dependency>

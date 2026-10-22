@@ -87,6 +87,7 @@ describe('SimulatorPage', () => {
     await open('/learn/simulator?symbol=NOPE');
 
     answer('AAPL');
+    expect(el().querySelector<HTMLSelectElement>('select')!.value).toBe('AAPL');
   });
 
   it('defaults to $1,000 three months back and shows what it would be worth', async () => {
