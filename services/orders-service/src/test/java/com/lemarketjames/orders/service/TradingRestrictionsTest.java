@@ -7,6 +7,7 @@ import com.lemarketjames.common.domain.AccountEntity;
 import com.lemarketjames.common.domain.AddressEntity;
 import com.lemarketjames.market.model.MarketInstrument;
 import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.orders.repository.InstrumentLocationRestrictionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,9 @@ class TradingRestrictionsTest {
     private AddressRepository addressRepository;
 
     @Mock
+    private InstrumentLocationRestrictionRepository instrumentRules;
+
+    @Mock
     private Clock clock;
 
     @InjectMocks
@@ -53,6 +57,8 @@ class TradingRestrictionsTest {
 
     private static final Integer TEST_ACCOUNT_ID = 1;
     private static final Integer TEST_CLIENT_ID = 100;
+    private static final Integer TEST_INSTRUMENT_ID = 9;
+    private static final Integer OTHER_INSTRUMENT_ID = 1;
     
     
 
@@ -76,7 +82,7 @@ class TradingRestrictionsTest {
         orderSettings.setRestrictedLocations(List.of());
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertFalse(restricted);
@@ -98,7 +104,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertFalse(restricted);
@@ -120,7 +126,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertFalse(restricted);
@@ -142,7 +148,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertTrue(restricted);
@@ -164,7 +170,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertTrue(restricted);
@@ -186,7 +192,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertTrue(restricted, "Should match case-insensitively");
@@ -208,7 +214,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertTrue(restricted, "Should match case-insensitively");
@@ -231,7 +237,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertFalse(restricted, "Should only check RESIDENTIAL addresses");
@@ -254,7 +260,7 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(addresses);
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertTrue(restricted, "Should return true if any residential address matches");
@@ -271,7 +277,7 @@ class TradingRestrictionsTest {
 
         // Act & Assert
         assertThrows(Exception.class, () ->
-            restrictions.locationRestricted(TEST_ACCOUNT_ID)
+            restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID)
         );
     }
 
@@ -288,10 +294,53 @@ class TradingRestrictionsTest {
         when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(List.of());
 
         // Act
-        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID);
+        boolean restricted = restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID);
 
         // Assert
         assertFalse(restricted);
+    }
+
+    // ========== Per-instrument Location Rules (BR-05) ==========
+
+    @Test
+    @DisplayName("Should restrict only the instruments whose rules name the client's state")
+    void testLocationRestricted_InstrumentRuleAppliesToThatInstrumentOnly() {
+        when(settings.getOrders()).thenReturn(orderSettings);
+        when(instrumentRules.findLocationsByInstrumentId(TEST_INSTRUMENT_ID)).thenReturn(List.of("New Jersey"));
+        when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(createTestAccount()));
+        when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(List.of(
+            createTestAddress(TEST_CLIENT_ID, "RESIDENTIAL", "New Jersey", "US")));
+
+        assertTrue(restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID));
+        // No rule for the other instrument and no platform-wide list: nothing to look up.
+        assertFalse(restrictions.locationRestricted(TEST_ACCOUNT_ID, OTHER_INSTRUMENT_ID));
+    }
+
+    @Test
+    @DisplayName("Should not restrict clients living elsewhere from an instrument with a rule")
+    void testLocationRestricted_InstrumentRuleOtherState() {
+        when(settings.getOrders()).thenReturn(orderSettings);
+        when(instrumentRules.findLocationsByInstrumentId(TEST_INSTRUMENT_ID)).thenReturn(List.of("New Jersey"));
+        when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(createTestAccount()));
+        when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(List.of(
+            createTestAddress(TEST_CLIENT_ID, "RESIDENTIAL", "Ohio", "US")));
+
+        assertFalse(restrictions.locationRestricted(TEST_ACCOUNT_ID, TEST_INSTRUMENT_ID));
+    }
+
+    @Test
+    @DisplayName("Should keep the platform-wide list for every instrument alongside instrument rules")
+    void testLocationRestricted_GlobalListStillAppliesToEveryInstrument() {
+        when(settings.getOrders()).thenReturn(orderSettings);
+        orderSettings.setRestrictedLocations(List.of("TX"));
+        when(instrumentRules.findLocationsByInstrumentId(OTHER_INSTRUMENT_ID)).thenReturn(List.of());
+        when(accountRepository.findById(TEST_ACCOUNT_ID)).thenReturn(Optional.of(createTestAccount()));
+        when(addressRepository.findByClientId(TEST_CLIENT_ID)).thenReturn(List.of(
+            createTestAddress(TEST_CLIENT_ID, "RESIDENTIAL", "TX", "US")));
+
+        assertTrue(restrictions.locationRestricted(TEST_ACCOUNT_ID, OTHER_INSTRUMENT_ID));
+        assertEquals(List.of("TX"), orderSettings.getRestrictedLocations(),
+            "The instrument's rules must not be added to the shared settings list");
     }
 
     // ========== Quote Staleness Tests ==========

@@ -55,6 +55,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final PlatformSettings.Auth.Lockout lockout;
     private final Clock clock;
+    private final RegistrationRules registrationRules;
+    private final SessionTokens sessionTokens;
 
     /** Resolve the trading account from the server-authenticated identity. */
     public Integer getAccountId(String username) {
@@ -83,7 +85,7 @@ public class AuthService {
      * @param addressRepository repository for client addresses
      * @param accountRepository repository for trading accounts
      * @param staffUserRepository repository for staff logins
-     * @param settings platform settings; supplies the lockout rule (contract C5)
+     * @param settings platform settings; supplies the lockout rule and the inactivity timeout (contract C5)
      */
     @Autowired
     public AuthService(
@@ -97,7 +99,11 @@ public class AuthService {
                 Clock.systemUTC());
     }
 
-    /** Takes the clock the lockout is timed with, so tests can move time instead of sleeping. */
+    /**
+     * Takes the clock the lockout and session tokens are timed with, so tests can move time
+     * instead of sleeping. Give the JwtService the same clock, or the tokens it checks will look
+     * expired or not yet issued.
+     */
     AuthService(
             JwtService jwtService,
             ClientRepository clientRepository,
@@ -114,6 +120,10 @@ public class AuthService {
         this.jwtService = jwtService;
         this.lockout = settings.getAuth().getLockout();
         this.clock = clock;
+        // Built here, not injected: the rules hold no state but the clock the age is counted on.
+        this.registrationRules = new RegistrationRules(clock);
+        this.sessionTokens = new SessionTokens(jwtService, settings.getSession().getInactivityTimeout(),
+                Duration.ofSeconds(jwtService.getExpirationSeconds()), clock);
     }
 
     /**
@@ -122,8 +132,11 @@ public class AuthService {
      *
      * @param request the registration request containing user details
      * @return an AuthResponse with the registered username and success message
-     * @throws IllegalArgumentException if validation fails or username is already taken
+     * @throws ValidationException if a field breaks a registration rule ({@link RegistrationRules})
+     * @throws IllegalArgumentException if the username or email is already taken
      */
+    // One transaction for the client, address and account: a failure part-way leaves no half-registered client.
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         validateRegisterRequest(request);
 
@@ -242,12 +255,36 @@ public class AuthService {
         // The token subject stays the username: /me, orders and account ownership checks look users up by it.
         String username = account.getUsername();
         Set<Role> roles = account.roles();
-        Instant issuedAt = loginIssuedAt(account);
-        String token = issuedAt == null
-            ? jwtService.generateToken(username, roles)
-            : jwtService.generateToken(username, roles, issuedAt);
+        SessionTokens.SessionToken token = sessionTokens.signIn(username, roles, loginIssuedAt(account));
         log.info("Login succeeded for username={} roles={}", username, roles);
-        return new LoginResult(username, "Login successful", token, roles);
+        return new LoginResult(username, "Login successful", token.value(), roles, token.expiresAt());
+    }
+
+    /**
+     * Extends a session the user is still using (BR-03): a new token for another inactivity
+     * timeout, never past the session cap. The web apps call it on user activity only, so a
+     * session left open with nobody at it still ends.
+     *
+     * @param token the current session token
+     * @return the new token and its expiry, or empty if the token is expired, invalid or past the cap
+     */
+    public Optional<SessionTokens.SessionToken> refresh(String token) {
+        return sessionTokens.refresh(token);
+    }
+
+    /** When the given session token stops being accepted; empty if it is not valid now. */
+    public Optional<Instant> sessionExpiry(String token) {
+        return sessionTokens.expiryOf(token);
+    }
+
+    /** How long a session may sit idle before it ends (contract C5). */
+    public Duration inactivityTimeout() {
+        return sessionTokens.inactivityTimeout();
+    }
+
+    /** The time sessions are measured on, so a reply's "expires in" matches the token. */
+    public Instant now() {
+        return clock.instant();
     }
 
         private Instant loginIssuedAt(LoginAccount account) {
@@ -348,45 +385,17 @@ public class AuthService {
     }
 
     /**
-     * Retrieves the JWT token expiration time in seconds.
-     *
-     * @return the token expiration time in seconds
-     */
-    public long getTokenExpirySeconds() {
-        return jwtService.getExpirationSeconds();
-    }
-
-    /**
-     * Validates a registration request ensuring all required fields are present and non-empty.
+     * Applies the registration rules (BR-01). The server is authoritative; the trading app's form
+     * mirrors the same rules so mistakes are caught before sending.
      *
      * @param request the registration request to validate
-     * @throws IllegalArgumentException if any required field is missing or invalid
+     * @throws ValidationException with every broken field and its message
      */
     private void validateRegisterRequest(RegisterRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request is required");
         }
-
-        Map<String, String> errors = new LinkedHashMap<>();
-        requireField(errors, "username", request.getUsername(), "Username is required");
-        requireField(errors, "password", request.getPassword(), "Password is required");
-        requireField(errors, "email", request.getEmail(), "Email is required");
-        requireField(errors, "fullName", request.getFullName(), "Full name is required");
-        requireField(errors, "streetAddress", request.getStreetAddress(), "Street address is required");
-        requireField(errors, "city", request.getCity(), "City is required");
-        requireField(errors, "state", request.getState(), "State is required");
-        requireField(errors, "zipCode", request.getZipCode(), "ZIP code is required");
-        requireField(errors, "ssn", request.getSsn(), "SSN is required");
-        requireField(errors, "phoneNumber", request.getPhoneNumber(), "Phone number is required");
-        requireField(errors, "investmentExperience", request.getInvestmentExperience(), "Investment experience is required");
-        requireField(errors, "employmentStatus", request.getEmploymentStatus(), "Employment status is required");
-        if (request.getInitialDeposit() == null) {
-            errors.put("initialDeposit", "Initial deposit amount is required");
-        }
-        if (request.getDateOfBirth() == null) {
-            errors.put("dateOfBirth", "Date of birth is required");
-        }
-
+        Map<String, String> errors = registrationRules.check(request);
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
@@ -404,12 +413,6 @@ public class AuthService {
         }
         validateRequired(request.getUsername(), "Email is required");
         validateRequired(request.getPassword(), "Password is required");
-    }
-
-    private void requireField(Map<String, String> errors, String field, String value, String message) {
-        if (value == null || value.isBlank()) {
-            errors.put(field, message);
-        }
     }
 
     private void validateRequired(String value, String message) {
@@ -449,12 +452,19 @@ public class AuthService {
         private final String message;
         private final String token;
         private final Set<Role> roles;
+        private final Instant expiresAt;
 
-        public LoginResult(String username, String message, String token, Set<Role> roles) {
+        public LoginResult(String username, String message, String token, Set<Role> roles, Instant expiresAt) {
             this.username = username;
             this.message = message;
             this.token = token;
             this.roles = roles;
+            this.expiresAt = expiresAt;
+        }
+
+        /** When the token stops being accepted unless it is refreshed (BR-03); the cookie lasts as long. */
+        public Instant getExpiresAt() {
+            return expiresAt;
         }
 
         /** The roles written into the token; tells the controller whether this login has an account. */

@@ -9,6 +9,7 @@ import argparse
 import http.cookiejar
 import json
 import os
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -40,7 +41,7 @@ def wait_for_fill(opener, base, order_id):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     # The trading app, which forwards /api to the services (its dev server or Nginx).
-    parser.add_argument("--base-url", default="http://localhost:4200")
+    parser.add_argument("--base-url", default="https://localhost:4200")
     args = parser.parse_args()
     password = os.environ.get("DEMO_PASSWORD", "Pass123!")
     # Different activity and sizes make segment comparisons visible without changing prices.
@@ -49,7 +50,12 @@ def main():
     plans += [(n, 6, 150) for n in range(6, 8)]
     for number, target, quantity in plans:
         username = f"demo_segment_{number}"
-        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        # The local web apps use a self-signed certificate (BR-02), so this local-only script accepts it.
+        unverified = ssl.create_default_context()
+        unverified.check_hostname = False
+        unverified.verify_mode = ssl.CERT_NONE
+        opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=unverified),
+                                             urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
         login = request(opener, args.base_url, "/api/auth/login", {
             "username": username + "@seed.lemarket.com", "password": password})
         account_id = login["accountId"]

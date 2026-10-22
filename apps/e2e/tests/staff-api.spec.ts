@@ -2,6 +2,7 @@ import { APIRequestContext, expect, test } from '@playwright/test';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
 import { resetFeed } from './support/market-control';
 import { newUser, registerViaApi, TestUser } from './support/users';
+import { SELF_SIGNED, STAFF_APP_URL } from './support/app-urls';
 
 /**
  * LMKT-143: the staff app's own origin is its only backend entry point. Its Nginx forwards the
@@ -14,7 +15,7 @@ import { newUser, registerViaApi, TestUser } from './support/users';
  * needs its own address when the stack isn't on this machine. Both must be on the same host,
  * as in every environment, because that is what makes browsers share their cookies.
  */
-const STAFF = process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201';
+const STAFF = STAFF_APP_URL;
 const PING = '/api/v1/reports/ping';
 const SEARCH = '/api/v1/orders/trades/search';
 const timelineOf = (orderId: number) => `/api/v1/orders/${orderId}/timeline`;
@@ -61,7 +62,7 @@ test.describe('Staff app API', () => {
 
   test('TRADING_OPS reaches trade search and an order timeline', async ({ request, playwright }) => {
     const { orderId } = await clientWithOrder(request);
-    const staff = await playwright.request.newContext();
+    const staff = await playwright.request.newContext(SELF_SIGNED);
     try {
       expect(await staffSignIn(staff, OPERATIONS)).toEqual(['TRADING_OPS']);
 
@@ -99,7 +100,7 @@ test.describe('Staff app API', () => {
 
     // Signed in through the staff app: still a client, so every service refuses the role,
     // even for the client's own order.
-    const staff = await playwright.request.newContext();
+    const staff = await playwright.request.newContext(SELF_SIGNED);
     try {
       expect(await staffSignIn(staff, user)).toEqual(['CLIENT']);
       for (const path of [PING, `${SEARCH}?orderId=${orderId}`, timelineOf(orderId)]) {

@@ -15,6 +15,7 @@
       <div class="section-head">
         <h3>{{ card.label }}</h3>
         @if (card.data; as d) {
+          <staff-insight-flag [flag]="d.flag" />
           <span class="mono range">{{ d.current.startDate }} – {{ d.current.endDate }}</span>
         }
       </div>

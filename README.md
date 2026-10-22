@@ -21,12 +21,15 @@ A full-stack trading application of seven services: two **Angular 21** web apps 
    - [Authentication Flow](#authentication-flow)
    - [Technology Stack](#technology-stack)
    - [Current Features & Endpoints](#current-features--endpoints)
+   - [Additional capability (BR-18): Learn and simulator](#additional-capability-br-18-learn-and-simulator)
+   - [Market coverage (BR-12)](#market-coverage-br-12)
    - [Design Principles](#design-principles)
 3. [Prerequisites](#prerequisites)
 4. [Running the Application](#running-the-application)
    - [Method 1: Local Development (Maven + npm)](#method-1-local-development-maven--npm)
    - [Method 2: Docker Build & Run](#method-2-docker-build--run)
    - [Method 3: Docker Compose (Full Stack with Database)](#method-3-docker-compose-full-stack-with-database)
+   - [HTTPS and local-only ports](#https-and-local-only-ports)
    - [Trading App and Staff App](#trading-app-and-staff-app)
    - [Market simulation settings](#market-simulation-settings)
    - [Kafka (order events)](#kafka-order-events)
@@ -74,14 +77,16 @@ LeMarketJames/
 │   │                              #       order event topic names, settings, error handling
 │   └── market-client/             # MarketDataService interface, its quote model, and the HTTP client for the market
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
-│   ├── auth-service/              # :8082 register, login, logout, /api/auth/me (clients and staff)
+│   ├── auth-service/              # :8082 register, login, logout, session refresh, /api/auth/me (clients
+│   │                              #       and staff); account status changes and client self-close
 │   ├── orders-service/            # :8085 order placement, lifecycle, automatic execution, order events,
-│   │                              #       trade search and order timeline for Trading Ops
+│   │                              #       trade search, order timeline and audit archive for Trading Ops
 │   ├── trading-service/           # :8084 simulated market (GBM) and its test controls, instruments, quotes,
 │   │                              #       sessions, profile, holdings, portfolio/balance, trade history; settles
 │   │                              #       fills; Kafka consumers: client notifications, traded volume per stock
-│   └── staff-ops-service/         # :8086 analyst reports (/api/v1/reports/**) and the Kafka consumer that alerts
-│                                  #       Trading Ops to large orders and refused settlements; staff app only
+│   └── staff-ops-service/         # :8086 analyst reports (/api/v1/reports/**), their nightly summary and the
+│                                  #       overnight CSV, and the Kafka consumer that alerts Trading Ops to large
+│                                  #       orders and refused settlements; staff app only
 ├── apps/
 │   ├── frontend/                  # Angular 21 workspace: both frontends
 │   │   ├── src/app/               # Trading app (:4200)
@@ -94,20 +99,26 @@ LeMarketJames/
 │   │   ├── proxy.conf.json        # The same routing for `ng serve`
 │   │   ├── package.json           # npm dependencies (shared by both apps)
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
-│   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
+│   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app),
+│                                  #       load/ (report load test)
 ├── contracts/                     # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
-├── database/schema/               # Numbered SQL files (001_ … 024_); 011 is the seed data set
+├── database/                      # schema/: numbered SQL files (001_ … 031_), 011 is the seed data set;
+│                                  #       README: what each migration does, backups and restore
 ├── scripts/
-│   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
+│   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1, backup-db.ps1,
+│   │                              #       and the segment report demo seeding
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file
+│   ├── seed/                      # Historical segment report seed (used by the Windows seeding script)
 │   ├── sonarqube/                 # One-time SonarQube server set-up
+│   ├── backup-db.sh               # One database backup, keeping the newest 7; backup-db-nightly.sh runs it nightly in Compose
 │   └── verify-*.sh                # Checks Jenkins runs against the live stack (orders, Kafka consumers, audit lockdown)
 ├── docs/                          # Generated only: Javadoc and the coverage report (GitHub Pages)
 ├── .github/workflows/             # Publishes the Javadoc and the coverage report
 ├── docker-compose.yml             # Full-stack orchestration
 ├── Jenkinsfile                    # CI/CD pipeline
 ├── sonar-project.properties       # SonarQube analysis settings for the whole repo
-├── lebron_erd.png                 # The ER diagram shown below
+├── erd/                           # ER diagrams: lebron_erd_v2.png is shown below, lebron_erd.png is the earlier version
+├── business-requirements/         # The LEAP requirements: specification, backlog, checklist and grading sheet
 ├── AGENTS.md                      # Conventions for developers
 └── README.md                      # This file
 ```
@@ -126,10 +137,10 @@ LeMarketJames is a **monorepo**: one repository holding seven services, which sh
 |---|---|---|---|
 | 1 | Trading app | 4200 | Angular app for clients; its Nginx routes `/api` to auth-, orders- and trading-service |
 | 2 | Staff app | 4201 | Angular app for Trading Ops and Analysts; its Nginx routes only the staff paths, to auth-, orders- and staff-ops-service |
-| 3 | auth-service | 8082 | Registration, sign-in and sign-out for clients and staff |
-| 4 | orders-service | 8085 | Orders: placement, execution, history, Trading Ops' trade search and timeline; publishes order events |
+| 3 | auth-service | 8082 | Registration, sign-in, sign-out and session refresh for clients and staff; account status (suspend, close, expire) |
+| 4 | orders-service | 8085 | Orders: placement, execution, history, Trading Ops' trade search, timeline and audit archive; publishes order events |
 | 5 | trading-service | 8084 | Trading/Holdings: the simulated market, instruments, quotes, sessions, profile, holdings, portfolio, trade history, notifications and market activity |
-| 6 | staff-ops-service | 8086 | Analyst/Trading Ops: reports and surveillance alerts |
+| 6 | staff-ops-service | 8086 | Analyst/Trading Ops: reports (with a nightly summary and the overnight CSV) and surveillance alerts |
 | 7 | Kafka | 9092 | The broker for order events |
 
 There is no gateway: each web app calls `/api` on its own origin, and its Nginx (or dev-server proxy) forwards each path straight to the service that serves it.
@@ -196,14 +207,20 @@ The application implements **JWT (JSON Web Token) based authentication** with HT
    - auth-service looks the email up among clients first, then staff, refuses a locked or inactive login, and verifies the password
    - Repeated wrong passwords lock the login for a while (the limit and duration are settings, [C5](contracts/C5-config.md))
    - Returns the JWT in an HTTP-only cookie named `jwt`, and the username, roles and (for clients) account ID in the body
-   - The token carries the username as subject, the roles, the issued-at time and the expiration time
+   - The token carries the username as subject, the roles, the sign-in time (`auth_time`), the issued-at time and the expiration time
+   - The token and its cookie last only the inactivity timeout, one minute by default (BR-03, [C5](contracts/C5-config.md#who-uses-each-setting))
 
 3. **Authenticated Requests:** Subsequent requests include the cookie automatically
    - The web app's Nginx forwards it; each service's `JwtAuthenticationFilter` extracts the token
    - `JwtService` validates the signature and expiration and reads the roles
    - A missing or invalid token gets `401`; a valid token without the role an endpoint needs gets `403`
 
-4. **Logout:** `/api/auth/logout` answers with an expired `jwt` cookie, which clears it in the browser
+4. **Staying signed in (BR-03):** while the user is using the app (mouse, keys, touch), the web app calls `POST /api/auth/refresh` at most every 20 seconds for a new token that lasts another timeout
+   - Background polling and live updates never refresh, so a page left open still ends
+   - 30 seconds before the end, an "Are you still there?" warning offers "Stay signed in"; with no answer the app signs out to the login page, which says why
+   - However often it is refreshed, a session ends one hour after sign-in (`jwt.expiration-ms`)
+
+5. **Logout:** `/api/auth/logout` answers with an expired `jwt` cookie, which clears it in the browser
 
 The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagram-backend-login-flow).
 
@@ -237,22 +254,102 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 **See [contracts/C6-api.md](contracts/C6-api.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
 **Key Features:**
-- **Authentication and roles** (auth-service): client registration, login for clients and staff, lockout after repeated failures, JWT-based stateless sessions in HTTP-only cookies. Three roles, `CLIENT`, `TRADING_OPS` and `ANALYST`, travel in the token ([C7](contracts/C7-roles.md))
+- **Authentication and roles** (auth-service): client registration, login for clients and staff, lockout after repeated failures, JWT-based stateless sessions in HTTP-only cookies over HTTPS. A session ends after 1 minute without activity (configurable), with a warning first (BR-03). Trading Ops can suspend, reinstate, close or expire a client's account with a reason, and a client can close their own. Three roles, `CLIENT`, `TRADING_OPS` and `ANALYST`, travel in the token ([C7](contracts/C7-roles.md))
 - **Market simulation** (trading-service): live price ticks using Geometric Brownian Motion (GBM); per-instrument drift and volatility; market hours and holidays; test controls that set a price or make the feed stale or unavailable ([C4](contracts/C4-quote-feed.md))
 - **Instruments and quotes** (trading-service): the supported stock list and its quotes from the simulated market
-- **Orders** (orders-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
+- **Orders** (orders-service): buy and sell orders, by number of shares or by dollar amount (whole shares only), are checked on submission (account, location, tradability, price, quantity, and holdings and cash net of what open orders already reserve), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
 - **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
+- **Records kept, backed up** (BR-14): a filled or rejected order, the settlement and cash receipts and the account status history can't be changed or deleted by anyone, the owner included ([C2](contracts/C2-audit.md#the-lockdown)). Everything is kept at least seven years; events older than the online window (365 days by default) are marked archived in the timeline and trade search, and Trading Ops retrieve them through `GET /api/v1/audit/archive` ([C2](contracts/C2-audit.md#retention-and-the-archive)). A nightly `pg_dump` keeps the last seven backups ([database/README.md](database/README.md#backups-and-restore))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
-- **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding
+- **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding. It is the platform's additional capability ([BR-18](#additional-capability-br-18-learn-and-simulator))
 - **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
-- **Staff app**: trade search and order timeline for Trading Ops; surveillance alerts for Trading Ops (staff-ops-service); aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs ([C6](contracts/C6-api.md#reports-staff-ops-service))
+- **Watchlist** (trading-service): a client's list of stocks to follow, shown with their live quotes ([C6](contracts/C6-api.md#watchlist))
+- **Staff app**: trade search and order timeline for Trading Ops, and an Alerts page listing the surveillance alerts (staff-ops-service) by reason and date, each linked to its order's timeline; aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a "What changed" list of the insights below, flagged first when one moved by the configured percent or more (BR-17, `lmj.reports.insight-flag-percent`), then a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs, each with its file to download (the nightly Monthly trading summary CSV, BR-16). Long-range reports read a summary built overnight instead of live orders ([read side](services/staff-ops-service/README.md#read-side-br-16)) ([C6](contracts/C6-api.md#reports-staff-ops-service), [insight flags](contracts/C6-api.md#insight-flags))
 
 **Architecture Notes:**
 - Feature-based organization: a service per area (auth, orders, trading, staff ops), and inside a service one package per feature (`orders/`, `holdings/`, `portfolio/`, `quotes/`, `market/`, ...)
 - Layered pattern: Controllers → Services → Repositories; DTOs for API contracts
 - Data persisted in PostgreSQL; market prices are simulated in memory by trading-service and saved as quotes and candles
 - Quote-feed design, settings and test controls: **[contracts/C4-quote-feed.md](contracts/C4-quote-feed.md)**
+
+### Additional capability (BR-18): Learn and simulator
+
+The BRS asks for one additional capability that adds value for clients or the business, proposed by the delivery team (§4.1), with a reason why it was chosen over other options (BR-18). Ours is the trading app's **Learn** tab and its **stock simulator**.
+
+**The client problem.** The platform is built for Joanna (BRS §6): a self-directed investor who is "not a trading professional" and "has no patience for jargon". BRS §9.5 sets the standard: a first-time client should be able to place an order and understand its outcome "without training or a user guide". The core screens have to use terms that such a client may not know: bid and ask, market order, buying power, cost basis, an order that is `DELAYED` or `REJECTED`. Learn explains those terms in the app, next to the tab where they appear, and lets her try out an idea without risking money.
+
+**What it is.**
+
+- **Lessons** (`/learn`): nine short lessons, marked beginner or intermediate: how the stock market works, how a trade works, market and limit orders, risk and diversification, reading a quote and chart, what happens to your order, cash and buying power, reading your holdings, and long-term habits. Each lesson marks the glossary terms it teaches (20 terms) and ends with a link to the tab where she can try it out (Market, Orders, Holdings, Overview or the simulator). The index suggests what to read next and remembers which lessons this browser has read.
+- **Stock simulator** (`/learn/simulator`): pick a stock, a day in the last six months and a dollar amount, and see what that purchase would be worth today, with the stock's chart. It places no order and changes no balance or holding.
+
+**Options considered.** Each option is rated for value to clients, value to the business, effort to build, and risk to the platform.
+
+<!-- TEAM: confirm the ratings and the reasoning below -->
+
+| Option | Client value | Business value | Effort | Risk | Outcome |
+|---|---|---|---|---|---|
+| **Learn tab and stock simulator** | High: meets the usability standard (§9.5) for the persona the platform is built for | Medium to high: clients who understand an order before placing it make fewer mistaken orders, which means fewer disputes for Trading Ops (David, §6) and fewer support calls | Low: trading app only; no new service, table or endpoint | Low: reads price data and places no orders, so the lifecycle, audit trail and settlement are untouched | **Chosen** |
+| Social or copy trading | Medium: trade ideas from other clients | Medium: engagement | High: profiles, a follow graph, consent, a new service, and copied orders that still go through every validation | High: shows one client's trades to another, against BR-02 and §9.3; copying a trade looks like advice, and advised dealing is out of scope (§4.2) | Rejected |
+| Native mobile app | High: Joanna checks positions "around news events" (§6) | Medium | High: two more codebases, app-store releases and a separate way to keep sessions | Medium: a second UI to keep in step with every rule | Rejected: native mobile apps are out of scope for this phase (§4.2) |
+
+**Why Learn won.** It is the only option that is fully in scope and serves the usability standard directly. It costs the least, carries the least risk to the trading core, and builds only on what the platform already has.
+
+**How it extends the platform without rebuilding it** (BRS §3, fourth objective: a capability "can be added without rebuilding what came before"):
+
+- **No backend change.** The commits that added it (`feature/learn-tab`, `feature/papertrading`, `feature/simulator`) changed only the trading app: three routes behind the existing `clientGuard`, one nav link and the `features/learn/` folder.
+- **It reuses an existing endpoint.** The simulator reads the stock's daily prices from `GET /api/quotes/{symbol}/history?range=6M` ([C6](contracts/C6-api.md#chart-ranges)), the same history the trade page's chart uses, through the existing `PriceHistory` and `InstrumentCatalog` services. It calls no order, cash or holdings endpoint.
+- **Content is kept apart from the components.** Lessons and terms live in `learn-content.ts`, so they can be added or reworded, or later served by a backend, without touching a template.
+
+**Evidence.** 105 unit tests in 11 spec files under [`apps/frontend/src/app/features/learn/`](apps/frontend/src/app/features/learn/), for example:
+
+- `simulator/simulator-math.spec.ts` checks the purchase arithmetic, gains and losses, and days with no price (weekends, days outside the history).
+- `simulator/simulator-page.spec.ts` covers the default purchase, the date limits, the quick picks, and prices that are unavailable.
+- `learn-page.spec.ts` covers the index: the lesson tiles, what to read next and the level filter.
+- `lesson/lesson-page.spec.ts` covers the reader and the Back and Next links.
+- `term-links.spec.ts` checks that every glossary term is taught in at least one lesson and marked where it is first mentioned; `key-terms/key-terms.spec.ts` covers the term chips that show each definition.
+- `learn-progress.spec.ts` covers which lessons are marked read.
+
+No Playwright end-to-end spec covers the Learn tab yet; the end-to-end nav helper only knows its tab name.
+
+### Market coverage (BR-12)
+
+**The requirement.** BR-12 in the BRS reads: "The platform must price orders using current market quotes across the instrument classes the firm supports at launch: equities (UK/US and Indian markets), foreign exchange, and crypto assets." The BRS notes column adds "Targeting US market initially then rolling out to Indian". For BR-10 it adds "All US Currency initially as that is our market".
+
+<!-- TEAM: confirm the revised BR-12 wording and where it was agreed -->
+
+**Scope for this phase: US equities only, agreed with the business.** At launch the firm supports US-listed equities priced in US dollars. UK and Indian equities, foreign exchange and crypto are later phases. Every client has a single cash balance, in US dollars.
+
+**The market.** 51 US equities, all with `asset_class` `EQUITY`, `location` `US` and `currency` `USD`. Fifty are tradable stocks, from [migration 009](database/schema/009_full_lebron_market.sql). The fifty-first is `CAVS`, a suspended stock added by 010 that clients can't trade; it is there to test the `NOT_TRADABLE` rejection. Non-US companies are listed through their US listing (ADR), in dollars and on US hours. The [database README](database/README.md) lists every stock.
+
+**How quotes are produced.** There is no live data provider. trading-service's market simulator ([C4](contracts/C4-quote-feed.md)) moves every price by Geometric Brownian Motion, using per-stock drift, volatility and spread (`instrument_market_params`), one step per tick (`sim.tick-ms`). A stock's price moves only while its exchange is open: on weekdays during the New York session (`MarketHours.US_EQUITY`), outside the configured holidays. Each quote carries a bid, an ask, a last price and the time it was produced (`lastUpdated`). The quotes are also saved as minute candles and daily bars, which the charts read.
+
+**How freshness is enforced.** When it executes an order, orders-service fetches the stock's current quote from trading-service. [`MarketOrderExecutor`](services/orders-service/src/main/java/com/lemarketjames/orders/execution/MarketOrderExecutor.java) then decides:
+
+- **Exchange closed:** the order waits as `DELAYED` (or stays `PENDING`) and runs once the market opens ([C1](contracts/C1-orders.md)).
+- **No quote, or a price that isn't positive:** the order is rejected with `PRICE_UNAVAILABLE`.
+- **A quote older than the staleness limit** (`PlatformSettings.Market`, [C5](contracts/C5-config.md)): the order is rejected with `STALE_QUOTE`, so nothing ever fills at an old price. BUY placement also refuses a stale quote up front.
+- **Otherwise:** the order fills at the ask (BUY) or the bid (SELL). The price, its source and the quote's time are stored on the order (`price_per_unit`, `quote_source`, `quote_time`, [migration 013](database/schema/013_execution_quote.sql)), so every fill can be traced back to the quote it used.
+
+The feed controls in [C4](contracts/C4-quote-feed.md#controlling-the-feed) can make the feed stale or unavailable on demand. The end-to-end `feed-failure` project uses them to test both rejections.
+
+**Where clients see the quote and its time.**
+
+- The Market tab lists every stock with its live price, refreshed by polling.
+- Before an order is submitted, the trade page shows the price with "Indicative – your fill price may differ · Price as of *time*" (BR-13).
+- The Orders tab shows the price each order filled at.
+
+**How the design extends to more markets.** The groundwork is already in place:
+
+- `instruments` has `asset_class` (its check constraint already allows `EQUITY`, `FOREX` and `CRYPTO`), `location` and `currency`.
+- [`MarketHours.forInstrument`](libs/market-client/src/main/java/com/lemarketjames/market/model/MarketHours.java) already returns UK and Indian equity sessions, a 24-hour weekday session for FX and a 24/7 session for crypto. Both the simulator and the executor use it.
+
+So an Indian stock added with `location` `INDIA` would already be priced and executed on Indian hours. Three pieces are not built:
+
+- multi-currency cash: balances per currency, and conversion;
+- prices shown in currencies other than US dollars in the apps;
+- holidays per exchange: `sim.holidays` is one list today.
 
 ### Design Principles
 
@@ -327,7 +424,7 @@ curl http://localhost:8084/actuator/health   # trading
 curl http://localhost:8085/actuator/health   # orders
 curl http://localhost:8086/actuator/health   # staff ops
 ```
-Expect `{"status":"UP"}`, then open `http://localhost:4200`. If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
+Expect `{"status":"UP"}`, then open `http://localhost:4200` (`https://localhost:4200` when `start-all.ps1` started it: it serves both apps over HTTPS, see [HTTPS](#https-and-local-only-ports)). If you get `{"status":"DOWN"}` or a service fails at startup with a schema validation error, the database is usually missing or not fully migrated. Rerun `setup-db.ps1 -Reset`.
 
 **Frontend Setup (Angular on port 4200):**
 
@@ -415,15 +512,18 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    ```
    (On older installs with Compose v1, the command is `docker-compose up -d --build`.)
 
-   This starts the seven services, plus the database:
-   - The trading app (a production nginx build): `http://localhost:4200`; its Nginx forwards `/api` to the services
-   - The staff app (the same, for staff): `http://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
+   This starts the eight services, plus the database:
+   - The trading app (a production nginx build): `https://localhost:4200`; its Nginx forwards `/api` to the services
+   - The staff app (the same, for staff): `https://localhost:4201` (see [Trading App and Staff App](#trading-app-and-staff-app))
    - Auth service: `http://localhost:8082` (direct access for debugging)
    - Trading service: `http://localhost:8084` (direct access for debugging and the test controls)
    - Orders service: `http://localhost:8085` (direct access for debugging)
    - Staff ops service: `http://localhost:8086` (direct access for debugging; only the staff app routes to it)
    - PostgreSQL database: `localhost:5432`
    - Kafka broker: `localhost:9092` (order events; see [Kafka (order events)](#kafka-order-events))
+   - Nightly database backup (`db-backup`, no port): a `pg_dump` at 02:00 UTC into the `db_backups` volume, keeping the last seven ([Backups and restore](database/README.md#backups-and-restore))
+
+   The two web apps are the only ports another computer can reach, and only over HTTPS; see [HTTPS and local-only ports](#https-and-local-only-ports).
 
 2. The schema is applied automatically. On first start, Postgres runs every file in `database/schema/` in numeric order, because that folder is mounted into `docker-entrypoint-initdb.d`. This only happens when the `db_data` volume is empty. To pick up new schema files on an existing database, either apply them with `psql` (see [database/README.md](database/README.md)) or wipe and recreate the database:
    ```bash
@@ -440,7 +540,7 @@ This is the Linux/Jenkins setup. The frontend, backend, and database all run on 
    ```
    Kafka has no HTTP health endpoint; `docker compose ps kafka` shows `healthy` once the broker answers.
 
-4. Open `http://localhost:4200` and log in or register.
+4. Open `https://localhost:4200` and log in or register. The first visit shows a certificate warning: the certificate is self-signed. Accept it once per app.
 
 5. View logs:
    ```bash
@@ -472,11 +572,21 @@ Run the backend in Docker and the Angular dev server on the same machine, so fro
 
 3. Open `http://localhost:4200`.
 
+### HTTPS and local-only ports
+
+Docker Compose serves both web apps over HTTPS only (BR-02), so passwords and the session cookie never cross the network in clear text:
+
+- **Self-signed certificate.** Each web app's image makes one for `localhost` when it is built (`openssl` in its Dockerfile). Browsers warn on the first visit; accept the warning once per app. A plain `http://localhost:4200` is redirected to `https://`.
+- **Secure cookie.** auth-service runs with `AUTH_COOKIE_SECURE=true`, so the browser only ever sends the session cookie over HTTPS.
+- **Local-only service ports.** The services, the database and Kafka are published on `127.0.0.1` only (`SERVICE_BIND_ADDRESS`). Another computer can open the web apps but none of the ports behind them. A shared VM that other machines develop against with `npm run start:vm` sets `SERVICE_BIND_ADDRESS=0.0.0.0` in its environment.
+- **Native Windows.** `start-all.ps1` runs both dev servers with `--ssl` and sets `AUTH_COOKIE_SECURE=true` too. A plain `npm start` stays on `http://`, which the services still accept.
+- **Scripts and tests.** The e2e tests accept the certificate (`ignoreHTTPSErrors`), and the `scripts/verify-*.sh` smoke scripts call `curl --insecure`.
+
 **Opening a Linux/Jenkins host's stack from another machine:**
 
-The services only accept cross-origin browser API calls from the origin in `APP_CORS_ALLOWED_ORIGIN`, which defaults to `http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
+The services only accept cross-origin browser API calls from the origins in `APP_CORS_ALLOWED_ORIGIN`, a comma-separated list that defaults to `https://localhost:4200,http://localhost:4200`. That default works whenever the browser runs on the same machine as the stack. To browse a Linux host's stack from your Windows machine at `http://<linux-host>:4200`, set that URL on the Linux host before starting Compose, either in an untracked `.env` file next to `docker-compose.yml` (Compose reads it automatically) or in the Jenkins agent's environment:
 ```bash
-APP_CORS_ALLOWED_ORIGIN=http://<linux-host>:4200
+APP_CORS_ALLOWED_ORIGIN=https://<linux-host>:4200
 ```
 This is per-machine configuration and is never committed, so the repo stays tied to no particular host.
 
@@ -503,7 +613,7 @@ There are two Angular apps. The staff app is separate from the trading app: its 
 | App | For | Source | Port | Routes `/api` to |
 |---|---|---|---|---|
 | Trading app | Clients | `apps/frontend/src` | 4200 | auth-service (`/api/auth/**`), orders-service (`/api/v1/orders/**`, `/api/v1/buy-orders/**`) and trading-service (everything else) |
-| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | auth-service (sign-in, sign-out and `/me`), orders-service (the Trading Ops trade search and order timeline) and [staff-ops-service](#staff-ops-service) (`/api/v1/reports/**`, `/api/v1/surveillance/**`); any other path answers 404 ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)) |
+| Staff app | Trading Ops and Analysts | `apps/frontend/projects/staff` | 4201 | auth-service (sign-in, sign-out, session refresh, `/me` and Trading Ops' client account status), orders-service (the Trading Ops trade search and order timeline) and [staff-ops-service](#staff-ops-service) (`/api/v1/reports/**`, `/api/v1/surveillance/**`); any other path answers 404 ([C6](contracts/C6-api.md#which-web-app-routes-which-paths)) |
 
 Both are projects in one Angular workspace, [apps/frontend](apps/frontend). They share its `package.json`, `node_modules` and Angular version, so one `npm install` serves both. They share no application code.
 
@@ -550,12 +660,13 @@ Like the trading app, the staff app only ever calls `/api` on its own origin (`a
 |---|---|---|
 | `/login` | `features/auth/login/` | Anyone; it is the start page |
 | `/trade-search` | `features/trade-search/` | `TRADING_OPS`; it is where that role starts |
+| `/alerts` | `features/trading-ops/alerts/` | `TRADING_OPS`; linked from the Trading Ops tab bar ([trading-ops-nav.ts](apps/frontend/projects/staff/src/app/features/trading-ops/trading-ops-nav.ts)), which lists every Trading Ops page |
 | `/analyst` | `features/analyst/` | `ANALYST` |
 | `/analyst/reports/<report>` | `features/analyst/reports/<report>/`, listed in [analyst-reports.ts](apps/frontend/projects/staff/src/app/features/analyst/reports/analyst-reports.ts) | `ANALYST` |
 
 The layout around every staff page is [staff-shell](apps/frontend/projects/staff/src/app/shared/layout/staff-shell), which also holds the sign-out action.
 
-**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trade-search` (Trading Ops) and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
+**Guarding a staff screen.** Routes are in [app.routes.ts](apps/frontend/projects/staff/src/app/app.routes.ts), and every page is guarded with `requiresRole(...roles)` ([role.guard.ts](apps/frontend/projects/staff/src/app/core/auth/role.guard.ts)), not with a guard written for one role. The `trade-search` and `alerts` (Trading Ops) and `analyst` sections are each one parent route with `canActivate: [requiresRole('<ROLE>')]`:
 
 - A page for one role goes in as a child of that role's section and needs no guard of its own. A report added to `analyst-reports.ts` is such a child already.
 - A page outside the sections takes the guard itself. Several roles can share one: `requiresRole('TRADING_OPS', 'ANALYST')` lets either in.
@@ -658,7 +769,7 @@ To run one app's tests, see [Trading App and Staff App](#trading-app-and-staff-a
 
 ### End-to-End Tests (Playwright)
 
-[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, buying a stock, and filtering order history. The tests don't start the app. Run them against a disposable stack that is already up on `http://localhost:4200` (Method 1 or Method 3). Most tests register their own user; the order-history suite also inserts exact UTC boundary fixtures into that disposable stack and removes them afterward.
+[apps/e2e](apps/e2e) drives the running app in a real Chromium browser, the way a user does: registering, logging in and out, buying a stock, and filtering order history. The tests don't start the app. Run them against a disposable stack that is already up on `https://localhost:4200` (Method 3, or `start-all.ps1`); the tests accept its self-signed certificate. For a plain-HTTP dev server, set `E2E_BASE_URL=http://localhost:4200`. Most tests register their own user; the order-history suite also inserts exact UTC boundary fixtures into that disposable stack and removes them afterward.
 
 ```bash
 cd apps/e2e
@@ -668,7 +779,7 @@ npm test                          # or: npm run test:headed to watch the browser
 npm run report                    # open the HTML report from the last run
 ```
 
-To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Connect as the application account (`PGUSER=lemarket_app`), as Jenkins does: the suite needs no more rights than the services have. Only enable database seeding for a disposable development or CI database; never point it at production.
+To test a stack elsewhere, set `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://my-linux-host:4200`). The order-history suite also requires either `E2E_DATABASE_URL` or `E2E_ALLOW_DATABASE_SEED=true` with the standard `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` variables. Connect as the application account (`PGUSER=lemarket_app`), as Jenkins does: the suite needs no more rights than the services have. The specs that insert their own orders (order history, trade search, the insight tiles, the load test) remove them afterwards as the owner, which needs `E2E_OWNER_DATABASE_URL` too (e.g. `postgres://lemarket:changeme@localhost:5432/lemarket`): nobody else may delete an order ([C2](contracts/C2-audit.md#the-lockdown)). Only enable database seeding for a disposable development or CI database; never point it at production.
 
 The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) follow an order from placement to its fill or rejection, so they need three more things from the stack:
 
@@ -680,20 +791,20 @@ The execution suites (`execution.spec.ts`, `execution-feed-failure.spec.ts`) fol
 
 `reporting-access.spec.ts` checks who may read reports, with the seed logins. It checks the service's own rule, so it calls staff-ops-service directly at `http://localhost:8086`; set `E2E_REPORTING_URL` if it is elsewhere.
 
-`staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `http://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
+`staff-api.spec.ts` goes through the staff app's Nginx the way the staff app does, by calling `/api` on the staff app's origin, `https://localhost:4201`; set `E2E_STAFF_BASE_URL` if it is elsewhere (same host as `E2E_BASE_URL`, since the suite is about the two apps sharing a browser's cookies). It checks that an analyst reaches reports, that Trading Ops reach trade search and an order timeline, that a client is refused, and that a customer session and a staff session exist at the same time.
 
 `settlement.spec.ts` follows a buy and a sell through settlement (S17, S18), with fills the executor really made: an order the client can no longer pay for, or has no shares left for, by the time it fills is `REJECTED` and Trading Ops are alerted; a settlement that fails part-way changes nothing and settles exactly once afterwards. Besides what the execution suites need, it needs:
 
 - The settlement test control ([C5](contracts/C5-config.md#settlement-test-control)) on trading-service, reached directly at `http://localhost:8084`; set `E2E_HOLDINGS_URL` if it is elsewhere.
 - The execution control on orders-service, reached directly at `http://localhost:8085` (`E2E_EXECUTION_URL`), to hold an order back until the price or the holding has changed.
 - Kafka, which carries the alert to staff-ops-service: Docker Compose has it; on the native Windows stack start with `-Kafka` ([Kafka (order events)](#kafka-order-events)).
-- The staff app on `http://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
+- The staff app on `https://localhost:4201` (`E2E_STAFF_BASE_URL`), where the test signs in as Trading Ops to read the alert.
 
 It pauses the execution worker for the whole stack, as `execution-retry.spec.ts` does, so both run one test at a time in the Playwright project `execution-recovery`, after the main tests.
 
 `execution-feed-failure.spec.ts` makes the feed stale or unavailable for the whole stack, so it runs in its own Playwright project, `feed-failure`, after every other test has finished, `execution-recovery` included. Playwright skips it when an earlier test failed.
 
-**The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `http://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It also holds the trade search tests (`trade-search.spec.ts`), which moved here with the screen: they register clients through the trading app (`E2E_BASE_URL`) and insert their trades, so they need the same database settings as the order-history suite above.
+**The staff app's suite** is separate: its tests are in `apps/e2e/tests-staff` and its configuration is [playwright.staff.config.ts](apps/e2e/playwright.staff.config.ts), which is the trading suite's configuration pointed at the staff app, `https://localhost:4201` (`E2E_STAFF_BASE_URL` if it is elsewhere). It signs in on the staff login with the seed logins and checks where each role lands, that each role is refused on the other's pages, and that a client is turned away. It also holds the trade search tests (`trade-search.spec.ts`), which moved here with the screen: they register clients through the trading app (`E2E_BASE_URL`) and insert their trades, so they need the same database settings as the order-history suite above.
 
 ```bash
 cd apps/e2e
@@ -703,6 +814,8 @@ npm run report:staff              # open the HTML report from the last staff run
 
 Jenkins runs the trading suite in the stage **Run Playwright E2E tests**, right after the smoke test, and the staff suite in **Run staff app Playwright E2E tests**, right after that. It uses the official `mcr.microsoft.com/playwright` Docker image, so the agent needs only Docker. The image tag in the Jenkinsfile must match the `@playwright/test` version in `apps/e2e/package.json`; update both together. Results show on the build's test report. The HTML report, plus traces, screenshots and videos of any failed test, are archived as build artifacts.
 
+**The inactivity timeout and the tests.** A session ends after one minute without input (BR-03), and many tests wait longer than that on an order or a report without touching the page. Start the stack for the e2e and load suites with a longer timeout, as Jenkins does: `SESSION_INACTIVITY_TIMEOUT=PT30M docker compose up -d`, or `start-all.ps1 -SessionTimeout PT30M` on Windows. Restore the default afterwards with a plain `docker compose up -d`. The timeout itself is tested by `session-timeout.spec.ts` and `tests-staff/staff-session-timeout.spec.ts`, which fake the browser's clock and so pass with either setting.
+
 ---
 
 ## API & Frontend Access
@@ -711,22 +824,22 @@ Once the application is running (via any of the three methods), you can access:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Angular Frontend** | `http://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
-| **Registration Page** | `http://localhost:4200/register` | User registration with Material Design form |
-| **Staff App** | `http://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
-| **Trading app API** | `http://localhost:4200/api/...` | The trading app's Nginx (or dev proxy) forwards each `/api` path to auth-, orders- or trading-service; there is no gateway |
-| **Auth Register API** | `POST http://localhost:4200/api/auth/register` | Register new user (forwarded to auth-service) |
-| **Auth Login API** | `POST http://localhost:4200/api/auth/login` | User login (forwarded to auth-service) |
-| **Staff app API** | `http://localhost:4201/api/...` | The staff app forwards only the staff paths: reports, alerts, staff sign-in, trade search and order timeline |
-| **Staff Login API** | `POST http://localhost:4201/api/auth/login` | Staff sign-in (forwarded to auth-service); sets the `staff_jwt` cookie |
+| **Angular Frontend** | `https://localhost:4200` | User interface (dev server in Method 1, nginx container in Method 3) |
+| **Registration Page** | `https://localhost:4200/register` | User registration with Material Design form |
+| **Staff App** | `https://localhost:4201` | Staff interface for Trading Ops and Analysts; opens on the staff login |
+| **Trading app API** | `https://localhost:4200/api/...` | The trading app's Nginx (or dev proxy) forwards each `/api` path to auth-, orders- or trading-service; there is no gateway |
+| **Auth Register API** | `POST https://localhost:4200/api/auth/register` | Register new user (forwarded to auth-service) |
+| **Auth Login API** | `POST https://localhost:4200/api/auth/login` | User login (forwarded to auth-service) |
+| **Staff app API** | `https://localhost:4201/api/...` | The staff app forwards only the staff paths: reports, alerts, staff sign-in, trade search and order timeline |
+| **Staff Login API** | `POST https://localhost:4201/api/auth/login` | Staff sign-in (forwarded to auth-service); sets the `staff_jwt` cookie |
 | **Health Checks** | `GET http://localhost:{8082,8084,8085,8086}/actuator/health` | auth / trading / orders / staff ops liveness (`UP`/`DOWN`) |
-| **Orders** | `POST http://localhost:4200/api/v1/orders` | orders-service: submit a buy or sell order as the signed-in client |
-| **Holdings / Portfolio** | `GET http://localhost:4200/api/v1/holdings`, `/api/v1/portfolio` | trading-service: the signed-in client's positions and cash balance |
-| **Instruments** | `GET http://localhost:4200/api/v1/instruments` | trading-service: the supported stock list |
-| **Notifications** | `GET http://localhost:4200/api/v1/notifications` | trading-service: the signed-in client's order notifications, built from Kafka events |
-| **Market activity** | `GET http://localhost:4200/api/v1/market-activity` | trading-service: traded volume per stock over the last 24 hours, built from Kafka events |
-| **Surveillance alerts (staff)** | `GET http://localhost:4201/api/v1/surveillance/alerts` | staff-ops-service, through the staff app; `TRADING_OPS` login only, built from Kafka events |
-| **Reports (staff)** | `GET http://localhost:4201/api/v1/reports/trades?periodType=MONTH` | staff-ops-service, through the staff app: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
+| **Orders** | `POST https://localhost:4200/api/v1/orders` | orders-service: submit a buy or sell order as the signed-in client |
+| **Holdings / Portfolio** | `GET https://localhost:4200/api/v1/holdings`, `/api/v1/portfolio` | trading-service: the signed-in client's positions and cash balance |
+| **Instruments** | `GET https://localhost:4200/api/v1/instruments` | trading-service: the supported stock list |
+| **Notifications** | `GET https://localhost:4200/api/v1/notifications` | trading-service: the signed-in client's order notifications, built from Kafka events |
+| **Market activity** | `GET https://localhost:4200/api/v1/market-activity` | trading-service: traded volume per stock over the last 24 hours, built from Kafka events |
+| **Surveillance alerts (staff)** | `GET https://localhost:4201/api/v1/surveillance/alerts` | staff-ops-service, through the staff app; `TRADING_OPS` login only, built from Kafka events |
+| **Reports (staff)** | `GET https://localhost:4201/api/v1/reports/trades?periodType=MONTH` | staff-ops-service, through the staff app: trades counted and totalled per period; `ANALYST` login only (`/api/v1/reports/ping` checks access alone) |
 | **PostgreSQL Database** | `localhost:5432` | Database server |
 | **Kafka Broker** | `localhost:9092` | Order events from orders-service to the consumers in trading- and staff-ops-service (Method 3 only; not HTTP) |
 
@@ -757,18 +870,23 @@ All test accounts are loaded automatically when the database is initialized (see
 | `seed_trader@seed.lemarket.com` | Active, `ACTIVE_TRADER` | Frequent trading; second account for segment reports |
 | `seed_hnw@seed.lemarket.com` | Active, `HIGH_NET_WORTH` | Large positions and balances |
 | `seed_closed@seed.lemarket.com` | Closed | Login refused; demonstrates closed account error |
-| `seed_expired@seed.lemarket.com` | Expired | Can log in but orders refused with `ACCOUNT_RESTRICTED` |
+| `seed_expired@seed.lemarket.com` | Expired | Login refused, like a closed account |
 | `seed_locked@seed.lemarket.com` | Locked out | Demonstrates account lockout message |
 | `seed_notrading@seed.lemarket.com` | Active, trading disabled | Orders refused with `ACCOUNT_RESTRICTED` |
+| `seed_restricted@seed.lemarket.com` | Active, lives in New Jersey | The non-US companies' stocks (e.g. `TSM`) refused with `LOCATION_RESTRICTED`; every other stock can be traded |
 
 ### Staff App Test Logins (port 4201)
 
 | Email | Role | Access |
 |---|---|---|
-| `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline |
+| `ops@seed.lemarket.com` | `TRADING_OPS` | Trade search, order timeline, a client's account status (suspend, reinstate, close, expire) |
 | `analyst@seed.lemarket.com` | `ANALYST` | Reports dashboard, read-only aggregate reports |
 
 **Password for all staff logins:** `Pass123!`
+
+A client closes their own account from **Your account** in the trading app's account menu, once they hold no stocks and have no open orders (BR-03). That can't be undone from the trading app: make the account active again from the staff app's trade search as `ops@seed.lemarket.com`.
+
+Both apps sign you out after **one minute without input** (BR-03), with a warning 30 seconds before. To look around at leisure, start the stack with `SESSION_INACTIVITY_TIMEOUT=PT30M docker compose up -d`.
 
 ---
 
@@ -908,7 +1026,7 @@ This repository includes a **Jenkins Pipeline** (`Jenkinsfile`) that:
 9. Runs the Playwright end-to-end suites, the trading app's and then the staff app's (see [End-to-End Tests](#end-to-end-tests-playwright))
 10. Places a buy order and a sell order, waits for each to fill, restarts orders-service and checks the order is still there and was settled once ([scripts/verify-buy-order.sh](scripts/verify-buy-order.sh), [scripts/verify-sell-order.sh](scripts/verify-sell-order.sh))
 11. Places a large order and checks that each of the three Kafka consumers acted on its events: the client's notification, the Trading Ops alert and the fill in market activity. The stage (**Verify Kafka consumers**) ends by printing the broker's consumer groups
-12. Checks that the services' database account cannot change audit records ([scripts/verify-audit-lockdown.sh](scripts/verify-audit-lockdown.sh)), then smoke-tests the quote and tradability APIs
+12. Checks that the services' database account cannot change audit or trade records ([scripts/verify-audit-lockdown.sh](scripts/verify-audit-lockdown.sh)), then smoke-tests the quote and tradability APIs
 13. Cleans up resources
 
 The Jenkins agent requires:
@@ -962,7 +1080,9 @@ https://aditya0774.github.io/LeMarketJames/
 
 ## ER Diagram
 
-![ER Diagram](lebron_erd_v2.png)
+![ER Diagram](erd/lebron_erd_v2.png)
+
+The diagram dates from 2026-10-08. Tables added since are drawn in the [class diagram](#class-diagram-backend-data-model) below where they have an entity, and each is described with its migration in [database/README.md](database/README.md): `price_history` (022), `report_runs` (023), `cash_movement_receipts` (024), `watchlist` (025), `account_status_changes` (027), `instrument_location_restrictions` (028), and `reporting_daily_trades`, `reporting_summary_state` and `report_outputs` (030).
 
 ---
 
@@ -1177,6 +1297,59 @@ classDiagram
         -Instant filledAt
     }
 
+    class PriceHistoryEntity {
+        -Integer instrumentId
+        -LocalDate tradingDate
+        -BigDecimal openPrice
+        -BigDecimal highPrice
+        -BigDecimal lowPrice
+        -BigDecimal closePrice
+        -Long volume
+    }
+
+    class WatchlistEntry {
+        -Integer id
+        -Integer accountId
+        -Integer instrumentId
+        -Instant addedAt
+    }
+
+    class CashMovementReceipt {
+        -UUID requestId
+        -Integer accountId
+        -CashMovementType movementType
+        -BigDecimal amount
+        -BigDecimal cashBalanceAfter
+        -Instant createdAt
+    }
+
+    class AccountStatusChangeEntity {
+        -Long changeId
+        -Integer clientId
+        -AccountStatus oldStatus
+        -AccountStatus newStatus
+        -String reason
+        -String changedBy
+        -Instant changedAt
+    }
+
+    class InstrumentLocationRestriction {
+        -Integer instrumentId
+        -String location
+    }
+
+    class ReportRun {
+        -UUID id
+        -String reportName
+        -LocalDate runDate
+        -RunStatus status
+        -Instant scheduledFor
+        -Instant readyBy
+        -Instant startedAt
+        -Instant readyAt
+        -String failureReason
+    }
+
     class ReportingTrade {
         <<view>>
         -Integer orderId
@@ -1206,6 +1379,12 @@ classDiagram
     Instrument "1" --> "0..1" MarketQuoteEntity : is quoted by
     Instrument "1" --> "0..*" PriceCandleEntity : has history
     Order "0..1" --> "0..*" AuditEventEntity : is audited by
+    Instrument "1" --> "0..*" PriceHistoryEntity : has daily bars
+    AccountEntity "1" --> "0..*" WatchlistEntry : watches
+    Instrument "1" --> "0..*" WatchlistEntry : is watched as
+    AccountEntity "1" --> "0..*" CashMovementReceipt : deposits and withdraws
+    ClientEntity "1" --> "0..*" AccountStatusChangeEntity : status history
+    Instrument "1" --> "0..*" InstrumentLocationRestriction : is restricted by
 
     SettlementReceipt ..> Order : settles, once
     Notification ..> Order : status change, from an event
@@ -1231,8 +1410,14 @@ Where each class lives, and the table it maps to:
 | `OrderAlert` | `order_alerts` | `staff-ops-service` |
 | `RecordedFill` | `trade_activity` | `trading-service` |
 | `ReportingTrade` | `reporting_trades` (view) | `staff-ops-service` |
+| `PriceHistoryEntity`, `WatchlistEntry`, `CashMovementReceipt` | `price_history`, `watchlist`, `cash_movement_receipts` (insert-only, [029](database/README.md#029--trade-record-lockdown)) | `trading-service` |
+| `AccountStatusChangeEntity` | `account_status_changes` (insert-only) | `auth-service` |
+| `InstrumentLocationRestriction` | `instrument_location_restrictions` (read-only; rows come from migrations) | `orders-service` |
+| `ReportRun` | `report_runs` | `staff-ops-service` |
 
-The enum types in the diagram are not drawn with their values, which live once, in code: `OrderStatus`, `OrderType` and `RejectionReason` ([C1](contracts/C1-orders.md)), `AuditEventType` ([C2](contracts/C2-audit.md)), `Role` ([C7](contracts/C7-roles.md)), and `AccountStatus` and `ClientSegment` in `libs/common`.
+The enum types in the diagram are not drawn with their values, which live once, in code: `OrderStatus`, `OrderType` and `RejectionReason` ([C1](contracts/C1-orders.md)), `AuditEventType` ([C2](contracts/C2-audit.md)), `Role` ([C7](contracts/C7-roles.md)), `AccountStatus` and `ClientSegment` in `libs/common`, `CashMovementType` in trading-service and `RunStatus` in staff-ops-service.
+
+Some tables have no entity class, because only plain SQL reads or writes them: the nightly report summary (`reporting_daily_trades`, `reporting_summary_state`) and the overnight files (`report_outputs`) in staff-ops-service ([030](database/README.md#030--nightly-trade-summary-and-overnight-report-files)).
 
 ---
 
@@ -1305,6 +1490,7 @@ sequenceDiagram
     participant WebApp as Trading app (Nginx)
     participant OrderController
     participant OrderService
+    participant OrderPlacement
     participant SubmissionValidator
     participant Holdings as trading-service<br/>holdings
     participant Market as trading-service<br/>market
@@ -1312,43 +1498,49 @@ sequenceDiagram
     participant Database
     participant Kafka
 
-    Client->>WebApp: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity}
+    Client->>WebApp: POST /api/v1/orders<br/>{accountId, instrumentId, orderType, quantity or amount}
     WebApp->>OrderController: forward to orders-service with the jwt cookie
     Note over OrderController: JwtAuthenticationFilter has validated the token.<br/>SubmissionRequestId sets the X-Request-Id response header.
     OrderController->>OrderService: createOrder(request, requestId)
-    OrderService->>SubmissionValidator: validate(request, trail)
+    OrderService->>OrderPlacement: place(request, trail)
+    Note over OrderPlacement,Database: One transaction, holding the account lock (BR-05)
+    OrderPlacement->>SubmissionValidator: validate(request, trail)
 
-    SubmissionValidator->>Database: Account is the caller's and may trade,<br/>location not restricted, instrument tradable
+    SubmissionValidator->>Database: Lock the account; it is the caller's and may trade,<br/>location not restricted for this stock, instrument tradable
+    opt BUY order, or any order by amount (BR-04)
+        SubmissionValidator->>Market: GET /api/market/quotes/by-instrument/{id}
+        Market-->>SubmissionValidator: Quote (ask for a BUY, bid for a SELL, time)
+        SubmissionValidator->>SubmissionValidator: Price available and quote fresh
+    end
+    SubmissionValidator->>SubmissionValidator: Whole shares (an amount becomes<br/>as many as it covers at that price)
     opt SELL order
-        SubmissionValidator->>Holdings: POST /internal/holdings/validate
+        SubmissionValidator->>Holdings: POST /internal/holdings/validate<br/>(with the shares in open SELLs)
         Holdings-->>SubmissionValidator: Enough shares, or InsufficientHoldingsException
     end
     opt BUY order
-        SubmissionValidator->>Market: GET /api/market/quotes/by-instrument/{id}
-        Market-->>SubmissionValidator: Quote (ask price, time)
-        SubmissionValidator->>SubmissionValidator: Price available and quote fresh
-        SubmissionValidator->>Database: Cash balance covers quantity x ask price
+        SubmissionValidator->>Database: Cash less open BUYs covers shares x ask price
     end
-    SubmissionValidator-->>OrderService: ValidationOutcome (passed, or refused with a reason)
+    SubmissionValidator-->>OrderPlacement: ValidationOutcome (passed, or refused with a reason)
 
     alt A check failed
+        OrderPlacement-->>OrderService: Refused (the transaction only releases the lock)
         OrderService->>SubmissionRecorder: refuse(trail)
         SubmissionRecorder->>Database: INSERT INTO audit_log<br/>SUBMITTED, RULE_CHECKED for each check that ran
         OrderService-->>OrderController: Refusal
         OrderController-->>Client: 400 Bad Request<br/>{success: false, reason, code}
     else Every check passed
-        OrderService->>SubmissionRecorder: accept(order, trail)
-        Note over SubmissionRecorder,Database: One transaction
+        OrderPlacement->>SubmissionRecorder: accept(order, trail)
         SubmissionRecorder->>Database: INSERT INTO orders (status SUBMITTED)
         SubmissionRecorder->>Database: INSERT INTO audit_log<br/>SUBMITTED, RULE_CHECKED for each check, VALIDATED
-        SubmissionRecorder-->>OrderService: Saved Order
+        SubmissionRecorder-->>OrderPlacement: Saved Order
+        OrderPlacement-->>OrderService: Saved Order (the commit releases the lock)
         SubmissionRecorder-)Kafka: After the commit, OrderSubmitted<br/>on lemarket.orders.submitted
         OrderService-->>OrderController: OrderResponse
         OrderController-->>Client: 201 Created<br/>{orderId, orderStatus: "SUBMITTED"}
     end
 ```
 
-Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; staff-ops-service's surveillance consumer reads it.
+Every submission, accepted or refused, leaves an audit trail filed under its `X-Request-Id` ([C2](contracts/C2-audit.md#the-submission-trail)). Cash and shares are checked net of the account's open orders, and the account lock means two orders sent at once are checked one after the other ([C6](contracts/C6-api.md#post-apiv1orders)). An account that isn't the caller's is refused with `403` instead of `400`. The event reaches Kafka through `OrderEventForwarder` and the `OrderEventPublisher` interface, which logs instead when no broker is configured; staff-ops-service's surveillance consumer reads it.
 
 ---
 
@@ -1487,11 +1679,12 @@ does not route to it; the staff app (4201) does. Sign in there as staff and call
 `staff_jwt` cookie that sign-in sets (seed logins: [C3](contracts/C3-seed-data.md)):
 
 ```bash
-curl -c cookies.txt -H "Content-Type: application/json" \
+# -k: the staff app's certificate is self-signed (HTTPS and local-only ports, above).
+curl -k -c cookies.txt -H "Content-Type: application/json" \
      -d '{"username":"analyst@seed.lemarket.com","password":"Pass123!"}' \
-     http://localhost:4201/api/auth/login
-curl -b cookies.txt http://localhost:4201/api/v1/reports/ping
-curl -b cookies.txt "http://localhost:4201/api/v1/reports/trades?periodType=MONTH"
+     https://localhost:4201/api/auth/login
+curl -k -b cookies.txt https://localhost:4201/api/v1/reports/ping
+curl -k -b cookies.txt "https://localhost:4201/api/v1/reports/trades?periodType=MONTH"
 ```
 
 The first only checks access; the second is the trade report, counted and totalled per day, week, month or year.

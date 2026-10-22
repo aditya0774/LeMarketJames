@@ -44,7 +44,7 @@ public class MarketOrderExecutor implements OrderExecutor {
                 || !clients.findById(account.get().getClientId()).map(c -> c.getAccountStatus().canTrade()).orElse(false)) {
             return ExecutionResult.rejected(RejectionReason.ACCOUNT_RESTRICTED);
         }
-        if (restrictions.locationRestricted(order.getAccountId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);
+        if (restrictions.locationRestricted(order.getAccountId(), order.getInstrumentId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);
         var instrument = instruments.findById(order.getInstrumentId());
         if (instrument.isEmpty() || !instrument.get().isTradable()) {
             return ExecutionResult.rejected(RejectionReason.NOT_TRADABLE);
@@ -53,17 +53,18 @@ public class MarketOrderExecutor implements OrderExecutor {
         if (settings.isRespectMarketHours() && !MarketHours.forInstrument(stock.getAssetClass().name(),
                 stock.getLocation()).isOpen(clock.instant(), settings.getHolidays())) {
             return ExecutionResult.waiting(order.getOrderStatus() == OrderStatus.PENDING
-                ? OrderStatus.PENDING : OrderStatus.DELAYED);
+                ? OrderStatus.PENDING : OrderStatus.DELAYED, RejectionReason.MARKET_CLOSED);
         }
         var quote = market.findByInstrumentId(order.getInstrumentId());
         if (quote.isEmpty()) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
-        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {
-            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE);
-        }
         double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();
-        if (!Double.isFinite(raw) || raw <= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
-        BigDecimal price = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);
-        if (price.signum() <= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);
-        return ExecutionResult.filled(new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated()));
+        // A refusal keeps the quote it was refused on, so the audit trail can show a dispute why (BR-15).
+        BigDecimal price = Double.isFinite(raw) ? BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP) : null;
+        var used = new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated());
+        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {
+            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE, used);
+        }
+        if (price == null || price.signum() <= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE, used);
+        return ExecutionResult.filled(used);
     }
 }

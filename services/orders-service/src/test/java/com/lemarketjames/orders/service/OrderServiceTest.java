@@ -94,6 +94,7 @@ class OrderServiceTest {
     private ApplicationEventPublisher events;
 
     @Mock private TradingRestrictions restrictions;
+    @Mock private OpenOrderReservations reservations;
     private OrderService orderService;
 
     private static final String REQUEST_ID = "req-1";
@@ -101,17 +102,21 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(orderRepository.findLockedById(any())).thenAnswer(inv -> orderRepository.findById(inv.getArgument(0)));
+        lenient().when(accountRepository.findLockedById(any())).thenAnswer(inv -> accountRepository.findById(inv.getArgument(0)));
+        lenient().when(reservations.reservedShares(anyInt(), anyInt())).thenReturn(BigDecimal.ZERO);
         // The real checks and the real recorder run against the mocks below, so these tests cover
         // placement end to end, down to the audit events handed to AuditRecorder.
         AccountAccess accountAccess = new AccountAccess(accountRepository, clientRepository);
         var validator = new com.lemarketjames.orders.submission.SubmissionValidator(accountAccess, accountRepository,
             clientRepository, instrumentRepository, restrictions, holdingsValidationClient, marketDataService,
-            cashValidationService);
-        orderService = new OrderService(orderRepository, accountAccess, validator,
-            new SubmissionRecorder(orderRepository, auditRecorder, events),
+            cashValidationService, reservations);
+        var submissions = new SubmissionRecorder(orderRepository, auditRecorder, events);
+        orderService = new OrderService(orderRepository, accountAccess,
+            new com.lemarketjames.orders.submission.OrderPlacement(validator, submissions), submissions,
             new com.lemarketjames.orders.execution.OrderTransitions(auditRecorder, events),
             auditEventRepository,
-            instrumentRepository);
+            instrumentRepository,
+            mock(com.lemarketjames.audit.AuditRetention.class));
         // Mock cash validation to pass by default (sufficient balance)
         // Use lenient() to avoid "UnnecessaryStubbingException" for tests that don't use cash validation
         lenient().when(cashValidationService.validateSufficientCash(any(Integer.class), any())).thenReturn(true);
@@ -130,7 +135,7 @@ class OrderServiceTest {
         when(orderRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         var response = orderService.createOrder(request, REQUEST_ID);
         var sequence = inOrder(holdingsValidationClient, orderRepository);
-        sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+        sequence.verify(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         sequence.verify(orderRepository).save(any());
         verifyNoInteractions(cashValidationService);
         assertTrue(response.isSuccess());
@@ -141,7 +146,7 @@ class OrderServiceTest {
     void insufficientHoldingsNeverSavesSell() {
         var request = validSell();
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .when(holdingsValidationClient).validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         assertThrows(InsufficientHoldingsException.class, () -> orderService.createOrder(request, REQUEST_ID));
         verifyNoInteractions(orderRepository, cashValidationService);
     }
@@ -179,7 +184,7 @@ class OrderServiceTest {
         assertTrue(orderService.createOrder(request, REQUEST_ID).isSuccess());
 
         assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
-            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"),
+            "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"),
             auditedSteps());
         // Every event names the order, the caller's client and account, and the one request.
         audited().forEach(event -> {
@@ -195,12 +200,12 @@ class OrderServiceTest {
         assertNull(submitted.get("price"));
         assertFalse(submitted.containsKey("requestedAccountId"));
         // VALIDATED lists the rules that actually ran, not a fixed list.
-        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"),
-            audited().get(6).details().get("checks"));
+        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "QUANTITY", "HOLDINGS"),
+            audited().get(7).details().get("checks"));
         // The order is saved before its events, so they can carry its ID.
         var sequence = inOrder(orderRepository, auditRecorder);
         sequence.verify(orderRepository).save(any());
-        sequence.verify(auditRecorder, times(7)).recordSubmission(any());
+        sequence.verify(auditRecorder, times(8)).recordSubmission(any());
         // The new order is announced once, with what was ordered (contract C6).
         verify(events).publishEvent(argThat((Object e) -> e instanceof OrderSubmitted announced
             && announced.orderId() == 77 && announced.accountId() == 1 && announced.instrumentId() == 1
@@ -215,13 +220,13 @@ class OrderServiceTest {
         callerIsClient(42);
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
         when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
-        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+        when(cashValidationService.availableCash(1)).thenReturn(BigDecimal.ONE);
 
         assertEquals("INSUFFICIENT_CASH", orderService.createOrder(request, REQUEST_ID).getCode());
 
         assertEquals(List.of("SUBMITTED", "RULE_CHECKED:ACCOUNT_ACCESS:PASS", "RULE_CHECKED:ACCOUNT_STATUS:PASS",
             "RULE_CHECKED:LOCATION:PASS", "RULE_CHECKED:TRADABLE:PASS", "RULE_CHECKED:PRICE_AVAILABLE:PASS",
-            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"), auditedSteps());
+            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"), auditedSteps());
         audited().forEach(event -> {
             assertNull(event.orderId(), "a refused order has no order ID");
             assertEquals(42, event.clientId());
@@ -271,13 +276,13 @@ class OrderServiceTest {
         var request = validSell();
         var unreachable = new IllegalStateException("trading-service unreachable");
         doThrow(unreachable).when(holdingsValidationClient)
-            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
 
         assertSame(unreachable, assertThrows(IllegalStateException.class,
             () -> orderService.createOrder(request, REQUEST_ID)));
 
-        assertEquals("RULE_CHECKED:HOLDINGS:ERROR", auditedSteps().get(5));
-        assertEquals(6, auditedSteps().size());
+        assertEquals("RULE_CHECKED:HOLDINGS:ERROR", auditedSteps().get(6));
+        assertEquals(7, auditedSteps().size());
         verifyNoInteractions(orderRepository);
     }
 
@@ -287,7 +292,7 @@ class OrderServiceTest {
         var request = validSell();
         var refusal = new InsufficientHoldingsException("Insufficient holdings");
         doThrow(refusal).when(holdingsValidationClient)
-            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE);
+            .validateSufficientHoldings(1, "testuser", 1, BigDecimal.ONE, BigDecimal.ZERO);
         var auditDown = new IllegalStateException("audit store unavailable");
         doThrow(auditDown).when(auditRecorder).recordSubmission(any());
 
@@ -453,7 +458,7 @@ class OrderServiceTest {
         var request = validBuy();
         when(marketDataService.findByInstrumentId(1)).thenReturn(Optional.of(quote(250)));
         when(cashValidationService.validateSufficientCash(1, new BigDecimal("500.0000"))).thenReturn(false);
-        when(cashValidationService.getCashBalance(1)).thenReturn(BigDecimal.ONE);
+        when(cashValidationService.availableCash(1)).thenReturn(BigDecimal.ONE);
 
         var response = orderService.createOrder(request, REQUEST_ID);
 

@@ -16,6 +16,9 @@ pipeline {
         // CI exercises fills regardless of the wall-clock time; production defaults still respect sessions.
         SIM_RESPECT_MARKET_HOURS = 'false'
         AUTH_LOCKOUT_DURATION = '2s'
+        // BR-03's one-minute inactivity timeout would sign the e2e and load tests out while they
+        // wait on API calls; they test the timeout itself with a faked browser clock instead.
+        SESSION_INACTIVITY_TIMEOUT = 'PT30M'
         CI_HEALTH_RETRIES = '180'
         CI_HEALTH_SLEEP_SECONDS = '1'
     }
@@ -302,6 +305,18 @@ pipeline {
                     # trading-service validates its entities at startup too (HoldingsOwnDataIntegrationTest),
                     # watchlist included, and a kept db volume never re-runs initdb.
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/025_watchlist.sql
+                    # The order tests now audit PENDING and DELAYED, which 026 adds to the action list.
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/026_audit_waiting_steps.sql
+                    # auth-service validates its entities at startup, the account status history included (BR-03).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/027_account_status_changes.sql
+                    # orders-service validates its entities at startup, the per-stock location rules included (BR-05).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/028_instrument_location_restrictions.sql
+                    # AuditLockdownIntegrationTest checks the trade-record lockdown too (BR-14).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/029_trade_record_lockdown.sql
+                    # staff-ops-service reads the nightly trade summary and run files (BR-16).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/030_reporting_summary.sql
+                    # orders-service also validates the amount an order was placed for (BR-04).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/031_order_requested_amount.sql
 
                     # Keep one Maven invocation so integration tests share startup work.
                     # kafka-test only means something to orders-service: its integration tests
@@ -309,7 +324,7 @@ pipeline {
                     # the stub, and OrderEventKafkaIntegrationTest reads them back from the topics.
                     mvn -B -pl services/orders-service,services/auth-service,services/trading-service,services/staff-ops-service -am \
                         -Dspring.profiles.active=postgres-test,kafka-test \
-                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
+                        "-Dtest=BuyOrderIntegrationTest,SellOrderIntegrationTest,OpenOrderReservationIntegrationTest,OrderSubmissionAuditIntegrationTest,SubmissionRestartIntegrationTest,AuditLockdownIntegrationTest,OwnDataIntegrationTest,OrderEventKafkaIntegrationTest,SessionOwnershipIntegrationTest,AuthPersistenceIntegrationTest,AccountStatusPostgresIntegrationTest,HoldingsOwnDataIntegrationTest,ReadSideSafeguardsIntegrationTest,SegmentActivityIntegrationTest,OvernightRunsIntegrationTest" \
                         -Dsurefire.failIfNoSpecifiedTests=false test
 
                     # The Kafka test skips itself when the kafka-test profile is missing, and a
@@ -321,7 +336,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'services/trading-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/trading-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*OvernightRunsIntegrationTest.xml'
+                    junit 'services/trading-service/target/surefire-reports/TEST-*SessionOwnershipIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderEventKafkaIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OrderSubmissionAuditIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*SubmissionRestartIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*AuditLockdownIntegrationTest.xml, services/orders-service/target/surefire-reports/TEST-*OwnDataIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AuthPersistenceIntegrationTest.xml, services/auth-service/target/surefire-reports/TEST-*AccountStatusPostgresIntegrationTest.xml, services/trading-service/target/surefire-reports/TEST-*HoldingsOwnDataIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*ReadSideSafeguardsIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*SegmentActivityIntegrationTest.xml, services/staff-ops-service/target/surefire-reports/TEST-*OvernightRunsIntegrationTest.xml'
                 }
             }
         }
@@ -566,15 +581,17 @@ pipeline {
                     # The web apps route /api by path (apps/frontend/nginx.conf and the staff app's).
                     # Signed out, the trading app reaches auth-service (401 from /me) and
                     # trading-service (401); the staff app has no route for a customer path (404).
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     expect_status() {
                         actual=$(curl --silent --output /dev/null --write-out "%{http_code}" "$2" || true)
                         echo "$2 -> $actual (expected $1)"
                         test "$actual" = "$1"
                     }
-                    expect_status 401 http://localhost:4200/api/auth/me
-                    expect_status 401 http://localhost:4200/api/v1/holdings
-                    expect_status 401 http://localhost:4201/api/v1/reports/ping
-                    expect_status 404 http://localhost:4201/api/v1/holdings
+                    expect_status 401 https://localhost:4200/api/auth/me
+                    expect_status 401 https://localhost:4200/api/v1/holdings
+                    expect_status 401 https://localhost:4201/api/v1/reports/ping
+                    expect_status 404 https://localhost:4201/api/v1/holdings
 
                     echo "Spring Boot container logs:"
                     compose logs auth-service orders-service trading-service staff-ops-service
@@ -626,12 +643,15 @@ pipeline {
                     # Docker. Its tag must match @playwright/test in apps/e2e/package.json.
                     # --network host lets the browser reach localhost:4200 on the agent; running as
                     # the Jenkins user keeps the report files deletable by the workspace cleanup.
+                    # The owner URL is only for removing the orders a test inserted, which the
+                    # application account may not delete (029, contracts/C2-audit.md).
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test'
@@ -661,11 +681,12 @@ pipeline {
                     # the clients whose trades they insert and then look up from the staff app.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
-                        -e E2E_BASE_URL=http://localhost:4200 \
+                        -e E2E_STAFF_BASE_URL=https://localhost:4201 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c 'npm ci --no-audit --no-fund && npx playwright test -c playwright.staff.config.ts'
@@ -694,11 +715,12 @@ pipeline {
                     # so only install when they didn't run.
                     docker run --rm --network host --ipc=host \
                         --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=true \
-                        -e E2E_BASE_URL=http://localhost:4200 \
-                        -e E2E_STAFF_BASE_URL=http://localhost:4201 \
+                        -e E2E_BASE_URL=https://localhost:4200 \
+                        -e E2E_STAFF_BASE_URL=https://localhost:4201 \
                         -e E2E_ALLOW_DATABASE_SEED=true \
                         -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=lemarket -e PGUSER=lemarket_app \
                         -e PGPASSWORD="${APP_DB_PASSWORD:-changeme_app}" \
+                        -e E2E_OWNER_DATABASE_URL="postgres://lemarket:${DB_PASSWORD:-changeme}@localhost:5432/lemarket" \
                         -v "$PWD/apps/e2e:/e2e" -w /e2e \
                         mcr.microsoft.com/playwright:v1.63.0-noble \
                         sh -c '{ [ -d node_modules/@playwright/test ] || npm ci --no-audit --no-fund; } && npx playwright test -c playwright.load.config.ts'
@@ -769,12 +791,14 @@ pipeline {
 
                     # Through the trading app's Nginx: register/login reach auth-service, quotes
                     # trading-service and orders orders-service.
-                    base="http://localhost:4200"
+                    base="https://localhost:4200"
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     user="ciuser$(date +%s)"
                     email="$user@example.com"
 
                     register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567"}
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":5000,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567"}
 JSON
 )
 
@@ -838,12 +862,14 @@ JSON
 
                     # Through the trading app's Nginx: register/login reach auth-service, quotes
                     # trading-service and orders orders-service.
-                    base="http://localhost:4200"
+                    base="https://localhost:4200"
+                    # The web apps use a self-signed certificate (BR-02), so curl accepts it in this block.
+                    curl() { command curl --insecure "$@"; }
                     user="ciusertrad$(date +%s)"
                     email="$user@example.com"
 
                     register_payload=$(cat <<JSON
-{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
+{"username":"$user","password":"Pass123!","email":"$email","fullName":"CI User","streetAddress":"123 Main St","city":"Springfield","state":"IL","zipCode":"62701","country":"US","ssn":"123-45-6789","initialDeposit":5000,"investmentExperience":"beginner","employmentStatus":"employed","dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567","termsAccepted":true}
 JSON
 )
 
@@ -911,9 +937,9 @@ JSON
             // Capture errors from failed smoke requests before containers are removed.
             sh '''
                 if docker compose version >/dev/null 2>&1; then
-                    docker compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
+                    docker compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db db-backup kafka || true
                 elif command -v docker-compose >/dev/null 2>&1; then
-                    docker-compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db kafka || true
+                    docker-compose logs --tail=100 frontend staff-frontend auth-service orders-service trading-service staff-ops-service db db-backup kafka || true
                 fi
             '''
         }

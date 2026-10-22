@@ -2,6 +2,111 @@
 
 ## Unreleased
 
+- BR-16: A real overnight report and a separate read side. The overnight stub is replaced by the
+  Monthly trading summary: each night it rebuilds the nightly trade summary (`reporting_daily_trades`,
+  migration 030: one row per day, stock, segment and side, built only from `reporting_trades`) through
+  the run date, then writes the month so far as a CSV per stock and segment, stored with the run
+  (`report_outputs`). The overnight list gives each run's `outputFileName`, and the new
+  `GET /api/v1/reports/overnight/{runId}/output` downloads it (a Download CSV link on the staff app's
+  Overnight reports). `/api/v1/reports/trades` and `/trades-by-stock` read the summary for the days it
+  covers and the live view only after it. In the report load test, reports answered 9,840 requests in
+  30 s instead of 607 with order confirmations still on target (staff-ops-service/LMKT-44-performance.md).
+  New switches `REPORTING_OVERNIGHT_QUERY_TIMEOUT_MS` and `REPORTING_OVERNIGHT_FAILWITH` (was
+  `REPORTING_OVERNIGHT_STUB_FAILWITH`) ([C6](contracts/C6-api.md#get-apiv1reportsovernight), [C5](contracts/C5-config.md#reporting-read-side-limits)).
+- BR-14: Trade records are kept and can't be changed. Migration 029 locks them like the audit trail:
+  an order is never deleted and, once FILLED or REJECTED, never updated; `settlement_receipts`,
+  `cash_movement_receipts` and `account_status_changes` are insert-only, for `lemarket_app` and (by
+  trigger) for the owner too. Audit events older than `lmj.audit.online-retention` count as archived:
+  the order timeline and trade search return `archived` and the staff app labels them, and the new
+  `GET /api/v1/audit/archive` (orders-service, Trading Ops, staff app) retrieves them by order,
+  request, client and time, with no age limit. Backups: `scripts/backup-db.sh`,
+  `scripts/windows/backup-db.ps1` and a nightly `db-backup` Compose service (`pg_dump`, keeping 7);
+  restore steps in database/README.md. Tests that insert orders remove them as the owner: the e2e
+  suite now needs `E2E_OWNER_DATABASE_URL` ([C2](contracts/C2-audit.md#retention-and-the-archive),
+  [C6](contracts/C6-api.md#audit-archive-trading_ops-only), [C5](contracts/C5-config.md#who-uses-each-setting)).
+- BR-17: Insights are flagged when they move. Every Analyst insight now carries a `flag`
+  (`flagged`, `changePercent`, `direction`, `thresholdPercent`): flagged when it moved by
+  `lmj.reports.insight-flag-percent` or more against the period it is compared with.
+  The most active stocks are compared with the same days of last week (`previousTradedValue`), and
+  the active-client trend's last seven days with the seven before (`lastWeek`, `weekBefore`). The
+  Analyst dashboard opens with a "What changed" list, flagged insights first, and each tile shows a
+  flag chip. Trading Ops get an Alerts page (`/alerts`, beside trade search on a new tab bar) listing
+  the surveillance alerts, filtered by reason and UTC days (`GET /api/v1/surveillance/alerts` takes
+  `reason`, `from` and `to`), each order linked to its timeline ([C6](contracts/C6-api.md#insight-flags),
+  [C5](contracts/C5-config.md#who-uses-each-setting), [C7](contracts/C7-roles.md)).
+- BR-04: Orders can be placed by amount. `POST /api/v1/orders` and `/api/v1/buy-orders` take
+  `amount` (USD) instead of `quantity`, exactly one of the two; the server buys or sells as many whole
+  shares as the amount covers at the ask (BUY) or bid (SELL) and keeps the amount on the order
+  (`orders.requested_amount`, migration 031; `requestedAmount` in the order DTO). Orders are whole
+  shares only, now enforced on the server too: the new placement check `QUANTITY` refuses `0.5` or an
+  amount below one share's price with the new code `INVALID_QUANTITY`. The trade form (and the
+  Overview's quick trade) has a Shares / Amount switch and shows "Buys N shares, about $X left over"
+  before the client confirms ([C6](contracts/C6-api.md#post-apiv1orders), [C1](contracts/C1-orders.md),
+  [C2](contracts/C2-audit.md#the-submission-trail)).
+- BR-05: Open orders now reserve what they will spend. A BUY must fit the cash less the cost of the
+  account's open BUYs (the buying power the balance shows), and a SELL the holding less the shares in
+  its open SELLs of that stock; trading-service's `POST /internal/holdings/validate` takes the new
+  `reservedQuantity` for that. Placement locks the account until the order is saved, so two orders
+  sent at once are checked one after the other (`OrderPlacement`). Location rules can now name single
+  stocks: `instrument_location_restrictions` (migration 028) blocks the six non-US companies' stocks
+  for clients living in New Jersey, shown by the new persona `seed_restricted`; the platform-wide
+  `lmj.orders.restricted-locations` list still blocks every stock ([C6](contracts/C6-api.md#post-apiv1orders),
+  [C5](contracts/C5-config.md#who-uses-each-setting), [C3](contracts/C3-seed-data.md#clients)).
+- BR-03: Accounts can be suspended, reinstated, closed and expired. Trading Ops do it from trade
+  search in the staff app: once a client is chosen, an "Account status" card shows their status and
+  its history, and changes it with a reason and a confirmation step
+  (`GET`/`PUT /api/v1/clients/{clientId}/status`, auth-service, `TRADING_OPS` only, routed by the staff
+  app). A client closes their own account from the new account page in the trading app's account
+  menu (`GET`/`POST /api/auth/close-account`): only with no stocks and no open orders, after
+  re-entering the password; any cash stays on the closed account for operations to pay out. Every
+  change is kept in the new `account_status_changes` table (migration 027, insert-only for the
+  services), logged as `ACCOUNT_STATUS_CHANGED`, and ends the client's sessions: their next request
+  gets `401 ACCOUNT_INACTIVE` ([C6](contracts/C6-api.md#account-status-trading_ops-only),
+  [C7](contracts/C7-roles.md#who-may-use-what)).
+- BR-03: Sessions end after one minute without input (`lmj.session.inactivity-timeout`, `PT1M`).
+  A session token, and its cookie, last only that long. `POST /api/auth/refresh` extends an active
+  session, never past `jwt.expiration-ms` from sign-in (the token's new `auth_time` claim). Login
+  and `/api/auth/me` now also return `expiresInSeconds` and `inactivityTimeoutSeconds`. Both web
+  apps refresh on user input only, at most every 20 seconds, warn 30 seconds before the end ("Are
+  you still there?", `@lemarket/shared-ui` `SessionTimeout`) and then sign out to
+  `/login?reason=timeout`. The staff app routes the refresh. Test stacks set
+  `SESSION_INACTIVITY_TIMEOUT=PT30M` (Docker Compose; Jenkins does), or `-SessionTimeout PT30M` in
+  `start-all.ps1` ([C5](contracts/C5-config.md#who-uses-each-setting),
+  [C6](contracts/C6-api.md#auth-auth-service)).
+- BR-02 hardening: both web apps are HTTPS only in Docker: `https://localhost:4200` and `:4201`,
+  with a self-signed certificate made at image build (accept the browser warning once). Plain HTTP
+  on those ports is redirected. The session cookie is `Secure` (`AUTH_COOKIE_SECURE=true`). The
+  services', database's and Kafka's ports are published on `127.0.0.1` only
+  (`SERVICE_BIND_ADDRESS`; a shared VM sets `0.0.0.0`). `APP_CORS_ALLOWED_ORIGIN` is now a
+  comma-separated list, by default the https and http localhost origins. `start-all.ps1` serves both
+  dev servers with `--ssl`. The e2e tests, the Jenkins smoke tests and `scripts/verify-*.sh` use
+  `https://` and accept the certificate ([README](README.md#https-and-local-only-ports),
+  [C5](contracts/C5-config.md#web-apps-ports-and-service-urls)).
+- BR-02: No endpoint answers without a credential, except health, registration, sign-in and
+  `GET /api/market/**`. `/internal/**` in trading- and orders-service (settlement, the SELL check
+  and the test controls) now needs the shared `INTERNAL_API_TOKEN` in the `X-Internal-Token`
+  header. Without it the answer is `401`, and with a client or staff session `403`
+  (`InternalApiTokenFilter` in `libs/common`). orders-service sends the token, and Docker Compose
+  gives both services the same value. `/api/market/**` is open for `GET` only. A stack outside
+  development must set `INTERNAL_API_TOKEN` ([C6](contracts/C6-api.md#internal-endpoints-service-to-service-only-never-through-a-web-app),
+  [C5](contracts/C5-config.md#who-uses-each-setting)).
+- BR-15 follow-up: the e2e audit-trail expectations now include the `PENDING` step, and the quote
+  on a `STALE_QUOTE` rejection.
+- BR-01: Registration rules are enforced on the server, not only in the form. auth-service's
+  `RegistrationRules` applies the form's rules with the same messages (username, password strength,
+  email, phone, SSN, ZIP, names and address, age, minimum deposit, experience and employment), and
+  registration is one transaction. The form now sends the username the client typed, not the email
+  ([C6](contracts/C6-api.md#auth-auth-service)).
+- BR-15: Every step of an order's life is in its audit trail. `PENDING` and `DELAYED` are audited
+  (migration 026; `DELAYED` with the reason `MARKET_CLOSED`), and a rejection made on a quote records
+  that quote's price and time. The staff timeline shows a waiting step in grey
+  ([C2](contracts/C2-audit.md#the-execution-trail)).
+- BR-12: The market in scope is the 51 US equities in USD; README "Market coverage (BR-12)" sets out
+  the scope, the simulated feed and how quote freshness is enforced at placement and execution
+  ([C4](contracts/C4-quote-feed.md#market-scope)).
+- BR-18: README "Additional capability (BR-18)" justifies the Learn tab and stock simulator against
+  the alternatives considered (copy trading, a mobile app).
+
 - LMKT-28: Holdings and buying power on the Overview update live when an order settles, and
   catch up after the connection drops. trading-service adds `GET /api/v1/portfolio/stream`
   (SSE, `balance-changed`), sent only after a settlement commits; the trading app's Nginx routes

@@ -51,7 +51,9 @@ public class OrderExecutionTransactions {
             order.setSettlementPending(true);
             return order;
         }
-        if (order.getOrderStatus() != result.nextStatus()) transitions.move(order, result.nextStatus(), result.reason());
+        if (order.getOrderStatus() != result.nextStatus()) {
+            transitions.move(order, result.nextStatus(), result.reason(), result.quote());
+        }
         return null;
     }
     @Transactional

@@ -24,17 +24,6 @@ export function stepOfField(field: string): number | null {
   return index < 0 ? null : index + 1;
 }
 
-/**
- * The password rules from register.schema.ts, one line each, so the form can tick them off as the
- * user types. The schema stays the source of truth on submit.
- */
-export const PASSWORD_RULES: readonly { readonly text: string; readonly test: (password: string) => boolean }[] = [
-  { text: 'At least 8 characters', test: (p) => p.length >= 8 },
-  { text: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
-  { text: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
-  { text: 'One special character, like ! or #', test: (p) => /[^A-Za-z0-9]/.test(p) },
-];
-
 export const US_STATES: readonly string[] = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida',
   'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',

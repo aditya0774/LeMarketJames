@@ -60,7 +60,9 @@ class VolumeInsightControllerTest {
                 LocalDate.parse("2026-10-04"), 32, new BigDecimal("1000"), new BigDecimal("41000.00"));
         var change = new VolumeInsightResponse.VolumeChange(new BigDecimal("200"), new BigDecimal("20.00"),
                 new BigDecimal("13000.00"), null);
-        return new VolumeInsightResponse("WEEK", current, previous, current, change, Instant.parse("2026-10-12T14:00:00Z"));
+        var flag = new InsightFlag(false, new BigDecimal("20.00"), InsightFlag.Direction.UP, new BigDecimal("25"));
+        return new VolumeInsightResponse("WEEK", current, previous, current, change, flag,
+                Instant.parse("2026-10-12T14:00:00Z"));
     }
 
     @Test
@@ -153,7 +155,7 @@ class VolumeInsightControllerTest {
         var from = LocalDate.parse("2026-10-05");
         var to = LocalDate.parse("2026-10-11");
         when(service.compareRanges(from, to, LocalDate.parse("2026-09-28"), LocalDate.parse("2026-10-04")))
-                .thenReturn(new VolumeComparisonResponse(current, previous, sample().change(),
+                .thenReturn(new VolumeComparisonResponse(current, previous, sample().change(), sample().flag(),
                         Instant.parse("2026-10-12T14:00:00Z")));
 
         mvc.perform(get(COMPARE).param("currentFrom", "2026-10-05").param("currentTo", "2026-10-11")
@@ -162,7 +164,11 @@ class VolumeInsightControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.current.shareVolume").value(1200))
                 .andExpect(jsonPath("$.previous.shareVolume").value(1000))
-                .andExpect(jsonPath("$.change.shareVolume").value(200));
+                .andExpect(jsonPath("$.change.shareVolume").value(200))
+                .andExpect(jsonPath("$.flag.flagged").value(false))
+                .andExpect(jsonPath("$.flag.changePercent").value(20.00))
+                .andExpect(jsonPath("$.flag.direction").value("UP"))
+                .andExpect(jsonPath("$.flag.thresholdPercent").value(25));
     }
 
     @ParameterizedTest

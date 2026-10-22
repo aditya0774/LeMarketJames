@@ -14,10 +14,13 @@ import java.time.LocalDate;
  * @param inProgress the period still running, totalled up to today. Not part of {@code change}: an
  *                   unfinished period would always look like a drop against a finished one
  * @param change     {@code current} minus {@code previous}
+ * @param flag       whether the share volume moved enough to be flagged (BR-17); like {@code change},
+ *                   it leaves {@code inProgress} out
  * @param generatedAt when the figures were computed
  */
 public record VolumeInsightResponse(String periodType, PeriodVolume current, PeriodVolume previous,
-                                    PeriodVolume inProgress, VolumeChange change, Instant generatedAt) {
+                                    PeriodVolume inProgress, VolumeChange change, InsightFlag flag,
+                                    Instant generatedAt) {
 
     /**
      * One period's totals. {@code startDate} and {@code endDate} are both included and are days in

@@ -1,0 +1,96 @@
+<staff-trading-ops-nav />
+
+<div class="al">
+  <div class="al-title">
+    <h1>Alerts</h1>
+    <p>
+      Orders brought to Trading Operations' attention: large orders
+      @if (data(); as d) {
+        (<span class="mono">{{ d.largeOrderQuantity | number }}</span> shares or more)
+      }
+      and settlements refused for lack of cash or shares. The newest 100, newest first.
+    </p>
+  </div>
+
+  <form method="post" class="card al-filters" (ngSubmit)="apply()" novalidate>
+    <div class="field">
+      <label for="al-reason">Reason</label>
+      <select id="al-reason" name="reason" [(ngModel)]="reason">
+        <option value="">All reasons</option>
+        @for (r of reasons; track r[0]) {
+          <option [value]="r[0]">{{ r[1] }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="al-from">Start date (UTC)</label>
+      <input id="al-from" name="from" type="date" [(ngModel)]="from" />
+    </div>
+    <div class="field">
+      <label for="al-to">End date (UTC)</label>
+      <input id="al-to" name="to" type="date" [(ngModel)]="to" />
+    </div>
+    <div class="al-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ loading() ? 'Loading…' : 'Show alerts' }}</button>
+      <button type="button" class="btn btn-outline clear" [disabled]="loading()" (click)="clear()">Clear</button>
+    </div>
+  </form>
+
+  @if (error()) {
+    <div class="alert err" role="alert"><div>{{ error() }}</div></div>
+  }
+  <output class="al-status" aria-live="polite">
+    @if (loading()) {
+      Loading alerts…
+    } @else if (data(); as d) {
+      @if (d.alerts.length) {
+        {{ d.alerts.length }} alert(s). Select an order to see its full timeline.
+      } @else {
+        No alerts match these filters.
+      }
+    }
+  </output>
+
+  @if (data()?.alerts?.length) {
+    <section class="card al-results" aria-label="Alerts">
+      <div class="table-scroll">
+        <table class="t">
+          <caption>Newest first · Prices in USD · Times in UTC</caption>
+          <thead>
+            <tr>
+              <th scope="col">When (UTC)</th>
+              <th scope="col">Reason</th>
+              <th scope="col">Order ID</th>
+              <th scope="col">Account ID</th>
+              <th scope="col">Instrument ID</th>
+              <th scope="col">Side</th>
+              <th scope="col" class="r">Quantity</th>
+              <th scope="col" class="r">Price (USD)</th>
+              <th scope="col">Rejection reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (alert of data()!.alerts; track alert.alertId) {
+              <tr [class.selected]="alert.orderId === selectedOrder()" [attr.data-reason]="alert.reason">
+                <td class="mono when">{{ utcTime(alert.occurredAt) }}</td>
+                <td><span class="pill reason" [class.refused]="alert.reason === 'SETTLEMENT_REFUSED'">{{ label(alert.reason) }}</span></td>
+                <td>
+                  <button type="button" class="mono order-btn" [attr.aria-pressed]="alert.orderId === selectedOrder()"
+                          [attr.aria-label]="'Show the timeline of order ' + alert.orderId" (click)="selectedOrder.set(alert.orderId)">{{ alert.orderId }}</button>
+                </td>
+                <td class="mono">{{ alert.accountId }}</td>
+                <td class="mono">{{ alert.instrumentId ?? '—' }}</td>
+                <td class="side" [class.buy]="alert.side === 'BUY'">{{ alert.side ?? '—' }}</td>
+                <td class="r mono">{{ alert.quantity === null ? '—' : (alert.quantity | number: '1.0-4') }}</td>
+                <td class="r mono">{{ alert.price === null ? '—' : (alert.price | number: '1.4-4') }}</td>
+                <td class="mono">{{ alert.rejectionReason ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <staff-order-timeline-panel [orderId]="selectedOrder()" prompt="Select an order ID in the list to see its timeline from the audit trail." />
+  }
+</div>

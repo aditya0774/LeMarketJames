@@ -12,6 +12,8 @@ import { ReportsTimeZoneService } from '../../../shared/services/reports-time-zo
 import { VolumeInsightService } from '../../../shared/services/volume-insight.service';
 import { VolumeComparisonResponse, VolumeRangeRequest } from '../../../shared/models/volume-insight.model';
 import { toIsoDay, volumePresets } from '../../../shared/utils/volume-ranges';
+import { InsightFlags } from '../insight-flags/insight-flags';
+import { InsightFlagChip } from '../insight-flags/insight-flag-chip';
 
 type Direction = 'up' | 'down' | 'flat';
 
@@ -30,6 +32,11 @@ interface Card {
 /** How often the tile reloads by itself, so a trade made now shows up without pressing Refresh. */
 export const AUTO_REFRESH_MS = 30_000;
 
+/** One day, or the first and last day of a range. */
+function range(first: string, last: string): string {
+  return first === last ? first : `${first} – ${last}`;
+}
+
 function newCard(key: string, label: string, request: VolumeRangeRequest): Card {
   return { key, label, request, loading: true, error: false, data: null };
 }
@@ -39,7 +46,7 @@ function newCard(key: string, label: string, request: VolumeRangeRequest): Card 
   imports: [
     DatePipe, DecimalPipe, NgTemplateOutlet, ReactiveFormsModule,
     MatDatepickerModule, MatFormFieldModule,
-    MatInputModule, MatNativeDateModule,
+    MatInputModule, MatNativeDateModule, InsightFlagChip,
   ],
   templateUrl: './volume-insight-tile.html',
   styleUrl: './volume-insight-tile.css',
@@ -47,6 +54,8 @@ function newCard(key: string, label: string, request: VolumeRangeRequest): Card 
 export class VolumeInsightTile {
   private readonly insights = inject(VolumeInsightService);
   private readonly destroyRef = inject(DestroyRef);
+  /** Where the preset cards' flags go for the "What changed" strip; absent outside the dashboard. */
+  private readonly flags = inject(InsightFlags, { optional: true });
 
   /**
    * The reports time zone, whose day "today" is. Until it is known, or if it cannot be read, the
@@ -155,7 +164,20 @@ export class VolumeInsightTile {
       this.custom.update((c) => (c ? { ...c, ...change } : c));
     } else {
       this.presets.update((all) => all.map((c) => (c.key === key ? { ...c, ...change } : c)));
+      this.reportFlags();
     }
+  }
+
+  /** The presets that have figures, for the strip. The custom range is the analyst's own question, so it stays here. */
+  private reportFlags(): void {
+    this.flags?.report('volume', this.presets()
+      .filter((card) => card.data)
+      .map((card) => ({
+        key: `volume-${card.key}`,
+        label: `Shares traded · ${card.label}`,
+        comparedWith: `vs ${range(card.data!.previous.startDate, card.data!.previous.endDate)}`,
+        flag: card.data!.flag,
+      })));
   }
 
   private fillPickFromThisWeek(): void {

@@ -1,3 +1,5 @@
+<staff-trading-ops-nav />
+
 <div class="ts">
   <!-- Left: what to search for. Right: the trades found and the selected order's timeline. -->
   <aside class="ts-side">
@@ -102,7 +104,12 @@
                   <td class="side" [class.buy]="trade.side === 'BUY'">{{ trade.side }}</td>
                   <td class="r mono">{{ trade.quantity | number: '1.0-4' }}</td>
                   <td class="r mono">{{ trade.pricePerUnit | number: '1.4-4' }}</td>
-                  <td class="mono when">{{ utcTime(trade.filledAt) }}</td>
+                  <td class="mono when">
+                    {{ utcTime(trade.filledAt) }}
+                    @if (trade.archived) {
+                      <span class="pill archived" title="Older than the online retention window; kept, never deleted">Archived</span>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>
@@ -129,6 +136,10 @@
           <p class="hint">Select an order number in the table to see its timeline from the audit trail.</p>
         }
       </section>
+    }
+
+    @if (selectedClient(); as clientId) {
+      <staff-client-status [clientId]="clientId" />
     }
   </div>
 </div>

@@ -1,0 +1,103 @@
+/* The selected client's account status card in trade search (BR-03). */
+
+:host {
+  display: block;
+}
+
+.cs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.cs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cs-head h2,
+.cs-history-title {
+  margin: 0;
+}
+
+.cs .hint {
+  margin: 0;
+}
+
+/* Colour follows the order pills: green for usable, red for refused; the glyph says it too. */
+.cs-active {
+  background: var(--up-soft);
+  color: var(--upt);
+}
+
+.cs-suspended,
+.cs-closed,
+.cs-expired {
+  background: var(--down-soft);
+  color: var(--errt);
+}
+
+.cs-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cs-form legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.cs-form .field {
+  margin: 0;
+}
+
+.cs-form button {
+  align-self: flex-start;
+}
+
+/* The base styles cover inputs and selects; the reason box matches them. */
+.cs-form textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+  color: var(--text);
+  font: 400 var(--font-md) var(--font-body);
+  outline: none;
+  resize: vertical;
+}
+
+.cs-form textarea:focus {
+  border-color: var(--focusb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focusb) 22%, transparent);
+}
+
+/* Long history rows scroll inside the card rather than widening the page. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.cs-confirm p {
+  margin: 4px 0 10px;
+}
+
+.cs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cs-history td {
+  vertical-align: top;
+}

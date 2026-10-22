@@ -7,7 +7,7 @@ import java.time.Instant;
 
 /**
  * Writes security events that cut off access (LMKT-57, AC3), so sign-in and every service's
- * request filter log them in one format. Names the account by username only: never a password,
+ * request filter log them in one format, and the account status changes that cause them (BR-03). Names the account by username only: never a password,
  * token or email.
  */
 public final class SecurityEventLog {
@@ -34,5 +34,20 @@ public final class SecurityEventLog {
      */
     public static void accessRevoked(String username, String reason, Instant at) {
         log.warn("ACCESS_REVOKED username={} reason={} at={}", username, reason, at);
+    }
+
+    /**
+     * Records that a client's account status changed (BR-03): by Trading Ops, or by the client
+     * closing their own account. The reason stays in the status history, not the log, because staff
+     * may write personal details into it.
+     *
+     * @param username  the client's username
+     * @param from      the status before
+     * @param to        the status after
+     * @param changedBy the username of whoever changed it
+     * @param at        when, in UTC
+     */
+    public static void accountStatusChanged(String username, String from, String to, String changedBy, Instant at) {
+        log.warn("ACCOUNT_STATUS_CHANGED username={} from={} to={} changedBy={} at={}", username, from, to, changedBy, at);
     }
 }

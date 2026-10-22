@@ -24,6 +24,6 @@ CREATE INDEX IF NOT EXISTS cash_movement_receipts_account_idx
 -- the same list for clean databases and because Jenkins safely reapplies the schema files.
 ALTER TABLE audit_log DROP CONSTRAINT IF EXISTS audit_log_action_check;
 ALTER TABLE audit_log ADD CONSTRAINT audit_log_action_check
-    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'FILLED', 'REJECTED', 'SETTLED', 'CASH_DEPOSITED', 'CASH_WITHDRAWN'));
+    CHECK (action IN ('SUBMITTED', 'RULE_CHECKED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'DELAYED', 'FILLED', 'REJECTED', 'SETTLED', 'CASH_DEPOSITED', 'CASH_WITHDRAWN'));
 
 COMMIT;

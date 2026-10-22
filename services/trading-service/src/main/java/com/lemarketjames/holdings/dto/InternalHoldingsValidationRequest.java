@@ -7,6 +7,9 @@ import java.math.BigDecimal;
  * holdings before persisting it. Unlike {@link ValidateHoldingRequest} (the browser-facing,
  * JWT-authenticated {@code /api/v1/holdings/validate}), this call has no security context of its
  * own, so the username is carried explicitly. Called server-to-server, never by a browser.
+ *
+ * <p>{@code reservedQuantity} is what the account's open SELL orders of the stock already promise,
+ * which orders-service knows and this service doesn't (BR-05). Missing means none.
  */
 public class InternalHoldingsValidationRequest {
 
@@ -14,6 +17,7 @@ public class InternalHoldingsValidationRequest {
     private String username;
     private Integer instrumentId;
     private BigDecimal sellQuantity;
+    private BigDecimal reservedQuantity;
 
     public InternalHoldingsValidationRequest() {}
 
@@ -47,5 +51,13 @@ public class InternalHoldingsValidationRequest {
 
     public void setSellQuantity(BigDecimal sellQuantity) {
         this.sellQuantity = sellQuantity;
+    }
+
+    public BigDecimal getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public void setReservedQuantity(BigDecimal reservedQuantity) {
+        this.reservedQuantity = reservedQuantity;
     }
 }

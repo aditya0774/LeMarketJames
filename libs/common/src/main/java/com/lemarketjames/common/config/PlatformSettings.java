@@ -70,8 +70,13 @@ public class PlatformSettings {
 
     /** Logged-in sessions. */
     public static class Session {
-        /** How long a session may sit idle before the user must log in again. */
-        private Duration inactivityTimeout = Duration.ofMinutes(30);
+        /**
+         * How long a session may sit idle before the user must log in again (BR-03). A session
+         * token lasts only this long; the web apps refresh it while the user is active and warn
+         * 30 seconds before it runs out. One minute is the business's choice, short because the
+         * apps show money and trades on screen; tests that pause longer set it higher.
+         */
+        private Duration inactivityTimeout = Duration.ofMinutes(1);
 
         public Duration getInactivityTimeout() {
             return inactivityTimeout;
@@ -136,7 +141,8 @@ public class PlatformSettings {
     public static class Orders {
         /**
          * Client residence locations (US state names as stored in addresses.state, or ISO country
-         * codes) that may not place orders. Empty means no restriction.
+         * codes) that may not trade any instrument. Empty means no platform-wide restriction.
+         * Restrictions on single instruments are rows of instrument_location_restrictions (028).
          */
         private List<String> restrictedLocations = new ArrayList<>();
 
@@ -179,6 +185,12 @@ public class PlatformSettings {
         private LocalTime readyBy = LocalTime.of(7, 0);
         /** Time zone overnightRunTime and readyBy are in. */
         private ZoneId timeZone = ZoneId.of("America/New_York");
+        /**
+         * How far, in percent of the previous period, an insight must move (up or down) to be
+         * flagged for analysts (BR-17). A move from nothing to something is always flagged.
+         * Must be above zero.
+         */
+        private BigDecimal insightFlagPercent = new BigDecimal("25");
 
         public LocalTime getOvernightRunTime() {
             return overnightRunTime;
@@ -202,6 +214,14 @@ public class PlatformSettings {
 
         public void setTimeZone(ZoneId timeZone) {
             this.timeZone = timeZone;
+        }
+
+        public BigDecimal getInsightFlagPercent() {
+            return insightFlagPercent;
+        }
+
+        public void setInsightFlagPercent(BigDecimal insightFlagPercent) {
+            this.insightFlagPercent = insightFlagPercent;
         }
     }
 

@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerUnitTest {
 
     private final AuthService authService = mock(AuthService.class);
-    private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, false)).build();
+    private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, new SessionCookies(false))).build();
 
     @Test
     void logoutInvalidatesTheCookieTokenAndClearsTheCookie() throws Exception {

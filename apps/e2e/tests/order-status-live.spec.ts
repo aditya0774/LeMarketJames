@@ -3,6 +3,7 @@ import { openTab } from './support/nav';
 import { instrumentIdOf, loginViaApi, placeOrder } from './support/orders';
 import { resetFeed } from './support/market-control';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
+import { SELF_SIGNED, TRADING_APP_URL } from './support/app-urls';
 
 const OPS = { email: 'ops@seed.lemarket.com', password: 'Pass123!' };
 
@@ -75,7 +76,8 @@ test('LMKT-77: order status change appears on the dashboard within 2 seconds', a
   await resetFeed(request);
 
   const ops = await playwright.request.newContext({
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4200',
+    baseURL: TRADING_APP_URL,
+    ...SELF_SIGNED,
   });
   let orderId = 0;
   try {

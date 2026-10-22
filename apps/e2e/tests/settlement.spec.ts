@@ -2,7 +2,7 @@ import { test, expect, APIRequestContext, Browser } from '@playwright/test';
 import { Client } from 'pg';
 import { signIn, TRADING_OPS } from '../tests-staff/support/staff';
 import {
-  auditTrail, connectDatabase, lifecycleSteps, settlementPending, settlementReceipts,
+  auditTrail, connectDatabase, lifecycleSteps, setHoldingQuantity, settlementPending, settlementReceipts,
 } from './support/database';
 import { setExecutionControl } from './support/execution-control';
 import { getQuote, pinPrice, releasePrice } from './support/market-control';
@@ -11,6 +11,7 @@ import {
   failSettlementsFor, resendSettlement, restoreSettlementsFor, settlementFailuresOf,
 } from './support/settlement-control';
 import { newUser, registerViaApi } from './support/users';
+import { SELF_SIGNED, STAFF_APP_URL } from './support/app-urls';
 
 /**
  * LMKT-72 (S17, a buy) and LMKT-74 (S18, a sell): settlement on the live stack, of fills the
@@ -30,7 +31,7 @@ const SYMBOL = 'MA';
 // What a new client registers with (support/users.ts).
 const OPENING_CASH = 10000;
 // The staff app, where Trading Ops read their alerts (the same variable staff-api.spec.ts uses).
-const STAFF = process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201';
+const STAFF = STAFF_APP_URL;
 
 // The stages after this suite in Jenkins place orders too; never leave the worker paused for them.
 test.afterAll(async ({ request }) => {
@@ -106,19 +107,20 @@ async function expectRefusedAndNotApplied(db: Client, order: OrderDto, reason: s
   expect(await settlementPending(db, order.orderId)).toBe(false);
   // The refusal is the order's one stored outcome, so a repeated request gets it again (C6).
   expect((await settlementReceipts(db, order.orderId)).map(receipt => receipt.rejection_reason)).toEqual([reason]);
-  // Accepted and priced, then refused: nothing was settled, so nothing is audited as settled.
+  // Accepted and priced (PENDING, BR-15), then refused: nothing was settled, so nothing is audited as settled.
   const trail = await auditTrail(db, order.orderId);
-  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'REJECTED']);
+  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'REJECTED']);
   expect(trail[trail.length - 1].details).toEqual({ reason });
 }
 
 /**
  * AC4: Trading Operations are alerted. Staff sign in on the staff app's own login page, and the
- * alert is read with that session through the staff app's origin: the staff app has no alerts
- * screen yet, so this is the staff app's answer to a signed-in TRADING_OPS browser (C6).
+ * alert is read with that session through the staff app's origin, the staff app's answer to a
+ * signed-in TRADING_OPS browser (C6). The Alerts page that shows it is tested in
+ * tests-staff/staff-alerts.spec.ts.
  */
 async function expectTradingOpsAlerted(browser: Browser, order: OrderDto, accountId: number, reason: string) {
-  const context = await browser.newContext({ baseURL: STAFF });
+  const context = await browser.newContext({ baseURL: STAFF, ...SELF_SIGNED });
   try {
     const page = await context.newPage();
     await signIn(page, TRADING_OPS);
@@ -157,7 +159,7 @@ async function expectUnsettledAndRecoverable(request: APIRequestContext, db: Cli
   // None of the three changes, and no record that there was a settlement.
   expect(await positionOf(request, accountId)).toEqual(before);
   expect(await settlementReceipts(db, orderId)).toEqual([]);
-  expect(lifecycleSteps(await auditTrail(db, orderId))).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED']);
+  expect(lifecycleSteps(await auditTrail(db, orderId))).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING']);
   return waiting;
 }
 
@@ -170,8 +172,8 @@ async function expectSettledOnce(db: Client, order: OrderDto, cashDelta: number,
   expect(Number(receipts[0].quantity)).toBe(order.quantity);
   expect(Number(receipts[0].price_per_unit)).toBe(order.pricePerUnit);
   const trail = await auditTrail(db, order.orderId);
-  // One SETTLED and one FILLED, however many attempts there were.
-  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+  // One PENDING, one SETTLED and one FILLED, however many attempts there were.
+  expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'SETTLED', 'FILLED']);
   const settled = trail.find(event => event.action === 'SETTLED')!.details;
   expect(Number(settled.cashDelta)).toBeCloseTo(cashDelta, 6);
   expect(Number(settled.quantityDelta)).toBe(quantityDelta);
@@ -234,25 +236,29 @@ test.describe('A settlement that would overdraw the account is refused (S17 and 
       const held = await positionOf(request, accountId);
       expect(held.shares).toBe(3);
 
-      // Two sells of 2 from a holding of 3. Placement reserves nothing (C6), so both are saved;
-      // the worker takes them in the order they were placed.
+      // A sell of 2 from a holding of 3 is saved. A second sell of 2 is refused at placement: the
+      // open sell already holds 2 of the 3 shares (BR-05, C6).
       await setExecutionControl(request, false, true);
-      const first = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
-      const second = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
-      await setExecutionControl(request, true, true);
+      const placed = await placeOrder(request, accountId, instrumentId, 'SELL', 2);
+      const second = await request.post('/api/v1/orders',
+        { data: { accountId, instrumentId, orderType: 'SELL', quantity: 2 } });
+      expect(second.status()).toBe(400);
+      expect((await second.json()).code).toBe('INSUFFICIENT_HOLDINGS');
 
-      const sold = await waitForFinalStatus(request, first.orderId);
-      expect(sold.orderStatus, `rejected: ${sold.rejectionReason}`).toBe('FILLED');
-      const rejected = await waitForFinalStatus(request, second.orderId);
+      // Orders can no longer oversell, so the shares go another way before the fill: settlement
+      // must still refuse the sale rather than leave -1 shares.
+      await setHoldingQuantity(db, accountId, instrumentId, 1);
+      await setExecutionControl(request, true, true);
+      const rejected = await waitForFinalStatus(request, placed.orderId);
       await expectRefusedAndNotApplied(db, rejected, 'INSUFFICIENT_HOLDINGS');
 
-      // Only the first sell was applied (S18 AC1, a holding reduced by Q): 1 share is left, not
-      // -1, the cash rose by one sale, and one SELL is in the trade history.
+      // Nothing of the sale was applied: the 1 share is left, the cash is unchanged, and the trade
+      // history has only the buy.
       const after = await positionOf(request, accountId);
       expect(after.shares).toBe(1);
       expect(after.averageCost).toBe(held.averageCost);
-      expect(after.cash).toBeCloseTo(held.cash + amountOf(2, sold.pricePerUnit!), 6);
-      expect(after.trades).toEqual(['BUY', 'SELL']);
+      expect(after.cash).toBeCloseTo(held.cash, 6);
+      expect(after.trades).toEqual(['BUY']);
       await expectTradingOpsAlerted(browser, rejected, accountId, 'INSUFFICIENT_HOLDINGS');
     } finally {
       await setExecutionControl(request, true, true);

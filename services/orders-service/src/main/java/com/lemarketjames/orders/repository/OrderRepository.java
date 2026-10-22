@@ -43,6 +43,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      */
     List<Order> findByAccountIdAndOrderStatus(Integer accountId, Order.OrderStatus orderStatus);
 
+    /** One side of an account's orders in the given statuses, e.g. its open BUYs (BR-05 reservations). */
+    List<Order> findByAccountIdAndOrderTypeAndOrderStatusIn(Integer accountId, Order.OrderType orderType,
+        java.util.Collection<Order.OrderStatus> statuses);
+
+    /** As above, for one instrument: an account's open SELLs of a stock. */
+    List<Order> findByAccountIdAndInstrumentIdAndOrderTypeAndOrderStatusIn(Integer accountId,
+        Integer instrumentId, Order.OrderType orderType, java.util.Collection<Order.OrderStatus> statuses);
+
     Page<Order> findByAccountIdAndOrderStatus(Integer accountId, Order.OrderStatus orderStatus, Pageable pageable);
     
     /**

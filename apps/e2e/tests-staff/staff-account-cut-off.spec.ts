@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { connectDatabase, createStaffUser, deleteStaffUser, setStaffActive } from '../tests/support/database';
 import { newUser, TestUser } from '../tests/support/users';
-import { ANALYST, signIn } from './support/staff';
+import { ANALYST, signIn, waitForAnalystDashboard } from './support/staff';
 
 /**
  * LMKT-58 (S06-INT): a staff login deactivated while signed in to the staff app loses the session
@@ -26,6 +26,9 @@ test.describe('Staff account cut off mid-session', () => {
       await signIn(page, staff);
       await expect(page).toHaveURL(/\/analyst$/);
       await expect(page.getByRole('heading', { name: 'Trading volume', exact: true })).toBeVisible();
+      // Every tile has loaded before the login is deactivated, so no tile request is still on its way
+      // to collect the 401 and redirect the page before the checks below.
+      await waitForAnalystDashboard(page);
 
       await setStaffActive(db, staff.username, false);
 
@@ -37,7 +40,13 @@ test.describe('Staff account cut off mid-session', () => {
       // A full reload would land on a plain login page: the session is restored before the first
       // navigation, so the interceptor leaves the redirect to the auth guard. The tile only reloads
       // itself every 30 s, so Refresh makes the in-app request that sends the user back with the reason.
-      await page.locator('staff-volume-insight-tile').getByRole('button', { name: 'Refresh' }).click();
+      // A tile's own reload can still get there first; that is the same outcome, so the click is only
+      // made while the page is still the dashboard, and the redirect is what's checked either way.
+      if (/\/analyst$/.test(page.url())) {
+        await page.locator('staff-volume-insight-tile').getByRole('button', { name: 'Refresh' })
+          .click({ timeout: 10_000 })
+          .catch(() => { /* the page left the dashboard mid-click: checked below */ });
+      }
       await expect(page).toHaveURL(/\/login\?reason=inactive$/);
       await expect(page.getByRole('alert')).toContainText('Account not active');
       await expect(page.getByRole('alert')).toContainText(INACTIVE_MESSAGE);

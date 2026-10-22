@@ -7,6 +7,7 @@ import com.lemarketjames.common.audit.AuditEventRepository;
 import com.lemarketjames.common.instruments.Instrument;
 import com.lemarketjames.common.instruments.InstrumentRepository;
 import com.lemarketjames.common.security.Role;
+import com.lemarketjames.audit.AuditRetention;
 import com.lemarketjames.orders.dto.AuditEventDto;
 import com.lemarketjames.orders.dto.CreateOrderRequest;
 import com.lemarketjames.orders.dto.OrderResponse;
@@ -15,10 +16,10 @@ import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.entity.RejectionReason;
 import com.lemarketjames.orders.execution.OrderTransitions;
 import com.lemarketjames.orders.repository.OrderRepository;
+import com.lemarketjames.orders.submission.OrderPlacement;
 import com.lemarketjames.orders.submission.SubmissionRecorder;
 import com.lemarketjames.orders.submission.SubmissionTrail;
 import com.lemarketjames.orders.submission.SubmissionValidator;
-import com.lemarketjames.orders.submission.ValidationOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -45,26 +46,29 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final AccountAccess accountAccess;
-    private final SubmissionValidator validator;
+    private final OrderPlacement placement;
     private final SubmissionRecorder submissions;
     private final OrderTransitions transitions;
     private final AuditEventRepository auditEventRepository;
     private final InstrumentRepository instrumentRepository;
+    private final AuditRetention retention;
 
     public OrderService(OrderRepository orderRepository,
                         AccountAccess accountAccess,
-                        SubmissionValidator validator,
+                        OrderPlacement placement,
                         SubmissionRecorder submissions,
                         OrderTransitions transitions,
                         AuditEventRepository auditEventRepository,
-                        InstrumentRepository instrumentRepository) {
+                        InstrumentRepository instrumentRepository,
+                        AuditRetention retention) {
         this.orderRepository = orderRepository;
         this.accountAccess = accountAccess;
-        this.validator = validator;
+        this.placement = placement;
         this.submissions = submissions;
         this.transitions = transitions;
         this.auditEventRepository = auditEventRepository;
         this.instrumentRepository = instrumentRepository;
+        this.retention = retention;
     }
 
     /**
@@ -72,39 +76,31 @@ public class OrderService {
      * Submission does not execute a trade.
      *
      * <p>Every submission leaves an audit trail under {@code requestId} (contract C2): an accepted
-     * order's is saved in the same transaction as the order, and a refused order's is saved on its
-     * own. Deliberately not transactional itself: the checks only read, and with no transaction
-     * around them a refusal has nothing to roll its trail back.
+     * order's is saved in the same transaction as the order ({@link OrderPlacement}), and a refused
+     * order's is saved on its own. Deliberately not transactional itself: the placement transaction
+     * has ended before a refusal's trail is saved, so nothing can roll that trail back.
      *
      * @param requestId the server-generated ID of this submission
      */
     public OrderResponse createOrder(CreateOrderRequest request, String requestId) {
         SubmissionTrail trail = new SubmissionTrail(requestId, accountAccess.callerClientId(), request);
-        ValidationOutcome outcome;
+        OrderPlacement.Result placed;
         try {
-            outcome = validator.validate(request, trail);
-        } catch (RuntimeException refusal) {
-            recordRefusalBeforeRethrowing(trail, refusal);
-            throw refusal;
+            placed = placement.place(request, trail);
+        } catch (RuntimeException failure) {
+            // A failure saving an order that passed its checks is no refusal: its trail was part of
+            // the save and rolled back with it, and nothing is recorded in its place.
+            if (!trail.hasPassedAll()) {
+                recordRefusalBeforeRethrowing(trail, failure);
+            }
+            throw failure;
         }
-        if (outcome.isRefused()) {
+        if (placed.isRefused()) {
             submissions.refuse(trail);
-            return outcome.refusal();
+            return placed.refusal().refusal();
         }
 
-        // Persist only after all submission checks pass.
-        Order order = new Order(
-            request.getAccountId(),
-            request.getInstrumentId(),
-            request.getOrderType(),
-            request.getQuantity()
-        );
-
-        if (outcome.price() != null) {
-            order.setPricePerUnit(outcome.price());
-        }
-
-        Order savedOrder = submissions.accept(order, trail);
+        Order savedOrder = placed.saved();
         log.info("Order submitted orderId={} accountId={} instrumentId={} side={} requestId={}",
             savedOrder.getOrderId(), savedOrder.getAccountId(), savedOrder.getInstrumentId(),
             savedOrder.getOrderType(), requestId);
@@ -136,6 +132,7 @@ public class OrderService {
             Order.OrderType.BUY,
             request.getQuantity()
         );
+        createOrderRequest.setAmount(request.getAmount());
         createOrderRequest.setPricePerUnit(request.getPricePerUnit());
         return createOrder(createOrderRequest, requestId);
     }
@@ -325,7 +322,9 @@ public class OrderService {
             .map(event -> new AuditEventDto(
                 event.getEventType(),
                 event.getOccurredAt(),
-                event.getDetails()
+                event.getDetails(),
+                // Older events stay in the timeline, marked: a dispute about an old trade still needs them.
+                retention.isArchived(event.getOccurredAt())
             ))
             .toList();
     }

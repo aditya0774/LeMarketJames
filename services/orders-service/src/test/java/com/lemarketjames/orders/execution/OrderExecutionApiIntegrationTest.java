@@ -159,17 +159,25 @@ class OrderExecutionApiIntegrationTest {
 
         assertEquals(1, auditOf(orderId, AuditEventType.FILLED).size());
         assertTrue(auditOf(orderId, AuditEventType.REJECTED).isEmpty());
+        // BR-15: the step between acceptance and the fill is in the trail too, before the fill.
+        assertEquals(List.of(AuditEventType.PENDING, AuditEventType.FILLED),
+            audit.findByOrderIdOrderByOccurredAtAsc(orderId).stream().map(AuditEventEntity::getEventType).toList());
     }
 
     // AC2 + AC4: a stale quote rejects the order; its price is never used.
     @Test
     void staleQuoteRejectsAndIsNeverFilledAt() throws Exception {
-        quoted(Instant.now().minusSeconds(60));
+        Instant quoteTime = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MILLIS);
+        quoted(quoteTime);
         int orderId = acceptedBuy();
 
         JsonNode rejected = fill(orderId);
 
         assertRejectedWithoutAFill(orderId, rejected, "STALE_QUOTE");
+        // BR-15: the trail shows the quote it was refused on (the ask, for a BUY), not just the reason.
+        var details = auditOf(orderId, AuditEventType.REJECTED).get(0).getDetails();
+        assertEquals(0, new BigDecimal("101.2346").compareTo(new BigDecimal(details.get("quotePrice").toString())));
+        assertEquals(quoteTime.toString(), details.get("quoteTime"));
     }
 
     // AC2 + AC4: with no quote at all the order rejects as price unavailable.
@@ -181,6 +189,10 @@ class OrderExecutionApiIntegrationTest {
         JsonNode rejected = fill(orderId);
 
         assertRejectedWithoutAFill(orderId, rejected, "PRICE_UNAVAILABLE");
+        // No quote, so none is recorded.
+        var details = auditOf(orderId, AuditEventType.REJECTED).get(0).getDetails();
+        assertFalse(details.containsKey("quotePrice"));
+        assertFalse(details.containsKey("quoteTime"));
     }
 
     private void assertRejectedWithoutAFill(int orderId, JsonNode rejected, String reason) {

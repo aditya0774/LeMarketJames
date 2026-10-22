@@ -66,6 +66,10 @@ test.describe('Staff login', () => {
     await expectAccessDenied(page);
     await expect(page.getByRole('heading', { name: 'Trade search', exact: true })).toHaveCount(0);
 
+    await page.goto('/alerts');
+    await expectAccessDenied(page);
+    await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toHaveCount(0);
+
     // /trading-ops is no longer a page: it falls through to the start page, the Analyst's own dashboard.
     await page.goto('/trading-ops');
     await expect(page).toHaveURL(/\/analyst$/);

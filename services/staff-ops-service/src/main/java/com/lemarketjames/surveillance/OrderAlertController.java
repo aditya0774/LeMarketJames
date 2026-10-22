@@ -1,11 +1,14 @@
 package com.lemarketjames.surveillance;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -22,10 +25,18 @@ public class OrderAlertController {
         this.surveillance = surveillance;
     }
 
-    /** @return the newest alerts, newest first, with the quantity at which an order counts as large */
+    /**
+     * @param reason only alerts raised for this {@link AlertReason}; an unknown name is answered with 400
+     * @param from   first UTC day, included
+     * @param to     last UTC day, included; before {@code from} is answered with 400
+     * @return the newest matching alerts, newest first, with the quantity at which an order counts as large
+     */
     @GetMapping("/alerts")
-    public AlertList alerts() {
-        return new AlertList(true, surveillance.largeOrderQuantity(), surveillance.latest().stream()
+    public AlertList alerts(@RequestParam(required = false) AlertReason reason,
+                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        AlertFilter filter = new AlertFilter(reason, from, to);
+        return new AlertList(true, surveillance.largeOrderQuantity(), surveillance.latest(filter).stream()
             .map(AlertView::of)
             .toList());
     }

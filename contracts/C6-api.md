@@ -7,7 +7,7 @@ Value lists (order statuses, rejection codes, roles, audit event types) are not 
 ## Rules for every public endpoint
 
 - **Entry point.** Browsers call only their own web app's origin, under `/api/**`: the trading app on `:4200` and the staff app on `:4201`. Each app forwards the paths it routes straight to the service that serves them (its Nginx in Docker, its dev-server proxy under `ng serve`); there is no gateway. Paths under `/internal/**` exist only service-to-service and neither app forwards them. See [Which web app routes which paths](#which-web-app-routes-which-paths).
-- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` calls are never refused this way. The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff app the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
+- **Authentication.** Log in with `POST /api/auth/login`; it sets an HTTP-only `jwt` cookie that every other endpoint reads. A missing or expired cookie gets `401`. A valid cookie whose account has since been closed, suspended, expired, deleted or (for staff) deactivated gets `401 { "success": false, "code": "ACCOUNT_INACTIVE", "error" }` on its next request: every servlet service checks the account on each request in the shared `JwtAuthenticationFilter`. `/internal/**` takes no cookie: it needs the shared internal token in the `X-Internal-Token` header ([internal endpoints](#internal-endpoints-service-to-service-only-never-through-a-web-app)). Besides health, `GET /api/market/**`, registration and sign-in, no endpoint answers without a credential (BR-02). The cookie carries the caller's roles ([C7](C7-roles.md)). Through the staff app the browser's cookie is named `staff_jwt` instead ([C7](C7-roles.md#the-staff-session-cookie)); the services see `jwt` either way.
 - **Ownership.** Clients only see their own data. A foreign or unknown account or order id gets the same `403 { "success": false, "error": "Access denied", "code": "ACCOUNT_ACCESS_DENIED" }`, so ids never leak.
 - **Money** is a JSON number in USD. **Order timestamps** represent UTC and currently serialize without an offset (`2026-09-21T10:30:00`); clients must interpret them as UTC. Session DTOs retain their existing local date-time format. Quote times are ISO-8601 UTC.
 - **Validation failures** return `400 { "errors": { "<field>": "<message>" } }`. Other bad input returns `400 { "message": "..." }`.
@@ -18,10 +18,13 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 
 | Paths | Service | Trading app ([nginx.conf](../apps/frontend/nginx.conf), [proxy.conf.json](../apps/frontend/proxy.conf.json)) | Staff app ([nginx.conf](../apps/frontend/projects/staff/nginx.conf), [staff-proxy.mjs](../apps/frontend/projects/staff/staff-proxy.mjs)) |
 |---|---|---|---|
-| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | auth-service | yes | yes |
+| `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/refresh`, `GET /api/auth/me` | auth-service | yes | yes |
 | `POST /api/auth/register` | auth-service | yes | no: staff logins are not self-service |
+| `GET /api/auth/close-account`, `POST /api/auth/close-account` | auth-service | yes, as part of `/api/auth/**` | no: a client closes their own account |
+| `GET /api/v1/clients/{clientId}/status`, `PUT /api/v1/clients/{clientId}/status` | auth-service | no: these paths reach trading-service, which has no such endpoint | yes |
 | `GET /api/v1/orders/trades/search`, `GET /api/v1/orders/trades/clients`, `GET /api/v1/orders/{orderId}/timeline` | orders-service | yes, as part of `/api/v1/orders/**` | yes |
 | The rest of `/api/v1/orders/**`, `/api/v1/buy-orders/**` | orders-service | yes | no |
+| `GET /api/v1/audit/archive` | orders-service | no: this path reaches trading-service, which has no such endpoint | yes |
 | `/api/v1/reports/**`, `/api/v1/surveillance/**` | staff-ops-service | no: these paths reach trading-service, which has no such endpoint | yes |
 | Everything else under `/api/**`: quotes, instruments, sessions, `/api/market/**`, holdings, balance, profile, portfolio, trades, watchlist, notifications, market activity | trading-service | yes | no |
 
@@ -34,16 +37,57 @@ Each app's routing is its Nginx configuration, repeated in its dev-server proxy;
 | Method & path | Request | Success |
 |---|---|---|
 | `POST /api/auth/register` | `username, password, email, fullName, streetAddress, apartment?, city, state, zipCode, country, ssn, initialDeposit, investmentExperience ("beginner" / "experienced"), employmentStatus, dateOfBirth (yyyy-MM-dd), phoneNumber` | `201 { username, message }` |
-| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, email?, fullName?, message }` and the `jwt` cookie |
+| `POST /api/auth/login` | `{ "username": "<email>", "password": "..." }`: the email goes in `username` | `200 { username, roles, accountId?, email?, fullName?, expiresInSeconds, inactivityTimeoutSeconds, message }` and the `jwt` cookie |
 | `POST /api/auth/logout` | none | `200 { message }`; invalidates the server-side session and clears the cookie |
-| `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName? }` |
+| `POST /api/auth/refresh` | none (the cookie) | `200 { expiresInSeconds, inactivityTimeoutSeconds }` and a new `jwt` cookie; `401` if the session has already ended |
+| `GET /api/auth/me` | none | `200 { username, roles, accountId?, email?, fullName?, expiresInSeconds, inactivityTimeoutSeconds }` |
+| `GET /api/auth/close-account` | none (`CLIENT` only) | `200 { closable, cashBalance, currency, holdings, openOrders }`: what is left on the caller's account ([closing an account](#closing-an-account-client-only)) |
+| `POST /api/auth/close-account` | `{ "password": "..." }` (`CLIENT` only) | `200 { message, cashBalance, currency }`; the account is `CLOSED` and the cookie cleared |
 
-- Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout and `/me` only, and the cookie it sets and clears is `staff_jwt`.
+- Clients and staff sign in with the same endpoint, each through their own web app. The staff app routes login, logout, refresh and `/me` only, and the cookie it sets and clears is `staff_jwt`.
+- **Sessions end when idle (BR-03).** A session token, and its cookie, last the inactivity timeout only ([C5](C5-config.md#who-uses-each-setting), one minute by default). `POST /api/auth/refresh` gives a still-valid session another full timeout from now. It keeps the sign-in time (the token's `auth_time`), so no session outlives `jwt.expiration-ms` (one hour) from sign-in, however often it is refreshed. A session that was signed out or cut off gets the usual `401 ACCOUNT_INACTIVE`; an expired one, or one past the cap, gets a plain `401`.
+- The web apps call refresh on user input only (mouse, keys, touch, returning to the tab), at most every 20 seconds. Background polling and SSE never refresh, so a page left open still times out. 30 seconds before the end they show "Are you still there?"; with no answer they sign out to `/login?reason=timeout` (or `?reason=expired` at the cap).
+- `expiresInSeconds` is how long the session has left; `inactivityTimeoutSeconds` is the setting. Both are durations, so a browser clock that is off doesn't matter.
 - `roles` is an array of [Role](../libs/common/src/main/java/com/lemarketjames/common/security/Role.java) names. `accountId` is present only for `CLIENT` logins; staff have no trading account.
 - `email` and `fullName` are present only for staff logins: the staff member's own row in `staff_users`, read only, for the staff app's Employee information page (LMKT-144). Clients never get them here; their details come from `/api/v1/profile`.
 - Login fails with `400 { message }` for a wrong email or password, or a locked login ([C5](C5-config.md) lockout).
 - The right password for a login that may no longer be used gets `403 { "success": false, "code": "ACCOUNT_INACTIVE", "error", "message" }`, with both texts "This account is no longer active. Please contact the firm." That is any client that isn't `ACTIVE` ([AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java)) or a staff login whose `active` flag is off. Match on `code` ([AccountInactiveException](../libs/common/src/main/java/com/lemarketjames/common/security/AccountInactiveException.java)), not the text. A wrong password never gets this response, so it never reveals an account's status, and an account that no longer exists gets the wrong-password `400`.
-- Registration errors are `400 { errors }` per field, or `400 { message }` for a duplicate username or email.
+- **Registration rules are the server's** (BR-01), defined once in [RegistrationRules](../services/auth-service/src/main/java/com/lemarketjames/auth/RegistrationRules.java). Every caller gets them, the form or not. The trading app's form mirrors them, with the same messages, in `register.schema.ts`. They cover:
+  - the formats of username, email, phone number, SSN and ZIP code;
+  - password strength;
+  - the characters allowed in names and addresses;
+  - a minimum age and a minimum initial deposit, and a higher deposit for `experienced`;
+  - the allowed `investmentExperience` and `employmentStatus` values (any case).
+- `username` is the one the user chose, not the email; sign-in uses the email.
+- A registration saves the client, address and account in one transaction: a failure part-way leaves nothing behind.
+- Registration errors are `400 { "errors": { "<field>": "<message>" } }`, with one message per broken field (the first rule it breaks), keyed by the request's field names. A duplicate username or email gets `400 { message }`.
+
+### Closing an account (CLIENT only)
+
+A client closes their own account from the trading app's account page (BR-03). Closing is final for the client: only Trading Ops can make the account active again ([account status](#account-status-trading_ops-only)).
+
+- `GET` says whether the account may be closed now and what is on it. `holdings` counts the stocks the account holds shares of; `openOrders` counts its orders that are not final (anything but `FILLED` or `REJECTED`, [C1](C1-orders.md)). `closable` is true when both are 0. Cash may remain.
+- `POST` checks the password again, then the same rule, in one transaction with the client row locked:
+  - wrong or missing password: `400 { "errors": { "password": "The password is not correct." } }`, nothing changes;
+  - stocks or open orders left: `409 { "success": false, "code": "ACCOUNT_NOT_EMPTY", "error", "holdings", "openOrders" }`, with `error` saying what to do first;
+  - otherwise the status becomes `CLOSED`, a history row is written (`changedBy` is the client's username, reason "Closed by the client"), every earlier session is ended and the reply clears the cookie. The client's next request with an old cookie gets `401 ACCOUNT_INACTIVE`, and sign-in gets `403 ACCOUNT_INACTIVE`.
+- Remaining cash stays in `accounts.cash_balance` of the closed account. It is never deleted; operations pay it out outside the platform (BRS 4.2).
+- Staff get `403`; the staff app doesn't route the path.
+
+### Account status (TRADING_OPS only)
+
+Trading Ops see and change a client's account status, with its history, from trade search in the staff app (BR-03). Served by auth-service; routed by the staff app only.
+
+| Method & path | Request | Success |
+|---|---|---|
+| `GET /api/v1/clients/{clientId}/status` | none | `200 { clientId, fullName, status, changes: [{ oldStatus, newStatus, reason, changedBy, changedAt }] }`, newest change first |
+| `PUT /api/v1/clients/{clientId}/status` | `{ "status": "SUSPENDED", "reason": "..." }` | `200`, the same body after the change |
+
+- `status` is an [AccountStatus](../libs/common/src/main/java/com/lemarketjames/common/domain/AccountStatus.java) name, any case. Any status may follow any other; `ACTIVE` reinstates an account. `changedAt` is ISO-8601 UTC; `changedBy` is the staff member's username.
+- `reason` is required, at most 500 characters, kept in the history (`account_status_changes`, [027](../database/README.md#027--account-status-history)). History rows are never changed or deleted.
+- Validation failures are `400 { "errors": { "status" | "reason": "<message>" } }`, including a change to the status the account already has. An unknown client is `404 { "success": false, "code": "CLIENT_NOT_FOUND", "error": "Client not found" }`. Every role but `TRADING_OPS` gets `403`.
+- A change takes effect on the client's next request: every service checks the status on each request ([rules](#rules-for-every-public-endpoint)), so a suspended, closed or expired client's open session gets `401 ACCOUNT_INACTIVE`. Every change also ends the sessions issued before it, so reinstating an account never revives an old session: the client signs in again.
+- auth-service logs `ACCOUNT_STATUS_CHANGED username=… from=… to=… changedBy=… at=…` for each change, the client's own closing included; the reason stays out of the log.
 
 ## Instruments (trading-service)
 
@@ -70,12 +114,19 @@ Places a market order for one of the caller's accounts.
 
 ```json
 { "accountId": 7, "instrumentId": 5, "orderType": "BUY", "quantity": 1 }
+{ "accountId": 7, "instrumentId": 5, "orderType": "BUY", "amount": 250.00 }
 ```
 
-- `orderType` is `BUY` or `SELL`. IDs and quantity must be positive; the UI sends whole shares.
+- `orderType` is `BUY` or `SELL`. IDs must be positive.
+- **Size the order once (BR-04):** either `quantity`, in shares, or `amount`, in USD (dollars and cents). Both or neither is a `400` with `errors.quantityOrAmount`.
+- **Whole shares only.** A `quantity` that isn't a whole number of at least one share (`0.5`, `1.25`) is refused with `INVALID_QUANTITY`, by the `QUANTITY` placement check ([C2](C2-audit.md#the-submission-trail)), so the refusal is audited like any other.
+- **An `amount` buys or sells as many whole shares as it covers**, at the ask for a BUY and the bid for a SELL, rounded down: $250.00 at an ask of $99.50 is 2 shares. An amount that doesn't cover one share is refused with `INVALID_QUANTITY` and the reason "Amount is less than the price of one share". The order is then saved and checked for those shares like any other: its `quantity` is the share count and `requestedAmount` keeps the amount. Shares are fixed at placement; the fill price can still differ from the placement quote, as for every market order, so the cost of an order by amount can end a little above or below it.
 - For a BUY, the server prices the order at the current ask from `MarketDataService`, rounded to 4 decimals, and uses that for both the cash check and the saved `pricePerUnit`. Any `pricePerUnit` the client sends is ignored.
 - For a SELL, trading-service checks the holding before anything is saved. Browser prices are ignored. The server saves a bid-price execution intent before settlement.
-- Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order. Placement does not reserve cash or shares. Settlement serializes account updates and rechecks availability; competing orders may be rejected at execution.
+- **Open orders reserve what they will spend (BR-05).** A BUY must fit the account's cash less the cost of its open BUYs (quantity × the ask each was placed at), which is the `buyingPower` the balance endpoints show. A SELL must fit the holding less the shares in the account's open SELLs of that stock. Open means not yet `FILLED` or `REJECTED` ([C1](C1-orders.md)). Cash and shares only move at settlement; the reservation is just this check.
+- **Orders on one account are checked one at a time.** Placement locks the account row from the account-status check until the order is saved, so of two orders sent at once the second is checked with the first already open. Settlement still locks the account and rechecks availability, since the fill price can differ from the placement ask.
+- **Location rules (BR-05).** An order is refused with `LOCATION_RESTRICTED` when the client's residential state or country is in the platform-wide list (every stock, [C5](C5-config.md#who-uses-each-setting)) or in the stock's own rules (`instrument_location_restrictions`, [028](../database/README.md#028--per-instrument-location-restrictions)). Execution checks again before it fills.
+- Placing an order saves it as `SUBMITTED` and writes its submission audit trail: `SUBMITTED`, one `RULE_CHECKED` per placement check, then `VALIDATED` ([C2](C2-audit.md#the-submission-trail)). The response remains `SUBMITTED`; a background worker subsequently accepts and executes the order.
 
 **Response `201`** (the order DTO, also returned by every read below):
 
@@ -84,13 +135,15 @@ Places a market order for one of the caller's accounts.
   "success": true, "reason": null, "code": null,
   "orderId": 42, "accountId": 7, "instrumentId": 5,
   "symbol": "AAPL", "instrumentName": "BronApple",
-  "orderType": "BUY", "quantity": 1,
+  "orderType": "BUY", "quantity": 1, "requestedAmount": null,
   "pricePerUnit": 244.2366, "orderStatus": "SUBMITTED", "rejectionReason": null,
   "submittedAt": "2026-09-21T10:30:00", "acceptedAt": null, "filledAt": null,
   "quoteSource": null, "quoteTime": null,
   "createdAt": "2026-09-21T10:30:00", "updatedAt": "2026-09-21T10:30:00"
 }
 ```
+
+`requestedAmount` is the USD amount the order was placed for, or null when it was placed by shares.
 
 `quoteSource` and `quoteTime` describe the quote the order was priced from at execution: the feed it came from, and when the feed produced it (ISO-8601 UTC, e.g. `2026-09-21T10:30:04.512Z`). Both are null until execution prices the order; from then on `pricePerUnit` is that quote's price, and `filledAt` is the execution time.
 
@@ -102,17 +155,18 @@ Places a market order for one of the caller's accounts.
 |---|---|---|
 | 400 | The client or account may not trade | `success: false, code: ACCOUNT_RESTRICTED, reason` |
 | 400 | Suspended stock | `success: false, code: NOT_TRADABLE, error` |
-| 400 | Not enough shares (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
-| 400 | Not enough cash (BUY) | `success: false, code: INSUFFICIENT_CASH, reason` |
-| 400 | No usable quote (BUY) | `success: false, code: PRICE_UNAVAILABLE, reason` |
-| 400 | Stale quote (BUY) | `success: false, code: STALE_QUOTE, reason` |
-| 400 | Residence restricted by platform settings | `success: false, code: LOCATION_RESTRICTED, reason` |
-| 400 | Invalid fields / unknown instrument | `errors` / `message` |
+| 400 | Not a whole number of shares, or an `amount` below the price of one share | `success: false, code: INVALID_QUANTITY, reason` |
+| 400 | Not enough shares outside open SELLs (SELL) | `success: false, code: INSUFFICIENT_HOLDINGS, error` |
+| 400 | Not enough cash outside open BUYs (BUY); `reason` names the cost and the available cash | `success: false, code: INSUFFICIENT_CASH, reason` |
+| 400 | No usable quote (BUY, or any order by `amount`) | `success: false, code: PRICE_UNAVAILABLE, reason` |
+| 400 | Stale quote (BUY, or any order by `amount`) | `success: false, code: STALE_QUOTE, reason` |
+| 400 | Residence restricted for this stock, or for every stock | `success: false, code: LOCATION_RESTRICTED, reason` |
+| 400 | Invalid fields (including both or neither of `quantity` and `amount`) / unknown instrument | `errors` / `message` |
 | 401 / 403 | Not logged in / not the caller's account | see rules above |
 
 ### POST /api/v1/buy-orders
 
-The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ accountId, instrumentId, quantity, pricePerUnit }`. `pricePerUnit` is required, but it is validation input only; the server still uses the live ask. The trade dialog uses this endpoint for buys.
+The same as `POST /api/v1/orders` with `orderType` fixed to `BUY`. Body: `{ accountId, instrumentId, quantity, pricePerUnit }`, or `amount` instead of `quantity` (BR-04, the same rules). `pricePerUnit` is required, but it is validation input only; the server still uses the live ask. The trade dialog uses this endpoint for buys.
 
 ### Reading orders
 
@@ -196,6 +250,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "SUBMITTED",
     "occurredAt": "2026-09-21T10:30:00Z",
+    "archived": false,
     "details": {
       "side": "BUY",
       "quantity": 10,
@@ -205,6 +260,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "VALIDATED",
     "occurredAt": "2026-09-21T10:30:01Z",
+    "archived": false,
     "details": {
       "validationStatus": "PASSED"
     }
@@ -212,11 +268,13 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "ACCEPTED",
     "occurredAt": "2026-09-21T10:30:02Z",
+    "archived": false,
     "details": {}
   },
   {
     "eventType": "FILLED",
     "occurredAt": "2026-09-21T10:30:03Z",
+    "archived": false,
     "details": {
       "executionPrice": 244.2366,
       "quantity": 10
@@ -225,6 +283,7 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
   {
     "eventType": "SETTLED",
     "occurredAt": "2026-09-21T10:30:04Z",
+    "archived": false,
     "details": {
       "cashDelta": -2442.366,
       "quantityDelta": 10
@@ -244,6 +303,33 @@ Retrieve the complete audit trail for an order, showing all events in chronologi
 - An unknown or inaccessible order ID returns `403` (no information leak).
 - Clients and other staff roles are denied with `403`, even if they own the order.
 - Events are sourced exclusively from the audit trail ([C2](C2-audit.md)), ensuring immutable and comprehensive order history.
+- `archived` is `true` for an event older than the online retention window (BR-14, [C2](C2-audit.md#retention-and-the-archive)). Archived events stay in the timeline; the staff app labels them "Archived".
+
+### Audit archive (TRADING_OPS only)
+
+`GET /api/v1/audit/archive` (orders-service, through the staff app only) returns archived audit events: those older than the online retention window ([C5](C5-config.md#who-uses-each-setting)), for Risk and Compliance through Trading Ops (BR-14, [C2](C2-audit.md#retention-and-the-archive)). It reads only; no endpoint changes or deletes an audit record.
+
+| Query parameter | Meaning |
+|---|---|
+| `orderId` | Events of one order (positive integer) |
+| `requestId` | Events of one submission, including a refused one that has no order (1–36 characters) |
+| `clientId` | Events naming that client (positive integer) |
+| `from`, `to` | ISO-8601 instants, e.g. `2019-01-01T00:00:00Z`; `from` inclusive, `to` exclusive, `from` before `to` |
+| `limit`, `offset` | Page size and start; defaults and bounds in [ArchiveQuery](../services/orders-service/src/main/java/com/lemarketjames/audit/ArchiveQuery.java) |
+
+Every parameter is optional and they combine with AND. There is no lower age bound: a record older than seven years is returned like any other.
+
+**Response `200`**, oldest first, audit ID breaking ties of time:
+
+```json
+{ "success": true,
+  "events": [
+    { "auditId": 412, "eventType": "SUBMITTED", "orderId": 42, "accountId": 9, "clientId": 7,
+      "requestId": "8a3f…", "occurredAt": "2018-03-01T15:00:00Z", "details": { "side": "BUY" } }
+  ] }
+```
+
+`orderId`, `accountId`, `clientId` and `requestId` can be null, as on the stored event ([C2](C2-audit.md#stored-fields)). No match returns `"events": []`. A malformed or out-of-range parameter, or `from` not before `to`, returns `400 { "message": "..." }`; no session `401`; any role but `TRADING_OPS` `403`.
 
 ### Trade search (TRADING_OPS only)
 
@@ -265,9 +351,11 @@ then descending order ID for equal fill times. Client IDs are not account IDs.
 [
   { "orderId": 42, "clientId": 7, "accountId": 9, "instrumentId": 5,
     "symbol": "AAPL", "side": "BUY", "quantity": 2, "pricePerUnit": 123.4567,
-    "filledAt": "2026-01-10T12:00:00" }
+    "filledAt": "2026-01-10T12:00:00", "archived": false }
 ]
 ```
+
+`archived` is `true` when the trade filled before the online retention window, so its audit trail is archived (BR-14, [C2](C2-audit.md#retention-and-the-archive)); such trades are still found, and the staff app labels them "Archived".
 
 Only FILLED orders are trades. Unknown IDs, unfilled orders and ranges with no matches return
 `200 []`. Results use stored execution prices and instrument symbols, without live quote calls.
@@ -450,7 +538,8 @@ Rules for every report (the full list, for whoever builds one, is in the service
 
 - **Path.** Every report is under `/api/v1/reports/...`.
 - **Access.** `ANALYST` only ([C7](C7-roles.md)). A missing or expired cookie gets `401`; every other role gets `403`.
-- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs`.
+- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)), or the nightly summary built from it. They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs` and `report_outputs`.
+- **Read side (BR-16).** The long-range reports, [`/trades`](#get-apiv1reportstrades) (a year by default) and `/trades-by-stock`, read the days the nightly summary `reporting_daily_trades` covers from it, and only the days after (today, and any night not summarized yet) from the live view, so a year's report does not scan a year of orders on the database trading uses. The figures are the same either way: a summarized day never changes, since trades are final. The insights, the segment report and the overnight list read live: they cover a few weeks, or count distinct clients, which a daily summary cannot add up. Which endpoint reads what is in the service's [README](../services/staff-ops-service/README.md#read-side-br-16).
 - **Aggregates only.** A response never contains `client_id` or anything else that identifies an individual client, and never a single trade.
 - **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
 
@@ -526,7 +615,7 @@ The original activity endpoint retains its aggregate-only response shape.
 
 ### GET /api/v1/reports/trades
 
-Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.
+Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first. A long-range report: summarized days come from the nightly summary, later days live ([read side](#reports-staff-ops-service)).
 
 **Parameters** (all optional except `periodType`):
 
@@ -598,11 +687,13 @@ Insight: the traded volume of the last completed period compared with the period
   "previous": { "startDate": "2026-09-28", "endDate": "2026-10-04", "tradeCount": 32, "shareVolume": 1000, "grossAmount": 41000.00 },
   "inProgress": { "startDate": "2026-10-12", "endDate": "2026-10-12", "tradeCount": 3, "shareVolume": 75, "grossAmount": 900.00 },
   "change":   { "shareVolume": 200, "shareVolumePercent": 20.00, "grossAmount": 13000.00, "grossAmountPercent": 31.71 },
+  "flag":     { "flagged": false, "changePercent": 20.00, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-12T14:00:00Z"
 }
 ```
 
 - `startDate` and `endDate` are both included, days in the reports time zone. For `inProgress`, `endDate` is today.
+- `flag` is the [insight flag](#insight-flags) on `shareVolume`, `current` against `previous`; like `change`, it leaves `inProgress` out.
 - `shareVolume` is the sum of the trades' quantities; `grossAmount` is quantity × price ([no fees](#reports-staff-ops-service)).
 - `change` is `current` minus `previous`. A `*Percent` is relative to `previous`, rounded to two decimals, and `null` when `previous` is `0` (there is nothing to compare with). A period with no trades returns zeros, not an error.
 
@@ -618,8 +709,10 @@ Insight: the traded volume of the last completed period compared with the period
 
 Insight: the five stocks with the highest gross traded value in the current week, for `ANALYST`
 only. The current week starts on Monday in the configured reports time zone and includes trades
-through today. It is computed from `reporting_trades` on every request, so the dashboard can refresh
-it at least daily without a scheduled cache.
+through today. Each stock is compared with the same days of the week before (`previousStartDate` to
+`previousEndDate`: Monday to the same weekday), so a Tuesday is never set against a whole week. It is
+computed from `reporting_trades` on every request, so the dashboard can refresh it at least daily
+without a scheduled cache.
 
 **Response `200`:**
 
@@ -627,9 +720,15 @@ it at least daily without a scheduled cache.
 {
   "startDate": "2026-10-12",
   "endDate": "2026-10-14",
+  "previousStartDate": "2026-10-05",
+  "previousEndDate": "2026-10-07",
   "stocks": [
-    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530 },
-    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410 }
+    { "rank": 1, "symbol": "AAPL", "tradedValue": 125000.00, "tradeCount": 24, "shareVolume": 530,
+      "previousTradedValue": 100000.00,
+      "flag": { "flagged": true, "changePercent": 25.00, "direction": "UP", "thresholdPercent": 25 } },
+    { "rank": 2, "symbol": "MSFT", "tradedValue": 98000.00, "tradeCount": 18, "shareVolume": 410,
+      "previousTradedValue": 0,
+      "flag": { "flagged": true, "changePercent": null, "direction": "UP", "thresholdPercent": 25 } }
   ],
   "generatedAt": "2026-10-14T14:00:00Z"
 }
@@ -637,8 +736,10 @@ it at least daily without a scheduled cache.
 
 Rows are ordered by `tradedValue` descending, then symbol ascending for ties. `tradedValue` is the
 sum of `quantity × price` for both BUY and SELL fills. Fewer than five rows are returned when fewer
-than five symbols traded; no trades returns an empty `stocks` array. The response contains no
-client, account or order identifiers.
+than five symbols traded; no trades returns an empty `stocks` array. `previousTradedValue` is the
+same sum over the same days of last week, `0` when the stock did not trade then, and `flag` is the
+[insight flag](#insight-flags) on `tradedValue` against it. The response contains no client, account
+or order identifiers.
 
 | HTTP | When | Body |
 |---|---|---|
@@ -661,11 +762,12 @@ The traded volume of two date ranges the caller chooses, compared. The staff til
   "current":  { "startDate": "2026-10-12", "endDate": "2026-10-14", "tradeCount": 9, "shareVolume": 420, "grossAmount": 15000.00 },
   "previous": { "startDate": "2026-10-05", "endDate": "2026-10-07", "tradeCount": 6, "shareVolume": 300, "grossAmount": 11000.00 },
   "change":   { "shareVolume": 120, "shareVolumePercent": 40.00, "grossAmount": 4000.00, "grossAmountPercent": 36.36 },
+  "flag":     { "flagged": true, "changePercent": 40.00, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-14T14:00:00Z"
 }
 ```
 
-`current`, `previous` and `change` follow the rules of the insight above. A range that includes today counts the trades made so far, so a trade made now shows up on the next request.
+`current`, `previous`, `change` and `flag` follow the rules of the insight above. A range that includes today counts the trades made so far, so a trade made now shows up on the next request.
 
 **Failures:**
 
@@ -691,6 +793,9 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
     { "date": "2026-09-15", "activeClients": 12 },
     { "date": "2026-09-16", "activeClients": 0 }
   ],
+  "lastWeek":   { "startDate": "2026-10-07", "endDate": "2026-10-13", "averageActiveClients": 2.00 },
+  "weekBefore": { "startDate": "2026-09-30", "endDate": "2026-10-06", "averageActiveClients": 1.57 },
+  "flag": { "flagged": true, "changePercent": 27.27, "direction": "UP", "thresholdPercent": 25 },
   "generatedAt": "2026-10-14T14:00:00Z"
 }
 ```
@@ -698,6 +803,7 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 - The window is the 30 days ending today in the reports time zone, both ends included; `days` lists every one of them, oldest first, and a day without trades is `0`, not missing. Today counts the trades made so far.
 - `activeClients` is the number of distinct clients with at least one filled trade that day, counted across all of a client's accounts. Each day is a range from [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java).
 - Counts only: the response never contains a client, account or order identifier.
+- `lastWeek` is the seven whole days before today and `weekBefore` the seven before those; `averageActiveClients` is the mean of their daily counts, two decimals. `flag` is the [insight flag](#insight-flags) on `lastWeek` against `weekBefore`, worked out from the two weeks' totals (the same percent, without the rounding). Whole weeks, so a weekend is in both and today, still running, is in neither.
 
 **Failures:**
 
@@ -706,11 +812,26 @@ Insight: how many distinct clients traded on each of the last 30 days (LMKT-48),
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
 
+### Insight flags
+
+Every insight above says whether it moved enough to be brought to an analyst's attention (BR-17), with the same `flag` object, made by one rule ([InsightFlagRule](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/insight/InsightFlagRule.java)):
+
+| Field | Meaning |
+|---|---|
+| `flagged` | `true` when the figure moved by at least `thresholdPercent` of the period it is compared with, up or down, or when that period had none and this one has some. |
+| `changePercent` | The move as a percent of the previous figure, two decimals, half up; `null` when the previous figure was `0`. |
+| `direction` | `UP`, `DOWN` or `FLAT`. |
+| `thresholdPercent` | The setting in force, `lmj.reports.insight-flag-percent` ([C5](C5-config.md)), so the staff app shows what "flagged" means without its own copy. |
+
+Which figure each insight flags: the volume insights flag `shareVolume`, the most active stocks each stock's `tradedValue`, and the active-client trend the last seven days' average. The staff app's Analyst dashboard opens with a "What changed" list of them, flagged first, built from the tiles' own responses (no extra request).
+
 ### GET /api/v1/reports/overnight
 
 The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in staff-ops-service's [README](../services/staff-ops-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
 
-Unlike the other reports, it reads the service's own `report_runs` table ([023](../database/schema/023_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+Unlike the other reports, it reads the service's own `report_runs` and `report_outputs` tables ([023](../database/schema/023_report_runs.sql), [030](../database/schema/030_reporting_summary.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+
+The overnight report today is the **Monthly trading summary** (BR-16): each night it brings the nightly trade summary up to the run date, then writes the month so far (the 1st through `runDate`) as a CSV, one line per stock and client segment: `symbol,segment,trades,buys,sells,shares,gross_amount_usd`. It reads the summary, not live orders.
 
 **Parameters:** none.
 
@@ -729,17 +850,19 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
       "scheduledFor": "2026-10-15T06:00:00Z",
       "readyBy": "2026-10-15T11:00:00Z",
       "readyAt": "2026-10-15T06:04:12Z",
-      "failureReason": null
+      "failureReason": null,
+      "outputFileName": null
     },
     {
       "id": "1d7e5b20-2222-4c1f-8a6b-000000000002",
-      "name": "Stub overnight report",
+      "name": "Monthly trading summary",
       "runDate": "2026-10-14",
-      "status": "FAILED",
+      "status": "READY",
       "scheduledFor": "2026-10-15T06:00:00Z",
       "readyBy": "2026-10-15T11:00:00Z",
-      "readyAt": null,
-      "failureReason": "Source data missing for 2026-10-14"
+      "readyAt": "2026-10-15T06:00:03Z",
+      "failureReason": null,
+      "outputFileName": "monthly-trading-summary-2026-10-01-to-2026-10-14.csv"
     }
   ]
 }
@@ -751,6 +874,7 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 - `scheduledFor`, `readyBy` and `readyAt` are ISO-8601 UTC instants with a `Z`. `readyBy` is when a successful run must be available by, the ready-by time of that night (07:00 by default, `lmj.reports.ready-by`), so the app hard-codes neither the time nor the zone.
 - A run is `READY` when it finished by `readyBy`. It is `LATE` once `readyBy` has passed without it being ready: at that time a waiting or running run becomes `LATE` and carries on, and a run that finishes after `readyBy` is `LATE` too. A `LATE` run that then fails becomes `FAILED`.
 - `readyAt` is when the run finished: set when `READY`, and when `LATE` once the late run has finished (a `LATE` run with no `readyAt` is still waiting or running). `failureReason` is set only when `FAILED`. Otherwise each is `null`, never left out.
+- `outputFileName` names the file a finished (`READY` or `LATE` with `readyAt`) run produced, downloaded from [`/api/v1/reports/overnight/{id}/output`](#get-apiv1reportsovernightrunidoutput); `null` when the run has no file.
 - A run is `FAILED` when its report failed, with the report's message as the reason. It is also `FAILED` when staff-ops-service was down for the night's whole window (the reason starts "Did not run"), or stopped while the run was going (the reason starts "Interrupted"); so a night is never just missing from the list. `failureReason` is a message an analyst can read, never a stack trace.
 
 **Failures:**
@@ -759,6 +883,21 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 |---|---|---|
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
+### GET /api/v1/reports/overnight/{runId}/output
+
+The file an overnight run produced (BR-16), for `ANALYST` only: the staff app's Overnight reports list links it as **Download CSV**.
+
+**Response `200`:** the file, with its media type (`text/csv`) and `Content-Disposition: attachment; filename="monthly-trading-summary-2026-10-01-to-2026-10-14.csv"`. Aggregates only: no client, account or order identifier.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | `runId` is not a UUID | |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+| 404 | The run has no file: it failed, has not finished, or its report makes none | |
 
 ## The consumers (notifications, surveillance and market activity)
 
@@ -800,7 +939,12 @@ The signed-in client's newest notifications (up to 50), newest first. There is n
 
 ### GET /api/v1/surveillance/alerts (TRADING_OPS only)
 
-The newest alerts (up to 100), newest first by `occurredAt`. Routed by the staff app only; the trading app has no route to it.
+The newest alerts (up to 100) that match the filters, newest first by `occurredAt`. Routed by the staff app only; the trading app has no route to it. The staff app's Alerts page (Trading Ops) lists them and links each order to its [timeline](#order-timeline-trading_ops-only).
+
+**Parameters** (all optional; one left out does not filter):
+
+- `reason`: an [AlertReason](../services/staff-ops-service/src/main/java/com/lemarketjames/surveillance/AlertReason.java) name, e.g. `LARGE_ORDER`.
+- `from`, `to`: `YYYY-MM-DD`, whole days in UTC, both included, compared with `occurredAt`; as in [trade search](#trade-search-trading_ops-only), since Trading Ops read every time in UTC.
 
 ```json
 {
@@ -830,7 +974,8 @@ The newest alerts (up to 100), newest first by `occurredAt`. Routed by the staff
 - An alert is not updated afterwards: a `LARGE_ORDER` alert shows the order as it was placed, whatever happens to it later.
 - A rejection for any other reason raises no alert. The two codes are the ones a refused settlement gives, so a Trading Ops rejection made by hand with one of them ([Changing an order's status](#changing-an-orders-status-trading_ops-only)) is alerted to as well. An order refused at placement is never saved and publishes no event, so it raises none.
 - A status change published before the event carried `rejectionReason` has none and raises no alert.
-- `rejectionReason` and `occurredAt` were added after the other fields (LMKT-71).
+- `rejectionReason` and `occurredAt` were added after the other fields (LMKT-71); the filters with BR-17.
+- An unknown `reason`, a day that is not `YYYY-MM-DD`, or `to` before `from` gets `400`.
 - A missing or expired cookie gets `401`; every role but `TRADING_OPS` gets `403`.
 
 ### GET /api/v1/market-activity
@@ -877,14 +1022,23 @@ Feed-down detection is tracked by `MarketFeedStatus` (updated by every `MarketDa
 
 ## Internal endpoints (service-to-service only, never through a web app)
 
+- **`/internal/**` needs the shared internal token** (BR-02). The caller sends it in the
+  `X-Internal-Token` header ([InternalApiTokenFilter](../libs/common/src/main/java/com/lemarketjames/common/security/InternalApiTokenFilter.java)).
+  The setting is `internal.api-token` ([C5](C5-config.md#who-uses-each-setting)).
+  - No token or a wrong one gets `401`; a wrong one is logged as `INTERNAL_TOKEN_REJECTED`, without the token.
+  - A client or staff session gets `403`: settlement moves cash and shares for any account, so no person may call it.
+- **`GET /api/market/**` needs no credential.** Prices carry no user data, and orders-service reads them without a
+  cookie. Any other method there needs a session.
+
 | Method & path | Caller → callee | Purpose |
 |---|---|---|
 | `GET /api/market/quotes`, `/quotes/{ticker}`, `/quotes/by-instrument/{id}` | orders-service → trading-service | Raw `QuoteSnapshot`s. Answers `503` while the feed is UNAVAILABLE ([C4](C4-quote-feed.md)). trading-service's own features read the same quotes in-process, and see an UNAVAILABLE feed the same way: no quote, and an outage recorded. |
 | `GET /api/market/history/{instrumentId}?from=YYYY-MM-DD`, `/intraday/{instrumentId}` | any service → trading-service (none today: its own charts read in-process) | Past prices for the [chart ranges](#chart-ranges), through `PriceHistoryClient`: `DailyBar`s from `from` (inclusive, an exchange-local trading day), or today's `PricePoint`s; both end with the live quote. An unknown instrument has an empty list; `503` while the feed is UNAVAILABLE. |
 | `POST /internal/holdings/settle` | orders-service → trading-service | Applies a fill's cash and holdings changes, and audits `SETTLED` |
-| `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement |
+| `POST /internal/holdings/validate` | orders-service → trading-service | SELL holdings check at placement. Body `{ accountId, username, instrumentId, sellQuantity, reservedQuantity }`; `reservedQuantity` is the shares already in the account's open SELLs of the stock (missing means none), and the sale must fit the holding less that. `400 { success: false, error }` when it doesn't |
 | `/internal/market/control/**` | tests → trading-service | Quote-feed test controls, only when enabled; see [C4](C4-quote-feed.md) |
 | `/internal/holdings/control/settlement-faults/{accountId}` | tests → trading-service | [The settlement test control](#the-settlement-test-control), only when enabled |
+| `GET`, `PUT /internal/execution/control` | tests → orders-service | Pauses execution or makes settlement unavailable, only when `lmj.execution.control-enabled` is on ([C5](C5-config.md#order-execution)) |
 
 ### The settlement test control
 
@@ -892,12 +1046,13 @@ Makes the settlements of one account fail part-way, so a test can show on a runn
 failed settlement changes nothing and settles once when retried
 ([Automatic execution and recovery](#automatic-execution-and-recovery)). It exists only where its
 setting is on ([C5](C5-config.md#settlement-test-control)), and is served by trading-service
-itself on port 8084.
+itself on port 8084. Like every `/internal/**` call it needs the internal token, which the examples
+read from `INTERNAL_API_TOKEN` ([C5](C5-config.md#who-uses-each-setting)).
 
 ```bash
-curl -X PUT    localhost:8084/internal/holdings/control/settlement-faults/7   # account 7's settlements fail from now on
-curl           localhost:8084/internal/holdings/control/settlement-faults/7   # { "accountId": 7, "failing": true, "failures": 2 }
-curl -X DELETE localhost:8084/internal/holdings/control/settlement-faults/7   # they work again
+curl -X PUT    -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # account 7's settlements fail from now on
+curl           -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # { "accountId": 7, "failing": true, "failures": 2 }
+curl -X DELETE -H "X-Internal-Token: $INTERNAL_API_TOKEN" localhost:8084/internal/holdings/control/settlement-faults/7   # they work again
 ```
 
 - While an account is failing, `POST /internal/holdings/settle` for it answers `500` after the
@@ -972,10 +1127,10 @@ An order that fills therefore produces one `OrderSubmitted`, one `OrderStatusCha
 
 These are contracts for upcoming stories. Build them as written, or update this section in the same PR.
 
-- **Audit (TRADING_OPS):** `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C2](C2-audit.md), [C5](C5-config.md) retention). `requestId` is how a refused order's trail is found; `orderId` and `accountId` can be null on its events.
-- **Reports (ANALYST):** the service, its access rule, `GET /api/v1/reports/ping`, `GET /api/v1/reports/trades`, the [volume insight](#get-apiv1reportsinsightsvolume) and the [overnight reports list](#get-apiv1reportsovernight) are built; see [Reports](#reports-staff-ops-service). The activity and instruments reports below are still planned. Their response shapes were agreed before the reports rules were finalized, so the story that builds each one must first reconcile it with the rules and update this section:
-  - `GET /api/v1/reports/activity?startDate=&endDate=&limit=50&offset=0` → `{ success, activities: [{ id, type, symbol, quantity, price, totalAmount, timestamp }], total, limit, offset }`. `startDate` and `endDate` are days in the reports time zone, both included.
+- **Audit (TRADING_OPS):** the archive is built: [Audit archive](#audit-archive-trading_ops-only) returns events older than the online window. A search of the online (recent) events by request, client or time, beyond one order's [timeline](#order-timeline-trading_ops-only), is still planned with the shape agreed here: `GET /api/v1/audit?orderId=…|requestId=…|clientId=…&from=&to=` → `{ success, events: [{ eventType, orderId, accountId, clientId, requestId, occurredAt, details }] }`, oldest first, online events only ([C5](C5-config.md) retention). `orderId` and `accountId` can be null on a refused order's events.
+- **Reports (ANALYST):** the service, its access rule and every endpoint under [Reports](#reports-staff-ops-service) are built: ping, activity by segment and its comparison, trades by period and by stock, the volume, most-active and active-client insights, and the overnight list with its file download. One report is still planned. Its response shape was agreed before the reports rules were finalized (and holds per-instrument figures the rules may not allow), so the story that builds it must first reconcile it with the rules and update this section:
   - `GET /api/v1/reports/instruments?sortBy=gainLoss|gainLossPercent|quantity|value&order=ASC|DESC` → `{ success, instruments: [{ symbol, quantity, totalValue, gainLoss, gainLossPercent, performance: { week, month, threeMonth, year }, volatility, beta }] }`.
+  - The activity feed once planned at `/api/v1/reports/activity` (one row per trade) is dropped: rule 3 allows no single trade, and the path is now [activity by segment](#get-apiv1reportsactivity).
 - **Candles:** `GET /api/v1/instruments/{symbol}/candles?limit=60` (max 390) → `{ success, symbol, interval: "1m", candles: [{ time, open, high, low, close, volume }] }` from `price_candles`, oldest first. An unknown symbol gets `404` in the quotes shape.
 
 ## Changing a contract

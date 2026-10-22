@@ -16,23 +16,31 @@ import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import com.lemarketjames.orders.exception.NotTradableException;
 import com.lemarketjames.orders.service.AccountAccess;
 import com.lemarketjames.orders.service.CashValidationService;
+import com.lemarketjames.orders.service.OpenOrderReservations;
 import com.lemarketjames.orders.service.TradingRestrictions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
 
 /**
  * The checks an order must pass before it is saved, in the order of {@link ValidationRule}:
- * ownership, account status, location, tradability, then holdings for a SELL or price and cash for
- * a BUY. Kept apart from {@code OrderService} so deciding whether an order may be placed is
- * separate from saving it.
+ * ownership, account status, location, tradability, the price for a BUY or an order by amount,
+ * whole shares (BR-04), then holdings for a SELL or cash for a BUY. Kept apart from
+ * {@code OrderService} so deciding whether an order may be placed is separate from saving it.
  *
  * <p>Every check that runs is noted on the {@link SubmissionTrail}, pass or fail, before its
  * result is acted on, so the trail is complete however the submission ends.
+ *
+ * <p>Cash and holdings are checked net of the account's open orders (BR-05). The account row is
+ * locked from the account status check until the caller's transaction ends ({@link OrderPlacement}
+ * saves the order in it), so two orders on one account are checked one after the other: the second
+ * sees the first as open and can't spend what it reserves.
  */
 @Service
 public class SubmissionValidator {
@@ -47,6 +55,7 @@ public class SubmissionValidator {
     private final HoldingsValidationClient holdingsValidationClient;
     private final MarketDataService marketDataService;
     private final CashValidationService cashValidationService;
+    private final OpenOrderReservations reservations;
 
     public SubmissionValidator(AccountAccess accountAccess,
                                AccountRepository accountRepository,
@@ -55,7 +64,8 @@ public class SubmissionValidator {
                                TradingRestrictions restrictions,
                                HoldingsValidationClient holdingsValidationClient,
                                MarketDataService marketDataService,
-                               CashValidationService cashValidationService) {
+                               CashValidationService cashValidationService,
+                               OpenOrderReservations reservations) {
         this.accountAccess = accountAccess;
         this.accountRepository = accountRepository;
         this.clientRepository = clientRepository;
@@ -64,18 +74,23 @@ public class SubmissionValidator {
         this.holdingsValidationClient = holdingsValidationClient;
         this.marketDataService = marketDataService;
         this.cashValidationService = cashValidationService;
+        this.reservations = reservations;
     }
 
     /**
      * Runs the checks for one order, stopping at the first that fails. SELL orders require
      * sufficient holdings; BUY orders are priced from the market, never from the browser, and
-     * require sufficient cash at that price.
+     * require sufficient cash at that price. An order by amount becomes the whole shares the amount
+     * covers at the market price, and is then checked like an order for that many shares.
      *
      * @param trail receives the result of every check that runs
      * @throws AccessDeniedException if the account isn't the caller's
      * @throws NotTradableException if the instrument is suspended
-     * @throws InsufficientHoldingsException if a SELL exceeds the holding
+     * @throws InsufficientHoldingsException if a SELL exceeds the holding less open SELLs
      */
+    // MANDATORY: the account lock taken here only protects anything while the order is saved in the
+    // same transaction.
+    @Transactional(propagation = Propagation.MANDATORY)
     public ValidationOutcome validate(CreateOrderRequest request, SubmissionTrail trail) {
         requireOwnAccount(request.getAccountId(), trail);
 
@@ -88,20 +103,44 @@ public class SubmissionValidator {
         trail.pass();
 
         trail.begin(ValidationRule.LOCATION);
-        if (restrictions.locationRestricted(request.getAccountId())) {
+        if (restrictions.locationRestricted(request.getAccountId(), request.getInstrumentId())) {
             return refuse(trail, "Trading is restricted in your location", RejectionReason.LOCATION_RESTRICTED);
         }
         trail.pass();
 
         requireTradable(request.getInstrumentId(), trail);
-        // Browser validation is advisory; every SELL must be checked again before saving.
-        if (request.getOrderType() == Order.OrderType.SELL) {
-            requireHoldings(request, trail);
+
+        boolean buy = request.getOrderType() == Order.OrderType.BUY;
+        // A BUY is priced to check its cost; an order by amount needs a price to become shares.
+        BigDecimal price = null;
+        if (buy || request.getAmount() != null) {
+            ValidationOutcome priced = priceFromMarket(request.getInstrumentId(), buy, trail);
+            if (priced.isRefused()) {
+                return priced;
+            }
+            price = priced.price();
         }
-        if (request.getOrderType() == Order.OrderType.BUY) {
-            return priceAndCheckCash(request, trail);
+
+        trail.begin(ValidationRule.QUANTITY);
+        BigDecimal shares = request.getAmount() == null
+            ? request.getQuantity()
+            : OrderShares.forAmount(request.getAmount(), price);
+        if (!OrderShares.isWholeShares(shares)) {
+            return refuse(trail, request.getAmount() == null
+                    ? "Orders are for whole shares: enter a quantity of at least 1"
+                    : "Amount is less than the price of one share",
+                RejectionReason.INVALID_QUANTITY);
         }
-        return ValidationOutcome.passed(null);
+        trail.sized(shares);
+        trail.pass();
+
+        if (!buy) {
+            // Browser validation is advisory; every SELL must be checked again before saving. A SELL
+            // gets its price at execution, so none is stored now even if one was used for its amount.
+            requireHoldings(request, shares, trail);
+            return ValidationOutcome.passed(null, shares);
+        }
+        return checkCash(request.getAccountId(), shares, price, trail);
     }
 
     private void requireOwnAccount(Integer accountId, SubmissionTrail trail) {
@@ -131,11 +170,13 @@ public class SubmissionValidator {
         trail.pass();
     }
 
-    private void requireHoldings(CreateOrderRequest request, SubmissionTrail trail) {
+    private void requireHoldings(CreateOrderRequest request, BigDecimal shares, SubmissionTrail trail) {
         trail.begin(ValidationRule.HOLDINGS);
         try {
+            // Shares already promised to open SELLs can't be sold again.
             holdingsValidationClient.validateSufficientHoldings(request.getAccountId(),
-                accountAccess.authenticatedUsername(), request.getInstrumentId(), request.getQuantity());
+                accountAccess.authenticatedUsername(), request.getInstrumentId(), shares,
+                reservations.reservedShares(request.getAccountId(), request.getInstrumentId()));
         } catch (InsufficientHoldingsException insufficient) {
             trail.fail(RejectionReason.INSUFFICIENT_HOLDINGS.name());
             throw insufficient;
@@ -143,14 +184,19 @@ public class SubmissionValidator {
         trail.pass();
     }
 
-    private ValidationOutcome priceAndCheckCash(CreateOrderRequest request, SubmissionTrail trail) {
+    /**
+     * Prices the order from the market, never from the browser: the ask for a BUY, the bid for a
+     * SELL. Passes with that price (and no quantity yet), or refuses a missing or stale quote.
+     */
+    private ValidationOutcome priceFromMarket(Integer instrumentId, boolean buy, SubmissionTrail trail) {
         trail.begin(ValidationRule.PRICE_AVAILABLE);
-        var quote = marketDataService.findByInstrumentId(request.getInstrumentId());
+        var quote = marketDataService.findByInstrumentId(instrumentId);
         // Match the database scale so validation and the persisted snapshot agree. A price that
         // rounds to zero is as unusable as none, so it belongs to this check rather than a later one.
         BigDecimal price = quote
-            .filter(q -> Double.isFinite(q.askPrice()) && q.askPrice() > 0)
-            .map(q -> BigDecimal.valueOf(q.askPrice()).setScale(4, RoundingMode.HALF_UP))
+            .map(q -> buy ? q.askPrice() : q.bidPrice())
+            .filter(side -> Double.isFinite(side) && side > 0)
+            .map(side -> BigDecimal.valueOf(side).setScale(4, RoundingMode.HALF_UP))
             .filter(rounded -> rounded.signum() > 0)
             .orElse(null);
         if (price == null) {
@@ -164,17 +210,20 @@ public class SubmissionValidator {
         }
         trail.pass();
         trail.priced(price);
+        return ValidationOutcome.passed(price, null);
+    }
 
+    private ValidationOutcome checkCash(Integer accountId, BigDecimal shares, BigDecimal price, SubmissionTrail trail) {
         trail.begin(ValidationRule.CASH);
-        BigDecimal orderCost = request.getQuantity().multiply(price);
-        if (!cashValidationService.validateSufficientCash(request.getAccountId(), orderCost)) {
-            BigDecimal availableCash = cashValidationService.getCashBalance(request.getAccountId());
+        BigDecimal orderCost = shares.multiply(price);
+        if (!cashValidationService.validateSufficientCash(accountId, orderCost)) {
+            BigDecimal availableCash = cashValidationService.availableCash(accountId);
             return refuse(trail,
                 String.format("Insufficient balance. Required: $%.2f, Available: $%.2f", orderCost, availableCash),
                 RejectionReason.INSUFFICIENT_CASH);
         }
         trail.pass();
-        return ValidationOutcome.passed(price);
+        return ValidationOutcome.passed(price, shares);
     }
 
     /** Fails the open check with the same code the caller is given. */
@@ -186,9 +235,10 @@ public class SubmissionValidator {
     /**
      * Whether the account may trade: trading enabled on the account and the client ACTIVE (an
      * EXPIRED client may log in but not trade). Runs after the ownership check, so the account exists.
+     * Its first read of the account, so the lock it takes also makes every later read current.
      */
     private boolean accountMayTrade(Integer accountId) {
-        return accountRepository.findById(accountId)
+        return accountRepository.findLockedById(accountId)
             .map(account -> account.isTradingEnabled() && clientMayTrade(account))
             .orElse(true);
     }

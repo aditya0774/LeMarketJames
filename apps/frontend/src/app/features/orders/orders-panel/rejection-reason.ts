@@ -2,6 +2,7 @@ const REJECTION_REASON_COPY: Record<string, string> = {
   INSUFFICIENT_CASH: 'Order rejected because your available cash is too low for this buy order.',
   INSUFFICIENT_HOLDINGS: 'Order rejected because you do not hold enough shares to sell that quantity.',
   NOT_TRADABLE: 'Order rejected because this stock is currently not tradable.',
+  INVALID_QUANTITY: 'Order rejected because it was not for a whole number of shares, or its amount was less than one share.',
   PRICE_UNAVAILABLE: 'Order rejected because a live market price was unavailable at execution time.',
   STALE_QUOTE: 'Order rejected because the market quote was too old to safely execute the trade.',
   MARKET_CLOSED: 'Order rejected because the market is currently closed for this order type.',

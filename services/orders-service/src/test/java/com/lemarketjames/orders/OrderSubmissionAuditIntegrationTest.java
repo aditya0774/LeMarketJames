@@ -106,7 +106,7 @@ class OrderSubmissionAuditIntegrationTest {
         List<AuditEventEntity> trail = trailOf(result);
 
         assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:PRICE_AVAILABLE:PASS",
-            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:CASH:PASS", "VALIDATED"), stepsOf(trail));
+            "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:CASH:PASS", "VALIDATED"), stepsOf(trail));
         AuditEventEntity submitted = trail.get(0);
         assertEquals(AuditEventType.SUBMITTED, submitted.getEventType());
         assertEquals(clientId, submitted.getClientId());
@@ -136,8 +136,8 @@ class OrderSubmissionAuditIntegrationTest {
 
         List<AuditEventEntity> trail = trailOf(result);
 
-        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"), stepsOf(trail));
-        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "HOLDINGS"),
+        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:PASS", "VALIDATED"), stepsOf(trail));
+        assertEquals(List.of("ACCOUNT_ACCESS", "ACCOUNT_STATUS", "LOCATION", "TRADABLE", "QUANTITY", "HOLDINGS"),
             trail.get(trail.size() - 1).getDetails().get("checks"));
         assertNull(trail.get(0).getDetails().get("price"), "a SELL isn't priced at placement");
     }
@@ -148,7 +148,7 @@ class OrderSubmissionAuditIntegrationTest {
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_CASH")).andReturn();
 
         List<AuditEventEntity> trail = assertRefusedTrail(result, steps("SUBMITTED", COMMON_CHECKS_PASSED,
-            "RULE_CHECKED:PRICE_AVAILABLE:PASS", "RULE_CHECKED:QUOTE_FRESH:PASS",
+            "RULE_CHECKED:PRICE_AVAILABLE:PASS", "RULE_CHECKED:QUOTE_FRESH:PASS", "RULE_CHECKED:QUANTITY:PASS",
             "RULE_CHECKED:CASH:FAIL:INSUFFICIENT_CASH"));
         // The price the order was valued at when it was refused is kept with the submission.
         assertEquals(0, new BigDecimal("250.1235").compareTo(new BigDecimal(trail.get(0).getDetails().get("price").toString())));
@@ -179,14 +179,14 @@ class OrderSubmissionAuditIntegrationTest {
     @Test
     void aSellRefusedForHoldingsLeavesItsTrailAndNoOrder() throws Exception {
         doThrow(new InsufficientHoldingsException("Insufficient holdings"))
-            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
+            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any(), any());
 
         // Refused by an exception handler, not a returned response: the trail and the ID still get out.
         MvcResult result = submit("SELL", accountId, instrumentId, 4)
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INSUFFICIENT_HOLDINGS")).andReturn();
 
         assertRefusedTrail(result, steps("SUBMITTED", COMMON_CHECKS_PASSED,
-            "RULE_CHECKED:HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"));
+            "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:FAIL:INSUFFICIENT_HOLDINGS"));
     }
 
     @Test
@@ -249,13 +249,13 @@ class OrderSubmissionAuditIntegrationTest {
     @Test
     void aCheckThatCannotCompleteStillLeavesItsTrail() {
         doThrow(new IllegalStateException("trading-service unreachable"))
-            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any());
+            .when(holdings).validateSufficientHoldings(eq(accountId), eq(username), eq(instrumentId), any(), any());
 
         // Nothing maps this failure to a response, so it surfaces from the request itself.
         assertThrows(Exception.class, () -> submit("SELL", accountId, instrumentId, 1));
 
         List<AuditEventEntity> trail = audit.findByRequestIdOrderByAuditIdAsc(onlyRequestIdOfTheCaller());
-        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:HOLDINGS:ERROR"), stepsOf(trail));
+        assertEquals(steps("SUBMITTED", COMMON_CHECKS_PASSED, "RULE_CHECKED:QUANTITY:PASS", "RULE_CHECKED:HOLDINGS:ERROR"), stepsOf(trail));
         assertEquals(0, countOrders());
     }
 

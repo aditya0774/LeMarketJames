@@ -25,12 +25,17 @@ class CashValidationServiceTest {
     
     @Mock
     private AccountRepository accountRepository;
+
+    @Mock
+    private OpenOrderReservations reservations;
     
     private CashValidationService cashValidationService;
     
     @BeforeEach
     void setUp() {
-        cashValidationService = new CashValidationService(accountRepository);
+        cashValidationService = new CashValidationService(accountRepository, reservations);
+        // No open orders unless a test says otherwise.
+        lenient().when(reservations.reservedCash(anyInt())).thenReturn(BigDecimal.ZERO);
     }
     
     /**
@@ -159,11 +164,11 @@ class CashValidationServiceTest {
     }
     
     /**
-     * Test: Get cash balance for existing account
-     * Expected: returns the correct cash balance
+     * Test: Available cash for an account with no open orders
+     * Expected: returns the cash balance
      */
     @Test
-    void testGetCashBalance_Success() {
+    void testAvailableCash_Success() {
         // Arrange
         Integer accountId = 1;
         BigDecimal expectedBalance = new BigDecimal("5000.00");
@@ -172,7 +177,7 @@ class CashValidationServiceTest {
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         
         // Act
-        BigDecimal result = cashValidationService.getCashBalance(accountId);
+        BigDecimal result = cashValidationService.availableCash(accountId);
         
         // Assert
         assertEquals(expectedBalance, result, "Should return correct cash balance");
@@ -180,18 +185,18 @@ class CashValidationServiceTest {
     }
     
     /**
-     * Test: Get cash balance for non-existent account
+     * Test: Available cash for non-existent account
      * Expected: throws IllegalArgumentException
      */
     @Test
-    void testGetCashBalance_AccountNotFound() {
+    void testAvailableCash_AccountNotFound() {
         // Arrange
         Integer accountId = 999;
         when(accountRepository.findById(accountId)).thenReturn(Optional.empty());
         
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
-            () -> cashValidationService.getCashBalance(accountId));
+            () -> cashValidationService.availableCash(accountId));
         
         assertTrue(exception.getMessage().contains("Account not found"));
     }
@@ -217,6 +222,23 @@ class CashValidationServiceTest {
         assertTrue(result, "Should handle decimal precision correctly");
     }
     
+    /**
+     * Test: Open BUY orders reserve cash (BR-05)
+     * Account has $5000.00 with $3000.00 held by open BUYs, order cost is $2500.00
+     * Expected: refused, because only $2000.00 is available, though the balance alone would cover it
+     */
+    @Test
+    void testValidateSufficientCash_OpenBuysReserveCash() {
+        AccountEntity account = createTestAccount(1, new BigDecimal("5000.00"));
+        when(accountRepository.findById(1)).thenReturn(Optional.of(account));
+        when(reservations.reservedCash(1)).thenReturn(new BigDecimal("3000.00"));
+
+        assertFalse(cashValidationService.validateSufficientCash(1, new BigDecimal("2500.00")));
+        assertTrue(cashValidationService.validateSufficientCash(1, new BigDecimal("2000.00")),
+            "Exactly the available cash is enough");
+        assertEquals(0, new BigDecimal("2000.00").compareTo(cashValidationService.availableCash(1)));
+    }
+
     /**
      * Helper method to create test account entities
      */

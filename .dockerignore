@@ -7,6 +7,6 @@ README.md
 apps
 docs
 database
-*.pdf
-*.xlsx
-*.png
+# The requirements documents and ER diagrams: not needed to build a service.
+business-requirements
+erd

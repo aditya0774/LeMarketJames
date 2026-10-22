@@ -223,6 +223,29 @@ public class HoldingsServiceTest {
     }
 
     /**
+     * BR-05: shares in open SELL orders can't be sold again. Holding 10 with 6 in open sells:
+     * selling 4 fits exactly, selling 5 does not, and the refusal says what is left and why.
+     */
+    @Test
+    public void testValidateSufficientHoldings_OpenSellsReserveShares() {
+        Integer accountId = 1;
+        String username = "alice";
+        Integer instrumentId = 1;
+        HoldingsEntity holding = new HoldingsEntity(accountId, instrumentId, new BigDecimal("10.0000"));
+        when(accountRepository.existsByAccountIdAndUsername(accountId, username)).thenReturn(true);
+        when(holdingsRepository.findByAccountIdAndInstrumentId(accountId, instrumentId))
+            .thenReturn(Optional.of(holding));
+
+        assertDoesNotThrow(() -> holdingsService.validateSufficientHoldings(
+            accountId, username, instrumentId, new BigDecimal("4"), new BigDecimal("6")));
+        InsufficientHoldingsException refused = assertThrows(InsufficientHoldingsException.class,
+            () -> holdingsService.validateSufficientHoldings(
+                accountId, username, instrumentId, new BigDecimal("5"), new BigDecimal("6")));
+        assertTrue(refused.getMessage().contains("Available: 4.0000 (6 already in open sell orders)"),
+            refused.getMessage());
+    }
+
+    /**
      * AC2: Overselling rejected - verify exception when no holdings exist
      * AC1: Unauthorized data access prevented - user owns account
      */

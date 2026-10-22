@@ -3,15 +3,20 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MostActiveStocksResponse } from '../../../shared/models/most-active-stocks.model';
 import { MOST_ACTIVE_STOCKS_REFRESH_MS, MostActiveStocksTile } from './most-active-stocks-tile';
+import { flagFor } from '../insight-flags/insight-flag.fixtures';
+import { InsightFlags } from '../insight-flags/insight-flags';
 
 const URL = '/api/v1/reports/insights/most-active-stocks';
 
 /** This week's top stocks in the C6 shape, ranked by traded value. */
 function week(stocks: MostActiveStocksResponse['stocks'] = [
-  { rank: 1, symbol: 'AAPL', tradedValue: 125000, tradeCount: 24, shareVolume: 530 },
-  { rank: 2, symbol: 'MSFT', tradedValue: 98000.5, tradeCount: 1200, shareVolume: 410.25 },
+  { rank: 1, symbol: 'AAPL', tradedValue: 125000, tradeCount: 24, shareVolume: 530, previousTradedValue: 100000, flag: flagFor(25) },
+  { rank: 2, symbol: 'MSFT', tradedValue: 98000.5, tradeCount: 1200, shareVolume: 410.25, previousTradedValue: 105000, flag: flagFor(-6.67) },
 ]): MostActiveStocksResponse {
-  return { startDate: '2026-10-12', endDate: '2026-10-14', stocks, generatedAt: '2026-10-14T14:00:00Z' };
+  return {
+    startDate: '2026-10-12', endDate: '2026-10-14', previousStartDate: '2026-10-05', previousEndDate: '2026-10-07',
+    stocks, generatedAt: '2026-10-14T14:00:00Z',
+  };
 }
 
 describe('MostActiveStocksTile', () => {
@@ -19,12 +24,14 @@ describe('MostActiveStocksTile', () => {
   let httpMock: HttpTestingController;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const cells = (row: Element) => Array.from(row.querySelectorAll('td, th')).map(c => c.textContent!.trim());
+  const cells = (row: Element) =>
+    Array.from(row.querySelectorAll('td, th')).map(c => c.textContent!.replace(/\s+/g, ' ').trim());
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MostActiveStocksTile],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // As on the dashboard, which provides the store the tile reports its flags to.
+      providers: [provideHttpClient(), provideHttpClientTesting(), InsightFlags],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -62,8 +69,28 @@ describe('MostActiveStocksTile', () => {
     expect(el().querySelector('.range')!.textContent).toContain('This week: 2026-10-12 – 2026-10-14');
     const rows = el().querySelectorAll('tbody tr');
     expect(rows).toHaveLength(2);
-    expect(cells(rows[0])).toEqual(['1', 'AAPL', '24', '530', '$125,000.00']);
-    expect(cells(rows[1])).toEqual(['2', 'MSFT', '1,200', '410.25', '$98,000.50']);
+    expect(cells(rows[0])).toEqual(['1', 'AAPL', '24', '530', '$125,000.00', '▲ Flagged +25%']);
+    expect(cells(rows[1])).toEqual(['2', 'MSFT', '1,200', '410.25', '$98,000.50', '−6.67%']);
+  });
+
+  it('compares each stock with the same days of last week, and flags a move of 25% or more', async () => {
+    create();
+    await flush();
+
+    expect(el().querySelector('.range')!.textContent).toContain('same days of last week (2026-10-05 – 2026-10-07)');
+    const [aapl, msft] = Array.from(el().querySelectorAll('tbody tr'));
+    expect(aapl.querySelector('staff-insight-flag .flag')!.classList).toContain('up');
+    expect(msft.querySelector('staff-insight-flag .flag')).toBeNull();
+    expect(msft.querySelector('.vs')!.getAttribute('title')).toBe('Same days last week: $105,000.00');
+  });
+
+  it('reports each stock to the dashboard\'s "What changed" strip', async () => {
+    create();
+    await flush();
+
+    const flags = TestBed.inject(InsightFlags);
+    expect(flags.all().map((i) => [i.key, i.flag.flagged])).toEqual([['stock-AAPL', true], ['stock-MSFT', false]]);
+    expect(flags.all()[0].comparedWith).toBe('vs 2026-10-05 – 2026-10-07');
   });
 
   it('shows the last-refreshed time', async () => {

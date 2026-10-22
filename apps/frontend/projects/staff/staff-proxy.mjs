@@ -7,7 +7,8 @@
  *   the caller's role itself.
  * - Staff hold their own session cookie, staff_jwt, so a staff and a customer session can share a
  *   browser. The services only know jwt: on the way in the staff cookie is sent as jwt and any
- *   customer jwt is dropped; on the way out sign-in's and sign-out's jwt is renamed to staff_jwt.
+ *   customer jwt is dropped; on the way out the jwt set by sign-in, sign-out and refresh is renamed
+ *   to staff_jwt.
  * - Origin is not passed on: the services accept only the trading app's origin and would refuse
  *   every staff POST with 403.
  */
@@ -73,10 +74,14 @@ export function staffProxy(host) {
   return {
     // Analyst reports and Trading Ops' surveillance alerts: staff-ops-service.
     '^/api/v1/(reports|surveillance)/': staffRoute(at(8086)),
-    // Sign-in, sign-out and "who am I": auth-service. No registration for staff.
-    '^/api/auth/(login|logout|me)(\\?|$)': staffRoute(at(8082)),
+    // Sign-in, sign-out, "who am I" and session refresh (BR-03): auth-service. No registration for staff.
+    '^/api/auth/(login|logout|me|refresh)(\\?|$)': staffRoute(at(8082)),
     // The Trading Ops reads: trade search, its client list and an order's timeline: orders-service.
     '^/api/v1/orders/(trades/search|trades/clients|[^/?]+/timeline)(\\?|$)': staffRoute(at(8085)),
+    // Archived audit events (BR-14): orders-service.
+    '^/api/v1/audit/archive(\\?|$)': staffRoute(at(8085)),
+    // Trading Ops' view and change of a client's account status (BR-03): auth-service.
+    '^/api/v1/clients/[0-9]+/status(\\?|$)': staffRoute(at(8082)),
     // Any other /api path does not exist for staff; returning false makes the dev server answer 404.
     '^/api/': { target: at(8086), bypass: () => false },
   };

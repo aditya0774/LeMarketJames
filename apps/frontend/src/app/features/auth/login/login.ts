@@ -5,6 +5,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { INACTIVE_REASON, isAccountInactive } from '../../../core/auth/account-inactive';
 import { Brand } from '../../../shared/components/brand/brand';
+import { sessionEndMessage } from '@lemarket/shared-ui';
+import { ACCOUNT_CLOSED_MESSAGE, ACCOUNT_CLOSED_REASON } from '../../../core/account/account-closure.service';
 
 /** Shown, with the heading "Account not active", for an account the firm has closed or suspended (C6). */
 export const ACCOUNT_INACTIVE_MESSAGE = 'This account is no longer active. Please contact the firm.';
@@ -48,8 +50,18 @@ export class Login {
       password: ['', Validators.required],
     });
     // Sent here by accountInactiveInterceptor after the account was cut off mid-session.
-    if (route.snapshot.queryParamMap.get('reason') === INACTIVE_REASON) {
+    const reason = route.snapshot.queryParamMap.get('reason');
+    if (reason === INACTIVE_REASON) {
       this.showAccountInactive();
+    }
+    // Sent here by the inactivity timeout (BR-03, SessionTimeout) when the session ended.
+    const ended = sessionEndMessage(reason);
+    if (ended) {
+      this.showAlert('info', ended.heading, ended.message);
+    }
+    // Sent here by the account page after the client closed their own account (BR-03).
+    if (reason === ACCOUNT_CLOSED_REASON) {
+      this.showAlert('info', ACCOUNT_CLOSED_MESSAGE.heading, ACCOUNT_CLOSED_MESSAGE.message);
     }
   }
 

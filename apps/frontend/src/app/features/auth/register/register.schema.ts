@@ -2,6 +2,11 @@ import { z } from 'zod';
 
 /**
  * Registration Form Schema
+ *
+ * The server is authoritative: auth-service applies the same rules, with the same messages, to
+ * every registration (RegistrationRules.java, BR-01), so a caller that skips this form gets them
+ * too. This schema mirrors them so the user sees a mistake before anything is sent. Change both
+ * together.
  * 
  * This file defines all validation rules for the registration form using Zod schema validation.
  * Zod provides a declarative approach to data validation, allowing us to define both the shape
@@ -52,6 +57,20 @@ const zipPattern = /^\d{5}$/;
 
 // One @ symbol, no spaces, and must end in .com.
 const emailPattern = /^[^\s@]+@[^\s@]+\.com$/i;
+
+/**
+ * The password rules, one line each: the form ticks them off as the user types, and the schema
+ * below checks the same list on submit, so the two can't disagree.
+ */
+export const PASSWORD_RULES: readonly { readonly text: string; readonly test: (password: string) => boolean }[] = [
+  { text: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { text: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
+  { text: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
+  { text: 'One special character, like ! or #', test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
+const PASSWORD_MESSAGE =
+  'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character.';
 
 // This helper computes age in whole years from a yyyy-mm-dd date string.
 function calculateAge(dateOfBirth: string): number {
@@ -189,18 +208,11 @@ export const registerSchema = z
       .min(1, 'Phone is required.')
       .regex(phonePattern, 'Phone number must be 10 digits.'),
 
-    // Individual .regex() calls (rather than one combined check) so Zod can point out
-    // exactly which requirement failed, using the same combined message as before.
+    // One combined message, as the server sends; the checklist under the field shows which rule is missing.
     password: z
       .string()
       .min(1, 'Password is required.')
-      .min(8, 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character.')
-      .regex(/[A-Z]/, 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character.')
-      .regex(/[a-z]/, 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character.')
-      .regex(
-        /[^A-Za-z0-9]/,
-        'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character.'
-      ),
+      .refine((value) => PASSWORD_RULES.every((rule) => rule.test(value)), { message: PASSWORD_MESSAGE }),
 
     confirmPassword: z.string().min(1, 'Confirm password is required.'),
   })

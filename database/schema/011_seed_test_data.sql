@@ -162,6 +162,8 @@ BEGIN
                                          THEN jsonb_build_array('ACCOUNT', 'TRADABLE', 'CASH')
                                          ELSE jsonb_build_array('ACCOUNT', 'TRADABLE', 'HOLDINGS') END)
                WHEN 'ACCEPTED'  THEN '{}'::jsonb
+               WHEN 'PENDING'   THEN '{}'::jsonb
+               WHEN 'DELAYED'   THEN jsonb_build_object('reason', 'MARKET_CLOSED')
                WHEN 'FILLED'    THEN jsonb_build_object('quantity', o.quantity, 'price', o.price_per_unit)
                WHEN 'SETTLED'   THEN jsonb_build_object('cashDelta',
                                          CASE WHEN o.order_type = 'BUY' THEN -1 ELSE 1 END * o.quantity * o.price_per_unit,
@@ -172,12 +174,15 @@ BEGIN
     FROM orders o
     JOIN accounts a ON a.account_id = o.account_id
     JOIN clients c  ON c.client_id = a.client_id
-    JOIN (VALUES ('SUBMITTED', 0), ('VALIDATED', 1), ('ACCEPTED', 2), ('FILLED', 3), ('SETTLED', 4), ('REJECTED', 1))
+    JOIN (VALUES ('SUBMITTED', 0), ('VALIDATED', 1), ('ACCEPTED', 2), ('FILLED', 3), ('SETTLED', 4), ('REJECTED', 1),
+                 ('PENDING', 3), ('DELAYED', 3))
          AS s (action, step)
       ON (s.action = 'SUBMITTED')
       OR (s.action = 'VALIDATED' AND o.order_status <> 'REJECTED')
       OR (s.action = 'ACCEPTED'  AND o.order_status IN ('ACCEPTED', 'PENDING', 'DELAYED', 'FILLED'))
       OR (s.action IN ('FILLED', 'SETTLED') AND o.order_status = 'FILLED')
       OR (s.action = 'REJECTED'  AND o.order_status = 'REJECTED')
+      -- An open seeded order ends on the step it is waiting in, as the services would record it.
+      OR (s.action IN ('PENDING', 'DELAYED') AND o.order_status = s.action)
     WHERE c.username LIKE 'seed\_%';
 END $$;

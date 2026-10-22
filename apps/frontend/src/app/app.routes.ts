@@ -11,6 +11,7 @@ import { SimulatorPage } from './features/learn/simulator/simulator-page';
 import { TradePage } from './features/trade/trade-page';
 import { HoldingsListComponent } from './features/holdings/holdings-list/holdings-list.component';
 import { ByStockDetailComponent } from './features/holdings/by-stock-report/by-stock-detail.component';
+import { AccountPage } from './features/account/account-page';
 import { AppShell } from './shared/layout/app-shell/app-shell';
 import { authGuard } from './core/auth/auth.guard';
 import { clientGuard } from './core/auth/client.guard';
@@ -35,6 +36,8 @@ export const routes: Routes = [
       { path: 'trade', component: TradePage, canActivate: [clientGuard] },
       { path: 'holdings', component: HoldingsListComponent, canActivate: [clientGuard] },
       { path: 'holdings/:symbol', component: ByStockDetailComponent, canActivate: [clientGuard] },
+      // Opened from the account menu; holds "Close my account" (BR-03).
+      { path: 'account', component: AccountPage, canActivate: [clientGuard] },
       { path: 'access-denied', loadComponent: () => import('./features/trade-search/access-denied').then(m => m.AccessDenied) },
     ],
   },

@@ -4,9 +4,11 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { ACCOUNT_CLOSED_MESSAGE } from '../../../core/account/account-closure.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Auth } from '../../../core/auth/auth';
 import { ACCOUNT_INACTIVE_MESSAGE, Login } from './login';
+import { SESSION_END_MESSAGES } from '@lemarket/shared-ui';
 
 describe('Login', () => {
   let component: Login;
@@ -210,5 +212,26 @@ describe('Login opened after the session was cut off', () => {
 
   it('shows no message on a plain visit', async () => {
     expect((await open('/login')).querySelector('[role="alert"]')).toBeNull();
+  });
+
+  // BR-03: the inactivity timeout signs an idle session out to ?reason=timeout, and one that hit
+  // its time limit to ?reason=expired.
+  for (const reason of ['timeout', 'expired'] as const) {
+    it('says why the session ended for ?reason=' + reason, async () => {
+      const alert = (await open('/login?reason=' + reason)).querySelector('[role="alert"]')!;
+
+      expect(alert.classList).toContain('info');
+      expect(alert.querySelector('b')!.textContent).toBe(SESSION_END_MESSAGES[reason].heading);
+      expect(alert.textContent).toContain(SESSION_END_MESSAGES[reason].message);
+    });
+  }
+
+  // BR-03: the account page sends a client who closed their own account here with ?reason=closed.
+  it('confirms a closed account for ?reason=closed', async () => {
+    const alert = (await open('/login?reason=closed')).querySelector('[role="alert"]')!;
+
+    expect(alert.classList).toContain('info');
+    expect(alert.querySelector('b')!.textContent).toBe(ACCOUNT_CLOSED_MESSAGE.heading);
+    expect(alert.textContent).toContain(ACCOUNT_CLOSED_MESSAGE.message);
   });
 });

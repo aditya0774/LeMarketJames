@@ -35,6 +35,10 @@ const RUNS: SeededRun[] = [
   { name: `${PREFIX} failed`, status: 'FAILED', readyAt: null, failureReason: 'Source data missing (E2E)' },
 ];
 
+// BR-16: the ready run has a file, as the Monthly trading summary's runs do. Removed with its run.
+const FILE_NAME = 'e2e-monthly-trading-summary.csv';
+const FILE_BODY = 'symbol,segment,trades,buys,sells,shares,gross_amount_usd\r\nAAPL,RETAIL,1,1,0,5,1137.75\r\n';
+
 // The tests share the runs written once below, and one of them changes a run: in one worker, in
 // order, or another worker's cleanup would delete the runs while a test still reads them.
 test.describe.configure({ mode: 'serial' });
@@ -53,6 +57,10 @@ test.beforeAll(async () => {
          VALUES ($1, $2, $3, $4, $5, $4, $6, $7)`,
         [run.name, runDate, run.status, SCHEDULED_FOR, READY_BY, run.readyAt, run.failureReason]);
     }
+    await db.query(
+      `INSERT INTO report_outputs (run_id, file_name, content_type, body)
+       SELECT run_id, $2, 'text/csv', $3 FROM report_runs WHERE report_name = $1`,
+      [RUNS[0].name, FILE_NAME, FILE_BODY]);
   } finally { await db.end(); }
 });
 
@@ -94,8 +102,9 @@ test('LMKT-45 AC2/AC3: the list shows each run with its status, ready time and f
     expect(run, `${seeded.name} is in the API's list`).toBeTruthy();
     // An allowlist: nothing beyond the C6 fields, so nothing that could identify a client.
     expect(Object.keys(run).sort()).toEqual(
-      ['failureReason', 'id', 'name', 'readyAt', 'readyBy', 'runDate', 'scheduledFor', 'status']);
-    expect(run).toMatchObject({ runDate, status: seeded.status, failureReason: seeded.failureReason });
+      ['failureReason', 'id', 'name', 'outputFileName', 'readyAt', 'readyBy', 'runDate', 'scheduledFor', 'status']);
+    expect(run).toMatchObject({ runDate, status: seeded.status, failureReason: seeded.failureReason,
+      outputFileName: seeded === RUNS[0] ? FILE_NAME : null });
     // Instants are compared as instants, so the API may write seconds or fractions either way.
     expect(run.readyAt === null ? null : Date.parse(run.readyAt))
       .toBe(seeded.readyAt === null ? null : Date.parse(seeded.readyAt));
@@ -124,6 +133,22 @@ test('LMKT-45 AC2/AC3: the list shows each run with its status, ready time and f
   await expect(failed.locator('.status-badge')).toHaveText('Failed');
   await expect(failed.locator('.failure-reason')).toHaveText('Source data missing (E2E)');
   await expect(failed.locator('.ready-time')).toHaveText('—');
+});
+
+test("BR-16: a run's file downloads from its row, through the staff app, and only that run has one", async ({ page }) => {
+  await openList(page);
+  await expect(row(page, `${PREFIX} failed`).locator('a.download')).toHaveCount(0);
+
+  const link = row(page, `${PREFIX} ready`).getByRole('link', { name: `Download ${FILE_NAME}` });
+  await expect(link).toHaveText('Download CSV');
+  const [download] = await Promise.all([page.waitForEvent('download'), link.click()]);
+
+  expect(download.suggestedFilename()).toBe(FILE_NAME);
+  const chunks: Buffer[] = [];
+  for await (const chunk of (await download.createReadStream())) chunks.push(chunk as Buffer);
+  expect(Buffer.concat(chunks).toString('utf8')).toBe(FILE_BODY);
+  // Through the staff app's origin, which forwards the analyst's session like any other report call.
+  expect(new URL(download.url()).origin).toBe(new URL(page.url()).origin);
 });
 
 test('LMKT-45: Refresh asks the server again and shows a run that changed meanwhile', async ({ page }) => {

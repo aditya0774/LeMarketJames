@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Disposable Jenkins stack only. The HTTP requests traverse the frontend's Nginx -> services.
 set -euo pipefail
+
+# The web apps use a self-signed certificate (BR-02), so curl accepts it.
+curl() { command curl --insecure "$@"; }
 if docker compose version >/dev/null 2>&1; then
     compose() { docker compose "$@"; }
 else
     compose() { docker-compose "$@"; }
 fi
-base=http://localhost:4200
+base=https://localhost:4200
 username="sellci$(date +%s)"
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
@@ -14,7 +17,7 @@ trap 'rm -rf -- "$scratch"' EXIT
 # Keep credentials out of shell tracing, including when Jenkins invokes this script.
 set +x
 curl --fail --silent --show-error "$base/api/auth/register" -H 'Content-Type: application/json' \
-    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Sell CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":500,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"5551234567\",\"termsAccepted\":true}" >/dev/null
+    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Sell CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":5000,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"(555) 123-4567\",\"termsAccepted\":true}" >/dev/null
 curl --fail --silent --show-error "$base/api/auth/login" -c "$scratch/cookies" -H 'Content-Type: application/json' \
     --data "{\"username\":\"$username@example.com\",\"password\":\"Pass123!\"}" > "$scratch/login.json"
 account_id=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).accountId' "$scratch/login.json")

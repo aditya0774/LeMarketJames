@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -55,6 +56,11 @@ class ActiveClientTrendControllerTest {
         return new ActiveClientTrendResponse(LocalDate.parse("2026-09-15"), LocalDate.parse("2026-09-16"),
                 List.of(new ActiveClientTrendResponse.DayCount(LocalDate.parse("2026-09-15"), 12),
                         new ActiveClientTrendResponse.DayCount(LocalDate.parse("2026-09-16"), 0)),
+                new ActiveClientTrendResponse.WeekAverage(LocalDate.parse("2026-09-09"), LocalDate.parse("2026-09-15"),
+                        new BigDecimal("6.00")),
+                new ActiveClientTrendResponse.WeekAverage(LocalDate.parse("2026-09-02"), LocalDate.parse("2026-09-08"),
+                        new BigDecimal("4.00")),
+                new InsightFlag(true, new BigDecimal("50.00"), InsightFlag.Direction.UP, new BigDecimal("25")),
                 Instant.parse("2026-09-16T14:00:00Z"));
     }
 
@@ -96,6 +102,10 @@ class ActiveClientTrendControllerTest {
                 .andExpect(jsonPath("$.days[0].date").value("2026-09-15"))
                 .andExpect(jsonPath("$.days[0].activeClients").value(12))
                 .andExpect(jsonPath("$.days[1].activeClients").value(0))
+                .andExpect(jsonPath("$.lastWeek.averageActiveClients").value(6.00))
+                .andExpect(jsonPath("$.weekBefore.startDate").value("2026-09-02"))
+                .andExpect(jsonPath("$.flag.flagged").value(true))
+                .andExpect(jsonPath("$.flag.direction").value("UP"))
                 .andExpect(jsonPath("$.generatedAt").value("2026-09-16T14:00:00Z"));
     }
 

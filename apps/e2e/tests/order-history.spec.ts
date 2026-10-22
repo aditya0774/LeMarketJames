@@ -1,5 +1,5 @@
 import { test as base, expect, Page } from '@playwright/test';
-import { connectDatabase } from './support/database';
+import { connectDatabase, removeTestClients } from './support/database';
 import { openTab } from './support/nav';
 import { loginViaUi, newUser, registerViaApi } from './support/users';
 
@@ -47,12 +47,7 @@ const test = base.extend<{ seededAccount: number }>({
       await use(accountId);
     } finally {
       // Remove only this test's registered client. Never truncate the shared test database.
-      await db.query(`DELETE FROM orders WHERE account_id IN
-        (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)`, [user.username]);
-      await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-      await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-      await db.query('DELETE FROM clients WHERE username=$1', [user.username]);
-      await db.end();
+      try { await removeTestClients(user.username); } finally { await db.end(); }
     }
   }, { auto: true }],
 });

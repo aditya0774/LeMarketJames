@@ -14,10 +14,10 @@ The two features share the service, not a connection pool. Reports read through 
 Read these before adding a report. They apply to all of them.
 
 1. **Path and access.** Every report lives under `/api/v1/reports/`. [SecurityConfig](src/main/java/com/lemarketjames/config/SecurityConfig.java) lets only `ANALYST` in ([C7](../../contracts/C7-roles.md)) and denies every path outside that prefix and the surveillance one, so a new report needs no security change. It must also live in `com.lemarketjames.reports`, so it reads through the reports' pool.
-2. **One data source.** A report reads only the `reporting_trades` view ([010](../../database/schema/010_shared_contracts.sql)). Never query `orders`, `accounts`, `clients` or any other table. There are two exceptions. The shared security filter in `libs/common` reads the caller's own `staff_users` row on every request, to refuse a deactivated login ([C7](../../contracts/C7-roles.md)). The [overnight reports](#overnight-reports-lmkt-45) list reads `report_runs`, which records report runs, not trades. A *trade* is a filled order, one row of that view. There are no fees: an amount is the view's `gross_amount` (quantity × price).
+2. **One data source.** A report reads only the `reporting_trades` view ([010](../../database/schema/010_shared_contracts.sql)), or `reporting_daily_trades`, the nightly summary built from that view and nothing else ([Read side](#read-side-br-16)). Never query `orders`, `accounts`, `clients` or any other table. There are two exceptions. The shared security filter in `libs/common` reads the caller's own `staff_users` row on every request, to refuse a deactivated login ([C7](../../contracts/C7-roles.md)). The [overnight reports](#overnight-reports-lmkt-45) list reads `report_runs` and `report_outputs`, which record report runs and their files, not trades. A *trade* is a filled order, one row of that view. There are no fees: an amount is the view's `gross_amount` (quantity × price).
 3. **Aggregates only.** A response holds totals, counts and averages over groups of trades, never a single trade and never anything that identifies an individual client. That rules out `client_id`, `account_id` and `order_id`, even though the view has them. Grouping by `segment`, `symbol`, side or time period is fine.
 4. **Report time.** Days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](../../contracts/C5-config.md)), while `filled_at` and `submitted_at` are stored in UTC. Take every date range from [ReportCalendar](src/main/java/com/lemarketjames/reports/period/ReportCalendar.java): it returns half-open UTC ranges (`filled_at >= start AND filled_at < end`). Don't convert time zones anywhere else. Weeks run Monday to Sunday.
-5. **Read only.** A report never writes. The safeguards below enforce it, so a write fails instead of going unnoticed. The reports' one writer is the overnight scheduler's [ReportRunWriter](src/main/java/com/lemarketjames/reports/overnight/ReportRunWriter.java): it writes only `report_runs`, and only by making its own transactions read-write. Never copy that into a report.
+5. **Read only.** A report never writes. The safeguards below enforce it, so a write fails instead of going unnoticed. The reports' only writers are the overnight scheduler's: [ReportRunWriter](src/main/java/com/lemarketjames/reports/overnight/ReportRunWriter.java) writes `report_runs` and `report_outputs`, and [DailySummaryWriter](src/main/java/com/lemarketjames/reports/overnight/DailySummaryWriter.java) the nightly summary (`reporting_daily_trades`, `reporting_summary_state`), each only by making its own transactions read-write. Never copy that into a report.
 
 ## Read-side safeguards
 
@@ -37,6 +37,28 @@ What the load test taught us, so a new report doesn't undo it:
 - **Group in SQL.** Return one row per group, never the trades themselves. The trades report used to load every trade in its range and count in Java, which held the database long enough to slow order execution.
 - **The pool is one connection on purpose.** Report queries are CPU-bound in PostgreSQL, so each busy connection takes a core from order execution. The reasoning and the measurements are next to the setting in [application.properties](src/main/resources/application.properties).
 
+## Read side (BR-16)
+
+The long-range reports read a summary built overnight instead of a year of live orders, so they never
+compete with trading for the database during the day, however many analysts run them.
+
+- **The summary.** `reporting_daily_trades` ([030](../../database/schema/030_reporting_summary.sql)) holds one row per day (in the reports time zone), stock, client segment and side: the trades' count, shares and gross amount. A year is a few thousand rows however many trades there were. `reporting_summary_state` records, per time zone, the last day it covers; every earlier day is covered too, including days with no trades.
+- **Who builds it.** Each night the Monthly trading summary ([overnight reports](#overnight-reports-lmkt-45)) calls [DailySummaryWriter](src/main/java/com/lemarketjames/reports/overnight/DailySummaryWriter.java) first: it rebuilds every day not summarized yet through the run date, from the `reporting_trades` view only, in one transaction with its own statement timeout (`reporting.overnight.statement-timeout-ms`; the first night summarizes all history). The run date itself is always rebuilt, so running a night twice changes nothing.
+- **Why it stays right.** Trades are final ([029](../../database/schema/029_trade_record_lockdown.sql)) and a fill is stamped with the moment it happens, so no trade appears later on a day already summarized. A different `lmj.reports.time-zone` has no summary until the next night builds it; until then its reports read live.
+- **How a report reads it.** [ReadSplit](src/main/java/com/lemarketjames/reports/summary/ReadSplit.java) splits the requested days: up to the summary's last day from [DailyTradeSummary](src/main/java/com/lemarketjames/reports/summary/DailyTradeSummary.java), the rest (today, and any night not summarized yet) from the view as before, then the two are added up per period or stock (a week on both sides arrives twice). No summary yet means every day is live.
+
+| Endpoint | Reads | Why |
+|---|---|---|
+| `GET /api/v1/reports/trades` | Summary, plus the view for days after it | Long range: a year by default, in any period size |
+| `GET /api/v1/reports/trades-by-stock` | Summary, plus the view for days after it | Long range, whatever dates the analyst picks |
+| `GET /api/v1/reports/activity`, `/activity/comparison` | The view | Counts distinct clients, which daily totals can't add up |
+| `GET /api/v1/reports/insights/*` | The view | A few weeks at most, mostly today and this week; the active-client trend counts distinct clients |
+| `GET /api/v1/reports/overnight`, `/overnight/{runId}/output` | `report_runs`, `report_outputs` | About runs, not trades |
+| The Monthly trading summary (overnight) | Summary only | Built right after the summary is refreshed |
+
+The [report load test](#read-side-safeguards) (LMKT-44) runs these same long-range calls; its results with
+and without the summary are in [LMKT-44-performance.md](LMKT-44-performance.md).
+
 ## Tests
 
 | Test | Checks | Runs |
@@ -48,16 +70,19 @@ What the load test taught us, so a new report doesn't undo it:
 | [ActiveClientTrendControllerTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendControllerTest.java) | The active-client trend's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`), response shape and that no identifier is returned | same |
 | [ActiveClientTrendServiceTest](src/test/java/com/lemarketjames/reports/insight/ActiveClientTrendServiceTest.java) | The 30-day window ending today, zero-filled quiet days, local-day UTC ranges, daylight-saving and late-evening boundaries | same |
 | [MostActiveStocksControllerTest](src/test/java/com/lemarketjames/reports/insight/MostActiveStocksControllerTest.java) | The most-active-stocks insight's access (`401`, every role but `ANALYST` gets `403`, including `CLIENT` and `TRADING_OPS`) and response shape | same |
-| [MostActiveStocksServiceTest](src/test/java/com/lemarketjames/reports/insight/MostActiveStocksServiceTest.java) | The current Monday-to-today week in the reports time zone, the ranking and the refresh time | same |
+| [MostActiveStocksServiceTest](src/test/java/com/lemarketjames/reports/insight/MostActiveStocksServiceTest.java) | The current Monday-to-today week in the reports time zone, the ranking, the refresh time, and each stock against the same days of last week | same |
+| [InsightFlagRuleTest](src/test/java/com/lemarketjames/reports/insight/InsightFlagRuleTest.java) | The BR-17 flag: a move of at least the setting either way, from nothing, rounding, and a setting of zero or less refused | same |
 | [OvernightRunnerTest](src/test/java/com/lemarketjames/reports/overnight/OvernightRunnerTest.java) | A night's runs: every overnight report for the trading day before, finished with its time (READY or LATE is the writer's call), FAILED with its reason, one failure not stopping the next, no second run a night, LATE at the ready-by time, and the startup catch-up (run now, record as missed, or check last night) | same |
 | [OvernightScheduleConfigTest](src/test/java/com/lemarketjames/reports/overnight/OvernightScheduleConfigTest.java) | Runs at 02:00 New York time, outside trading hours, and the deadline at 07:00; summer, winter and both daylight-saving nights; the configured times; refusing a run time not before the ready-by time | same |
 | [OvernightReportsControllerTest](src/test/java/com/lemarketjames/reports/overnight/OvernightReportsControllerTest.java) | The overnight list's access (`401`, every role but `ANALYST` gets `403`) and its C6 shape, nulls included, with no client fields | same |
-| [OvernightReportsServiceTest](src/test/java/com/lemarketjames/reports/overnight/OvernightReportsServiceTest.java) | The 30-night window in the reports time zone, the order, and `readyAt`/`failureReason` only where C6 allows them | same |
+| [OvernightReportsServiceTest](src/test/java/com/lemarketjames/reports/overnight/OvernightReportsServiceTest.java) | The 30-night window in the reports time zone, the order, and `readyAt`/`failureReason`/`outputFileName` only where C6 allows them | same |
+| [MonthlyTradingSummaryJobTest](src/test/java/com/lemarketjames/reports/overnight/MonthlyTradingSummaryJobTest.java) | The overnight job refreshes the summary first, then writes the month so far as CSV (name, header, cents, quoting, formula defusing); the failure switch | same |
+| [ReadSplitTest](src/test/java/com/lemarketjames/reports/summary/ReadSplitTest.java), and the split tests in [TradeReportServiceTest](src/test/java/com/lemarketjames/reports/service/TradeReportServiceTest.java) and [TradesReportServiceTest](src/test/java/com/lemarketjames/reports/TradesReportServiceTest.java) | Which days come from the summary and which live, and that a period or stock on both sides is added up once | same |
 | [ReadSideSafeguardsIntegrationTest](src/test/java/com/lemarketjames/ReadSideSafeguardsIntegrationTest.java) | The three safeguards on the reports' pool, and that the ordinary pool has none of them, on a real PostgreSQL | Jenkins' integration stage; locally, the command in its Javadoc |
-| [OvernightRunsIntegrationTest](src/test/java/com/lemarketjames/reports/overnight/OvernightRunsIntegrationTest.java) | On a real PostgreSQL: the run writer gets past the read-only default, a report runs once a night, READY by the ready-by time and LATE after it, a run only moves forward, a missed night is recorded once and an interrupted run is failed, the stub reads the real view, and every other write is still refused | same as the safeguards test |
+| [OvernightRunsIntegrationTest](src/test/java/com/lemarketjames/reports/overnight/OvernightRunsIntegrationTest.java) | On a real PostgreSQL: the run writer gets past the read-only default, a report runs once a night, READY by the ready-by time and LATE after it, a run only moves forward, a missed night is recorded once and an interrupted run is failed, a run's file is stored with its finish, the nightly summary equals the live view for the days it covers, and every other write is still refused | same as the safeguards test |
 | [StaffOpsServiceApplicationTest](src/test/java/com/lemarketjames/StaffOpsServiceApplicationTest.java) | Reports and surveillance get separate pools | same |
-| [SurveillanceFlowTest](src/test/java/com/lemarketjames/surveillance/SurveillanceFlowTest.java) and the listener tests | Events become alerts, stored once, and only `TRADING_OPS` may read them | same |
-| [staff-overnight-reports.spec.ts](../../apps/e2e/tests-staff/staff-overnight-reports.spec.ts) | Overnight reports through the real staff app and service: runs written into `report_runs` show as Ready, Late and Failed with their times and reason, Refresh picks up a change, and signed-out visitors and Trading Ops are refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins (`E2E_ALLOW_DATABASE_SEED=true` and the `PG*` variables) |
+| [SurveillanceFlowTest](src/test/java/com/lemarketjames/surveillance/SurveillanceFlowTest.java) and the listener tests | Events become alerts, stored once, and only `TRADING_OPS` may read them, narrowed by reason and UTC days, newest 100 | same |
+| [staff-overnight-reports.spec.ts](../../apps/e2e/tests-staff/staff-overnight-reports.spec.ts) | Overnight reports through the real staff app and service: runs written into `report_runs` show as Ready, Late and Failed with their times and reason, a run's file downloads from its row (BR-16), Refresh picks up a change, and signed-out visitors and Trading Ops are refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins (`E2E_ALLOW_DATABASE_SEED=true` and the `PG*` variables) |
 | [staff-most-active-stocks.spec.ts](../../apps/e2e/tests-staff/staff-most-active-stocks.spec.ts) | The most-active-stocks tile through the real staff app and service: this week's top five by traded value against `reporting_trades`, the refresh time, a new trade showing after Refresh, and signed-out visitors, clients and Trading Ops refused | `cd apps/e2e && npm run test:staff`, with database access as in Jenkins |
 | [reporting-access.spec.ts](../../apps/e2e/tests/reporting-access.spec.ts) | The same access rules on the running service, with the seed logins | `cd apps/e2e && npm test` |
 | [report-load.spec.ts](../../apps/e2e/load/report-load.spec.ts) | Order confirmations stay on target while reports run (LMKT-44) | Jenkins' "Run report load test" stage; locally, `cd apps/e2e && npm run test:load` against a running stack |
@@ -123,6 +148,21 @@ response includes the week dates, rank, symbol, trade count, share volume, trade
 `generatedAt` refresh time. Only `ANALYST` may call it; the shared reports security rule returns
 `401` for missing authentication and `403` for `CLIENT`, `TRADING_OPS`, and every other role.
 
+## Insight flags (BR-17)
+
+Each insight says whether it moved enough to be flagged: by `lmj.reports.insight-flag-percent`
+([C5](../../contracts/C5-config.md); default in `PlatformSettings.Reports`) or more of the period it is compared with.
+[InsightFlagRule](src/main/java/com/lemarketjames/reports/insight/InsightFlagRule.java) is the one
+rule; each service only chooses what to compare:
+
+| Insight | Flags | Against |
+|---|---|---|
+| Volume, and volume compare | share volume | the period before, or the range the analyst chose |
+| Most active stocks | each stock's traded value this week so far | the same days of last week (one more query, for the five symbols only) |
+| Active-client trend | the last seven whole days' daily average | the seven days before, read from the 30 days already counted (no extra query) |
+
+The response shape is in [C6](../../contracts/C6-api.md#insight-flags).
+
 ## Overnight reports (LMKT-45)
 
 Heavy reports run overnight so they are ready in the morning without slowing anything down
@@ -132,26 +172,28 @@ the staff app's Analyst dashboard.
 
 | Piece | Does |
 |---|---|
-| `OvernightReportJob` | One overnight report. Every Spring bean of this type runs each night; a real report joins by adding a bean. Today the only one is `StubOvernightReportJob`. |
+| `OvernightReportJob` | One overnight report. Every Spring bean of this type runs each night; a report joins by adding a bean. It may return a file (`ReportOutput`), stored with the run. Today the only one is `MonthlyTradingSummaryJob` (BR-16). |
 | `OvernightScheduleConfig` + `DailyTrigger` | Two triggers a night in the reports time zone, from C5: `lmj.reports.overnight-run-time` (02:00) starts the runs, `lmj.reports.ready-by` (07:00) is the deadline. The service refuses to start unless the run time is before the ready-by time. |
 | `OvernightRunner` | A night's runs: schedules one run per report for the trading day before, then runs them one after another (the pool is small), and records each as READY, LATE or FAILED. At the deadline it marks LATE every run still waiting or running; those carry on. |
-| `ReportRunWriter` | The reports' only writer, through their pool, to `report_runs` ([023](../../database/schema/023_report_runs.sql)) only (rule 5). |
-| `OvernightReportsService` + controller | The list: the last 30 nights, most recent first. |
+| `ReportRunWriter` | Writes `report_runs` ([023](../../database/schema/023_report_runs.sql)) and, in the same transaction as a finish, the run's file in `report_outputs` ([030](../../database/schema/030_reporting_summary.sql)), through the reports' pool (rule 5). |
+| `MonthlyTradingSummaryJob` + `DailySummaryWriter` | The Monthly trading summary: refreshes the [nightly summary](#read-side-br-16), then writes the month so far (the 1st through the run date) as CSV per stock and client segment, money in USD (`MonthlySummaryCsv`). |
+| `OvernightReportsService` + controller | The list: the last 30 nights, most recent first, each with its file's name; and `GET /api/v1/reports/overnight/{runId}/output`, the file itself as an attachment. The staff app's list has a Download CSV link per file. |
 
 - **Once a night.** `UNIQUE (report_name, run_date)` means a restart or a second trigger never runs a report twice for the same night.
 - **Failures.** There are no notifications, so a failure is shown only in the list. A report that throws is FAILED with its exception's message as the reason (its kind if it has none, never a stack trace; the stack trace goes to the log). 
 - **Late.** A run not ready by the ready-by time is LATE, not FAILED: at that time a waiting or running run becomes LATE and carries on, and a run that finishes after it is LATE with the time it finished. A LATE run that then throws becomes FAILED. A run only moves forward, and a finished run never changes again.
-- **The stub.** `StubOvernightReportJob` counts the run date's trades from `reporting_trades`, the way a real report reads (rules 2 to 4), and logs the count. The seed data already has trades on many days, so it needs no seeding of its own.
+- **The monthly summary.** `MonthlyTradingSummaryJob` replaced LMKT-45's stub. It reads trades only from `reporting_trades`, through the summary it has just refreshed (rules 2 to 4), and writes aggregates only: no client, account or order identifier (rule 3). The seed data already has trades on many days, so it needs no seeding of its own.
 - **Daylight saving.** The triggers are not cron: cron skips a time the clocks jump over, and 02:00 does not exist in New York on the night clocks go forward. `DailyTrigger` takes times from `ReportCalendar.at`, so that night's run is at 03:00 instead of not at all, and the night clocks go back still has one run.
 - **Startup catch-up.** So the list never just leaves a night out, `OvernightRunner.catchUp` runs once when the scheduler starts. It first fails, as interrupted, every run a previous process left unfinished. Then it looks at the most recent night: if its run time has passed but its ready-by time has not (a restart at 03:00), the missing reports run now; if the ready-by time has passed too (a start at 15:00), they are not run during trading hours but recorded as FAILED with "Did not run". Only the most recent night is checked. Both test profiles (`postgres-test` and the H2 default) turn the scheduler off, so tests never write runs.
-- **Not covered yet.** Real heavy reports will need their own `SET LOCAL statement_timeout` above the 5-second read-side limit; decide the limit with the first one.
+- **Statement timeout.** The summary refresh sets its own `SET LOCAL statement_timeout` (`reporting.overnight.statement-timeout-ms`, 5 minutes) in place of the 5-second daytime limit, for its transaction only: the first night summarizes all history.
 
 Two technical switches in [application.properties](src/main/resources/application.properties):
 
 | Setting | Default | Use |
 |---|---|---|
 | `REPORTING_OVERNIGHT_ENABLED` | `true` | `false` turns the scheduler off on an instance that should only serve reports |
-| `REPORTING_OVERNIGHT_STUB_FAILWITH` | blank | Makes the stub fail with this message, to show a failed run on a running stack |
+| `REPORTING_OVERNIGHT_FAILWITH` | blank | Makes the overnight job fail with this message, to show a failed run on a running stack |
+| `REPORTING_OVERNIGHT_QUERY_TIMEOUT_MS` | `300000` | The summary refresh's statement timeout |
 
 To see a run without waiting for 2 a.m., start the service with `LMJ_REPORTS_OVERNIGHTRUNTIME` a
 minute or two ahead (New York time, e.g. `14:05`) and `LMJ_REPORTS_READYBY` after it. Open
@@ -166,5 +208,7 @@ group's committed position carried over) and stores at most one alert per order 
 `order_alerts` ([018](../../database/schema/018_event_consumers.sql)). It listens only when
 `LMJ_EVENTS_CONSUMER=kafka` ([C5](../../contracts/C5-config.md#order-events)). What counts as a large order is
 `lmj.surveillance.large-order-quantity`; the alert reasons are
-[AlertReason](src/main/java/com/lemarketjames/surveillance/AlertReason.java). The endpoint and its
-response are in [C6](../../contracts/C6-api.md#get-apiv1surveillancealerts-trading_ops-only).
+[AlertReason](src/main/java/com/lemarketjames/surveillance/AlertReason.java). The endpoint, its
+filters (reason, UTC days, through [AlertFilter](src/main/java/com/lemarketjames/surveillance/AlertFilter.java))
+and its response are in [C6](../../contracts/C6-api.md#get-apiv1surveillancealerts-trading_ops-only);
+the staff app's Alerts page shows them.

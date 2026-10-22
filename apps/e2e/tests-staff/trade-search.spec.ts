@@ -1,8 +1,9 @@
 import { APIRequestContext, test as base, expect, Page } from '@playwright/test';
-import { connectDatabase } from '../tests/support/database';
+import { connectDatabase, removeTestClients } from '../tests/support/database';
 import { loginViaApi } from '../tests/support/orders';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-39 trade search, on the staff app since LMKT-145 moved it out of the trading app.
@@ -11,7 +12,7 @@ import { signIn, TRADING_OPS } from './support/staff';
  */
 const SEARCH = '/api/v1/orders/trades/search';
 // Clients register through the trading app; the staff app has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 
 interface SearchFixture {
   user: TestUser;
@@ -25,7 +26,7 @@ interface SearchFixture {
 // Final statuses keep the execution worker from changing these read-side fixtures.
 const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture }>({
   tradingApp: async ({ playwright }, use) => {
-    const context = await playwright.request.newContext({ baseURL: TRADING_APP });
+    const context = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
     await use(context);
     await context.dispose();
   },
@@ -60,12 +61,7 @@ const test = base.extend<{ tradingApp: APIRequestContext; trades: SearchFixture 
       await use({ user: users[0], clientId: account.client_id, accountId: account.account_id, firstId, lastId });
     } finally {
       try {
-        for (const user of users) {
-          await db.query('DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)', [user.username]);
-          await db.query('DELETE FROM accounts WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-          await db.query('DELETE FROM addresses WHERE client_id IN (SELECT client_id FROM clients WHERE username=$1)', [user.username]);
-          await db.query('DELETE FROM clients WHERE username=$1', [user.username]);
-        }
+        await removeTestClients(...users.map(user => user.username));
       } finally { await db.end(); }
     }
   },

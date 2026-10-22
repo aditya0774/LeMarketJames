@@ -21,15 +21,16 @@ export function newUser(prefix = 'e2e'): TestUser {
 /**
  * Registers through the API instead of the form, for tests whose subject is something else;
  * the registration form itself is covered in auth.spec.ts. Uses the same payload as the
- * Jenkins API smoke tests.
+ * Jenkins API smoke tests; `changes` replaces fields of it, e.g. `{ state: 'New Jersey' }`.
  */
-export async function registerViaApi(request: APIRequestContext, user: TestUser): Promise<void> {
+export async function registerViaApi(request: APIRequestContext, user: TestUser,
+    changes: Record<string, unknown> = {}): Promise<void> {
   const response = await request.post('/api/auth/register', {
     data: {
       username: user.username,
       email: user.email,
       password: user.password,
-      fullName: 'E2E Tester',
+      fullName: 'Endtoend Tester',
       streetAddress: '123 Main St',
       city: 'Springfield',
       state: 'Illinois',
@@ -41,6 +42,7 @@ export async function registerViaApi(request: APIRequestContext, user: TestUser)
       employmentStatus: 'employed',
       dateOfBirth: '1990-01-01',
       phoneNumber: '(555) 123-4567',
+      ...changes,
     },
   });
   expect(response.status(), await response.text()).toBe(201);

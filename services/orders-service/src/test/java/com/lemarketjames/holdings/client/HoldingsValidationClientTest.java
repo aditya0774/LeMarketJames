@@ -31,7 +31,7 @@ class HoldingsValidationClientTest {
     @BeforeEach
     void setUp() {
         // Create client pointing to a test URL (real RestClient will be used)
-        client = new HoldingsValidationClient(TEST_SERVICE_URL);
+        client = new HoldingsValidationClient(TEST_SERVICE_URL, "test-token");
     }
 
     // ========== Contract Validation Tests ==========
@@ -44,7 +44,7 @@ class HoldingsValidationClientTest {
             // Just verify the method exists and can be accessed
             var method = HoldingsValidationClient.class
                 .getDeclaredMethod("validateSufficientHoldings", 
-                    Integer.class, String.class, Integer.class, BigDecimal.class);
+                    Integer.class, String.class, Integer.class, BigDecimal.class, BigDecimal.class);
             assertNotNull(method);
         });
     }
@@ -54,7 +54,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullAccountId() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(null, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -63,7 +63,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullUsername() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, null,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -72,7 +72,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullInstrumentId() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                null, TEST_QUANTITY)
+                null, TEST_QUANTITY, BigDecimal.ZERO)
         );
     }
 
@@ -81,7 +81,7 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_NullQuantity() {
         assertThrows(Exception.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, null)
+                TEST_INSTRUMENT_ID, null, BigDecimal.ZERO)
         );
     }
 
@@ -94,7 +94,7 @@ class HoldingsValidationClientTest {
         // (Will throw when actually connecting to non-existent service, but that's a network error)
         assertThrows(IllegalStateException.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, BigDecimal.ZERO)
+                TEST_INSTRUMENT_ID, BigDecimal.ZERO, BigDecimal.ZERO)
         );
     }
 
@@ -106,7 +106,7 @@ class HoldingsValidationClientTest {
         // Should not throw on construction/validation
         assertThrows(IllegalStateException.class, () ->
             client.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, largeQty)
+                TEST_INSTRUMENT_ID, largeQty, BigDecimal.ZERO)
         );
     }
 
@@ -117,11 +117,11 @@ class HoldingsValidationClientTest {
     void testValidateSufficientHoldings_ServiceUnreachable() {
         // Client points to non-existent service
         HoldingsValidationClient unreachableClient = 
-            new HoldingsValidationClient(TEST_SERVICE_URL);
+            new HoldingsValidationClient(TEST_SERVICE_URL, "test-token");
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
             unreachableClient.validateSufficientHoldings(TEST_ACCOUNT_ID, TEST_USERNAME,
-                TEST_INSTRUMENT_ID, TEST_QUANTITY)
+                TEST_INSTRUMENT_ID, TEST_QUANTITY, BigDecimal.ZERO)
         );
         
         assertTrue(exception.getMessage().contains("Failed to validate holdings"));
@@ -132,7 +132,7 @@ class HoldingsValidationClientTest {
     void testEndpointConfiguration() {
         // Verify RestClient is created with correct base URL
         HoldingsValidationClient testClient = 
-            new HoldingsValidationClient("http://trading-service:8084");
+            new HoldingsValidationClient("http://trading-service:8084", "test-token");
         
         RestClient restClient = (RestClient) ReflectionTestUtils
             .getField(testClient, "restClient");

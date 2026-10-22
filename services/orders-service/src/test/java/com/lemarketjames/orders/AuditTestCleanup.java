@@ -7,14 +7,14 @@ import java.util.function.Consumer;
 
 /**
  * Removes what an integration test committed for its own client. The one place these tests delete
- * audit events, so there is a single thing to change when the way they are removed changes.
+ * audit events and orders, so there is a single thing to change when the way they are removed changes.
  *
  * <p>Only the named client's rows go: the disposable PostgreSQL suite also runs other tests, so
  * shared tables are never truncated.
  *
- * <p>On PostgreSQL nobody may delete an audit event (contract C2): the application account lacks
- * the privilege and a trigger refuses everyone else. So the events are removed as the owner, with
- * the trigger switched off inside the deleting transaction. Only the owner can do that, and the
+ * <p>On PostgreSQL nobody may delete an audit event or an order (contract C2): the application
+ * account lacks the privilege and a trigger refuses everyone else. So they are removed as the
+ * owner, with the triggers switched off inside the deleting transaction. Only the owner can do that, and the
  * table stays locked until the transaction ends, so no other session ever sees it switched off.
  * This is for disposable test data only; nothing in the application can do the same.
  */
@@ -39,10 +39,14 @@ class AuditTestCleanup {
      * refused, so they are found by client as well as by account.
      */
     void removeClient(String username) {
-        deletingAuditEvents(db -> {
+        deletingRecords(db -> {
             db.update("DELETE FROM audit_log WHERE client_id IN " + CLIENT, username);
             db.update("DELETE FROM audit_log WHERE account_id IN " + ACCOUNT, username);
+            // Orders are never deleted either (029); only this cleanup switches their trigger off, and
+            // only here, so a submission's cleanup never locks the orders table.
+            if (owner.isConfigured()) db.execute("ALTER TABLE orders DISABLE TRIGGER orders_no_delete");
             db.update("DELETE FROM orders WHERE account_id IN " + ACCOUNT, username);
+            if (owner.isConfigured()) db.execute("ALTER TABLE orders ENABLE ALWAYS TRIGGER orders_no_delete");
             db.update("DELETE FROM accounts WHERE client_id IN " + CLIENT, username);
             db.update("DELETE FROM addresses WHERE client_id IN " + CLIENT, username);
             db.update("DELETE FROM clients WHERE username=?", username);
@@ -51,10 +55,10 @@ class AuditTestCleanup {
 
     /** Removes one submission's events, for a test that writes events naming no client. */
     void removeSubmission(String requestId) {
-        deletingAuditEvents(db -> db.update("DELETE FROM audit_log WHERE request_id=?", requestId));
+        deletingRecords(db -> db.update("DELETE FROM audit_log WHERE request_id=?", requestId));
     }
 
-    private void deletingAuditEvents(Consumer<JdbcTemplate> deletes) {
+    private void deletingRecords(Consumer<JdbcTemplate> deletes) {
         if (!owner.isConfigured()) {
             // H2: one account and no trigger, so the test's own connection may delete.
             deletes.accept(jdbc);

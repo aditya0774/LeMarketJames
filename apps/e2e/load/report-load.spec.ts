@@ -1,8 +1,9 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
 import { Client } from 'pg';
-import { connectDatabase } from '../tests/support/database';
+import { connectDatabase, removeTestClients } from '../tests/support/database';
 import { OrderDto, getOrder, instrumentIdOf, loginViaApi, placeOrder, utc } from '../tests/support/orders';
 import { TestUser, newUser, registerViaApi } from '../tests/support/users';
+import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-44: reports must not slow down live trading (BR-16, BRS §9.2).
@@ -58,8 +59,8 @@ const CASH_TOP_UP = 10_000_000;
 const SYMBOL = 'MSFT';
 
 // Clients trade through the trading app, analysts read reports through the staff app, as in production.
-const TRADING = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
-const STAFF = process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201';
+const TRADING = TRADING_APP_URL;
+const STAFF = STAFF_APP_URL;
 const ANALYST: TestUser = { username: 'analyst', email: 'analyst@seed.lemarket.com', password: 'Pass123!' };
 
 interface OrderTiming {
@@ -214,7 +215,7 @@ test('LMKT-44: order confirmations stay on target while reports run (AC1, AC2)',
     const clients = [];
     for (let i = 0; i < LOAD.clients; i++) {
       // One cookie jar per client, so each places orders as itself.
-      const context = await playwright.request.newContext({ baseURL: TRADING });
+      const context = await playwright.request.newContext({ baseURL: TRADING, ...SELF_SIGNED });
       contexts.push(context);
       const user = newUser('load');
       await registerViaApi(context, user);
@@ -225,7 +226,7 @@ test('LMKT-44: order confirmations stay on target while reports run (AC1, AC2)',
     // The stock list needs a signed-in caller, so it is read as the first client.
     const instrumentId = await instrumentIdOf(clients[0].context, SYMBOL);
 
-    const staff = await playwright.request.newContext();
+    const staff = await playwright.request.newContext(SELF_SIGNED);
     contexts.push(staff);
     const login = await staff.post(`${STAFF}/api/auth/login`, {
       data: { username: ANALYST.email, password: ANALYST.password },
@@ -271,10 +272,8 @@ test('LMKT-44: order confirmations stay on target while reports run (AC1, AC2)',
       .toBeLessThanOrEqual(allowedMs);
   } finally {
     await Promise.all(contexts.map(context => context.dispose()));
-    // Remove only the inserted history: those rows have no audit trail, unlike the orders placed
-    // through the API, whose audit records may never be deleted (C2).
-    await db.query(`DELETE FROM orders WHERE account_id IN (SELECT a.account_id FROM accounts a
-      JOIN clients c ON c.client_id=a.client_id WHERE c.username=$1)`, [historyUser.username]);
-    await db.end();
+    // Remove only the history client and its inserted history: those rows have no audit trail,
+    // unlike the orders placed through the API, whose audit records may never be deleted (C2).
+    try { await removeTestClients(historyUser.username); } finally { await db.end(); }
   }
 });

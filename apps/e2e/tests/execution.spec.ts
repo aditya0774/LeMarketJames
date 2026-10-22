@@ -70,7 +70,8 @@ test.describe('Fill an accepted order at the current market price (LMKT-23)', ()
   /** AC4: one audit event per lifecycle step, settlement before the fill it belongs to (C2). */
   async function expectFillAudited(db: Client, order: OrderDto) {
     const trail = await auditTrail(db, order.orderId);
-    expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'SETTLED', 'FILLED']);
+    // BR-15: PENDING is audited too, between acceptance and settlement (C2).
+    expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'PENDING', 'SETTLED', 'FILLED']);
     // LMKT-99: an accepted order also has one event per placement check, every one a pass, and
     // they are the checks VALIDATED says ran.
     const checks = ruleChecks(trail);

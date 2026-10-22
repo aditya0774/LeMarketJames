@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -80,7 +81,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6789",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -192,6 +193,43 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errors.streetAddress").exists());
     }
 
+    // BR-01: the form's rules hold for any caller, with one message per field the form can show.
+    @Test
+    void registerEnforcesTheFormsRulesForAnyCaller() throws Exception {
+        String weakJson = """
+                {
+                  "username": "rulesuser",
+                  "password": "password",
+                  "email": "rules@example.org",
+                  "fullName": "Rules User",
+                  "streetAddress": "123 Main St",
+                  "city": "Springfield",
+                  "state": "IL",
+                  "zipCode": "62701",
+                  "country": "US",
+                  "ssn": "123-45-6789",
+                  "initialDeposit": 500,
+                  "investmentExperience": "beginner",
+                  "employmentStatus": "employed",
+                  "dateOfBirth": "1990-01-01",
+                  "phoneNumber": "5551234567"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(weakJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.password").value(
+                        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a special character."))
+                .andExpect(jsonPath("$.errors.email").value("Email must contain @ and end in .com."))
+                .andExpect(jsonPath("$.errors.initialDeposit").value("Initial deposit must be at least $5,000."))
+                .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number must be 10 digits."))
+                .andExpect(jsonPath("$.errors.username").doesNotExist());
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM clients WHERE username = 'rulesuser'", Integer.class));
+    }
+
     @Test
     void registerRejectsDuplicateUsername() throws Exception {
         String registerJson = """
@@ -206,7 +244,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6789",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -240,7 +278,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6780",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -259,7 +297,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6781",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -326,7 +364,7 @@ class AuthControllerTest {
                   "zipCode": "62701",
                   "country": "US",
                   "ssn": "123-45-6799",
-                  "initialDeposit": 500,
+                  "initialDeposit": 5000,
                   "investmentExperience": "beginner",
                   "employmentStatus": "employed",
                   "dateOfBirth": "1990-01-01",
@@ -359,6 +397,53 @@ class AuthControllerTest {
         assertTrue(setCookieHeader.contains("SameSite=Lax"));
     }
 
+    // BR-03: login, /me and refresh say when the session ends; refresh sets a new cookie for
+    // another timeout; a signed-out session can't be refreshed, nor can a request with no cookie.
+    @Test
+    void refreshExtendsTheSessionUntilSignOut() throws Exception {
+        authService.register(validRegisterRequest("refreshuser"));
+        MockHttpServletResponse login = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "username": "refreshuser@example.com", "password": "Pass123!" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.lessThanOrEqualTo(60)))
+                .andReturn().getResponse();
+        Cookie loginCookie = login.getCookie(JwtAuthenticationFilter.COOKIE_NAME);
+        assertNotNull(loginCookie);
+        // The cookie goes when the token does, so a browser left alone forgets the session too.
+        assertTrue(login.getHeader("Set-Cookie").matches(".*Max-Age=(59|60);.*"), login.getHeader("Set-Cookie"));
+
+        mockMvc.perform(get("/api/auth/me").cookie(loginCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.lessThanOrEqualTo(60)));
+
+        MockHttpServletResponse refreshed = mockMvc.perform(post("/api/auth/refresh").cookie(loginCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inactivityTimeoutSeconds").value(60))
+                .andExpect(jsonPath("$.expiresInSeconds").value(org.hamcrest.Matchers.greaterThanOrEqualTo(59)))
+                .andReturn().getResponse();
+        Cookie refreshedCookie = refreshed.getCookie(JwtAuthenticationFilter.COOKIE_NAME);
+        assertNotNull(refreshedCookie);
+        assertTrue(refreshed.getHeader("Set-Cookie").contains("HttpOnly"));
+        mockMvc.perform(get("/api/auth/me").cookie(refreshedCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("refreshuser"));
+
+        mockMvc.perform(post("/api/auth/refresh"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/refresh").cookie(new Cookie(JwtAuthenticationFilter.COOKIE_NAME, "not-a-token")))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/logout").cookie(refreshedCookie))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/auth/refresh").cookie(refreshedCookie))
+                .andExpect(status().isUnauthorized());
+    }
+
     private RegisterRequest validRegisterRequest(String username) {
         RegisterRequest request = new RegisterRequest(username, "Pass123!", username + "@example.com", "Test User");
         request.setStreetAddress("123 Main St");
@@ -367,7 +452,7 @@ class AuthControllerTest {
         request.setZipCode("62701");
         request.setCountry("US");
         request.setSsn("123-45-6789");
-        request.setInitialDeposit(BigDecimal.valueOf(500));
+        request.setInitialDeposit(BigDecimal.valueOf(5000));
         request.setInvestmentExperience("beginner");
         request.setEmploymentStatus("employed");
         request.setDateOfBirth(LocalDate.of(1990, 1, 1));

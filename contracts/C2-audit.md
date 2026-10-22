@@ -39,6 +39,8 @@ Every order submission that reaches placement is audited, whether or not the ord
 - **A refused order** saves no order row. Its trail is `SUBMITTED`, then one `RULE_CHECKED` per rule that ran. The last one is the outcome: `FAIL` with `reason`, the same code the caller received. There is no `VALIDATED` and no `REJECTED`; `REJECTED` stays an order status change ([C1](C1-orders.md)).
 - **`result` is `PASS`, `FAIL` or `ERROR`.** `ERROR` means the check could not complete (for example trading-service was unreachable); the caller got an error rather than a refusal, and the trail shows where it stopped.
 - **The `reason` on a `FAIL`** is a [RejectionReason](../services/orders-service/src/main/java/com/lemarketjames/orders/entity/RejectionReason.java), except for `ACCOUNT_ACCESS`, which fails with `ACCOUNT_ACCESS_DENIED`. An instrument that doesn't exist fails `TRADABLE` with `NOT_TRADABLE`.
+- **What each rule checks** is defined once, on [ValidationRule](../services/orders-service/src/main/java/com/lemarketjames/orders/submission/ValidationRule.java). Since BR-05, `CASH` and `HOLDINGS` count the account's open orders: a `FAIL` there can mean the balance or holding would cover the order on its own, but open BUYs or SELLs already reserve part of it ([C6](C6-api.md#post-apiv1orders)). `LOCATION` covers the platform-wide list and the stock's own rules.
+- **An order by amount (BR-04)** adds `amount` to `SUBMITTED`. Its `quantity` is then the whole shares worked out from the amount (null if it was refused before that), and its `price` the quote they were worked out at: the ask for a BUY, the bid for a SELL. The price checks run for any order by amount, a SELL too, because the amount needs a price to become shares; that is why `QUANTITY` runs after them.
 - **Refused account access** is audited against the caller: `client_id` is theirs, `account_id` is empty, and the account they asked for is in `SUBMITTED`'s `requestedAccountId`.
 - **Not audited:** a request refused before placement runs, because nobody is logged in (401) or the body is malformed (400 with `errors`). No order was submitted.
 
@@ -50,6 +52,34 @@ A BUY refused for lack of cash:
 | `RULE_CHECKED` | `{"rule": "ACCOUNT_ACCESS", "result": "PASS"}` |
 | … | one per rule, in order |
 | `RULE_CHECKED` | `{"rule": "CASH", "result": "FAIL", "reason": "INSUFFICIENT_CASH"}` |
+
+## The execution trail
+
+After placement, orders-service audits every status an order moves to ([C1](C1-orders.md)), in the transaction that moves it, so the trail shows every step the order went through, including the time it waited.
+
+- **`ACCEPTED`**: the order was accepted for execution.
+- **`DELAYED`**: its market was closed, so it waits for the open, with `reason` `MARKET_CLOSED`. While the market stays closed, later attempts leave it `DELAYED` and write nothing more.
+- **`PENDING`**: it is executing. Either it has a price and settlement is under way, or an attempt failed and it will be retried. A retry that leaves it `PENDING` writes nothing more.
+- **`FILLED`** or **`REJECTED`**: how it ended. A rejection keeps its `reason`. When execution refused the order on a quote it did receive (`STALE_QUOTE`, or `PRICE_UNAVAILABLE` for an unusable price), the event also has that quote's `quotePrice` and `quoteTime`, so a dispute can see what the market showed. With no quote at all there is only the `reason`.
+
+An order placed while the market was closed, then filled at the open:
+
+| `action` | `details` |
+|---|---|
+| `ACCEPTED` | `{}` |
+| `DELAYED` | `{"reason": "MARKET_CLOSED"}` |
+| `PENDING` | `{}` |
+| `SETTLED` | `{"cashDelta": -202.4692, "quantityDelta": 2}` (written by trading-service) |
+| `FILLED` | `{"quantity": 2, "price": 101.2346}` |
+
+An order refused at execution on a stale quote:
+
+| `action` | `details` |
+|---|---|
+| `ACCEPTED` | `{}` |
+| `REJECTED` | `{"reason": "STALE_QUOTE", "quotePrice": 101.2346, "quoteTime": "2026-09-21T13:29:50Z"}` |
+
+A move made through the status endpoint ([C6](C6-api.md#orders-orders-service)) is audited the same way. Its `DELAYED` has no `reason`, and its `REJECTED` has `reason` `REJECTED_BY_OPERATIONS` (or the code it was given).
 
 **Reading a trail.** Use `findByOrderIdOrderByOccurredAtAsc` for an order, which returns its submission events followed by the rest of its life. Use `findByRequestIdOrderByAuditIdAsc` for a refused order, which has no order ID. Order an order's trail by `created_at`: the seeded checks ([C3](C3-seed-data.md)) were added after their orders' later events, so `audit_id` does not order them.
 
@@ -65,7 +95,7 @@ A BUY refused for lack of cash:
   | Where | Event types |
   |---|---|
   | orders-service, order placement | `SUBMITTED`, then `RULE_CHECKED` for each rule that runs, then `VALIDATED` if the order is saved |
-  | orders-service, status changes | `ACCEPTED`, `FILLED`, `REJECTED` |
+  | orders-service, status changes | `ACCEPTED`, `DELAYED`, `PENDING`, `FILLED`, `REJECTED` ([the execution trail](#the-execution-trail)) |
   | trading-service, settlement | `SETTLED` |
   | trading-service, cash movements | `CASH_DEPOSITED`, `CASH_WITHDRAWN` |
 
@@ -78,11 +108,23 @@ A BUY refused for lack of cash:
   A cash movement event has no order. Its `request_id` is the caller-supplied idempotency key, and
   its details contain `amount`, `balanceAfter` and `requestId`. The account balance, movement
   receipt and event commit or roll back together.
-- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. If archival ever needs to record more than that, it goes in a table of its own. The archival job and the audit views are later stories. Their API is planned in [C6](C6-api.md#planned-agreed-not-built).
+- **Kept, not deleted.** Events older than the online retention window ([C5](C5-config.md)) count as archived and stay in the table. Nothing is written to the row to say so, because a row is never updated: an event is archived when its `created_at` is older than the window. If archival ever needs to record more than that, it goes in a table of its own. See [Retention and the archive](#retention-and-the-archive).
+
+## Retention and the archive
+
+BR-14. Audit records, and the trade records they describe, are kept for **at least seven years**, and in practice for good: nothing in the application deletes them, and the database refuses to ([the lockdown](#the-lockdown)).
+
+- **Archived means old, not moved.** An event is archived once its `created_at` is older than the online retention window ([C5](C5-config.md#who-uses-each-setting), default 365 days). It stays in `audit_log`; the row is not changed. [AuditRetention](../services/orders-service/src/main/java/com/lemarketjames/audit/AuditRetention.java) decides it on every request from the server's UTC clock, so changing the window reclassifies records without touching one. The cutoff instant itself is still online.
+- **Still visible where staff look.** The order timeline returns every event with `archived: true` or `false`, and trade search marks a trade filled before the window as `archived`; the staff app labels both "Archived" ([C6](C6-api.md#order-timeline-trading_ops-only)). A dispute about an old trade is answered the same way as one about a new trade.
+- **Retrieved through the archive.** Risk and Compliance, through Trading Ops, search archived events with `GET /api/v1/audit/archive` ([C6](C6-api.md#audit-archive-trading_ops-only)): by order, by `requestId` (a refused submission has no order, so no timeline), by client and by time, with no lower age bound. It reads only; [ArchiveService](../services/orders-service/src/main/java/com/lemarketjames/audit/ArchiveService.java) is separate from the writer, `AuditRecorder`.
+- **Backups.** A nightly `pg_dump` keeps the last seven copies of the whole database, and the restore steps are written down ([database/README.md](../database/README.md#backups-and-restore)). A restore brings the triggers and grants back with the data.
+- **Proven by** [AuditRetentionTest](../services/orders-service/src/test/java/com/lemarketjames/audit/AuditRetentionTest.java) (window boundaries, seven-year-old records, reclassification) and [AuditArchiveApiIntegrationTest](../services/orders-service/src/test/java/com/lemarketjames/audit/AuditArchiveApiIntegrationTest.java) (retrieval, filters, a refused submission, access).
 
 ## The lockdown
 
 The database refuses a change to an audit record by itself, whatever the application does ([016](../database/schema/016_audit_lockdown.sql)). It covers `audit_log` and the unused `order_events`.
+
+The trade records the trail describes are locked the same way (BR-14, [029](../database/schema/029_trade_record_lockdown.sql)): an order is never deleted and, once `FILLED` or `REJECTED`, never changed; `settlement_receipts`, `cash_movement_receipts` and `account_status_changes` are insert-only. While an order is open the application still moves it along its lifecycle ([C1](C1-orders.md)); the move into a final status is its last update. Refusals of trade-record changes say `Trade records are immutable`, with the same SQLSTATE.
 
 | Layer | Stops | How it fails |
 |---|---|---|
@@ -92,8 +134,9 @@ The database refuses a change to an audit record by itself, whatever the applica
 - **Two accounts.** `lemarket` owns the schema and runs migrations, seeding and resets. `lemarket_app` is the restricted account for the services. See [database/README.md](../database/README.md#016--audit-lockdown).
 - **Migrations may not rewrite audit records either.** A new migration that updates or deletes existing audit rows fails on the trigger. Add rows; don't change them.
 - **A new audit table needs its own lockdown.** New tables get ordinary read and write for `lemarket_app` by default. A table that holds audit records must revoke `UPDATE` and `DELETE` and get the same triggers, in the migration that creates it.
-- **Resetting test data.** A whole-database reset (`docker compose down -v`, `setup-db.ps1 -Reset`) is unaffected. A test that must remove its own audit events does it through [AuditTestCleanup](../services/orders-service/src/test/java/com/lemarketjames/orders/AuditTestCleanup.java): as the owner, with the trigger switched off inside the deleting transaction. Don't delete audit rows any other way, and never outside a disposable database.
-- **Proven by** [AuditLockdownIntegrationTest](../services/orders-service/src/test/java/com/lemarketjames/orders/AuditLockdownIntegrationTest.java), which runs on PostgreSQL only.
+- **Resetting test data.** A whole-database reset (`docker compose down -v`, `setup-db.ps1 -Reset`) is unaffected. A test that must remove its own audit events or orders does it through [AuditTestCleanup](../services/orders-service/src/test/java/com/lemarketjames/orders/AuditTestCleanup.java), or in the e2e suite `removeTestClients` ([database.ts](../apps/e2e/tests/support/database.ts), with `E2E_OWNER_DATABASE_URL`): as the owner, with the trigger switched off inside the deleting transaction. Don't delete audit rows or orders any other way, and never outside a disposable database.
+- **A new trade-record table needs the same.** A table that records what happened to money or shares (a receipt, a history) revokes `UPDATE` and `DELETE` from `lemarket_app` and gets the triggers, in the migration that creates it, as 029 does.
+- **Proven by** [AuditLockdownIntegrationTest](../services/orders-service/src/test/java/com/lemarketjames/orders/AuditLockdownIntegrationTest.java), which runs on PostgreSQL only, for the audit tables and the trade records.
 
 ### Refused attempts are recorded
 
@@ -110,9 +153,9 @@ Every refused attempt is recorded in PostgreSQL's server log, by the server itse
 - **Switching a trigger off is recorded too.** DDL is logged, so the one thing the owner could do to get around the triggers leaves a line naming the account.
 - **Where it is set.** The `db` service's `command` in [docker-compose.yml](../docker-compose.yml). On a native Windows install, `setup-db.ps1 -AuditLogging`; without it the attempt is still logged, but the line does not name the account.
 - **Limits.** Values bound as parameters are not logged; the statement shows `$1` in their place. The log is not in the database, so it will not appear in the planned audit views. Keeping it is the deployment's job: a Compose container's log goes when the container is removed, so a real environment must ship the server log somewhere it is retained as long as the audit trail.
-- **Proven by** [verify-audit-lockdown.sh](../scripts/verify-audit-lockdown.sh), a Jenkins stage that makes the attempts against the running stack as both accounts and then finds each one in the server log.
+- **Proven by** [verify-audit-lockdown.sh](../scripts/verify-audit-lockdown.sh), a Jenkins stage that makes the attempts against the running stack as both accounts, on the audit tables and the trade records, and then finds each one in the server log.
 
 ## Mirrors (change together with `AuditEventType`)
 
-- The `audit_log.action` CHECK constraint, in both [010](../database/schema/010_shared_contracts.sql) and [014](../database/schema/014_submission_audit.sql): 010 is re-applied before 014, so the two lists must match.
-- The seeded events in [011](../database/schema/011_seed_test_data.sql), brought to the current shape by [015](../database/schema/015_seed_submission_audit.sql). 015 also mirrors `ValidationRule`.
+- The `audit_log.action` CHECK constraint, in every migration that defines it: [010](../database/schema/010_shared_contracts.sql), [014](../database/schema/014_submission_audit.sql), [024](../database/schema/024_cash_movements.sql) and [026](../database/schema/026_audit_waiting_steps.sql). The lists must all match. A clean database applies every file in turn, after the seed has written its events, and Jenkins re-applies them. A migration that adds an action updates all of them.
+- The seeded events in [011](../database/schema/011_seed_test_data.sql) (an open seeded order ends on the `PENDING` or `DELAYED` step it waits in), brought to the current shape by [015](../database/schema/015_seed_submission_audit.sql). 015 also mirrors `ValidationRule`, as it was before `QUANTITY` (BR-04): seeded orders were all placed by whole shares, so their trails have no `QUANTITY` check.

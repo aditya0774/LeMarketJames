@@ -155,4 +155,22 @@ class OrderTimelineApiIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$", hasSize(0)));
     }
+
+    @Test
+    @DisplayName("BR-14: events older than the online retention window stay in the timeline, marked archived")
+    void oldEventsAreMarkedArchived() throws Exception {
+        Order order = orderRepository.save(new Order(accountId, 1, Order.OrderType.BUY, new BigDecimal("1")));
+        // The default window is 365 days (contract C5): one event well past it, one inside it.
+        auditEventRepository.save(new AuditEventEntity(order.getOrderId(), accountId, clientId,
+            AuditEventType.SUBMITTED, Map.of(), Instant.now().minus(java.time.Duration.ofDays(8 * 365))));
+        auditEventRepository.save(new AuditEventEntity(order.getOrderId(), accountId, clientId,
+            AuditEventType.VALIDATED, Map.of(), Instant.now().minus(java.time.Duration.ofDays(1))));
+
+        mvc.perform(get("/api/v1/orders/{orderId}/timeline", order.getOrderId())
+                .with(user("ops").roles("TRADING_OPS")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].archived", is(true)))
+            .andExpect(jsonPath("$[1].archived", is(false)));
+    }
 }

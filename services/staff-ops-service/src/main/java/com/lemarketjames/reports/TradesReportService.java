@@ -4,24 +4,31 @@ import com.lemarketjames.reports.dto.TradesByStockReportRow;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.TradesReportRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.ReadSplit;
+import com.lemarketjames.reports.summary.SymbolTotals;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Service for generating aggregate trading reports.
- * All queries are read-only and hit the reporting_trades view directly;
- * this service is fully isolated from trading and account services.
+ * All queries are read-only; this service is fully isolated from trading and account services.
+ * Days the nightly summary covers are read from it ({@link DailyTradeSummary}), later days from the
+ * reporting_trades view, so a long range does not scan live orders (BR-16, README "Read side").
  */
 @Service
 public class TradesReportService {
 
     private final TradesReportRepository repository;
+    private final DailyTradeSummary summary;
     private final ReportCalendar reportCalendar;
 
-    public TradesReportService(TradesReportRepository repository, ReportCalendar reportCalendar) {
+    public TradesReportService(TradesReportRepository repository, DailyTradeSummary summary, ReportCalendar reportCalendar) {
         this.repository = repository;
+        this.summary = summary;
         this.reportCalendar = reportCalendar;
     }
 
@@ -51,17 +58,22 @@ public class TradesReportService {
             throw new IllegalArgumentException("Start date must not be after end date");
         }
         
-        // Convert to UTC period using ReportCalendar for timezone-aware boundaries
-        ReportPeriod period = reportCalendar.between(startDate, endDate);
-        
-        return repository.aggregateTradesBySymbol(period.start(), period.end()).stream()
-                .map(projection -> new TradesByStockReportRow(
-                        projection.getSymbol(),
-                        projection.getTotalQuantity(),
-                        projection.getTotalGrossAmount(),
-                        projection.getBuyCount(),
-                        projection.getSellCount()
-                ))
+        String zone = reportCalendar.zone().getId();
+        ReadSplit split = ReadSplit.of(startDate, endDate, summary.summarizedThrough(zone));
+        List<SymbolTotals> rows = new ArrayList<>();
+        split.summarized().ifPresent(days -> rows.addAll(summary.bySymbol(zone, days.from(), days.to())));
+        split.live().ifPresent(days -> {
+            // Convert to UTC period using ReportCalendar for timezone-aware boundaries
+            ReportPeriod period = reportCalendar.between(days.from(), days.to());
+            repository.aggregateTradesBySymbol(period.start(), period.end()).forEach(projection -> rows.add(new SymbolTotals(
+                    projection.getSymbol(), projection.getTotalQuantity(), projection.getTotalGrossAmount(),
+                    projection.getBuyCount(), projection.getSellCount())));
+        });
+
+        // A stock traded on both sides of the summary's last day is added up here.
+        return SymbolTotals.merge(rows).stream()
+                .map(totals -> new TradesByStockReportRow(totals.symbol(), totals.totalQuantity(),
+                        totals.totalGrossAmount(), totals.buyCount(), totals.sellCount()))
                 .toList();
     }
 }

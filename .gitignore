@@ -33,3 +33,9 @@ error.txt
 
 # SonarScanner working folder
 .scannerwork/
+
+# Database backups (scripts/backup-db.sh, scripts/windows/backup-db.ps1): data, never committed.
+/backups/
+
+# Python bytecode caches (scripts/windows/seed-segment-report.py)
+__pycache__/

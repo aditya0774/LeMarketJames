@@ -4,6 +4,7 @@ import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { accountIdOf, addDays, Fill, insertFill, removeClient, todayIn } from './support/insight-fixtures';
 import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-48: the active-client trend tile on the Analyst dashboard, end to end (S40-INT). Everything
@@ -26,13 +27,16 @@ const TREND = '/api/v1/reports/insights/active-clients';
 const INSIGHTS = '/api/v1/reports/insights';
 const WINDOW_DAYS = 30;
 // Clients register through the trading app; the staff app has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 const TILE = 'staff-active-client-trend-tile';
 
 interface Trend {
   startDate: string;
   endDate: string;
   days: { date: string; activeClients: number }[];
+  lastWeek: { startDate: string; endDate: string; averageActiveClients: number };
+  weekBefore: { startDate: string; endDate: string; averageActiveClients: number };
+  flag: { flagged: boolean; changePercent: number | null; direction: string; thresholdPercent: number };
   generatedAt: string;
 }
 
@@ -126,8 +130,8 @@ test.describe('LMKT-48 active-client trend', () => {
     db = await connectDatabase();
     clientA = newUser('trenda');
     clientB = newUser('trendb');
-    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP });
-    const staffApp = await playwright.request.newContext({ baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201' });
+    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
+    const staffApp = await playwright.request.newContext({ baseURL: STAFF_APP_URL, ...SELF_SIGNED });
     try {
       await registerViaApi(tradingApp, clientA);
       await registerViaApi(tradingApp, clientB);
@@ -151,8 +155,8 @@ test.describe('LMKT-48 active-client trend', () => {
         await insertFill(db, accountB, timeZone, fill(day));
       }
     } catch (error) {
-      await removeClient(db, clientA.username);
-      await removeClient(db, clientB.username);
+      await removeClient(clientA.username);
+      await removeClient(clientB.username);
       await db.end();
       throw error;
     } finally {
@@ -163,8 +167,8 @@ test.describe('LMKT-48 active-client trend', () => {
 
   test.afterAll(async () => {
     try {
-      await removeClient(db, clientA.username);
-      await removeClient(db, clientB.username);
+      await removeClient(clientA.username);
+      await removeClient(clientB.username);
     } finally { await db.end(); }
   });
 
@@ -176,8 +180,13 @@ test.describe('LMKT-48 active-client trend', () => {
     expect(new URL(seen[0].url()).origin).toBe(new URL(page.url()).origin);
 
     // An allowlist catches new identifiers as well as known personal-data fields.
-    expect(Object.keys(body).sort()).toEqual(['days', 'endDate', 'generatedAt', 'startDate']);
+    expect(Object.keys(body).sort()).toEqual(['days', 'endDate', 'flag', 'generatedAt', 'lastWeek', 'startDate', 'weekBefore']);
     for (const day of body.days) expect(Object.keys(day).sort()).toEqual(['activeClients', 'date']);
+    // BR-17: the two weeks the flag compares, and the flag, are counts and percents only.
+    for (const week of [body.lastWeek, body.weekBefore]) {
+      expect(Object.keys(week).sort()).toEqual(['averageActiveClients', 'endDate', 'startDate']);
+    }
+    expect(Object.keys(body.flag).sort()).toEqual(['changePercent', 'direction', 'flagged', 'thresholdPercent']);
 
     // Thirty consecutive days ending today, oldest first, quiet days included.
     expect(body.endDate).toBe(today);

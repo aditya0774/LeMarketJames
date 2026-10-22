@@ -1,0 +1,116 @@
+/* The alerts list, in the style of the trade search board it sits beside. */
+
+.al {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.al-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.al-title p {
+  margin: 0;
+  font-size: var(--font-base);
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.al-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 18px;
+}
+
+.al-filters .field {
+  margin: 0;
+  flex: 1 1 180px;
+}
+
+.al-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.al .alert {
+  margin: 0;
+}
+
+.al-status {
+  font-size: var(--font-sm);
+  color: var(--dim);
+}
+
+.al-results {
+  padding-top: 14px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.al-results table {
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.al-results caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 18px 10px;
+  font-size: var(--font-xs);
+  color: var(--faint);
+}
+
+.al-results tr.selected {
+  background: color-mix(in srgb, var(--accb) 10%, transparent);
+}
+
+/* Colour follows the order pills: amber for a large order to look at, red for a refusal. */
+.reason {
+  background: var(--pri-soft);
+  color: var(--pritext);
+}
+
+.reason.refused {
+  background: var(--down-soft);
+  color: var(--errt);
+}
+
+.order-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line3);
+  text-underline-offset: 3px;
+}
+
+.order-btn[aria-pressed='true'] {
+  color: var(--seltext);
+  text-decoration-color: var(--acc);
+}
+
+.side {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--acc2t);
+}
+
+.side.buy {
+  color: var(--pritext);
+}
+
+.when {
+  color: var(--dim);
+}

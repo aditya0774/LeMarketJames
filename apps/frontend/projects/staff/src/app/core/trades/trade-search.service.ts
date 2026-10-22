@@ -15,6 +15,8 @@ export interface TradeSearchResult {
   quantity: number;
   pricePerUnit: number;
   filledAt: string;
+  /** Filled before the online retention window, so its audit trail is archived (BR-14). Still found. */
+  archived?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

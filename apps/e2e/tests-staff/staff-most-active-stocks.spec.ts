@@ -4,6 +4,7 @@ import { connectDatabase } from '../tests/support/database';
 import { newUser, registerViaApi, TestUser } from '../tests/support/users';
 import { accountIdOf, addDays, Fill, insertFill, removeClient, todayIn } from './support/insight-fixtures';
 import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './support/staff';
+import { SELF_SIGNED, STAFF_APP_URL, TRADING_APP_URL } from '../tests/support/app-urls';
 
 /**
  * LMKT-47: the most active stocks tile on the Analyst dashboard, end to end (S39-INT). Everything
@@ -27,13 +28,18 @@ import { ACCESS_DENIED_HEADING, ANALYST, CLIENT, signIn, TRADING_OPS } from './s
 const MOST_ACTIVE = '/api/v1/reports/insights/most-active-stocks';
 const TOP = 5;
 // Clients register through the trading app; the staff gateway has no registration route.
-const TRADING_APP = process.env.E2E_BASE_URL ?? 'http://localhost:4200';
+const TRADING_APP = TRADING_APP_URL;
 const TILE = 'staff-most-active-stocks-tile';
 const HEADING = 'Most active stocks';
 const FIXTURE_SYMBOLS = ['AAPL', 'MSFT', 'NVDA'];
 
 interface Stock { rank: number; symbol: string; tradedValue: number; tradeCount: number; shareVolume: number }
-interface MostActive { startDate: string; endDate: string; stocks: Stock[]; generatedAt: string }
+/** A stock as the endpoint returns it: with last week's traded value and its BR-17 flag. */
+interface RankedStock extends Stock { previousTradedValue: number; flag: { flagged: boolean; changePercent: number | null; direction: string; thresholdPercent: number } }
+interface MostActive {
+  startDate: string; endDate: string; previousStartDate: string; previousEndDate: string;
+  stocks: RankedStock[]; generatedAt: string;
+}
 
 const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -99,9 +105,19 @@ function differences(actual: Stock[], expected: Stock[]): string[] {
 const card = (page: Page) => page.locator(TILE);
 const rows = (page: Page) => card(page).locator('tbody tr');
 
-/** The table as the app renders it: rank, symbol, trades, shares, traded value. */
-const rowTexts = (stocks: Stock[]) => stocks.map(s =>
-  [String(s.rank), s.symbol, number.format(s.tradeCount), number.format(s.shareVolume), money.format(s.tradedValue)]);
+const percent = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+/** The "vs last week" cell (BR-17): the move, or the flag chip with it when the server flagged it. */
+function vsLastWeek({ flag }: RankedStock): string {
+  const move = flag.changePercent === null ? (flag.direction === 'FLAT' ? 'no change' : 'new')
+    : flag.changePercent > 0 ? `+${percent.format(flag.changePercent)}%`
+    : flag.changePercent < 0 ? `−${percent.format(-flag.changePercent)}%` : '0%';
+  return flag.flagged ? `${flag.direction === 'DOWN' ? '▼' : '▲'} Flagged ${move}` : move;
+}
+
+/** The table as the app renders it: rank, symbol, trades, shares, traded value, vs last week. */
+const rowTexts = (stocks: RankedStock[]) => stocks.map(s =>
+  [String(s.rank), s.symbol, number.format(s.tradeCount), number.format(s.shareVolume), money.format(s.tradedValue), vsLastWeek(s)]);
 
 async function shownRows(page: Page): Promise<string[][]> {
   const texts: string[][] = [];
@@ -143,8 +159,8 @@ test.describe('LMKT-47 most active stocks', () => {
   test.beforeAll(async ({ playwright }) => {
     db = await connectDatabase();
     client = newUser('active');
-    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP });
-    const staffApp = await playwright.request.newContext({ baseURL: process.env.E2E_STAFF_BASE_URL ?? 'http://localhost:4201' });
+    const tradingApp = await playwright.request.newContext({ baseURL: TRADING_APP, ...SELF_SIGNED });
+    const staffApp = await playwright.request.newContext({ baseURL: STAFF_APP_URL, ...SELF_SIGNED });
     try {
       await registerViaApi(tradingApp, client);
       // The reports time zone is a setting (C5), so ask the service instead of assuming one.
@@ -166,7 +182,7 @@ test.describe('LMKT-47 most active stocks', () => {
       ];
       for (const fill of fills) await insertFill(db, accountId, timeZone, fill);
     } catch (error) {
-      await removeClient(db, client.username);
+      await removeClient(client.username);
       await db.end();
       throw error;
     } finally {
@@ -176,7 +192,7 @@ test.describe('LMKT-47 most active stocks', () => {
   });
 
   test.afterAll(async () => {
-    try { await removeClient(db, client.username); } finally { await db.end(); }
+    try { await removeClient(client.username); } finally { await db.end(); }
   });
 
   test("AC1: the Analyst dashboard shows this week's 5 most traded stocks by traded value, from real data", async ({ page }) => {
@@ -188,9 +204,11 @@ test.describe('LMKT-47 most active stocks', () => {
     expect(new URL(seen[0].url()).origin).toBe(new URL(page.url()).origin);
 
     // An allowlist catches new identifiers as well as known personal-data fields.
-    expect(Object.keys(body).sort()).toEqual(['endDate', 'generatedAt', 'startDate', 'stocks']);
+    expect(Object.keys(body).sort()).toEqual(['endDate', 'generatedAt', 'previousEndDate', 'previousStartDate', 'startDate', 'stocks']);
     for (const stock of body.stocks) {
-      expect(Object.keys(stock).sort()).toEqual(['rank', 'shareVolume', 'symbol', 'tradeCount', 'tradedValue']);
+      expect(Object.keys(stock).sort()).toEqual(['flag', 'previousTradedValue', 'rank', 'shareVolume', 'symbol', 'tradeCount', 'tradedValue']);
+      // BR-17: last week's figure and the flag on it are aggregates too.
+      expect(Object.keys(stock.flag).sort()).toEqual(['changePercent', 'direction', 'flagged', 'thresholdPercent']);
     }
 
     // This week: Monday to today, in the reports time zone.
@@ -215,7 +233,8 @@ test.describe('LMKT-47 most active stocks', () => {
     // The same figures, on screen, exactly as the tile received them.
     const tile = card(page);
     await expect(tile.getByRole('heading', { name: HEADING })).toBeVisible();
-    await expect(tile.locator('.range')).toHaveText(`This week: ${body.startDate} – ${body.endDate}`);
+    await expect(tile.locator('.range')).toHaveText(`This week: ${body.startDate} – ${body.endDate}, against the same `
+      + `days of last week (${body.previousStartDate} – ${body.previousEndDate})`);
     await expect(rows(page)).toHaveCount(body.stocks.length);
     await expect.poll(() => shownRows(page)).toEqual(rowTexts(body.stocks));
   });

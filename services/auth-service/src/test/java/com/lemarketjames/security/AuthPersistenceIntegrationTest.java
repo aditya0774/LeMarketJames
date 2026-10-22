@@ -66,8 +66,8 @@ class AuthPersistenceIntegrationTest {
         RegisterRequest request = json.readValue("""
             {"password":"Pass123!","fullName":"Test User","streetAddress":"123 Main St",
              "city":"Boston","state":"MA","zipCode":"02110","country":"US","ssn":"123-45-6789",
-             "initialDeposit":500,"investmentExperience":"beginner","employmentStatus":"employed",
-             "dateOfBirth":"1990-01-01","phoneNumber":"5551234567"}
+             "initialDeposit":5000,"investmentExperience":"beginner","employmentStatus":"employed",
+             "dateOfBirth":"1990-01-01","phoneNumber":"(555) 123-4567"}
             """, RegisterRequest.class);
         request.setUsername(alice);
         request.setEmail(alice + "@example.com");

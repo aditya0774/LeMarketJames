@@ -21,6 +21,12 @@
       <p class="latest"><span class="mono">{{ latest() | number }}</span><span class="unit"> clients traded today so far</span></p>
       <p class="peak"><span class="mono">Peak {{ chart().maximum | number }}</span><span class="unit"> in the window</span></p>
     </div>
+    <p class="week">
+      <staff-insight-flag [flag]="d.flag" />
+      Last 7 days: <span class="mono">{{ d.lastWeek.averageActiveClients | number: '1.0-2' }}</span> a day on average,
+      against <span class="mono">{{ d.weekBefore.averageActiveClients | number: '1.0-2' }}</span> the 7 days before
+      ({{ d.weekBefore.startDate }} – {{ d.weekBefore.endDate }}).
+    </p>
 
     @if (chart().maximum === 0) {
       <p class="empty">No trades in this window.</p>

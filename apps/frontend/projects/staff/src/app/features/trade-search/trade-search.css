@@ -195,3 +195,9 @@
 .ts-timeline .hint {
   margin: 0;
 }
+
+/* BR-14: an archived trade is still listed, marked under its time (beside it, the long time pushes it out of view). */
+.when .archived {
+  display: table;
+  margin-top: 4px;
+}

@@ -4,7 +4,7 @@
       <div>
         <h2>Most active stocks</h2>
         @if (data(); as result) {
-          <p class="range">This week: {{ result.startDate }} – {{ result.endDate }}</p>
+          <p class="range">This week: {{ result.startDate }} – {{ result.endDate }}, against the same days of last week ({{ result.previousStartDate }} – {{ result.previousEndDate }})</p>
         }
       </div>
       <button mat-button type="button" class="refresh" (click)="refresh()">
@@ -20,7 +20,7 @@
       @if (result.stocks.length) {
         <table>
           <thead>
-            <tr><th>Rank</th><th>Stock</th><th>Trades</th><th>Shares</th><th>Traded value</th></tr>
+            <tr><th>Rank</th><th>Stock</th><th>Trades</th><th>Shares</th><th>Traded value</th><th>vs last week</th></tr>
           </thead>
           <tbody>
             @for (stock of result.stocks; track stock.symbol) {
@@ -30,6 +30,13 @@
                 <td>{{ stock.tradeCount | number }}</td>
                 <td>{{ stock.shareVolume | number }}</td>
                 <td>{{ stock.tradedValue | currency:'USD':'symbol':'1.2-2' }}</td>
+                <td class="vs" [attr.title]="'Same days last week: ' + (stock.previousTradedValue | currency:'USD':'symbol':'1.2-2')">
+                  @if (stock.flag.flagged) {
+                    <staff-insight-flag [flag]="stock.flag" />
+                  } @else {
+                    {{ changeText(stock.flag) }}
+                  }
+                </td>
               </tr>
             }
           </tbody>

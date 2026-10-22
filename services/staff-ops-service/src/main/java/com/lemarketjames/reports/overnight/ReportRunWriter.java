@@ -15,7 +15,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The only report code that writes, and it writes only {@code report_runs}.
+ * The report code that writes {@code report_runs} and the run's {@code report_outputs}. Its one
+ * sibling is {@link DailySummaryWriter}, which refreshes the nightly trade summary (README, rule 5).
  *
  * <p>It goes through the reports' own pool ({@link ReportingDataSourceConfig}), whose every
  * connection is read-only by default (README, "Read-side safeguards"), so a report can never write
@@ -116,6 +117,20 @@ public class ReportRunWriter {
                 WHERE run_id = ? AND status IN (?, ?) AND started_at IS NOT NULL AND ready_at IS NULL
                 """, utc(now), RunStatus.READY.name(), RunStatus.LATE.name(), utc(now),
                 runId, RunStatus.RUNNING.name(), RunStatus.LATE.name()) == 1;
+    }
+
+    /**
+     * {@link #finish(UUID, Instant)}, storing the file the run produced in the same transaction:
+     * only when the run did finish, so a failed or already finished run gets no file.
+     */
+    @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
+    public boolean finish(UUID runId, Instant now, ReportOutput output) {
+        if (!finish(runId, now)) {
+            return false;
+        }
+        jdbc.update("INSERT INTO report_outputs (run_id, file_name, content_type, body) VALUES (?, ?, ?, ?)",
+                runId, output.fileName(), output.contentType(), output.body());
+        return true;
     }
 
     /** An unfinished run to FAILED with a reason. False when it had already finished or failed. */

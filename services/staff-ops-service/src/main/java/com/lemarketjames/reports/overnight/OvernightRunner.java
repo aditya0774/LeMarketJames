@@ -133,8 +133,9 @@ public class OvernightRunner {
         if (!writer.start(runId, clock.instant())) {
             return; // already started, finished or failed: nothing left to run
         }
+        Optional<ReportOutput> output;
         try {
-            job.run(runDate);
+            output = job.run(runDate);
         } catch (RuntimeException failure) {
             // The analyst sees the message; the stack trace is for the log only.
             log.error("Overnight report '{}' for {} failed", job.name(), runDate, failure);
@@ -142,7 +143,12 @@ public class OvernightRunner {
             return;
         }
         // READY, or LATE if this is after the run's ready-by time: the writer decides, against the stored time.
-        writer.finish(runId, clock.instant());
+        // A file is stored in the same transaction, so a finished run and its output never disagree.
+        if (output.isPresent()) {
+            writer.finish(runId, clock.instant(), output.get());
+        } else {
+            writer.finish(runId, clock.instant());
+        }
     }
 
     /** A reason an analyst can read: the exception's message, or its kind when it has none. */

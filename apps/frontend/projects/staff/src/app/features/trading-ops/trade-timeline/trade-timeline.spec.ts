@@ -127,6 +127,58 @@ describe('TradeTimelineComponent', () => {
     expect(textContent).toContain('10');
   });
 
+  // BR-15: an order placed while the market was closed shows each step it went through.
+  it('shows the waiting steps of an order placed while the market was closed', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = [
+      { eventType: 'ACCEPTED', occurredAt: '2026-09-19T22:00:02Z', details: {} },
+      { eventType: 'DELAYED', occurredAt: '2026-09-19T22:00:02Z', details: { reason: 'MARKET_CLOSED' } },
+      { eventType: 'PENDING', occurredAt: '2026-09-21T13:30:00Z', details: {} },
+      { eventType: 'SETTLED', occurredAt: '2026-09-21T13:30:01Z', details: { cashDelta: -100, quantityDelta: 1 } },
+      { eventType: 'FILLED', occurredAt: '2026-09-21T13:30:01Z', details: { quantity: 1, price: 100 } },
+    ];
+    await fixture.whenStable();
+
+    const cards: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.timeline-event'));
+    expect(cards.map(card => card.querySelector('.event-type')?.textContent?.trim())).toEqual([
+      'ACCEPTED', 'DELAYED', 'PENDING', 'SETTLED', 'FILLED',
+    ]);
+    expect(cards.map(card => card.dataset['tone'])).toEqual(['progress', 'waiting', 'progress', 'settled', 'done']);
+    expect(cards[1].textContent).toContain('MARKET_CLOSED');
+  });
+
+  it('shows the quote a rejection was made on', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = [{
+      eventType: 'REJECTED',
+      occurredAt: '2026-09-21T13:30:00Z',
+      details: { reason: 'STALE_QUOTE', quotePrice: 101.2346, quoteTime: '2026-09-21T13:29:50Z' },
+    }];
+    await fixture.whenStable();
+
+    const card: HTMLElement = fixture.nativeElement.querySelector('.timeline-event');
+    expect(card.dataset['tone']).toBe('refused');
+    expect(card.textContent).toContain('quotePrice');
+    expect(card.textContent).toContain('101.2346');
+    expect(card.textContent).toContain('2026-09-21T13:29:50Z');
+  });
+
+  // BR-14: an event older than the online retention window is still shown, marked as archived.
+  it('marks only the archived events', async () => {
+    await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(TradeTimelineComponent);
+    fixture.componentInstance.events = [
+      { ...mockEvents[0], archived: true },
+      { ...mockEvents[1], archived: false },
+    ];
+    await fixture.whenStable();
+
+    const cards: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.timeline-event'));
+    expect(cards.map(card => card.querySelector('.archived')?.textContent?.trim() ?? null)).toEqual(['Archived', null]);
+  });
+
   it('renders empty state when no events provided', async () => {
     await TestBed.configureTestingModule({ imports: [TradeTimelineComponent] }).compileComponents();
     const fixture = TestBed.createComponent(TradeTimelineComponent);

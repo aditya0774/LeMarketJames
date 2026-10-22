@@ -2,13 +2,16 @@
 # Runs only against the disposable Jenkins Compose stack, through the frontend proxy.
 set -euo pipefail
 
+# The web apps use a self-signed certificate (BR-02), so curl accepts it.
+curl() { command curl --insecure "$@"; }
+
 if docker compose version >/dev/null 2>&1; then
     compose() { docker compose "$@"; }
 else
     compose() { docker-compose "$@"; }
 fi
 
-base=http://localhost:4200
+base=https://localhost:4200
 username="buyci$(date +%s)"
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
@@ -27,7 +30,7 @@ wait_for_backend() {
 wait_for_backend
 curl --fail --silent --show-error "$base/api/auth/register" \
     -H 'Content-Type: application/json' \
-    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Buy CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":10000,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"5551234567\",\"termsAccepted\":true}" >/dev/null
+    --data "{\"username\":\"$username\",\"email\":\"$username@example.com\",\"password\":\"Pass123!\",\"fullName\":\"Buy CI\",\"streetAddress\":\"123 Main St\",\"city\":\"Boston\",\"state\":\"MA\",\"zipCode\":\"02110\",\"country\":\"US\",\"ssn\":\"123-45-6789\",\"initialDeposit\":10000,\"investmentExperience\":\"beginner\",\"employmentStatus\":\"employed\",\"dateOfBirth\":\"1990-01-01\",\"phoneNumber\":\"(555) 123-4567\",\"termsAccepted\":true}" >/dev/null
 curl --fail --silent --show-error "$base/api/auth/login" \
     -c "$scratch/cookies" -H 'Content-Type: application/json' \
     --data "{\"username\":\"$username@example.com\",\"password\":\"Pass123!\"}" > "$scratch/login.json"

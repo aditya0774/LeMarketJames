@@ -2,8 +2,8 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { z } from 'zod';
-import { registerSchema, RegisterFormData } from './register.schema';
-import { PASSWORD_RULES, REGISTER_STEPS, US_STATES, stepOfField } from './register-steps';
+import { PASSWORD_RULES, registerSchema, RegisterFormData } from './register.schema';
+import { REGISTER_STEPS, US_STATES, stepOfField } from './register-steps';
 import { Auth } from '../../../core/auth/auth';
 import { Brand } from '../../../shared/components/brand/brand';
 
@@ -480,10 +480,10 @@ export class Register {
     this.submitting.set(true);
 
     const data = result.data;
-    // No standalone username field is collected; email doubles as the login identifier.
+    // The username is the one typed on the last step; sign-in uses the email (contract C7).
     this.auth
       .register({
-        username: data.email,
+        username: data.username,
         password: data.password,
         email: data.email,
         fullName: [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' '),

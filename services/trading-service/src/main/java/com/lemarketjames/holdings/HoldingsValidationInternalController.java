@@ -34,7 +34,8 @@ public class HoldingsValidationInternalController {
                 request.getAccountId(),
                 request.getUsername(),
                 request.getInstrumentId(),
-                request.getSellQuantity()
+                request.getSellQuantity(),
+                request.getReservedQuantity()
             );
             return ResponseEntity.ok(Map.of("success", true));
         } catch (InsufficientHoldingsException e) {

@@ -1,0 +1,67 @@
+<div class="acct">
+  <div class="acct-title">
+    <h1>Your account</h1>
+    <p>Signed in as <b>{{ auth.currentUser() }}</b>.</p>
+  </div>
+
+  <section class="card acct-close" aria-labelledby="acct-close-title">
+    <h2 id="acct-close-title">Close my account</h2>
+
+    @if (loading()) {
+      <output class="loading"><span class="spinner"></span>Checking your account…</output>
+    } @else if (loadError()) {
+      <div class="alert err" role="alert"><div>{{ loadError() }}</div></div>
+    } @else if (contents(); as c) {
+      @if (!c.closable) {
+        <div class="alert warn" role="status">
+          <div>
+            <b>Your account can't be closed yet.</b>
+            <ul class="acct-left">
+              @if (c.holdings) {
+                <li>You hold shares in {{ c.holdings }} {{ c.holdings === 1 ? 'stock' : 'stocks' }}. <a routerLink="/holdings">Sell them</a> first.</li>
+              }
+              @if (c.openOrders) {
+                <li>{{ c.openOrders }} {{ c.openOrders === 1 ? 'order is' : 'orders are' }} still in progress. <a routerLink="/orders">Wait for them</a> to finish.</li>
+              }
+            </ul>
+          </div>
+        </div>
+      } @else {
+        <p>Closing is final: you won't be able to sign in or trade again. Your order history is kept.</p>
+        <dl class="acct-cash">
+          <dt>Cash left on the account</dt>
+          <dd class="mono">{{ c.cashBalance | currency: c.currency }}</dd>
+        </dl>
+        @if (c.cashBalance > 0) {
+          <p class="hint">This cash stays on your closed account. Our operations team will pay it out to you.</p>
+        }
+
+        @if (confirming()) {
+          <form class="acct-confirm" (ngSubmit)="close()" novalidate>
+            <div class="field">
+              <label for="acct-password">Enter your password to close your account</label>
+              <input id="acct-password" name="password" type="password" autocomplete="current-password"
+                     [(ngModel)]="password" [attr.aria-invalid]="passwordError() ? true : null"
+                     [attr.aria-describedby]="passwordError() ? 'acct-password-error' : null" />
+              @if (passwordError()) {
+                <p id="acct-password-error" class="field-error">{{ passwordError() }}</p>
+              }
+            </div>
+            <div class="acct-actions">
+              <button type="submit" class="btn btn-sell" [disabled]="closing()">
+                {{ closing() ? 'Closing…' : 'Close my account permanently' }}
+              </button>
+              <button type="button" class="btn btn-outline" [disabled]="closing()" (click)="cancel()">Keep my account</button>
+            </div>
+          </form>
+        } @else {
+          <button type="button" class="btn btn-outline acct-start" (click)="start()">Close my account</button>
+        }
+      }
+    }
+
+    @if (closeError()) {
+      <div class="alert err" role="alert"><div>{{ closeError() }}</div></div>
+    }
+  </section>
+</div>

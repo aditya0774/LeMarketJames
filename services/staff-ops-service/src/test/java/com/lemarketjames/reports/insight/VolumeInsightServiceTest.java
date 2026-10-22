@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,7 +44,8 @@ class VolumeInsightServiceTest {
             rangesAsked.add(List.of(start, end));
             return totalsByRange.getOrDefault(List.of(start, end), totals(0, "0", "0"));
         };
-        return new VolumeInsightService(fake, calendar, Clock.fixed(now, ZoneOffset.UTC));
+        return new VolumeInsightService(fake, calendar, new InsightFlagRule(new PlatformSettings()),
+                Clock.fixed(now, ZoneOffset.UTC));
     }
 
     private static VolumeTotals totals(long trades, String shares, String amount) {
@@ -147,6 +150,10 @@ class VolumeInsightServiceTest {
         assertEquals(new BigDecimal("20.00"), r.change().shareVolumePercent());
         assertEquals(new BigDecimal("13000.00"), r.change().grossAmount());
         assertEquals(new BigDecimal("31.71"), r.change().grossAmountPercent());
+        // Shares rose 20 %, under the 25 % default; the larger move in value is not what is flagged.
+        assertFalse(r.flag().flagged());
+        assertEquals(InsightFlag.Direction.UP, r.flag().direction());
+        assertEquals(new BigDecimal("20.00"), r.flag().changePercent());
     }
 
     @Test
@@ -159,6 +166,20 @@ class VolumeInsightServiceTest {
         assertEquals(new BigDecimal("-250"), r.change().shareVolume());
         assertEquals(new BigDecimal("-25.00"), r.change().shareVolumePercent());
         assertEquals(new BigDecimal("-50.00"), r.change().grossAmountPercent());
+        assertTrue(r.flag().flagged());
+        assertEquals(InsightFlag.Direction.DOWN, r.flag().direction());
+    }
+
+    @Test
+    void aChosenRangeComparisonIsFlaggedByTheSameRule() {
+        register("2026-10-05T04:00:00", "2026-10-06T04:00:00", totals(9, "130", "1000.00"));
+        register("2026-09-28T04:00:00", "2026-09-29T04:00:00", totals(6, "100", "800.00"));
+
+        VolumeComparisonResponse r = serviceAt(MONDAY_MORNING).compareRanges(LocalDate.parse("2026-10-05"),
+                LocalDate.parse("2026-10-05"), LocalDate.parse("2026-09-28"), LocalDate.parse("2026-09-28"));
+
+        assertTrue(r.flag().flagged());
+        assertEquals(new BigDecimal("30.00"), r.flag().changePercent());
     }
 
     @Test
@@ -180,6 +201,9 @@ class VolumeInsightServiceTest {
         assertEquals(new BigDecimal("300"), r.change().shareVolume());
         assertNull(r.change().shareVolumePercent());
         assertNull(r.change().grossAmountPercent());
+        // From nothing to something: no percent, but flagged.
+        assertTrue(r.flag().flagged());
+        assertNull(r.flag().changePercent());
     }
 
     @Test

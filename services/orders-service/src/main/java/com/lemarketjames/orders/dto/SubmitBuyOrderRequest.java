@@ -1,5 +1,8 @@
 package com.lemarketjames.orders.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
@@ -14,10 +17,15 @@ public class SubmitBuyOrderRequest {
     @Positive(message = "instrumentId must be positive")
     private Integer instrumentId;
 
-    @NotNull(message = "quantity is required")
+    // Whole shares only, checked by the QUANTITY rule (see CreateOrderRequest).
     @Positive(message = "quantity must be positive")
-    @jakarta.validation.constraints.Digits(integer = 10, fraction = 4)
+    @Digits(integer = 10, fraction = 4)
     private BigDecimal quantity;
+
+    /** BR-04: a dollar amount to spend on whole shares, instead of a quantity. */
+    @Positive(message = "amount must be positive")
+    @Digits(integer = 13, fraction = 2, message = "amount must be dollars and cents")
+    private BigDecimal amount;
 
     @NotNull(message = "pricePerUnit is required")
     @Positive(message = "pricePerUnit must be positive")
@@ -55,6 +63,20 @@ public class SubmitBuyOrderRequest {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    @JsonIgnore
+    @AssertTrue(message = OrderSize.EXACTLY_ONE)
+    public boolean isQuantityOrAmount() {
+        return OrderSize.exactlyOne(quantity, amount);
     }
 
     public BigDecimal getPricePerUnit() {

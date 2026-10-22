@@ -1,5 +1,6 @@
 package com.lemarketjames.trades;
 
+import com.lemarketjames.audit.AuditRetention;
 import com.lemarketjames.orders.entity.Order.OrderStatus;
 import java.time.DateTimeException;
 import java.time.LocalDate;
@@ -11,12 +12,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TradeSearchService {
     private final TradeSearchRepository trades;
+    private final AuditRetention retention;
 
-    public TradeSearchService(TradeSearchRepository trades) {
+    public TradeSearchService(TradeSearchRepository trades, AuditRetention retention) {
         this.trades = trades;
+        this.retention = retention;
     }
 
+    /** Finds filled trades, each marked when it is older than the online retention window (BR-14). */
     public List<TradeSearchResult> search(Integer orderId, Integer clientId, String from, String to) {
+        return find(orderId, clientId, from, to).stream()
+                .map(trade -> trade.archived(retention.isArchived(trade.filledAt())))
+                .toList();
+    }
+
+    private List<TradeSearchResult> find(Integer orderId, Integer clientId, String from, String to) {
         if (orderId != null) {
             if (orderId <= 0 || clientId != null || from != null || to != null) {
                 throw new IllegalArgumentException("Supply a positive orderId alone, or clientId with from and to");

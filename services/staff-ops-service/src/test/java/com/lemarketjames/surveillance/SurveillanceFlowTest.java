@@ -211,6 +211,56 @@ class SurveillanceFlowTest {
             .andExpect(jsonPath("$.alerts[1].orderId").value(50));
     }
 
+    @Test
+    void alertsCanBeNarrowedToOneReason() throws Exception {
+        listener.onSubmitted(newOrder(42, "BUY", "150", "244.2366", "2026-10-08T14:30:00Z"));
+        statusListener.onStatusChanged(rejected(43, "INSUFFICIENT_CASH", "2026-10-08T14:35:00Z"));
+
+        mvc.perform(get(ALERTS).param("reason", "SETTLEMENT_REFUSED").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.alerts.length()").value(1))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(43));
+    }
+
+    /** Days are whole UTC days, both included, as in trade search. */
+    @Test
+    void alertsCanBeNarrowedToUtcDays() throws Exception {
+        listener.onSubmitted(newOrder(41, "BUY", "150", "244.2366", "2026-10-07T23:59:59Z"));
+        listener.onSubmitted(newOrder(42, "BUY", "150", "244.2366", "2026-10-08T00:00:00Z"));
+        listener.onSubmitted(newOrder(43, "BUY", "150", "244.2366", "2026-10-09T23:59:59Z"));
+        listener.onSubmitted(newOrder(44, "BUY", "150", "244.2366", "2026-10-10T00:00:00Z"));
+
+        mvc.perform(get(ALERTS).param("from", "2026-10-08").param("to", "2026-10-09").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(2))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(43))
+            .andExpect(jsonPath("$.alerts[1].orderId").value(42));
+        mvc.perform(get(ALERTS).param("from", "2026-10-09").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(2))
+            .andExpect(jsonPath("$.alerts[1].orderId").value(43));
+    }
+
+    @Test
+    void aReversedRangeOrAnUnknownReasonIsABadRequest() throws Exception {
+        mvc.perform(get(ALERTS).param("from", "2026-10-09").param("to", "2026-10-08").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isBadRequest());
+        mvc.perform(get(ALERTS).param("reason", "NOT_A_REASON").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isBadRequest());
+        mvc.perform(get(ALERTS).param("from", "8 Oct").cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void atMostTheNewestHundredAreListed() throws Exception {
+        for (int order = 1; order <= SurveillanceService.LATEST + 1; order++) {
+            listener.onSubmitted(newOrder(order, "BUY", "150", "1", Instant.parse("2026-10-08T14:00:00Z")
+                .plusSeconds(order).toString()));
+        }
+
+        mvc.perform(get(ALERTS).cookie(tokenFor(Role.TRADING_OPS)))
+            .andExpect(jsonPath("$.alerts.length()").value(SurveillanceService.LATEST))
+            .andExpect(jsonPath("$.alerts[0].orderId").value(SurveillanceService.LATEST + 1));
+    }
+
     /**
      * The service looks before it stores, but two instances can look at the same moment. The
      * table's key (database/schema/019) is what guarantees one alert per order and reason.

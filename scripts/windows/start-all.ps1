@@ -21,13 +21,17 @@
     .\scripts\windows\start-all.ps1
     .\scripts\windows\start-all.ps1 -SkipBuild
     .\scripts\windows\start-all.ps1 -Kafka
+    .\scripts\windows\start-all.ps1 -SessionTimeout PT30M
 #>
 param(
     # Skip `mvn install` when nothing under libs/ or services/ changed since the last run.
     [switch]$SkipBuild,
     # Publish order events to a Kafka broker you already have running on localhost:9092, and have
     # the consumers in trading-service and staff-ops-service read them from it.
-    [switch]$Kafka
+    [switch]$Kafka,
+    # How long a session may sit idle before it is signed out (BR-03), ISO-8601. Running the e2e
+    # or load tests against this stack needs PT30M: they pause longer than a minute without input.
+    [string]$SessionTimeout = 'PT1M'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,7 +63,11 @@ $trading = '$env:SIM_CONTROL_ENABLED = ''true''; $env:LMJ_SETTLEMENT_CONTROL_ENA
     'mvn -B -pl services/trading-service spring-boot:run'
 if ($Kafka) { $trading = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $trading }
 Start-Window 'trading-service :8084' $repoRoot $trading
-Start-Window 'auth-service :8082'     $repoRoot 'mvn -B -pl services/auth-service spring-boot:run'
+# The web apps below run over HTTPS (BR-02), so the session cookie is marked Secure, as in Docker Compose.
+# The inactivity timeout is passed on as Docker Compose passes SESSION_INACTIVITY_TIMEOUT.
+Start-Window 'auth-service :8082'     $repoRoot ('$env:AUTH_COOKIE_SECURE = ''true''; ' +
+    "`$env:LMJ_SESSION_INACTIVITYTIMEOUT = '$SessionTimeout'; " +
+    'mvn -B -pl services/auth-service spring-boot:run')
 # The same setting Docker Compose gives it; the broker address defaults to localhost:9092.
 $orders = '$env:LMJ_EXECUTION_CONTROL_ENABLED = ''true''; ' +
     'mvn -B -pl services/orders-service spring-boot:run'
@@ -72,13 +80,14 @@ if ($Kafka) { $staffOps = '$env:LMJ_EVENTS_CONSUMER = ''kafka''; ' + $staffOps }
 Start-Window 'staff-ops-service :8086' $repoRoot $staffOps
 
 $frontend = Join-Path $repoRoot 'apps\frontend'
-$npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start' } else { 'npm install; npm start' }
+# --ssl: the dev server makes its own self-signed certificate, so both apps are HTTPS as in Docker (BR-02).
+$npm = if (Test-Path (Join-Path $frontend 'node_modules')) { 'npm start -- --ssl' } else { 'npm install; npm start -- --ssl' }
 Start-Window 'frontend :4200' $frontend $npm
 # The staff app is a second project in the same Angular workspace. It shares node_modules with
 # the trading frontend, so it waits for the install above instead of running a second one.
-$staff = 'while (-not (Test-Path node_modules\.package-lock.json)) { Start-Sleep 2 }; npm run start:staff'
+$staff = 'while (-not (Test-Path node_modules\.package-lock.json)) { Start-Sleep 2 }; npm run start:staff -- --ssl'
 Start-Window 'staff-frontend :4201' $frontend $staff
 
 Write-Host ''
-Write-Host 'Services take ~30s to start. Then open http://localhost:4200 (trading app) or http://localhost:4201 (staff app)'
+Write-Host 'Services take ~30s to start. Then open https://localhost:4200 (trading app) or https://localhost:4201 (staff app); accept the browser''s certificate warning once'
 Write-Host 'Health check: curl http://localhost:<port>/actuator/health for 8082 (auth), 8084 (trading), 8085 (orders), 8086 (staff-ops)'

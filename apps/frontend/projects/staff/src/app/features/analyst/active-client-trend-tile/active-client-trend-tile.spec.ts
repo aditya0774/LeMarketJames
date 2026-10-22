@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActiveClientTrendResponse } from '../../../shared/models/active-client-trend.model';
 import { ActiveClientTrendTile } from './active-client-trend-tile';
+import { flagFor } from '../insight-flags/insight-flag.fixtures';
+import { InsightFlags } from '../insight-flags/insight-flags';
 
 const URL = '/api/v1/reports/insights/active-clients';
 
@@ -16,6 +18,9 @@ function trend(counts?: number[]): ActiveClientTrendResponse {
       date: new Date(Date.UTC(2026, 8, 15 + i)).toISOString().slice(0, 10),
       activeClients,
     })),
+    lastWeek: { startDate: '2026-10-07', endDate: '2026-10-13', averageActiveClients: 25 },
+    weekBefore: { startDate: '2026-09-30', endDate: '2026-10-06', averageActiveClients: 18 },
+    flag: flagFor(38.89),
     generatedAt: '2026-10-14T14:00:00Z',
   };
 }
@@ -29,7 +34,8 @@ describe('ActiveClientTrendTile', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ActiveClientTrendTile],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // As on the dashboard, which provides the store the tile reports its flag to.
+      providers: [provideHttpClient(), provideHttpClientTesting(), InsightFlags],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(ActiveClientTrendTile);
@@ -62,6 +68,25 @@ describe('ActiveClientTrendTile', () => {
 
     expect(el().querySelector('.latest')!.textContent).toContain('5');
     expect(el().querySelector('.peak')!.textContent).toContain('12');
+  });
+
+  it('compares the last 7 days with the 7 before and flags a move of 25% or more', async () => {
+    await flush();
+
+    const week = el().querySelector('.week')!.textContent!.replace(/\s+/g, ' ');
+    expect(week).toContain('Last 7 days: 25 a day on average, against 18 the 7 days before (2026-09-30 – 2026-10-06)');
+    expect(el().querySelector('.week staff-insight-flag .flag')!.textContent).toContain('Flagged +38.89%');
+    expect(TestBed.inject(InsightFlags).all()).toEqual([{
+      key: 'active-clients', label: 'Active clients, daily average',
+      comparedWith: '2026-10-07 – 2026-10-13 vs 2026-09-30 – 2026-10-06', flag: flagFor(38.89),
+    }]);
+  });
+
+  it('shows no flag when the two weeks are close', async () => {
+    await flush({ ...trend(), flag: flagFor(5) });
+
+    expect(el().querySelector('.week')).not.toBeNull();
+    expect(el().querySelector('.week staff-insight-flag .flag')).toBeNull();
   });
 
   it('shows the last-refreshed time', async () => {

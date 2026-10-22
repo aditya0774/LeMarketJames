@@ -1,6 +1,7 @@
 package com.lemarketjames.config;
 
 import com.lemarketjames.common.security.AccountAccessCheck;
+import com.lemarketjames.common.security.InternalApiTokenFilter;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
 import com.lemarketjames.common.security.Role;
@@ -20,17 +21,26 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Spring Security configuration for the application.
  * Configures authentication, authorization, CORS, and filters for JWT token handling.
+ *
+ * <p>Every endpoint but health needs a credential (BR-02). {@code /internal/**} (the execution test
+ * control) takes the shared internal token, not a JWT ({@link InternalApiTokenFilter}).
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** The trading app's origins, from a comma-separated setting (contract C5). */
     @Value("${app.cors.allowed-origin}")
-    private String allowedOrigin;
+    private List<String> allowedOrigins;
+
+    /** Shared with the services that serve and call {@code /internal/**} (contract C5). */
+    @Value("${internal.api-token}")
+    private String internalApiToken;
 
     /**
      * Configures the security filter chain for HTTP requests.
@@ -54,17 +64,22 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/", "/actuator/health", "/internal/execution/control/**").permitAll()
+                .requestMatchers("/", "/actuator/health").permitAll()
+                // Only another service or a test run, by the shared token: a session gets 403 here.
+                .requestMatchers("/internal/**").hasAuthority(InternalApiTokenFilter.AUTHORITY)
                 // Dispute searches may read any client's fills, so only operations may call them.
                 .requestMatchers("/api/v1/orders/trades/search", "/api/v1/orders/trades/clients").hasRole(Role.TRADING_OPS.name())
                 // Moving orders through their lifecycle is an operations task (contract C7).
                 .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/status/*").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/reject").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers("/api/v1/orders/*/timeline").hasRole(Role.TRADING_OPS.name())
+                // Archived audit events, for Risk and Compliance through operations (BR-14, contract C7).
+                .requestMatchers("/api/v1/audit/**").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers(HttpMethod.GET, "/api/v1/orders/stream").hasRole(Role.CLIENT.name())
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders", "/api/v1/buy-orders").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())
-            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new InternalApiTokenFilter(internalApiToken), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -79,7 +94,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow both the frontend (localhost:4200) and backend itself (localhost:8081) for smoke tests
-        configuration.setAllowedOrigins(List.of(allowedOrigin, "http://localhost:8081"));
+        configuration.setAllowedOrigins(Stream.concat(allowedOrigins.stream(), Stream.of("http://localhost:8081")).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

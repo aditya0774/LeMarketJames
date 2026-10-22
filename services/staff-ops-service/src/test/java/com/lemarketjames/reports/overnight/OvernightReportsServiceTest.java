@@ -26,10 +26,11 @@ class OvernightReportsServiceTest {
     private static final Instant READY_BY = Instant.parse("2026-10-15T11:00:00Z");
 
     private final ReportRunRepository runs = mock(ReportRunRepository.class);
+    private final ReportOutputs outputs = mock(ReportOutputs.class);
     // 21:00 EDT on the 14th, already the 15th in UTC: "today" must be the reports zone's day.
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-15T01:00:00Z"), ZoneOffset.UTC);
     private final OvernightReportsService service =
-            new OvernightReportsService(runs, new ReportCalendar(new PlatformSettings()), clock);
+            new OvernightReportsService(runs, outputs, new ReportCalendar(new PlatformSettings()), clock);
 
     private static ReportRun run(RunStatus status, Instant readyAt, String failureReason) {
         return new ReportRun(UUID.randomUUID(), "Activity by stock", LocalDate.parse("2026-10-14"), status,
@@ -131,5 +132,20 @@ class OvernightReportsServiceTest {
         var dates = service.recentRuns().data().stream().map(OvernightReportsResponse.Run::runDate).toList();
 
         assertEquals(List.of(LocalDate.parse("2026-10-14"), LocalDate.parse("2026-10-13")), dates);
+    }
+
+    // BR-16: a finished run names the file it produced; any other run names none, even with a row.
+    @Test
+    void aFinishedRunNamesItsFileAndNoOtherRunDoes() {
+        ReportRun ready = run(RunStatus.READY, Instant.parse("2026-10-15T06:04:12Z"), null);
+        ReportRun failed = run(RunStatus.FAILED, null, "boom");
+        when(runs.findByRunDateGreaterThanEqualOrderByRunDateDescReportNameAsc(any())).thenReturn(List.of(ready, failed));
+        when(outputs.fileNamesSince(LocalDate.parse("2026-09-14"))).thenReturn(java.util.Map.of(
+                ready.getId(), "monthly-trading-summary-2026-10-01-to-2026-10-14.csv", failed.getId(), "stray.csv"));
+
+        var data = service.recentRuns().data();
+
+        assertEquals("monthly-trading-summary-2026-10-01-to-2026-10-14.csv", data.get(0).outputFileName());
+        assertNull(data.get(1).outputFileName());
     }
 }

@@ -63,7 +63,14 @@ for (const { mode, reason, title } of cases) {
       // AC4: the rejection is audited with its reason; no fill and no settlement were recorded.
       const trail = await auditTrail(db, placed.orderId);
       expect(lifecycleSteps(trail)).toEqual(['SUBMITTED', 'VALIDATED', 'ACCEPTED', 'REJECTED']);
-      expect(trail[trail.length - 1].details).toEqual({ reason });
+      // BR-15: a rejection on a quote it did receive records that quote; with no quote, only the reason (C2).
+      const details = trail[trail.length - 1].details;
+      if (mode === 'STALE') {
+        expect(Object.keys(details).sort()).toEqual(['quotePrice', 'quoteTime', 'reason']);
+        expect(details.reason).toBe(reason);
+      } else {
+        expect(details).toEqual({ reason });
+      }
 
       // With quotes back, the rejection is final and nothing was settled: the share and the cash
       // are untouched. Read after the reset because holdings prices come from the same feed.

@@ -3,6 +3,7 @@ package com.lemarketjames.config;
 import com.lemarketjames.common.security.AccountAccessCheck;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.JwtService;
+import com.lemarketjames.common.security.Role;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,13 +23,15 @@ import java.util.List;
 /**
  * Spring Security configuration for the auth service.
  * Register and login are public; everything else (e.g. /api/auth/me) needs a valid JWT cookie.
+ * Account status changes are Trading Ops' and closing an account is the client's own (contract C7).
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** The trading app's origins, from a comma-separated setting (contract C5). */
     @Value("${app.cors.allowed-origin}")
-    private String allowedOrigin;
+    private List<String> allowedOrigins;
 
     /**
      * Configures the security filter chain for HTTP requests.
@@ -52,6 +55,8 @@ public class SecurityConfig {
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
+                .requestMatchers("/api/v1/clients/*/status").hasRole(Role.TRADING_OPS.name())
+                .requestMatchers("/api/auth/close-account").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())
             .addFilterBefore(new JwtAuthenticationFilter(jwtService, accessCheck), UsernamePasswordAuthenticationFilter.class);
 
@@ -67,7 +72,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

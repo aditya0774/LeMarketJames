@@ -20,17 +20,20 @@ public record OvernightReportsResponse(boolean success, String timeZone, List<Ru
      * @param readyAt       when it finished: set when {@code READY}, and when {@code LATE} once the
      *                      late run has finished; otherwise null
      * @param failureReason set only when {@code FAILED}, otherwise null
+     * @param outputFileName the file the run produced, downloaded from
+     *                       {@code /api/v1/reports/overnight/{id}/output}; null when there is none
      */
     public record Run(UUID id, String name, LocalDate runDate, RunStatus status, Instant scheduledFor,
-                      Instant readyBy, Instant readyAt, String failureReason) {
+                      Instant readyBy, Instant readyAt, String failureReason, String outputFileName) {
 
-        static Run of(ReportRun run) {
+        static Run of(ReportRun run, String outputFileName) {
             // Enforced here as well as by the writer, so the contract holds even for a hand-edited row.
             boolean finished = run.getStatus() == RunStatus.READY || run.getStatus() == RunStatus.LATE;
             return new Run(run.getId(), run.getReportName(), run.getRunDate(), run.getStatus(),
                     run.getScheduledFor(), run.getReadyBy(),
                     finished ? run.getReadyAt() : null,
-                    run.getStatus() == RunStatus.FAILED ? run.getFailureReason() : null);
+                    run.getStatus() == RunStatus.FAILED ? run.getFailureReason() : null,
+                    finished ? outputFileName : null);
         }
     }
 }

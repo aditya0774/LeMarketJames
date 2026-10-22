@@ -37,9 +37,14 @@
 
 .section-head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+/* The dates stay on the right, with the flag (when there is one) next to the heading. */
+.section-head .range {
+  margin-left: auto;
 }
 
 .section-head h3 {

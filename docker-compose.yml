@@ -5,7 +5,8 @@ services:
     image: lemarketjames/frontend:${IMAGE_TAG:-dev}
     build: ./apps/frontend
     ports:
-      - "4200:80"
+      # HTTPS only, with a self-signed certificate (BR-02): browsers warn once for localhost.
+      - "4200:443"
     depends_on:
       - auth-service
       - orders-service
@@ -22,7 +23,8 @@ services:
       context: ./apps/frontend
       dockerfile: projects/staff/Dockerfile
     ports:
-      - "4201:80"
+      # HTTPS only, like the trading app.
+      - "4201:443"
     depends_on:
       - auth-service
       - orders-service
@@ -37,7 +39,9 @@ services:
       dockerfile: services/auth-service/Dockerfile
     ports:
       # Published for direct debugging only; browser traffic goes through a web app.
-      - "8082:8082"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:8082:8082"
     depends_on:
       db:
         condition: service_healthy
@@ -49,8 +53,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
-      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-https://localhost:4200,http://localhost:4200}
+      # Both web apps are HTTPS, so the session cookie is only ever sent over HTTPS.
+      AUTH_COOKIE_SECURE: "true"
       LMJ_AUTH_LOCKOUT_DURATION: ${AUTH_LOCKOUT_DURATION:-15m}
+      # BR-03: an idle session ends after this (ISO-8601). Test runs that pause longer than a minute
+      # without input (the e2e and load suites, Jenkins) set SESSION_INACTIVITY_TIMEOUT=PT30M.
+      LMJ_SESSION_INACTIVITYTIMEOUT: ${SESSION_INACTIVITY_TIMEOUT:-PT1M}
 
   # Order placement, lifecycle, automatic execution and history, and the Trading Ops trade search
   # and order timeline. Publishes the order events to Kafka.
@@ -62,7 +71,9 @@ services:
     ports:
       # Published for direct debugging and the e2e execution control only; browser traffic goes
       # through a web app.
-      - "8085:8085"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:8085:8085"
     depends_on:
       db:
         condition: service_healthy
@@ -76,6 +87,8 @@ services:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      # orders-service calls trading-service's /internal/**, which needs this shared token (BR-02, C5).
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-development-only-internal-token}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
@@ -89,7 +102,7 @@ services:
       LMJ_EXECUTION_RESPECT_MARKET_HOURS: ${SIM_RESPECT_MARKET_HOURS:-true}
       LMJ_EXECUTION_HOLIDAYS: ${SIM_HOLIDAYS:-}
       LMJ_EXECUTION_CONTROL_ENABLED: "true"
-      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-https://localhost:4200,http://localhost:4200}
 
   # Everything a client trades against apart from the orders themselves: the simulated market
   # (GBM engine), instruments, quotes and sessions, the client profile, holdings, portfolio and
@@ -105,7 +118,9 @@ services:
     ports:
       # Published for direct debugging and the e2e test controls only; browser traffic goes
       # through a web app.
-      - "8084:8084"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:8084:8084"
     depends_on:
       db:
         condition: service_healthy
@@ -113,11 +128,13 @@ services:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET:-change-this-development-only-secret-key-please-32bytes+}
+      # orders-service calls trading-service's /internal/**, which needs this shared token (BR-02, C5).
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-development-only-internal-token}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lemarket
       SPRING_DATASOURCE_USERNAME: lemarket_app
       SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-changeme_app}
       ORDERS_SERVICE_URL: http://orders-service:8085
-      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-http://localhost:4200}
+      APP_CORS_ALLOWED_ORIGIN: ${APP_CORS_ALLOWED_ORIGIN:-https://localhost:4200,http://localhost:4200}
       # This stack is a test environment, so the quote-feed test controls (contract C4,
       # contracts/C4-quote-feed.md) and the settlement test control (contracts/C5-config.md) are
       # on. They sit under /internal on port 8084, which no web app forwards.
@@ -143,7 +160,9 @@ services:
       dockerfile: services/staff-ops-service/Dockerfile
     ports:
       # Published for direct debugging and tests only; staff browser traffic goes through the staff app.
-      - "8086:8086"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:8086:8086"
     depends_on:
       db:
         condition: service_healthy
@@ -177,7 +196,9 @@ services:
     ports:
       # For clients on the host: Jenkins' integration tests and a service run outside Docker.
       # Containers use kafka:29092 instead. No other service in this file uses 9092.
-      - "9092:9092"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:9092:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -241,13 +262,42 @@ services:
       # Db is reachable from the host too, for DBA tooling on the developer's
       # machine during development (the web apps never call db directly; only the backend
       # services talk to it).
-      - "5432:5432"
+      # This machine only (BR-02): another computer can't reach it. A shared VM that other machines
+      # develop against sets SERVICE_BIND_ADDRESS=0.0.0.0 (README, "Running the Frontend Against a Remote Backend").
+      - "${SERVICE_BIND_ADDRESS:-127.0.0.1}:5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./database/schema:/docker-entrypoint-initdb.d
+
+  # BR-14: a nightly pg_dump of the database, keeping the newest few, in the db_backups volume. The
+  # same scripts/backup-db.sh as a manual backup; restore steps in database/README.md ("Backups and
+  # restore"). Takes one at first start too. Same image as db, so pg_dump matches the server.
+  db-backup:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["sh", "/opt/backup/backup-db-nightly.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: lemarket
+      # The owner: only it can read every table, including those lemarket_app may not change.
+      PGUSER: lemarket
+      PGPASSWORD: ${DB_PASSWORD:-changeme}
+      BACKUP_DIR: /backups
+      # Empty means the scripts' defaults: keep 7 (backup-db.sh), at 02:00 UTC (backup-db-nightly.sh).
+      BACKUP_KEEP: ${BACKUP_KEEP:-}
+      BACKUP_TIME: ${BACKUP_TIME:-}
+    volumes:
+      - db_backups:/backups
+      - ./scripts/backup-db.sh:/opt/backup/backup-db.sh:ro
+      - ./scripts/backup-db-nightly.sh:/opt/backup/backup-db-nightly.sh:ro
 
 volumes:
   db_data:
     # Named volume: persists Postgres data across `docker compose down` and
     # `docker compose up`. Use `docker compose down -v` to also remove this
     # volume, which wipes the database and starts fresh on the next `up`.
+  db_backups:
+    # The nightly backups (db-backup above). Kept by `docker compose down`; `down -v` removes them
+    # with the database, so copy one out first if you need it (database/README.md).

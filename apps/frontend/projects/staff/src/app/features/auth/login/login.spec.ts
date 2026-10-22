@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { SESSION_END_MESSAGES } from '@lemarket/shared-ui';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -149,6 +150,22 @@ describe('Staff login', () => {
     expect(navigated).toBe(false);
     http.verify();
   });
+
+  // BR-03: the inactivity timeout signs an idle session out to ?reason=timeout, and one that hit
+  // its time limit to ?reason=expired.
+  for (const reason of ['timeout', 'expired'] as const) {
+    it('says why the session ended for ?reason=' + reason, async () => {
+      await TestBed.configureTestingModule({
+        providers: [provideRouter([{ path: 'login', component: Login }]), provideHttpClient(), provideHttpClientTesting()],
+      }).compileComponents();
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/login?reason=' + reason, Login);
+
+      const alert = harness.routeNativeElement!.querySelector('[role="alert"]')!;
+      expect(alert.querySelector('b')!.textContent).toBe(SESSION_END_MESSAGES[reason].heading);
+      expect(alert.textContent).toContain(SESSION_END_MESSAGES[reason].message);
+    });
+  }
 
   // LMKT-56: accountInactiveInterceptor sends a cut-off session here with ?reason=inactive.
   for (const [url, shown] of [['/login?reason=inactive', true], ['/login', false]] as const) {
