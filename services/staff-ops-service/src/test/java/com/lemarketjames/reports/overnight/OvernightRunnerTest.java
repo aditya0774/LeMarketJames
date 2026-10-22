@@ -83,6 +83,20 @@ class OvernightRunnerTest {
         verify(writer, never()).fail(any(), anyString());
     }
 
+    // BR-16: a report's file is stored with its finish, in the writer's one transaction.
+    @Test
+    void aRunsFileIsStoredWhenItFinishes() {
+        Job job = new Job("Monthly trading summary", day -> { });
+        ReportOutput file = new ReportOutput("monthly-trading-summary-2026-10-01-to-2026-10-14.csv", "text/csv", "symbol\r\n");
+        job.output = Optional.of(file);
+        UUID id = scheduled(job);
+
+        runner(job).runNight();
+
+        verify(writer).finish(id, RUN_TIME, file);
+        verify(writer, never()).finish(id, RUN_TIME);
+    }
+
     @Test
     void aFailedRunIsRecordedWithItsReason() {
         Job job = new Job("Activity by stock", day -> { throw new IllegalStateException("Source data missing for 2026-10-14"); });
@@ -239,6 +253,8 @@ class OvernightRunnerTest {
         private final String name;
         private final Consumer<LocalDate> work;
         final List<LocalDate> ranOn = new java.util.ArrayList<>();
+        /** What the job returns; most produce no file. */
+        Optional<ReportOutput> output = Optional.empty();
 
         Job(String name, Consumer<LocalDate> work) {
             this.name = name;
@@ -251,9 +267,10 @@ class OvernightRunnerTest {
         }
 
         @Override
-        public void run(LocalDate runDate) {
+        public Optional<ReportOutput> run(LocalDate runDate) {
             ranOn.add(runDate);
             work.accept(runDate);
+            return output;
         }
     }
 

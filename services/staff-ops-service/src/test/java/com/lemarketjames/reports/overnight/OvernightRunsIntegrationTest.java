@@ -1,6 +1,10 @@
 package com.lemarketjames.reports.overnight;
 
 import com.lemarketjames.config.ReportingDataSourceConfig;
+import com.lemarketjames.reports.period.ReportCalendar;
+import com.lemarketjames.reports.period.ReportPeriod;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.SymbolTotals;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -15,6 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * LMKT-45 on a real PostgreSQL with migration 023 applied: the run writer can record runs although
+ * LMKT-45 and BR-16 on a real PostgreSQL with migrations 023 and 030 applied: the run writer can record runs although
  * every connection of the reports' pool is read-only by default, a report runs once a night, a run only
  * moves forward, and every other write is still refused.
  *
@@ -49,9 +54,12 @@ class OvernightRunsIntegrationTest {
     private static final Instant READY_BY = Instant.parse("2026-10-15T11:00:00Z");
 
     @Autowired ReportRunWriter writer;
-    @Autowired StubOvernightReportJob stub;
+    @Autowired DailySummaryWriter refresher;
+    @Autowired DailyTradeSummary summary;
+    @Autowired ReportOutputs outputs;
+    @Autowired ReportCalendar calendar;
     @Autowired ReportRunRepository runs;
-    // The reports' pool, the one the writer and the stub use; the ordinary pool has no read-only default.
+    // The reports' pool, the one the writers use; the ordinary pool has no read-only default.
     @Autowired @Qualifier(ReportingDataSourceConfig.JDBC) JdbcTemplate jdbc;
     @Autowired @Qualifier(ReportingDataSourceConfig.TRANSACTION_MANAGER) PlatformTransactionManager transactions;
 
@@ -198,9 +206,46 @@ class OvernightRunsIntegrationTest {
         assertEquals(RunStatus.READY, stored(finished).getStatus());
     }
 
+    // BR-16: the nightly summary holds what the live view holds for the days it covers. Trades are
+    // final (029), so a day summarized earlier still matches. The rows written are real summary
+    // rows, correct for any later run, so they are left in place.
     @Test
-    void theStubReadsTheRealReportingView() {
-        assertDoesNotThrow(() -> stub.run(RUN_DATE));
+    void theSummaryMatchesTheLiveViewForTheDaysItCovers() {
+        assertDoesNotThrow(() -> refresher.refreshThrough(RUN_DATE));
+        String zone = calendar.zone().getId();
+        LocalDate from = RUN_DATE.minusDays(400);
+        ReportPeriod days = calendar.between(from, RUN_DATE);
+
+        List<SymbolTotals> live = jdbc.query("""
+                SELECT symbol, SUM(quantity) AS q, SUM(gross_amount) AS g,
+                       COUNT(*) FILTER (WHERE side = 'BUY') AS b, COUNT(*) FILTER (WHERE side = 'SELL') AS s
+                FROM reporting_trades WHERE filled_at >= ? AND filled_at < ? GROUP BY symbol ORDER BY symbol
+                """, (rs, i) -> new SymbolTotals(rs.getString("symbol"), rs.getBigDecimal("q").stripTrailingZeros(),
+                        rs.getBigDecimal("g").stripTrailingZeros(), rs.getLong("b"), rs.getLong("s")),
+                days.start(), days.end());
+        List<SymbolTotals> summarized = SymbolTotals.merge(summary.bySymbol(zone, from, RUN_DATE)).stream()
+                .map(t -> new SymbolTotals(t.symbol(), t.totalQuantity().stripTrailingZeros(),
+                        t.totalGrossAmount().stripTrailingZeros(), t.buyCount(), t.sellCount()))
+                .toList();
+
+        assertEquals(live, summarized);
+        assertTrue(summary.summarizedThrough(zone).orElseThrow().compareTo(RUN_DATE) >= 0);
+    }
+
+    @Test
+    void aRunsFileIsStoredWithItsFinishAndGoesWithTheRun() {
+        UUID id = writer.schedule(report, RUN_DATE, SCHEDULED_FOR, READY_BY).orElseThrow();
+        writer.start(id, SCHEDULED_FOR);
+        ReportOutput file = new ReportOutput("monthly-trading-summary-2026-10-01-to-2026-10-14.csv", "text/csv",
+                "symbol,segment\r\nAAPL,RETAIL\r\n");
+
+        assertTrue(writer.finish(id, SCHEDULED_FOR.plusSeconds(30), file));
+
+        assertEquals(RunStatus.READY, stored(id).getStatus());
+        assertEquals(Optional.of(file), outputs.find(id));
+        assertEquals(file.fileName(), outputs.fileNamesSince(RUN_DATE).get(id));
+        // A second finish is refused, and stores no second file.
+        assertFalse(writer.finish(id, SCHEDULED_FOR.plusSeconds(60), file));
     }
 
     @Test

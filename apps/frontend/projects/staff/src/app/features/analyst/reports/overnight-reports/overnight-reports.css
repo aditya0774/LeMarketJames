@@ -10,3 +10,6 @@
 .ready-time { white-space: nowrap; }
 .failure-reason { color: var(--errt); }
 .late-note { color: var(--pritext); }
+
+/* BR-16: a finished run's file, beside its note. */
+.download { margin-left: 10px; padding: 4px 10px; font-size: var(--font-sm); }

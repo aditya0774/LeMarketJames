@@ -5,6 +5,9 @@ import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.TradesAggregateProjection;
 import com.lemarketjames.reports.repository.TradesReportRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.SymbolTotals;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,8 +36,18 @@ class TradesReportServiceTest {
     @Mock
     private ReportCalendar reportCalendar;
 
+    // No summary yet (summarizedThrough is empty by default), so every day is read live, as before BR-16.
+    // The split itself is tested in TradesReportReadSideTest.
+    @Mock
+    private DailyTradeSummary summary;
+
     @InjectMocks
     private TradesReportService service;
+
+    @BeforeEach
+    void reportsTimeZone() {
+        lenient().when(reportCalendar.zone()).thenReturn(ZoneId.of("America/New_York"));
+    }
 
     @Test
     void mapsAggregateProjectionsToDto() {
@@ -152,8 +165,8 @@ class TradesReportServiceTest {
     }
 
     @Test
-    void preservesOrderFromRepository() {
-        // Arrange: Repository returns alphabetically sorted by symbol
+    void sortsBySymbolWhateverOrderTheRowsArriveIn() {
+        // Arrange: rows in any order (the summary and the live view are merged, so neither order is kept)
         LocalDate startDate = LocalDate.of(2026, 10, 1);
         LocalDate endDate = LocalDate.of(2026, 10, 7);
         LocalDateTime startUtc = LocalDateTime.of(2026, 10, 1, 0, 0);
@@ -170,10 +183,33 @@ class TradesReportServiceTest {
         // Act
         List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
 
-        // Assert: Order matches repository order (which is sorted in the SQL query)
+        // Assert: alphabetical by symbol, as the report promises
         assertEquals("AAA", result.get(0).symbol());
-        assertEquals("ZZZ", result.get(1).symbol());
-        assertEquals("MMM", result.get(2).symbol());
+        assertEquals("MMM", result.get(1).symbol());
+        assertEquals("ZZZ", result.get(2).symbol());
+    }
+
+    // BR-16: a long range reads the summarized days from the summary and only the rest live.
+    @Test
+    void summarizedDaysComeFromTheSummaryAndOnlyLaterDaysAreReadLive() {
+        LocalDate startDate = LocalDate.of(2025, 10, 22);
+        LocalDate endDate = LocalDate.of(2026, 10, 21);
+        LocalDateTime liveStart = LocalDateTime.of(2026, 10, 21, 4, 0);
+        LocalDateTime liveEnd = LocalDateTime.of(2026, 10, 22, 4, 0);
+        when(summary.summarizedThrough("America/New_York")).thenReturn(java.util.Optional.of(LocalDate.of(2026, 10, 20)));
+        when(summary.bySymbol("America/New_York", startDate, LocalDate.of(2026, 10, 20))).thenReturn(List.of(
+                new SymbolTotals("AAPL", new BigDecimal("100"), new BigDecimal("15000.00"), 6, 4),
+                new SymbolTotals("MSFT", new BigDecimal("10"), new BigDecimal("4000.00"), 1, 0)));
+        LocalDate today = LocalDate.of(2026, 10, 21);
+        when(reportCalendar.between(today, today)).thenReturn(new ReportPeriod(today, liveStart, liveEnd));
+        TradesAggregateProjection aaplToday = mockProjection("AAPL", 5, "750.50", 1, 0);
+        when(repository.aggregateTradesBySymbol(liveStart, liveEnd)).thenReturn(List.of(aaplToday));
+
+        List<TradesByStockReportRow> result = service.getTradesAggregateByStock(startDate, endDate);
+
+        assertEquals(List.of(
+                new TradesByStockReportRow("AAPL", new BigDecimal("105"), new BigDecimal("15750.50"), 7, 4),
+                new TradesByStockReportRow("MSFT", new BigDecimal("10"), new BigDecimal("4000.00"), 1, 0)), result);
     }
 
     // Helper to create mock projections with fluent syntax

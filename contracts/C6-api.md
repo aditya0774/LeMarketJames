@@ -538,7 +538,8 @@ Rules for every report (the full list, for whoever builds one, is in the service
 
 - **Path.** Every report is under `/api/v1/reports/...`.
 - **Access.** `ANALYST` only ([C7](C7-roles.md)). A missing or expired cookie gets `401`; every other role gets `403`.
-- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)). They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs`.
+- **Data source.** Reports read only the `reporting_trades` view ([010](../database/schema/010_shared_contracts.sql)), or the nightly summary built from it. They count filled orders: a *trade* is one filled order. There are no fees; amounts are quantity × price. The one exception is the [overnight reports list](#get-apiv1reportsovernight), which is about report runs, not trades, and reads `report_runs` and `report_outputs`.
+- **Read side (BR-16).** The long-range reports, [`/trades`](#get-apiv1reportstrades) (a year by default) and `/trades-by-stock`, read the days the nightly summary `reporting_daily_trades` covers from it, and only the days after (today, and any night not summarized yet) from the live view, so a year's report does not scan a year of orders on the database trading uses. The figures are the same either way: a summarized day never changes, since trades are final. The insights, the segment report and the overnight list read live: they cover a few weeks, or count distinct clients, which a daily summary cannot add up. Which endpoint reads what is in the service's [README](../services/staff-ops-service/README.md#read-side-br-16).
 - **Aggregates only.** A response never contains `client_id` or anything else that identifies an individual client, and never a single trade.
 - **Time zone.** A report's days, weeks, months and years are those of the reports time zone, the `lmj.reports.time-zone` setting ([C5](C5-config.md)), not UTC and not the browser's zone. Orders are stored in UTC; [ReportCalendar](../services/staff-ops-service/src/main/java/com/lemarketjames/reports/period/ReportCalendar.java) converts, including a period's local start and excluding the next period's. Weeks run Monday to Sunday.
 
@@ -614,7 +615,7 @@ The original activity endpoint retains its aggregate-only response shape.
 
 ### GET /api/v1/reports/trades
 
-Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first.
+Trade aggregation report, grouped by period (day, week, month, or year). Responds with counts and totals per period, newest first. A long-range report: summarized days come from the nightly summary, later days live ([read side](#reports-staff-ops-service)).
 
 **Parameters** (all optional except `periodType`):
 
@@ -828,7 +829,9 @@ Which figure each insight flags: the volume insights flag `shareVolume`, the mos
 
 The overnight reports list (LMKT-45). Heavy reports run each night at the overnight report time, outside trading hours, and each run is recorded here with its status, when it was ready and why it failed. The staff app's Analyst dashboard lists them. The platform sends no notifications, so this list is the only place a failure shows. How the runs happen is in staff-ops-service's [README](../services/staff-ops-service/README.md#overnight-reports-lmkt-45); the two times are C5 settings ([C5](C5-config.md)).
 
-Unlike the other reports, it reads the service's own `report_runs` table ([023](../database/schema/023_report_runs.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+Unlike the other reports, it reads the service's own `report_runs` and `report_outputs` tables ([023](../database/schema/023_report_runs.sql), [030](../database/schema/030_reporting_summary.sql)), not `reporting_trades`. It is about reports, never about clients, so it holds no client data either.
+
+The overnight report today is the **Monthly trading summary** (BR-16): each night it brings the nightly trade summary up to the run date, then writes the month so far (the 1st through `runDate`) as a CSV, one line per stock and client segment: `symbol,segment,trades,buys,sells,shares,gross_amount_usd`. It reads the summary, not live orders.
 
 **Parameters:** none.
 
@@ -847,17 +850,19 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
       "scheduledFor": "2026-10-15T06:00:00Z",
       "readyBy": "2026-10-15T11:00:00Z",
       "readyAt": "2026-10-15T06:04:12Z",
-      "failureReason": null
+      "failureReason": null,
+      "outputFileName": null
     },
     {
       "id": "1d7e5b20-2222-4c1f-8a6b-000000000002",
-      "name": "Stub overnight report",
+      "name": "Monthly trading summary",
       "runDate": "2026-10-14",
-      "status": "FAILED",
+      "status": "READY",
       "scheduledFor": "2026-10-15T06:00:00Z",
       "readyBy": "2026-10-15T11:00:00Z",
-      "readyAt": null,
-      "failureReason": "Source data missing for 2026-10-14"
+      "readyAt": "2026-10-15T06:00:03Z",
+      "failureReason": null,
+      "outputFileName": "monthly-trading-summary-2026-10-01-to-2026-10-14.csv"
     }
   ]
 }
@@ -869,6 +874,7 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 - `scheduledFor`, `readyBy` and `readyAt` are ISO-8601 UTC instants with a `Z`. `readyBy` is when a successful run must be available by, the ready-by time of that night (07:00 by default, `lmj.reports.ready-by`), so the app hard-codes neither the time nor the zone.
 - A run is `READY` when it finished by `readyBy`. It is `LATE` once `readyBy` has passed without it being ready: at that time a waiting or running run becomes `LATE` and carries on, and a run that finishes after `readyBy` is `LATE` too. A `LATE` run that then fails becomes `FAILED`.
 - `readyAt` is when the run finished: set when `READY`, and when `LATE` once the late run has finished (a `LATE` run with no `readyAt` is still waiting or running). `failureReason` is set only when `FAILED`. Otherwise each is `null`, never left out.
+- `outputFileName` names the file a finished (`READY` or `LATE` with `readyAt`) run produced, downloaded from [`/api/v1/reports/overnight/{id}/output`](#get-apiv1reportsovernightrunidoutput); `null` when the run has no file.
 - A run is `FAILED` when its report failed, with the report's message as the reason. It is also `FAILED` when staff-ops-service was down for the night's whole window (the reason starts "Did not run"), or stopped while the run was going (the reason starts "Interrupted"); so a night is never just missing from the list. `failureReason` is a message an analyst can read, never a stack trace.
 
 **Failures:**
@@ -877,6 +883,21 @@ Unlike the other reports, it reads the service's own `report_runs` table ([023](
 |---|---|---|
 | 401 | Not authenticated | see access rules above |
 | 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+
+### GET /api/v1/reports/overnight/{runId}/output
+
+The file an overnight run produced (BR-16), for `ANALYST` only: the staff app's Overnight reports list links it as **Download CSV**.
+
+**Response `200`:** the file, with its media type (`text/csv`) and `Content-Disposition: attachment; filename="monthly-trading-summary-2026-10-01-to-2026-10-14.csv"`. Aggregates only: no client, account or order identifier.
+
+**Failures:**
+
+| HTTP | When | Body |
+|---|---|---|
+| 400 | `runId` is not a UUID | |
+| 401 | Not authenticated | see access rules above |
+| 403 | Not ANALYST role (`CLIENT` and `TRADING_OPS` included) | see access rules above |
+| 404 | The run has no file: it failed, has not finished, or its report makes none | |
 
 ## The consumers (notifications, surveillance and market activity)
 

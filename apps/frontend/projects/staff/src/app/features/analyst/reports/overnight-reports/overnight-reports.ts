@@ -49,6 +49,11 @@ export class OvernightReports implements OnInit {
     this.load();
   }
 
+  /** The link a finished run's file downloads from. */
+  protected outputUrl(report: OvernightReport): string {
+    return this.overnightReports.outputUrl(report.id);
+  }
+
   protected statusLabel(status: OvernightReportStatus): string {
     return STATUS_LABELS[status];
   }

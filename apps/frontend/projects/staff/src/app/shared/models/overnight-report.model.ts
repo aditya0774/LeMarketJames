@@ -18,6 +18,8 @@ export interface OvernightReport {
   readyAt: string | null;
   /** Set only when FAILED: the platform sends no notifications, so this is how an analyst learns why. */
   failureReason: string | null;
+  /** The file a finished run produced (BR-16), downloaded from OvernightReportsService.outputUrl; null when none. */
+  outputFileName: string | null;
 }
 
 export interface OvernightReportsResponse {

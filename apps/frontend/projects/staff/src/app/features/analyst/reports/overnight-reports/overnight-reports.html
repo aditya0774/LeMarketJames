@@ -64,6 +64,10 @@
                 } @else {
                   <span class="scheduled">Scheduled for {{ time(report.scheduledFor) }}</span>
                 }
+                @if (report.outputFileName; as file) {
+                  <a class="btn btn-soft download" [href]="outputUrl(report)" [attr.download]="file"
+                     [attr.aria-label]="'Download ' + file">Download CSV</a>
+                }
               </td>
             </tr>
           }

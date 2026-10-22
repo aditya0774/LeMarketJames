@@ -7,6 +7,8 @@ import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.PeriodTotalsProjection;
 import com.lemarketjames.reports.repository.ReportingTradeRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.PeriodTotals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +52,9 @@ class TradeReportServiceTest {
     @Mock
     private Clock clock;
 
+    @Mock
+    private DailyTradeSummary summary;
+
     private TradeReportService reportService;
 
     /** A row as the database returns it. */
@@ -81,7 +86,8 @@ class TradeReportServiceTest {
                 return new ReportPeriod(firstDay, startInUtc(firstDay), startInUtc(lastDay.plusDays(1)));
             });
 
-        reportService = new TradeReportService(tradeRepository, reportCalendar, clock);
+        // No summary yet (summarizedThrough is empty by default): every day is read live, as before BR-16.
+        reportService = new TradeReportService(tradeRepository, summary, reportCalendar, clock);
     }
 
     @Test
@@ -235,6 +241,28 @@ class TradeReportServiceTest {
     }
 
     /** Helper: the database returns these rows for any request. */
+    // BR-16: days the nightly summary covers come from it; only later days are read live, and a
+    // week on both sides of the summary's last day is added up once.
+    @Test
+    void summarizedDaysComeFromTheSummaryAndOnlyLaterDaysAreReadLive() {
+        when(summary.summarizedThrough("America/New_York")).thenReturn(java.util.Optional.of(LocalDate.of(2026, 10, 6)));
+        when(summary.byPeriod("week", "America/New_York", LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 6)))
+            .thenReturn(List.of(
+                new PeriodTotals("2026-09-28", 3, 2, 1, new BigDecimal("300.00")),
+                new PeriodTotals("2026-10-05", 2, 1, 1, new BigDecimal("200.00"))));
+        mockRows(new Row("2026-10-05", 1, 1, 0, new BigDecimal("50.25")));
+
+        TradeReportResponse response = reportService.generateReport(new TradeReportRequest("WEEK",
+            LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 8), "America/New_York"));
+
+        verify(tradeRepository).aggregateByPeriod("week", "America/New_York",
+            startInUtc(LocalDate.of(2026, 10, 7)), startInUtc(LocalDate.of(2026, 10, 9)));
+        assertEquals(List.of("2026-W40", "2026-W41"), response.getData().stream().map(PeriodAggregation::getPeriod).toList());
+        assertEquals(3, response.getData().get(1).getTradeCount());
+        assertEquals(2, response.getData().get(1).getBuyCount());
+        assertEquals(new BigDecimal("250.25"), response.getData().get(1).getTotalValue());
+    }
+
     private void mockRows(PeriodTotalsProjection... rows) {
         when(tradeRepository.aggregateByPeriod(anyString(), anyString(), any(LocalDateTime.class), any(LocalDateTime.class)))
             .thenReturn(List.of(rows));

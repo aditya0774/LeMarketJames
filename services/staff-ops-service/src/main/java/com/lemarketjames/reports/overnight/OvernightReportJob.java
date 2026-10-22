@@ -1,6 +1,7 @@
 package com.lemarketjames.reports.overnight;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 /**
  * A report heavy enough to run overnight. Being a Spring bean of this type is what marks a
@@ -17,6 +18,8 @@ public interface OvernightReportJob {
      * failed, and its message becomes the reason the analyst sees, so make it readable.
      *
      * @param runDate the trading day to report on, in the reports time zone
+     * @return the file the analyst downloads, stored with the run when it finishes; empty when the
+     *         report produces none
      */
-    void run(LocalDate runDate);
+    Optional<ReportOutput> run(LocalDate runDate);
 }

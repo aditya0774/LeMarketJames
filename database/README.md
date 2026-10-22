@@ -14,6 +14,7 @@ All backend microservices connect to this same `lemarket` database. This folder 
 | `instruments` | migrations only | orders-service (orders), trading-service (`GET /api/v1/instruments`, the market simulator) |
 | `orders` | orders-service. Never deleted; a FILLED or REJECTED order never changes again ([029](#029--trade-record-lockdown)) | orders-service, trading-service (through orders-service's API) |
 | `settlement_receipts` | trading-service. Insert only ([029](#029--trade-record-lockdown)) | trading-service (idempotent execution outcomes) |
+| `reporting_daily_trades`, `reporting_summary_state`, `report_outputs` | staff-ops-service's overnight job ([030](#030--nightly-trade-summary-and-overnight-report-files)) | staff-ops-service: the long-range reports, the overnight list and its downloads |
 | `holdings` | trading-service (settlement) | trading-service |
 | `audit_log` | orders-service and trading-service, only through `AuditRecorder` ([C2](../contracts/C2-audit.md)). Insert only: nothing can update or delete a row ([016](#016--audit-lockdown)) | orders-service: the Trading Ops order timeline and the audit archive ([C6](../contracts/C6-api.md#audit-archive-trading_ops-only)) |
 | `market_quotes`, `price_candles` | trading-service (market simulator) | trading-service |
@@ -595,6 +596,30 @@ Tests that insert their own orders remove them as the owner, switching `orders_n
 inside the deleting transaction only: `AuditTestCleanup` in the Java tests, `removeTestClients`
 in the e2e suite (which needs `E2E_OWNER_DATABASE_URL`). Nothing in the application can.
 
+## 030 — Nightly trade summary and overnight report files
+
+`schema/030_reporting_summary.sql` adds the separated read side of the long-range reports (BR-16)
+and the place overnight files are kept:
+
+| Table | Holds |
+|---|---|
+| `reporting_daily_trades` | One row per day (in a reports time zone), stock, client segment and side: trades, shares, gross amount. Built only from the `reporting_trades` view, by the overnight Monthly trading summary |
+| `reporting_summary_state` | Per time zone, the last day the summary covers; every earlier day is covered too |
+| `report_outputs` | The file an overnight run produced (the monthly summary CSV), one per run, removed with its run |
+
+Reports read the summary for the days it covers and the live view after them
+([staff-ops README](../services/staff-ops-service/README.md#read-side-br-16)). Aggregates only:
+nothing in these tables identifies a client. staff-ops-service writes them only from its overnight
+writers; 016's default privileges give `lemarket_app` the rights it needs.
+
+```powershell
+Get-Content database/schema/030_reporting_summary.sql | psql -v ON_ERROR_STOP=1 -h localhost -U lemarket -d lemarket
+```
+
+The summary starts empty: until the first overnight run builds it (all history, that night), every
+report reads live, as before. staff-ops-service reads the tables in normal use, so apply 030 before
+starting a new one.
+
 ## 031 — The amount an order was placed for
 
 `schema/031_order_requested_amount.sql` adds `orders.requested_amount NUMERIC(15,2)`, null unless the
@@ -608,7 +633,6 @@ Get-Content database/schema/031_order_requested_amount.sql | psql -v ON_ERROR_ST
 ```
 
 orders-service validates the column at startup, so apply it before starting a new orders-service.
-030 is reserved for later work and may be added after it; the files still apply in number order.
 
 ## Backups and restore
 

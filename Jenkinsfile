@@ -313,7 +313,9 @@ pipeline {
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/028_instrument_location_restrictions.sql
                     # AuditLockdownIntegrationTest checks the trade-record lockdown too (BR-14).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/029_trade_record_lockdown.sql
-                    # ...and the amount an order was placed for (BR-04).
+                    # staff-ops-service reads the nightly trade summary and run files (BR-16).
+                    compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/030_reporting_summary.sql
+                    # orders-service also validates the amount an order was placed for (BR-04).
                     compose exec -T db psql -v ON_ERROR_STOP=1 -U lemarket -d lemarket < database/schema/031_order_requested_amount.sql
 
                     # Keep one Maven invocation so integration tests share startup work.

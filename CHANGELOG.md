@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- BR-16: A real overnight report and a separate read side. The overnight stub is replaced by the
+  Monthly trading summary: each night it rebuilds the nightly trade summary (`reporting_daily_trades`,
+  migration 030: one row per day, stock, segment and side, built only from `reporting_trades`) through
+  the run date, then writes the month so far as a CSV per stock and segment, stored with the run
+  (`report_outputs`). The overnight list gives each run's `outputFileName`, and the new
+  `GET /api/v1/reports/overnight/{runId}/output` downloads it (a Download CSV link on the staff app's
+  Overnight reports). `/api/v1/reports/trades` and `/trades-by-stock` read the summary for the days it
+  covers and the live view only after it. In the report load test, reports answered 9,840 requests in
+  30 s instead of 607 with order confirmations still on target (staff-ops-service/LMKT-44-performance.md).
+  New switches `REPORTING_OVERNIGHT_QUERY_TIMEOUT_MS` and `REPORTING_OVERNIGHT_FAILWITH` (was
+  `REPORTING_OVERNIGHT_STUB_FAILWITH`) ([C6](contracts/C6-api.md#get-apiv1reportsovernight), [C5](contracts/C5-config.md#reporting-read-side-limits)).
 - BR-14: Trade records are kept and can't be changed. Migration 029 locks them like the audit trail:
   an order is never deleted and, once FILLED or REJECTED, never updated; `settlement_receipts`,
   `cash_movement_receipts` and `account_status_changes` are insert-only, for `lemarket_app` and (by

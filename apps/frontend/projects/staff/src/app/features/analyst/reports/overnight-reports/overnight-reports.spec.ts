@@ -16,6 +16,7 @@ const run = (overrides: Partial<OvernightReport>): OvernightReport => ({
   readyBy: '2026-10-14T11:00:00Z',
   readyAt: null,
   failureReason: null,
+  outputFileName: null,
   ...overrides,
 });
 
@@ -117,6 +118,21 @@ describe('OvernightReports', () => {
     const row = page().querySelector('tr[data-status="LATE"]')!;
     expect(row.querySelector('.ready-time')?.textContent).toContain('Not ready yet');
     expect(row.querySelector('.failure-reason')).toBeNull();
+  });
+
+  // BR-16: a finished run with a file offers it for download; a run without one offers nothing.
+  it("offers a ready run's file for download, and nothing for a run without one", () => {
+    answer(response([
+      run({ id: 'with file', status: 'READY', readyAt: '2026-10-14T06:04:00Z',
+        outputFileName: 'monthly-trading-summary-2026-10-01-to-2026-10-13.csv' }),
+      run({ id: 'b', status: 'FAILED', failureReason: 'boom' }),
+    ]));
+
+    const links = Array.from(page().querySelectorAll<HTMLAnchorElement>('a.download'));
+    expect(links.length).toBe(1);
+    expect(links[0].getAttribute('href')).toBe('/api/v1/reports/overnight/with%20file/output');
+    expect(links[0].getAttribute('download')).toBe('monthly-trading-summary-2026-10-01-to-2026-10-13.csv');
+    expect(links[0].textContent?.trim()).toBe('Download CSV');
   });
 
   it('lists every run in the order the server sends', () => {

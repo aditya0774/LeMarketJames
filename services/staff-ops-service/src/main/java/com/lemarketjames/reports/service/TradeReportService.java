@@ -7,6 +7,9 @@ import com.lemarketjames.reports.period.ReportBucket;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.ReportingTradeRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.PeriodTotals;
+import com.lemarketjames.reports.summary.ReadSplit;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -14,24 +17,32 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.IsoFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /**
  * Business logic for trade aggregation reports.
  * Counts and totals settled trades per period (day, week, month, year); the grouping itself
- * runs in the database ({@link ReportingTradeRepository#aggregateByPeriod}), and this class
- * validates the request and labels each period.
+ * runs in the database, and this class validates the request and labels each period.
+ *
+ * <p>A long-range report (a year by default): the days the nightly summary covers are read from it
+ * ({@link DailyTradeSummary}), and only the days after them from the live view
+ * ({@link ReportingTradeRepository#aggregateByPeriod}), so a year's report no longer scans a year of
+ * orders on the database live trading uses (BR-16, README "Read side").
  */
 @Service
 public class TradeReportService {
 
     private final ReportingTradeRepository tradeRepository;
+    private final DailyTradeSummary summary;
     private final ReportCalendar reportCalendar;
     private final Clock clock;
 
-    public TradeReportService(ReportingTradeRepository tradeRepository, ReportCalendar reportCalendar, Clock clock) {
+    public TradeReportService(ReportingTradeRepository tradeRepository, DailyTradeSummary summary,
+                              ReportCalendar reportCalendar, Clock clock) {
         this.tradeRepository = tradeRepository;
+        this.summary = summary;
         this.reportCalendar = reportCalendar;
         this.clock = clock;
     }
@@ -75,18 +86,27 @@ public class TradeReportService {
         // Group in the database, so only one row per period comes back instead of every trade.
         // Loading every trade held a pooled connection and the shared database long enough to
         // slow live order execution under report load (LMKT-44).
-        ReportPeriod queryRange = reportCalendar.between(from, to);
         // ReportBucket's names are date_trunc's units: day, week, month, year.
         String unit = periodType.name().toLowerCase(Locale.ROOT);
-        List<PeriodAggregation> data = tradeRepository
-                .aggregateByPeriod(unit, queryZone.getId(), queryRange.start(), queryRange.end())
+        String zone = queryZone.getId();
+        ReadSplit split = ReadSplit.of(from, to, summary.summarizedThrough(zone));
+        List<PeriodTotals> rows = new ArrayList<>();
+        split.summarized().ifPresent(days -> rows.addAll(summary.byPeriod(unit, zone, days.from(), days.to())));
+        split.live().ifPresent(days -> {
+            ReportPeriod queryRange = reportCalendar.between(days.from(), days.to());
+            tradeRepository.aggregateByPeriod(unit, zone, queryRange.start(), queryRange.end()).forEach(row ->
+                    rows.add(new PeriodTotals(row.getPeriodStart(), row.getTradeCount(), row.getBuyCount(),
+                            row.getSellCount(), row.getTotalValue())));
+        });
+        // A period on both sides of the summary's last day (a week, a month) is added up here.
+        List<PeriodAggregation> data = PeriodTotals.merge(rows)
                 .stream()
                 .map(row -> new PeriodAggregation(
-                        formatPeriod(LocalDate.parse(row.getPeriodStart()), periodType),
-                        Math.toIntExact(row.getTradeCount()),
-                        Math.toIntExact(row.getBuyCount()),
-                        Math.toIntExact(row.getSellCount()),
-                        row.getTotalValue()))
+                        formatPeriod(LocalDate.parse(row.periodStart()), periodType),
+                        Math.toIntExact(row.tradeCount()),
+                        Math.toIntExact(row.buyCount()),
+                        Math.toIntExact(row.sellCount()),
+                        row.totalValue()))
                 .toList();
 
         LocalDateTime generatedAt = LocalDateTime.now(clock);

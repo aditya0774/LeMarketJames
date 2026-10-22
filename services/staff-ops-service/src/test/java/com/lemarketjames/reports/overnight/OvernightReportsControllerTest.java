@@ -25,6 +25,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,11 +62,12 @@ class OvernightReportsControllerTest {
         Instant readyBy = Instant.parse("2026-10-15T11:00:00Z");
         return new OvernightReportsResponse(true, "America/New_York", List.of(
                 new OvernightReportsResponse.Run(READY_ID, "Activity by stock", runDate, RunStatus.READY,
-                        scheduledFor, readyBy, Instant.parse("2026-10-15T06:04:12Z"), null),
-                new OvernightReportsResponse.Run(UUID.randomUUID(), "Stub overnight report", runDate, RunStatus.FAILED,
-                        scheduledFor, readyBy, null, "Source data missing"),
+                        scheduledFor, readyBy, Instant.parse("2026-10-15T06:04:12Z"), null,
+                        "monthly-trading-summary-2026-10-01-to-2026-10-14.csv"),
+                new OvernightReportsResponse.Run(UUID.randomUUID(), "Monthly trading summary", runDate, RunStatus.FAILED,
+                        scheduledFor, readyBy, null, "Source data missing", null),
                 new OvernightReportsResponse.Run(UUID.randomUUID(), "Activity by client segment", runDate, RunStatus.LATE,
-                        scheduledFor, readyBy, Instant.parse("2026-10-15T11:12:00Z"), null)));
+                        scheduledFor, readyBy, Instant.parse("2026-10-15T11:12:00Z"), null, null)));
     }
 
     @Test
@@ -142,5 +144,50 @@ class OvernightReportsControllerTest {
         mvc.perform(get(OVERNIGHT).cookie(tokenFor(Role.ANALYST)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    // BR-16: the file a run produced, as an attachment, to analysts only.
+    @Test
+    void analystDownloadsARunsFile() throws Exception {
+        when(service.output(READY_ID)).thenReturn(java.util.Optional.of(new ReportOutput(
+                "monthly-trading-summary-2026-10-01-to-2026-10-14.csv", "text/csv", "symbol,segment\r\n")));
+
+        mvc.perform(get(OVERNIGHT + "/" + READY_ID + "/output").cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Content-Disposition",
+                        "attachment; filename=\"monthly-trading-summary-2026-10-01-to-2026-10-14.csv\""))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().string("symbol,segment\r\n"));
+    }
+
+    @Test
+    void aRunWithNoFileIsNotFound() throws Exception {
+        when(service.output(READY_ID)).thenReturn(java.util.Optional.empty());
+
+        mvc.perform(get(OVERNIGHT + "/" + READY_ID + "/output").cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void aRunIdThatIsNotOneIsABadRequest() throws Exception {
+        mvc.perform(get(OVERNIGHT + "/not-a-uuid/output").cookie(tokenFor(Role.ANALYST)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, mode = EnumSource.Mode.EXCLUDE, names = "ANALYST")
+    void onlyAnalystsDownload(Role role) throws Exception {
+        mvc.perform(get(OVERNIGHT + "/" + READY_ID + "/output")).andExpect(status().isUnauthorized());
+        mvc.perform(get(OVERNIGHT + "/" + READY_ID + "/output").cookie(tokenFor(role))).andExpect(status().isForbidden());
+        verify(service, never()).output(any());
+    }
+
+    @Test
+    void theListNamesEachRunsFile() throws Exception {
+        when(service.recentRuns()).thenReturn(sample());
+
+        mvc.perform(get(OVERNIGHT).cookie(tokenFor(Role.ANALYST)))
+                .andExpect(jsonPath("$.data[0].outputFileName").value("monthly-trading-summary-2026-10-01-to-2026-10-14.csv"))
+                .andExpect(jsonPath("$.data[1].outputFileName").value(nullValue()));
     }
 }

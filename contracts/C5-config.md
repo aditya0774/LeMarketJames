@@ -88,6 +88,13 @@ The report load test ([report-load.spec.ts](../apps/e2e/load/report-load.spec.ts
 checks that they are enough to keep order confirmations on target. Its thresholds are test
 settings, defined with their `LOAD_*` overrides at the top of that file.
 
+The overnight job (BR-16, the Monthly trading summary) has two technical switches of the same kind,
+in the same file: `reporting.overnight.statement-timeout-ms` (`REPORTING_OVERNIGHT_QUERY_TIMEOUT_MS`),
+the statement timeout of its summary refresh in place of the daytime query timeout, since its first
+night summarizes all history; and `reporting.overnight.fail-with` (`REPORTING_OVERNIGHT_FAILWITH`),
+which makes it fail with that message, to show a failed run. When it runs is the business setting
+`lmj.reports.overnight-run-time` above.
+
 ## Order execution
 
 `lmj.execution` settings and their defaults live in
