@@ -117,8 +117,8 @@ LeMarketJames/
 ├── docker-compose.yml             # Full-stack orchestration
 ├── Jenkinsfile                    # CI/CD pipeline
 ├── sonar-project.properties       # SonarQube analysis settings for the whole repo
-├── lebron_erd_v2.png              # The ER diagram shown below (lebron_erd.png is the earlier version)
-├── LEAP_*.pdf, LEAP_*.xlsx        # The LEAP requirements: specification, backlog, checklist and grading sheet
+├── erd/                           # ER diagrams: lebron_erd_v2.png is shown below, lebron_erd.png is the earlier version
+├── business-requirements/         # The LEAP requirements: specification, backlog, checklist and grading sheet
 ├── AGENTS.md                      # Conventions for developers
 └── README.md                      # This file
 ```
@@ -1080,7 +1080,7 @@ https://aditya0774.github.io/LeMarketJames/
 
 ## ER Diagram
 
-![ER Diagram](lebron_erd_v2.png)
+![ER Diagram](erd/lebron_erd_v2.png)
 
 The diagram dates from 2026-10-08. Tables added since are drawn in the [class diagram](#class-diagram-backend-data-model) below where they have an entity, and each is described with its migration in [database/README.md](database/README.md): `price_history` (022), `report_runs` (023), `cash_movement_receipts` (024), `watchlist` (025), `account_status_changes` (027), `instrument_location_restrictions` (028), and `reporting_daily_trades`, `reporting_summary_state` and `report_outputs` (030).
 
