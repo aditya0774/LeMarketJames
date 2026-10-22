@@ -54,7 +54,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Preserve the original failure status during the container's error dispatch.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/actuator/health", "/health").permitAll()
                 .requestMatchers("/api/v1/clients/*/status").hasRole(Role.TRADING_OPS.name())
                 .requestMatchers("/api/auth/close-account").hasRole(Role.CLIENT.name())
                 .anyRequest().authenticated())

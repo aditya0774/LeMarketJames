@@ -51,6 +51,7 @@ A full-stack trading application of seven services: two **Angular 21** web apps 
    - [Container Exits Immediately](#container-exits-immediately-docker)
 9. [CI/CD Pipeline](#cicd-pipeline)
    - [SonarQube](#sonarqube)
+   - [Deploying to AWS](#deploying-to-aws)
 10. [Javadocs](#javadocs)
 11. [ER Diagram](#er-diagram)
 12. [UML Diagrams](#uml-diagrams)
@@ -115,7 +116,9 @@ LeMarketJames/
 ├── docs/                          # Generated only: Javadoc and the coverage report (GitHub Pages)
 ├── .github/workflows/             # Publishes the Javadoc and the coverage report
 ├── docker-compose.yml             # Full-stack orchestration
-├── Jenkinsfile                    # CI/CD pipeline
+├── Jenkinsfile                    # CI/CD pipeline: tests, analysis, the full stack in Docker
+├── Jenkinsfile.aws                # Deployment to the class AWS stack (deploy/aws/README.md)
+├── deploy/aws/                    # How the app runs on AWS and what the class stack must provide
 ├── sonar-project.properties       # SonarQube analysis settings for the whole repo
 ├── erd/                           # ER diagrams: lebron_erd_v2.png is shown below, lebron_erd.png is the earlier version
 ├── business-requirements/         # The LEAP requirements: specification, backlog, checklist and grading sheet
@@ -190,7 +193,7 @@ orders-service publishes every new order, order status change and fill to Kafka,
 - **Unidirectional data flow:** Browser → web app (Nginx) → Service → Database (only services talk to the database; a web app only routes)
 - **Server-to-server calls:** orders-service fetches prices from trading-service through the shared `libs/market-client`, and calls it to validate a sell and to settle a fill; trading-service reads orders back from orders-service for trade history and buying power. Inside trading-service, quotes, holdings and charts read the market simulator in-process
 - **Events are one-way:** an order event is published to Kafka after its transaction commits, and no request waits for it
-- **Shared JWT secret:** auth-service issues the `jwt` cookie; every service validates it with the same `JWT_SECRET` (`libs/common`) and enforces roles in its own `SecurityConfig` ([C7](contracts/C7-roles.md))
+- **Shared JWT secret:** auth-service issues the `jwt` cookie; every service validates it with the same `JWT_SECRET` (or `JWT_SHARED_SECRET`, the class AWS stack's name for it) (`libs/common`) and enforces roles in its own `SecurityConfig` ([C7](contracts/C7-roles.md))
 - **Separate staff session:** in the staff app's browser the same cookie is named `staff_jwt`; the staff app's Nginx renames it both ways, so a staff session and a customer session can share a browser ([C7](contracts/C7-roles.md#the-staff-session-cookie))
 - **Containerized:** Each service can run independently or together via Docker Compose
 - **Separation of concerns:** Frontend handles UI/UX; backend handles business logic and security; database stores persistent state
@@ -1071,6 +1074,20 @@ SONAR_HOST_URL=http://<sonarqube-host>:9000 SONAR_TOKEN=<token> sonar-scanner
 ```
 
 That publishes an analysis to the shared project. Without the integration tests it reports 17 skipped tests and fails the gate on that condition alone; to avoid that, first run the `mvn` command from the Jenkinsfile's integration-test stage against a local PostgreSQL (leave out `kafka-test` if no broker is running).
+
+### Deploying to AWS
+
+The class AWS setup (each team's `leap-<team>` CloudFormation stack, in us-east-1) is deployed by a second
+pipeline, [Jenkinsfile.aws](Jenkinsfile.aws), run on the class Jenkins with a `TEAM_ID` parameter: it builds the
+four backend images and both Angular apps, pushes them to ECR and S3, and after an instructor's approval swaps
+the image in each existing ECS service, then checks target health and the routes through CloudFront. It runs
+no tests; run the `Jenkinsfile` above on the same commit first.
+
+[deploy/aws/TEAM-GUIDE.md](deploy/aws/TEAM-GUIDE.md) walks the team through a deployment step by step and lists
+the usual problems with their fixes. [deploy/aws/README.md](deploy/aws/README.md) has the reference: how our services map onto the class stack's
+(orders, auth, holdings = trading-service, reporting = staff-ops-service), the load balancer rules, CloudFront
+settings and task definition variables the stack must have, loading the schema with `run-leap-sql.sh`, and
+what differs from the local stack.
 
 ## Javadocs
 
