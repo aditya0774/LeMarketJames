@@ -16,7 +16,7 @@
 
 **Fixes**
 1. The trades report groups trades in the database instead of loading every trade into the service.
-2. reporting-service uses 1 database connection instead of 3, so reports can't take CPU from order processing.
+2. The reports' connection pool (reporting-service then, staff-ops-service now) uses 1 database connection instead of 3, so reports can't take CPU from order processing.
 
 Reports still answer within 4 s, inside BR-16's 5–10 s.
 

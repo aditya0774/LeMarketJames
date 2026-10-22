@@ -92,6 +92,20 @@
   [C5](contracts/C5-config.md#who-uses-each-setting)).
 - BR-15 follow-up: the e2e audit-trail expectations now include the `PENDING` step, and the quote
   on a `STALE_QUOTE` rejection.
+- BR-01: Registration rules are enforced on the server, not only in the form. auth-service's
+  `RegistrationRules` applies the form's rules with the same messages (username, password strength,
+  email, phone, SSN, ZIP, names and address, age, minimum deposit, experience and employment), and
+  registration is one transaction. The form now sends the username the client typed, not the email
+  ([C6](contracts/C6-api.md#auth-auth-service)).
+- BR-15: Every step of an order's life is in its audit trail. `PENDING` and `DELAYED` are audited
+  (migration 026; `DELAYED` with the reason `MARKET_CLOSED`), and a rejection made on a quote records
+  that quote's price and time. The staff timeline shows a waiting step in grey
+  ([C2](contracts/C2-audit.md#the-execution-trail)).
+- BR-12: The market in scope is the 51 US equities in USD; README "Market coverage (BR-12)" sets out
+  the scope, the simulated feed and how quote freshness is enforced at placement and execution
+  ([C4](contracts/C4-quote-feed.md#market-scope)).
+- BR-18: README "Additional capability (BR-18)" justifies the Learn tab and stock simulator against
+  the alternatives considered (copy trading, a mobile app).
 
 - LMKT-28: Holdings and buying power on the Overview update live when an order settles, and
   catch up after the connection drops. trading-service adds `GET /api/v1/portfolio/stream`

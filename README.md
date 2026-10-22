@@ -77,14 +77,16 @@ LeMarketJames/
 │   │                              #       order event topic names, settings, error handling
 │   └── market-client/             # MarketDataService interface, its quote model, and the HTTP client for the market
 ├── services/                      # Spring Boot microservices (each has its own pom.xml + Dockerfile)
-│   ├── auth-service/              # :8082 register, login, logout, /api/auth/me (clients and staff)
+│   ├── auth-service/              # :8082 register, login, logout, session refresh, /api/auth/me (clients
+│   │                              #       and staff); account status changes and client self-close
 │   ├── orders-service/            # :8085 order placement, lifecycle, automatic execution, order events,
-│   │                              #       trade search and order timeline for Trading Ops
+│   │                              #       trade search, order timeline and audit archive for Trading Ops
 │   ├── trading-service/           # :8084 simulated market (GBM) and its test controls, instruments, quotes,
 │   │                              #       sessions, profile, holdings, portfolio/balance, trade history; settles
 │   │                              #       fills; Kafka consumers: client notifications, traded volume per stock
-│   └── staff-ops-service/         # :8086 analyst reports (/api/v1/reports/**) and the Kafka consumer that alerts
-│                                  #       Trading Ops to large orders and refused settlements; staff app only
+│   └── staff-ops-service/         # :8086 analyst reports (/api/v1/reports/**), their nightly summary and the
+│                                  #       overnight CSV, and the Kafka consumer that alerts Trading Ops to large
+│                                  #       orders and refused settlements; staff app only
 ├── apps/
 │   ├── frontend/                  # Angular 21 workspace: both frontends
 │   │   ├── src/app/               # Trading app (:4200)
@@ -97,20 +99,26 @@ LeMarketJames/
 │   │   ├── proxy.conf.json        # The same routing for `ng serve`
 │   │   ├── package.json           # npm dependencies (shared by both apps)
 │   │   └── Dockerfile             # Trading app container image (the staff app's is in projects/staff/)
-│   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app)
+│   └── e2e/                       # Playwright end-to-end tests: tests/ (trading app), tests-staff/ (staff app),
+│                                  #       load/ (report load test)
 ├── contracts/                     # Shared contracts C1–C7 (API, lifecycle, audit, seed data, ...)
-├── database/schema/               # Numbered SQL files (001_ … 024_); 011 is the seed data set
+├── database/                      # schema/: numbered SQL files (001_ … 031_), 011 is the seed data set;
+│                                  #       README: what each migration does, backups and restore
 ├── scripts/
-│   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1
+│   ├── windows/                   # Native Windows stack: setup-db.ps1, start-all.ps1, stop-all.ps1, backup-db.ps1,
+│   │                              #       and the segment report demo seeding
 │   ├── coverage/                  # Coverage site, coverage gate and the SonarQube coverage file
+│   ├── seed/                      # Historical segment report seed (used by the Windows seeding script)
 │   ├── sonarqube/                 # One-time SonarQube server set-up
+│   ├── backup-db.sh               # One database backup, keeping the newest 7; backup-db-nightly.sh runs it nightly in Compose
 │   └── verify-*.sh                # Checks Jenkins runs against the live stack (orders, Kafka consumers, audit lockdown)
 ├── docs/                          # Generated only: Javadoc and the coverage report (GitHub Pages)
 ├── .github/workflows/             # Publishes the Javadoc and the coverage report
 ├── docker-compose.yml             # Full-stack orchestration
 ├── Jenkinsfile                    # CI/CD pipeline
 ├── sonar-project.properties       # SonarQube analysis settings for the whole repo
-├── lebron_erd.png                 # The ER diagram shown below
+├── lebron_erd_v2.png              # The ER diagram shown below (lebron_erd.png is the earlier version)
+├── LEAP_*.pdf, LEAP_*.xlsx        # The LEAP requirements: specification, backlog, checklist and grading sheet
 ├── AGENTS.md                      # Conventions for developers
 └── README.md                      # This file
 ```
@@ -129,10 +137,10 @@ LeMarketJames is a **monorepo**: one repository holding seven services, which sh
 |---|---|---|---|
 | 1 | Trading app | 4200 | Angular app for clients; its Nginx routes `/api` to auth-, orders- and trading-service |
 | 2 | Staff app | 4201 | Angular app for Trading Ops and Analysts; its Nginx routes only the staff paths, to auth-, orders- and staff-ops-service |
-| 3 | auth-service | 8082 | Registration, sign-in and sign-out for clients and staff |
-| 4 | orders-service | 8085 | Orders: placement, execution, history, Trading Ops' trade search and timeline; publishes order events |
+| 3 | auth-service | 8082 | Registration, sign-in, sign-out and session refresh for clients and staff; account status (suspend, close, expire) |
+| 4 | orders-service | 8085 | Orders: placement, execution, history, Trading Ops' trade search, timeline and audit archive; publishes order events |
 | 5 | trading-service | 8084 | Trading/Holdings: the simulated market, instruments, quotes, sessions, profile, holdings, portfolio, trade history, notifications and market activity |
-| 6 | staff-ops-service | 8086 | Analyst/Trading Ops: reports and surveillance alerts |
+| 6 | staff-ops-service | 8086 | Analyst/Trading Ops: reports (with a nightly summary and the overnight CSV) and surveillance alerts |
 | 7 | Kafka | 9092 | The broker for order events |
 
 There is no gateway: each web app calls `/api` on its own origin, and its Nginx (or dev-server proxy) forwards each path straight to the service that serves it.
@@ -246,16 +254,17 @@ The sequence is drawn in [Sequence Diagram: Backend Login Flow](#sequence-diagra
 **See [contracts/C6-api.md](contracts/C6-api.md) for the complete and current list of all endpoints, request/response formats, and contracts.**
 
 **Key Features:**
-- **Authentication and roles** (auth-service): client registration, login for clients and staff, lockout after repeated failures, JWT-based stateless sessions in HTTP-only cookies. Three roles, `CLIENT`, `TRADING_OPS` and `ANALYST`, travel in the token ([C7](contracts/C7-roles.md))
+- **Authentication and roles** (auth-service): client registration, login for clients and staff, lockout after repeated failures, JWT-based stateless sessions in HTTP-only cookies over HTTPS. A session ends after 1 minute without activity (configurable), with a warning first (BR-03). Trading Ops can suspend, reinstate, close or expire a client's account with a reason, and a client can close their own. Three roles, `CLIENT`, `TRADING_OPS` and `ANALYST`, travel in the token ([C7](contracts/C7-roles.md))
 - **Market simulation** (trading-service): live price ticks using Geometric Brownian Motion (GBM); per-instrument drift and volatility; market hours and holidays; test controls that set a price or make the feed stale or unavailable ([C4](contracts/C4-quote-feed.md))
 - **Instruments and quotes** (trading-service): the supported stock list and its quotes from the simulated market
-- **Orders** (orders-service): buy and sell orders are checked on submission (account, location, tradability, holdings, price, cash), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
+- **Orders** (orders-service): buy and sell orders, by number of shares or by dollar amount (whole shares only), are checked on submission (account, location, tradability, price, quantity, and holdings and cash net of what open orders already reserve), then executed automatically at the market price; status changes are also offered as a server-sent event stream, `GET /api/v1/orders/stream` ([C1](contracts/C1-orders.md), [C6](contracts/C6-api.md#orders-orders-service))
 - **Holdings and portfolio** (trading-service): positions with cost basis, cash balance, profile and trade history; it settles every fill exactly once
 - **Audit trail** (`libs/common`): every submission, check, acceptance, fill, rejection and settlement is recorded in a table the services can add to but never change ([C2](contracts/C2-audit.md))
 - **Records kept, backed up** (BR-14): a filled or rejected order, the settlement and cash receipts and the account status history can't be changed or deleted by anyone, the owner included ([C2](contracts/C2-audit.md#the-lockdown)). Everything is kept at least seven years; events older than the online window (365 days by default) are marked archived in the timeline and trade search, and Trading Ops retrieve them through `GET /api/v1/audit/archive` ([C2](contracts/C2-audit.md#retention-and-the-archive)). A nightly `pg_dump` keeps the last seven backups ([database/README.md](database/README.md#backups-and-restore))
 - **Order events** (Kafka): notifications for clients, large-order and refused-settlement alerts for Trading Ops, and traded volume per stock ([Kafka (order events)](#kafka-order-events))
 - **Learn tab** (trading app, `/learn`): short lessons with a glossary, and a stock simulator (`/learn/simulator`) that shows what a purchase on a past day would be worth today, from the simulated price history. It places no order and changes no balance or holding. It is the platform's additional capability ([BR-18](#additional-capability-br-18-learn-and-simulator))
 - **Cash** (trading-service): deposit and withdraw, safe to retry, recorded in the audit trail ([C6](contracts/C6-api.md#deposit-and-withdraw-cash))
+- **Watchlist** (trading-service): a client's list of stocks to follow, shown with their live quotes ([C6](contracts/C6-api.md#watchlist))
 - **Staff app**: trade search and order timeline for Trading Ops, and an Alerts page listing the surveillance alerts (staff-ops-service) by reason and date, each linked to its order's timeline; aggregate, read-only reports for Analysts: the trade, by-stock and by-segment reports, and on the Analyst start page a "What changed" list of the insights below, flagged first when one moved by the configured percent or more (BR-17, `lmj.reports.insight-flag-percent`), then a volume comparison, the active-client trend, the most active stocks of the week and the overnight report runs, each with its file to download (the nightly Monthly trading summary CSV, BR-16). Long-range reports read a summary built overnight instead of live orders ([read side](services/staff-ops-service/README.md#read-side-br-16)) ([C6](contracts/C6-api.md#reports-staff-ops-service), [insight flags](contracts/C6-api.md#insight-flags))
 
 **Architecture Notes:**
@@ -1073,6 +1082,8 @@ https://aditya0774.github.io/LeMarketJames/
 
 ![ER Diagram](lebron_erd_v2.png)
 
+The diagram dates from 2026-10-08. Tables added since are drawn in the [class diagram](#class-diagram-backend-data-model) below where they have an entity, and each is described with its migration in [database/README.md](database/README.md): `price_history` (022), `report_runs` (023), `cash_movement_receipts` (024), `watchlist` (025), `account_status_changes` (027), `instrument_location_restrictions` (028), and `reporting_daily_trades`, `reporting_summary_state` and `report_outputs` (030).
+
 ---
 
 ## UML Diagrams
@@ -1286,6 +1297,59 @@ classDiagram
         -Instant filledAt
     }
 
+    class PriceHistoryEntity {
+        -Integer instrumentId
+        -LocalDate tradingDate
+        -BigDecimal openPrice
+        -BigDecimal highPrice
+        -BigDecimal lowPrice
+        -BigDecimal closePrice
+        -Long volume
+    }
+
+    class WatchlistEntry {
+        -Integer id
+        -Integer accountId
+        -Integer instrumentId
+        -Instant addedAt
+    }
+
+    class CashMovementReceipt {
+        -UUID requestId
+        -Integer accountId
+        -CashMovementType movementType
+        -BigDecimal amount
+        -BigDecimal cashBalanceAfter
+        -Instant createdAt
+    }
+
+    class AccountStatusChangeEntity {
+        -Long changeId
+        -Integer clientId
+        -AccountStatus oldStatus
+        -AccountStatus newStatus
+        -String reason
+        -String changedBy
+        -Instant changedAt
+    }
+
+    class InstrumentLocationRestriction {
+        -Integer instrumentId
+        -String location
+    }
+
+    class ReportRun {
+        -UUID id
+        -String reportName
+        -LocalDate runDate
+        -RunStatus status
+        -Instant scheduledFor
+        -Instant readyBy
+        -Instant startedAt
+        -Instant readyAt
+        -String failureReason
+    }
+
     class ReportingTrade {
         <<view>>
         -Integer orderId
@@ -1315,6 +1379,12 @@ classDiagram
     Instrument "1" --> "0..1" MarketQuoteEntity : is quoted by
     Instrument "1" --> "0..*" PriceCandleEntity : has history
     Order "0..1" --> "0..*" AuditEventEntity : is audited by
+    Instrument "1" --> "0..*" PriceHistoryEntity : has daily bars
+    AccountEntity "1" --> "0..*" WatchlistEntry : watches
+    Instrument "1" --> "0..*" WatchlistEntry : is watched as
+    AccountEntity "1" --> "0..*" CashMovementReceipt : deposits and withdraws
+    ClientEntity "1" --> "0..*" AccountStatusChangeEntity : status history
+    Instrument "1" --> "0..*" InstrumentLocationRestriction : is restricted by
 
     SettlementReceipt ..> Order : settles, once
     Notification ..> Order : status change, from an event
@@ -1340,8 +1410,14 @@ Where each class lives, and the table it maps to:
 | `OrderAlert` | `order_alerts` | `staff-ops-service` |
 | `RecordedFill` | `trade_activity` | `trading-service` |
 | `ReportingTrade` | `reporting_trades` (view) | `staff-ops-service` |
+| `PriceHistoryEntity`, `WatchlistEntry`, `CashMovementReceipt` | `price_history`, `watchlist`, `cash_movement_receipts` (insert-only, [029](database/README.md#029--trade-record-lockdown)) | `trading-service` |
+| `AccountStatusChangeEntity` | `account_status_changes` (insert-only) | `auth-service` |
+| `InstrumentLocationRestriction` | `instrument_location_restrictions` (read-only; rows come from migrations) | `orders-service` |
+| `ReportRun` | `report_runs` | `staff-ops-service` |
 
-The enum types in the diagram are not drawn with their values, which live once, in code: `OrderStatus`, `OrderType` and `RejectionReason` ([C1](contracts/C1-orders.md)), `AuditEventType` ([C2](contracts/C2-audit.md)), `Role` ([C7](contracts/C7-roles.md)), and `AccountStatus` and `ClientSegment` in `libs/common`.
+The enum types in the diagram are not drawn with their values, which live once, in code: `OrderStatus`, `OrderType` and `RejectionReason` ([C1](contracts/C1-orders.md)), `AuditEventType` ([C2](contracts/C2-audit.md)), `Role` ([C7](contracts/C7-roles.md)), `AccountStatus` and `ClientSegment` in `libs/common`, `CashMovementType` in trading-service and `RunStatus` in staff-ops-service.
+
+Some tables have no entity class, because only plain SQL reads or writes them: the nightly report summary (`reporting_daily_trades`, `reporting_summary_state`) and the overnight files (`report_outputs`) in staff-ops-service ([030](database/README.md#030--nightly-trade-summary-and-overnight-report-files)).
 
 ---
 
