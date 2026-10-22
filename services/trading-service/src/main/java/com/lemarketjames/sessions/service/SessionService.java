@@ -5,6 +5,7 @@ import com.lemarketjames.common.domain.AccountRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,11 +72,8 @@ public class SessionService {
           expiresAtLocal,
           true
       );
-    } catch (AccessDeniedException e) {
-      throw e;
-    } catch (SessionExpiredException e) {
-      throw e;
-    } catch (Exception e) {
+    } catch (JwtException | IllegalArgumentException e) {
+      // The parser's refusals: a forged, malformed or expired token (JwtException), or an empty one.
       throw new SessionExpiredException("Invalid or expired session token");
     }
   }

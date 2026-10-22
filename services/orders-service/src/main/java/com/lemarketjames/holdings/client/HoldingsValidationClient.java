@@ -55,7 +55,8 @@ public class HoldingsValidationClient {
             Map<?, ?> body = e.getResponseBodyAs(Map.class);
             Object error = body != null ? body.get("error") : null;
             return error != null ? error.toString() : "Insufficient holdings";
-        } catch (Exception parseFailure) {
+        } catch (RestClientException | IllegalStateException parseFailure) {
+            // An unreadable body (RestClientException) or none the client can convert (IllegalStateException).
             return "Insufficient holdings";
         }
     }
