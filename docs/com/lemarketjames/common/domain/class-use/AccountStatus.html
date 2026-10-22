@@ -54,13 +54,92 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.common.domain">com.lemarketjames.common.domain</a></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><a href="#com.lemarketjames.accountstatus">com.lemarketjames.accountstatus</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.domain">com.lemarketjames.common.domain</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Shared JPA mappings for clients, addresses, and accounts (database/schema/001_core_schema.sql).</div>
 </div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.accountstatus">
+<h2>Uses of <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a> in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a></h2>
+<div class="caption"><span>Methods in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> that return <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AccountStatusChangeEntity.</span><code><a href="../../../accountstatus/AccountStatusChangeEntity.html#getNewStatus()" class="member-name-link">getNewStatus</a>()</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">AccountStatusChangeEntity.</span><code><a href="../../../accountstatus/AccountStatusChangeEntity.html#getOldStatus()" class="member-name-link">getOldStatus</a>()</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code><a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AccountStatusService.StatusChangeView.</span><code><a href="../../../accountstatus/AccountStatusService.StatusChangeView.html#newStatus()" class="member-name-link">newStatus</a>()</code></div>
+<div class="col-last even-row-color">
+<div class="block">Returns the value of the <code>newStatus</code> record component.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">AccountStatusService.StatusChangeView.</span><code><a href="../../../accountstatus/AccountStatusService.StatusChangeView.html#oldStatus()" class="member-name-link">oldStatus</a>()</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Returns the value of the <code>oldStatus</code> record component.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AccountStatusService.ClientStatusView.</span><code><a href="../../../accountstatus/AccountStatusService.ClientStatusView.html#status()" class="member-name-link">status</a>()</code></div>
+<div class="col-last even-row-color">
+<div class="block">Returns the value of the <code>status</code> record component.</div>
+</div>
+</div>
+<div class="caption"><span>Methods in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> with parameters of type <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>void</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AccountStatusService.</span><code><a href="../../../accountstatus/AccountStatusService.html#record(com.lemarketjames.common.domain.ClientEntity,com.lemarketjames.common.domain.AccountStatus,java.lang.String,java.lang.String)" class="member-name-link">record</a><wbr>(<a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a>&nbsp;client,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;next,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Sets the client's status and writes its history row.</div>
+</div>
+</div>
+<div class="caption"><span>Constructors in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> with parameters of type <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../accountstatus/AccountStatusChangeEntity.html#%3Cinit%3E(java.lang.Integer,com.lemarketjames.common.domain.AccountStatus,com.lemarketjames.common.domain.AccountStatus,java.lang.String,java.lang.String,java.time.Instant)" class="member-name-link">AccountStatusChangeEntity</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;clientId,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;oldStatus,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;newStatus,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;changedAt)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../../../accountstatus/AccountStatusService.ClientStatusView.html#%3Cinit%3E(int,java.lang.String,com.lemarketjames.common.domain.AccountStatus,java.util.List)" class="member-name-link">ClientStatusView</a><wbr>(int&nbsp;clientId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fullName,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;status,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../../accountstatus/AccountStatusService.StatusChangeView.html" title="class in com.lemarketjames.accountstatus">AccountStatusService.StatusChangeView</a>&gt;&nbsp;changes)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Creates an instance of a <code>ClientStatusView</code> record class.</div>
+</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../accountstatus/AccountStatusService.StatusChangeView.html#%3Cinit%3E(com.lemarketjames.common.domain.AccountStatus,com.lemarketjames.common.domain.AccountStatus,java.lang.String,java.lang.String,java.time.Instant)" class="member-name-link">StatusChangeView</a><wbr>(<a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;oldStatus,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;newStatus,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;changedAt)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates an instance of a <code>StatusChangeView</code> record class.</div>
+</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.common.domain">
 <h2>Uses of <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a> in <a href="../package-summary.html">com.lemarketjames.common.domain</a></h2>

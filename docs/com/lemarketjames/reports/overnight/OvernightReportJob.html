@@ -88,7 +88,7 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="StubOvernightReportJob.html" title="class in com.lemarketjames.reports.overnight">StubOvernightReportJob</a></code></dd>
+<dd><code><a href="MonthlyTradingSummaryJob.html" title="class in com.lemarketjames.reports.overnight">MonthlyTradingSummaryJob</a></code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">OvernightReportJob</span></div>
@@ -114,7 +114,7 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">The name analysts see in the overnight reports list.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="ReportOutput.html" title="class in com.lemarketjames.reports.overnight">ReportOutput</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#run(java.time.LocalDate)" class="member-name-link">run</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;runDate)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Produces the report for one trading day.</div>
@@ -143,12 +143,15 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="run(java.time.LocalDate)">
 <h3>run</h3>
-<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;runDate)</span></div>
+<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="ReportOutput.html" title="class in com.lemarketjames.reports.overnight">ReportOutput</a>&gt;</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;runDate)</span></div>
 <div class="block">Produces the report for one trading day. Returning means it succeeded; any exception means it
  failed, and its message becomes the reason the analyst sees, so make it readable.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>runDate</code> - the trading day to report on, in the reports time zone</dd>
+<dt>Returns:</dt>
+<dd>the file the analyst downloads, stored with the run when it finishes; empty when the
+         report produces none</dd>
 </dl>
 </section>
 </li>

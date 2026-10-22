@@ -68,17 +68,35 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static <a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">ValidationOutcome.</span><code><a href="../ValidationOutcome.html#passed(java.math.BigDecimal)" class="member-name-link">passed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price)</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ValidationOutcome.</span><code><a href="../ValidationOutcome.html#passed(java.math.BigDecimal,java.math.BigDecimal)" class="member-name-link">passed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><code>static <a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">ValidationOutcome.</span><code><a href="../ValidationOutcome.html#refused(java.lang.String,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">refused</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message,
+<div class="col-first odd-row-color"><code><a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderPlacement.Result.</span><code><a href="../OrderPlacement.Result.html#refusal()" class="member-name-link">refusal</a>()</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Returns the value of the <code>refusal</code> record component.</div>
+</div>
+<div class="col-first even-row-color"><code>static <a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ValidationOutcome.</span><code><a href="../ValidationOutcome.html#refused(java.lang.String,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">refused</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message,
  <a href="../../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><code><a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">SubmissionValidator.</span><code><a href="../SubmissionValidator.html#validate(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">validate</a><wbr>(<a href="../../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">SubmissionValidator.</span><code><a href="../SubmissionValidator.html#validate(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">validate</a><wbr>(<a href="../../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
  <a href="../SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Runs the checks for one order, stopping at the first that fails.</div>
+</div>
+</div>
+<div class="caption"><span>Constructors in <a href="../package-summary.html">com.lemarketjames.orders.submission</a> with parameters of type <a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../OrderPlacement.Result.html#%3Cinit%3E(com.lemarketjames.orders.entity.Order,com.lemarketjames.orders.submission.ValidationOutcome)" class="member-name-link">Result</a><wbr>(<a href="../../entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;saved,
+ <a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a>&nbsp;refusal)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates an instance of a <code>Result</code> record class.</div>
 </div>
 </div>
 </section>

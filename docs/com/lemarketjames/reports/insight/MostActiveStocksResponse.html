@@ -92,9 +92,11 @@ loadScripts(document, 'script');</script>
 </div>
 <section class="class-description" id="class-description">
 <hr>
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">MostActiveStocksResponse</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MostActiveStock.html" title="class in com.lemarketjames.reports.insight">MostActiveStock</a>&gt;&nbsp;stocks, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">MostActiveStocksResponse</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousStartDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousEndDate, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MostActiveStock.html" title="class in com.lemarketjames.reports.insight">MostActiveStock</a>&gt;&nbsp;stocks, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
-<div class="block">Top stocks by gross traded value for the current reports-time-zone week.</div>
+<div class="block">Top stocks by gross traded value for the current reports-time-zone week so far, each compared
+ with the same days of the week before (<code>previousStartDate</code> to <code>previousEndDate</code>), so
+ a Tuesday is never set against a whole week.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -106,8 +108,10 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.time.LocalDate,java.time.LocalDate,java.util.List,java.time.Instant)" class="member-name-link">MostActiveStocksResponse</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.util.List,java.time.Instant)" class="member-name-link">MostActiveStocksResponse</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousStartDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousEndDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MostActiveStock.html" title="class in com.lemarketjames.reports.insight">MostActiveStock</a>&gt;&nbsp;stocks,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)</code></div>
 <div class="col-last even-row-color">
@@ -148,6 +152,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a hash code value for this object.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#previousEndDate()" class="member-name-link">previousEndDate</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <code>previousEndDate</code> record component.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#previousStartDate()" class="member-name-link">previousStartDate</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <code>previousStartDate</code> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#startDate()" class="member-name-link">startDate</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <code>startDate</code> record component.</div>
@@ -180,10 +194,12 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.time.LocalDate,java.time.LocalDate,java.util.List,java.time.Instant)">
+<section class="detail" id="&lt;init&gt;(java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.time.LocalDate,java.util.List,java.time.Instant)">
 <h3>MostActiveStocksResponse</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">MostActiveStocksResponse</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;startDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;endDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousStartDate,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;previousEndDate,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MostActiveStock.html" title="class in com.lemarketjames.reports.insight">MostActiveStock</a>&gt;&nbsp;stocks,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;generatedAt)</span></div>
 <div class="block">Creates an instance of a <code>MostActiveStocksResponse</code> record class.</div>
@@ -191,6 +207,8 @@ loadScripts(document, 'script');</script>
 <dt>Parameters:</dt>
 <dd><code>startDate</code> - the value for the <code>startDate</code> record component</dd>
 <dd><code>endDate</code> - the value for the <code>endDate</code> record component</dd>
+<dd><code>previousStartDate</code> - the value for the <code>previousStartDate</code> record component</dd>
+<dd><code>previousEndDate</code> - the value for the <code>previousEndDate</code> record component</dd>
 <dd><code>stocks</code> - the value for the <code>stocks</code> record component</dd>
 <dd><code>generatedAt</code> - the value for the <code>generatedAt</code> record component</dd>
 </dl>
@@ -264,6 +282,28 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <code>endDate</code> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="previousStartDate()">
+<h3>previousStartDate</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a></span>&nbsp;<span class="element-name">previousStartDate</span>()</div>
+<div class="block">Returns the value of the <code>previousStartDate</code> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <code>previousStartDate</code> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="previousEndDate()">
+<h3>previousEndDate</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a></span>&nbsp;<span class="element-name">previousEndDate</span>()</div>
+<div class="block">Returns the value of the <code>previousEndDate</code> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <code>previousEndDate</code> record component</dd>
 </dl>
 </section>
 </li>

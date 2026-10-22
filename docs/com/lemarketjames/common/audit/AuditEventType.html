@@ -101,7 +101,8 @@ loadScripts(document, 'script');</script>
 <div class="block">The steps of an order's life that are written to the audit trail (contract C2). Each constant's
  Javadoc lists the keys its <code>details</code> JSON carries; writers and readers rely on them.
 
- <p>Mirrors: the <code>audit_log.action</code> CHECK constraint (database/schema/010 and 014), and the
+ <p>Mirrors: the <code>audit_log.action</code> CHECK constraint, in every migration that defines it
+ (database/schema/010, 014, 024 and 026), and the
  seed events in database/schema/011 and 015.</div>
 </section>
 <section class="summary">
@@ -135,9 +136,18 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Cash was withdrawn.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#FILLED" class="member-name-link">FILLED</a></code></div>
+<div class="col-first odd-row-color"><code><a href="#DELAYED" class="member-name-link">DELAYED</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">The order is waiting for its market to open.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="#FILLED" class="member-name-link">FILLED</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">The order executed.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#PENDING" class="member-name-link">PENDING</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">The order is executing: it has a price and its settlement is under way, or its last attempt
+ failed and it will be retried.</div>
 </div>
 <div class="col-first even-row-color"><code><a href="#REJECTED" class="member-name-link">REJECTED</a></code></div>
 <div class="col-last even-row-color">
@@ -238,6 +248,22 @@ the order they are declared.</div>
 </section>
 </li>
 <li>
+<section class="detail" id="PENDING">
+<h3>PENDING</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">PENDING</span></div>
+<div class="block">The order is executing: it has a price and its settlement is under way, or its last attempt
+ failed and it will be retried. Details: none (<code>{}</code>).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="DELAYED">
+<h3>DELAYED</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">DELAYED</span></div>
+<div class="block">The order is waiting for its market to open. Details: <code>reason</code> (<code>MARKET_CLOSED</code>)
+ when execution delayed it; none (<code>{}</code>) when it was moved by the status endpoint.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="FILLED">
 <h3>FILLED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">FILLED</span></div>
@@ -248,7 +274,11 @@ the order they are declared.</div>
 <section class="detail" id="REJECTED">
 <h3>REJECTED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span>&nbsp;<span class="element-name">REJECTED</span></div>
-<div class="block">The order was refused. Details: <code>reason</code> (an order RejectionReason code).</div>
+<div class="block">The order was refused. Details: <code>reason</code> (an order RejectionReason code) and, when
+ execution refused it on a quote it did receive (<code>STALE_QUOTE</code>, or <code>PRICE_UNAVAILABLE</code>
+ for an unusable price), that quote's <code>quotePrice</code> (the ask for a BUY, the bid for a SELL;
+ left out when it isn't a number) and <code>quoteTime</code> (ISO-8601 UTC; left out when the quote
+ had none).</div>
 </section>
 </li>
 <li>

@@ -172,10 +172,10 @@ loadScripts(document, 'script');</script>
 <div class="block">The details a staff member's session shows about them (LMKT-144): what staff_users already
  stores, read only.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTokenExpirySeconds()" class="member-name-link">getTokenExpirySeconds</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#inactivityTimeout()" class="member-name-link">inactivityTimeout</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Retrieves the JWT token expiration time in seconds.</div>
+<div class="block">How long a session may sit idle before it ends (contract C5).</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="AuthService.LoginResult.html" title="class in com.lemarketjames.auth">AuthService.LoginResult</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#login(com.lemarketjames.auth.dto.LoginRequest)" class="member-name-link">login</a><wbr>(<a href="dto/LoginRequest.html" title="class in com.lemarketjames.auth.dto">LoginRequest</a>&nbsp;request)</code></div>
@@ -193,10 +193,26 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Verifies that a raw password matches the encoded password hash.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#now()" class="member-name-link">now</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The time sessions are measured on, so a reply's "expires in" matches the token.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;com.lemarketjames.auth.SessionTokens.SessionToken&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refresh(java.lang.String)" class="member-name-link">refresh</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Extends a session the user is still using (BR-03): a new token for another inactivity
+ timeout, never past the session cap.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="AuthService.AuthResponse.html" title="class in com.lemarketjames.auth">AuthService.AuthResponse</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#register(com.lemarketjames.auth.dto.RegisterRequest)" class="member-name-link">register</a><wbr>(<a href="dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a>&nbsp;request)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Registers a new user with the provided registration request.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sessionExpiry(java.lang.String)" class="member-name-link">sessionExpiry</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When the given session token stops being accepted; empty if it is not valid now.</div>
 </div>
 </div>
 </div>
@@ -233,7 +249,7 @@ loadScripts(document, 'script');</script>
 <dd><code>addressRepository</code> - repository for client addresses</dd>
 <dd><code>accountRepository</code> - repository for trading accounts</dd>
 <dd><code>staffUserRepository</code> - repository for staff logins</dd>
-<dd><code>settings</code> - platform settings; supplies the lockout rule (contract C5)</dd>
+<dd><code>settings</code> - platform settings; supplies the lockout rule and the inactivity timeout (contract C5)</dd>
 </dl>
 </section>
 </li>
@@ -263,7 +279,8 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="register(com.lemarketjames.auth.dto.RegisterRequest)">
 <h3>register</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="AuthService.AuthResponse.html" title="class in com.lemarketjames.auth">AuthService.AuthResponse</a></span>&nbsp;<span class="element-name">register</span><wbr><span class="parameters">(<a href="dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a>&nbsp;request)</span></div>
+<div class="member-signature"><span class="annotations">@Transactional
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="AuthService.AuthResponse.html" title="class in com.lemarketjames.auth">AuthService.AuthResponse</a></span>&nbsp;<span class="element-name">register</span><wbr><span class="parameters">(<a href="dto/RegisterRequest.html" title="class in com.lemarketjames.auth.dto">RegisterRequest</a>&nbsp;request)</span></div>
 <div class="block">Registers a new user with the provided registration request.
  Validates the request, checks for duplicate usernames, and stores the user with an encoded password.</div>
 <dl class="notes">
@@ -272,7 +289,8 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>an AuthResponse with the registered username and success message</dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if validation fails or username is already taken</dd>
+<dd><code><a href="../common/error/ValidationException.html" title="class in com.lemarketjames.common.error">ValidationException</a></code> - if a field breaks a registration rule (<code>RegistrationRules</code>)</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if the username or email is already taken</dd>
 </dl>
 </section>
 </li>
@@ -297,6 +315,42 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if validation fails, the login is locked, or credentials are invalid</dd>
 <dd><code><a href="../common/security/AccountInactiveException.html" title="class in com.lemarketjames.common.security">AccountInactiveException</a></code> - if the password is right but the login may no longer be used (LMKT-57)</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="refresh(java.lang.String)">
+<h3>refresh</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;com.lemarketjames.auth.SessionTokens.SessionToken&gt;</span>&nbsp;<span class="element-name">refresh</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</span></div>
+<div class="block">Extends a session the user is still using (BR-03): a new token for another inactivity
+ timeout, never past the session cap. The web apps call it on user activity only, so a
+ session left open with nobody at it still ends.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>token</code> - the current session token</dd>
+<dt>Returns:</dt>
+<dd>the new token and its expiry, or empty if the token is expired, invalid or past the cap</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sessionExpiry(java.lang.String)">
+<h3>sessionExpiry</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&gt;</span>&nbsp;<span class="element-name">sessionExpiry</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</span></div>
+<div class="block">When the given session token stops being accepted; empty if it is not valid now.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="inactivityTimeout()">
+<h3>inactivityTimeout</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">inactivityTimeout</span>()</div>
+<div class="block">How long a session may sit idle before it ends (contract C5).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="now()">
+<h3>now</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a></span>&nbsp;<span class="element-name">now</span>()</div>
+<div class="block">The time sessions are measured on, so a reply's "expires in" matches the token.</div>
 </section>
 </li>
 <li>
@@ -332,17 +386,6 @@ loadScripts(document, 'script');</script>
 <dd><code>encodedPassword</code> - the encoded password hash to compare against</dd>
 <dt>Returns:</dt>
 <dd>true if the passwords match, false otherwise</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="getTokenExpirySeconds()">
-<h3>getTokenExpirySeconds</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">long</span>&nbsp;<span class="element-name">getTokenExpirySeconds</span>()</div>
-<div class="block">Retrieves the JWT token expiration time in seconds.</div>
-<dl class="notes">
-<dt>Returns:</dt>
-<dd>the token expiration time in seconds</dd>
 </dl>
 </section>
 </li>

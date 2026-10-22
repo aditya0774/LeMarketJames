@@ -89,51 +89,55 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="AlertFilter.html" title="class in com.lemarketjames.surveillance">AlertFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="block">What Trading Operations narrow the alert list to (contract C6).</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Why an order was brought to Trading Operations' attention.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">One order brought to Trading Operations' attention.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderAlertController.html" title="class in com.lemarketjames.surveillance">OrderAlertController</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderAlertController.html" title="class in com.lemarketjames.surveillance">OrderAlertController</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The alerts Trading Operations read (contract C6).</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">The response body.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="OrderAlertController.AlertView.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertView</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="OrderAlertController.AlertView.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertView</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">One alert as staff see it.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="OrderAlertRepository.html" title="interface in com.lemarketjames.surveillance">OrderAlertRepository</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="OrderAlertRepository.html" title="interface in com.lemarketjames.surveillance">OrderAlertRepository</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Reads and writes the <code>order_alerts</code> table.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderStatusChangedListener.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedListener</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderStatusChangedListener.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedListener</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The second Kafka listener of this service: receives every order status change (contract C6) and
  hands it to <a href="SurveillanceService.html" title="class in com.lemarketjames.surveillance"><code>SurveillanceService</code></a>, which alerts Trading Operations when a settlement was
  refused.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="OrderStatusChangedMessage.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedMessage</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="OrderStatusChangedMessage.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedMessage</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">What this service reads from an <code>OrderStatusChanged</code> record (contract C6).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderSubmittedListener.html" title="class in com.lemarketjames.surveillance">OrderSubmittedListener</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderSubmittedListener.html" title="class in com.lemarketjames.surveillance">OrderSubmittedListener</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The Kafka side of this service: receives every newly placed order (contract C6) and hands it to
  <a href="SurveillanceService.html" title="class in com.lemarketjames.surveillance"><code>SurveillanceService</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="OrderSubmittedMessage.html" title="class in com.lemarketjames.surveillance">OrderSubmittedMessage</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="OrderSubmittedMessage.html" title="class in com.lemarketjames.surveillance">OrderSubmittedMessage</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">What this service reads from an <code>OrderSubmitted</code> record (contract C6).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SurveillanceService.html" title="class in com.lemarketjames.surveillance">SurveillanceService</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SurveillanceService.html" title="class in com.lemarketjames.surveillance">SurveillanceService</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Decides which orders Trading Operations are alerted to, and reads the alerts back.</div>
 </div>
 </div>

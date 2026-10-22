@@ -109,6 +109,9 @@ extends org.springframework.data.repository.Repository&lt;<a href="../entity/Rep
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="MostActiveStocksRepository.MostActiveStockAggregate.html" class="type-name-link" title="interface in com.lemarketjames.reports.insight">MostActiveStocksRepository.MostActiveStockAggregate</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static interface&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="MostActiveStocksRepository.SymbolTradedValue.html" class="type-name-link" title="interface in com.lemarketjames.reports.insight">MostActiveStocksRepository.SymbolTradedValue</a></code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -127,6 +130,14 @@ extends org.springframework.data.repository.Repository&lt;<a href="../entity/Rep
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#findTopFive(java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">findTopFive</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="MostActiveStocksRepository.SymbolTradedValue.html" title="interface in com.lemarketjames.reports.insight">MostActiveStocksRepository.SymbolTradedValue</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#tradedValueOf(java.util.Collection,java.time.LocalDateTime,java.time.LocalDateTime)" class="member-name-link">tradedValueOf</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;symbols,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Traded value per stock in a range, for the given stocks only: what this week's top five are
+ compared with.</div>
+</div>
 </div>
 </div>
 </div>
@@ -150,6 +161,21 @@ extends org.springframework.data.repository.Repository&lt;<a href="../entity/Rep
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
  @Param("endUtc")
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="tradedValueOf(java.util.Collection,java.time.LocalDateTime,java.time.LocalDateTime)">
+<h3>tradedValueOf</h3>
+<div class="member-signature"><span class="annotations">@Query(nativeQuery=true,
+       value="SELECT symbol AS \"symbol\",\n       CAST(COALESCE(SUM(gross_amount), 0) AS NUMERIC) AS \"tradedValue\"\nFROM reporting_trades\nWHERE filled_at &gt;= :startUtc AND filled_at &lt; :endUtc\n  AND symbol IN (:symbols)\nGROUP BY symbol\n")
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="MostActiveStocksRepository.SymbolTradedValue.html" title="interface in com.lemarketjames.reports.insight">MostActiveStocksRepository.SymbolTradedValue</a>&gt;</span>&nbsp;<span class="element-name">tradedValueOf</span><wbr><span class="parameters">(@Param("symbols")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;symbols,
+ @Param("startUtc")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;startUtc,
+ @Param("endUtc")
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDateTime.html" title="class or interface in java.time" class="external-link">LocalDateTime</a>&nbsp;endUtc)</span></div>
+<div class="block">Traded value per stock in a range, for the given stocks only: what this week's top five are
+ compared with. A stock that did not trade in the range has no row.</div>
 </section>
 </li>
 </ul>

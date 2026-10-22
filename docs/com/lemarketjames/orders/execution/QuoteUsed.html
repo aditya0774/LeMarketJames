@@ -93,15 +93,16 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>Record Components:</dt>
-<dd><code><span id="param-price">price</span></code> - price per share taken from the quote: the ask for a BUY, the bid for a SELL</dd>
+<dd><code><span id="param-price">price</span></code> - price per share taken from the quote: the ask for a BUY, the bid for a SELL;
+                  null only on a refused quote whose price wasn't a number</dd>
 <dd><code><span id="param-source">source</span></code> - the feed the quote came from</dd>
 <dd><code><span id="param-quoteTime">quoteTime</span></code> - when the feed produced the quote (UTC)</dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">QuoteUsed</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;source, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;quoteTime)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
-<div class="block">The quote an order was priced from at execution. Kept with the fill so a trade can always be
- traced back to the market data behind its price.</div>
+<div class="block">The quote an order was priced from at execution, or refused on. Kept with the fill, or in the
+ rejection's audit event, so an outcome can always be traced back to the market data behind it.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

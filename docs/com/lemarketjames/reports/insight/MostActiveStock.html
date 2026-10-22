@@ -91,10 +91,15 @@ loadScripts(document, 'script');</script>
 </div>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>Record Components:</dt>
+<dd><code><span id="param-previousTradedValue">previousTradedValue</span></code> - the stock's traded value over the same days of the week before; 0 when it did not trade</dd>
+<dd><code><span id="param-flag">flag</span></code> - whether <code>tradedValue</code> moved enough against it to be flagged (BR-17)</dd>
+</dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">MostActiveStock</span>(int&nbsp;rank, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;tradedValue, long&nbsp;tradeCount, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">MostActiveStock</span>(int&nbsp;rank, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;tradedValue, long&nbsp;tradeCount, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;previousTradedValue, <a href="InsightFlag.html" title="class in com.lemarketjames.reports.insight">InsightFlag</a>&nbsp;flag)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
-<div class="block">One stock's aggregate activity for the current reports week.</div>
+<div class="block">One stock's aggregate activity for the current reports week so far.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -106,11 +111,13 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(int,java.lang.String,java.math.BigDecimal,long,java.math.BigDecimal)" class="member-name-link">MostActiveStock</a><wbr>(int&nbsp;rank,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(int,java.lang.String,java.math.BigDecimal,long,java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.reports.insight.InsightFlag)" class="member-name-link">MostActiveStock</a><wbr>(int&nbsp;rank,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;tradedValue,
  long&nbsp;tradeCount,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;previousTradedValue,
+ <a href="InsightFlag.html" title="class in com.lemarketjames.reports.insight">InsightFlag</a>&nbsp;flag)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Creates an instance of a <code>MostActiveStock</code> record class.</div>
 </div>
@@ -133,10 +140,20 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Indicates whether some other object is "equal to" this one.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="InsightFlag.html" title="class in com.lemarketjames.reports.insight">InsightFlag</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flag()" class="member-name-link">flag</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-flag"><code>flag</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a hash code value for this object.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#previousTradedValue()" class="member-name-link">previousTradedValue</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-previousTradedValue"><code>previousTradedValue</code></a> record component.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#rank()" class="member-name-link">rank</a>()</code></div>
@@ -186,13 +203,15 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(int,java.lang.String,java.math.BigDecimal,long,java.math.BigDecimal)">
+<section class="detail" id="&lt;init&gt;(int,java.lang.String,java.math.BigDecimal,long,java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.reports.insight.InsightFlag)">
 <h3>MostActiveStock</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">MostActiveStock</span><wbr><span class="parameters">(int&nbsp;rank,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;symbol,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;tradedValue,
  long&nbsp;tradeCount,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;shareVolume,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;previousTradedValue,
+ <a href="InsightFlag.html" title="class in com.lemarketjames.reports.insight">InsightFlag</a>&nbsp;flag)</span></div>
 <div class="block">Creates an instance of a <code>MostActiveStock</code> record class.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -201,6 +220,8 @@ loadScripts(document, 'script');</script>
 <dd><code>tradedValue</code> - the value for the <code>tradedValue</code> record component</dd>
 <dd><code>tradeCount</code> - the value for the <code>tradeCount</code> record component</dd>
 <dd><code>shareVolume</code> - the value for the <code>shareVolume</code> record component</dd>
+<dd><code>previousTradedValue</code> - the value for the <a href="#param-previousTradedValue"><code>previousTradedValue</code></a> record component</dd>
+<dd><code>flag</code> - the value for the <a href="#param-flag"><code>flag</code></a> record component</dd>
 </dl>
 </section>
 </li>
@@ -305,6 +326,28 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <code>shareVolume</code> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="previousTradedValue()">
+<h3>previousTradedValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></span>&nbsp;<span class="element-name">previousTradedValue</span>()</div>
+<div class="block">Returns the value of the <a href="#param-previousTradedValue"><code>previousTradedValue</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-previousTradedValue"><code>previousTradedValue</code></a> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="flag()">
+<h3>flag</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="InsightFlag.html" title="class in com.lemarketjames.reports.insight">InsightFlag</a></span>&nbsp;<span class="element-name">flag</span>()</div>
+<div class="block">Returns the value of the <a href="#param-flag"><code>flag</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-flag"><code>flag</code></a> record component</dd>
 </dl>
 </section>
 </li>

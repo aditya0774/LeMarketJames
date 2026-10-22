@@ -99,30 +99,35 @@ loadScripts(document, 'script');</script>
 <div class="block">An account that may no longer use the platform: a client that is not ACTIVE, a deactivated staff
  user, or (on the request path) one that no longer exists (LMKT-57).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="InternalApiTokenFilter.html" title="class in com.lemarketjames.common.security">InternalApiTokenFilter</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Authenticates server-to-server calls to <code>/internal/**</code> (BR-02: no endpoint without a
+ credential).</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="JpaAccountAccessCheck.html" title="class in com.lemarketjames.common.security">JpaAccountAccessCheck</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Looks the token's account up in the shared database (LMKT-57).</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="JwtAuthenticationFilter.html" title="class in com.lemarketjames.common.security">JwtAuthenticationFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="JwtAuthenticationFilter.html" title="class in com.lemarketjames.common.security">JwtAuthenticationFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Spring Security filter that extracts JWT tokens from cookies and authenticates requests.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="JwtService.html" title="class in com.lemarketjames.common.security">JwtService</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Service class for JWT token generation and validation.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Who a logged-in user is (contract C7, see contracts/C7-roles.md for which role may use which
  views).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SecurityEventLog.html" title="class in com.lemarketjames.common.security">SecurityEventLog</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Writes security events that cut off access (LMKT-57, AC3), so sign-in and every service's
- request filter log them in one format.</div>
+ request filter log them in one format, and the account status changes that cause them (BR-03).</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab4"><a href="TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab4">
 <div class="block">What a valid JWT says about its holder.</div>
 </div>
 </div>

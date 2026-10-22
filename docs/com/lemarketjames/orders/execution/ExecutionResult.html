@@ -94,8 +94,11 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Record Components:</dt>
 <dd><code><span id="param-nextStatus">nextStatus</span></code> - FILLED, REJECTED, or PENDING/DELAYED when it can't execute yet</dd>
-<dd><code><span id="param-quote">quote</span></code> - the quote the order fills at; set only when nextStatus is FILLED</dd>
-<dd><code><span id="param-reason">reason</span></code> - why it was refused; set only when nextStatus is REJECTED</dd>
+<dd><code><span id="param-quote">quote</span></code> - the quote behind the outcome: the one the order fills at (FILLED), or the one it
+                   was refused on (REJECTED with STALE_QUOTE, or PRICE_UNAVAILABLE for an unusable
+                   price) so the audit trail shows it; otherwise null</dd>
+<dd><code><span id="param-reason">reason</span></code> - why it was refused (REJECTED), or why it has to wait (DELAYED: MARKET_CLOSED);
+                   otherwise null</dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">ExecutionResult</span>(<a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;nextStatus, <a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote, <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)
@@ -169,14 +172,21 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#rejected(com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">rejected</a><wbr>(<a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#rejected(com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">rejected</a><wbr>(<a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;refusedQuote)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">A refusal on a quote the feed did return, kept so the audit trail can show it.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#waiting(com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">waiting</a><wbr>(<a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#waiting(com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">waiting</a><wbr>(<a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
+ <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;why)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -230,9 +240,18 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="waiting(com.lemarketjames.orders.entity.Order.OrderStatus)">
+<section class="detail" id="rejected(com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)">
+<h3>rejected</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></span>&nbsp;<span class="element-name">rejected</span><wbr><span class="parameters">(<a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;refusedQuote)</span></div>
+<div class="block">A refusal on a quote the feed did return, kept so the audit trail can show it.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="waiting(com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason)">
 <h3>waiting</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></span>&nbsp;<span class="element-name">waiting</span><wbr><span class="parameters">(<a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status)</span></div>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></span>&nbsp;<span class="element-name">waiting</span><wbr><span class="parameters">(<a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
+ <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;why)</span></div>
 </section>
 </li>
 <li>

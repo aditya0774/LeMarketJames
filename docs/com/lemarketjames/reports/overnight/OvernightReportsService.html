@@ -105,7 +105,8 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">OvernightReportsService</a><wbr>(<a href="ReportRunRepository.html" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a>&nbsp;runs,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.overnight.ReportOutputs,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">OvernightReportsService</a><wbr>(<a href="ReportRunRepository.html" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a>&nbsp;runs,
+ <a href="ReportOutputs.html" title="class in com.lemarketjames.reports.overnight">ReportOutputs</a>&nbsp;outputs,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
@@ -123,9 +124,14 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recentRuns()" class="member-name-link">recentRuns</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="ReportOutput.html" title="class in com.lemarketjames.reports.overnight">ReportOutput</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#output(java.util.UUID)" class="member-name-link">output</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&nbsp;runId)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The file a run produced, for download.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recentRuns()" class="member-name-link">recentRuns</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Runs of the last 30 nights, the most recent first.</div>
 </div>
 </div>
@@ -146,9 +152,10 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.overnight.ReportRunRepository,com.lemarketjames.reports.overnight.ReportOutputs,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)">
 <h3>OvernightReportsService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OvernightReportsService</span><wbr><span class="parameters">(<a href="ReportRunRepository.html" title="interface in com.lemarketjames.reports.overnight">ReportRunRepository</a>&nbsp;runs,
+ <a href="ReportOutputs.html" title="class in com.lemarketjames.reports.overnight">ReportOutputs</a>&nbsp;outputs,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</span></div>
 </section>
@@ -166,6 +173,13 @@ loadScripts(document, 'script');</script>
 <h3>recentRuns</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OvernightReportsResponse.html" title="class in com.lemarketjames.reports.overnight">OvernightReportsResponse</a></span>&nbsp;<span class="element-name">recentRuns</span>()</div>
 <div class="block">Runs of the last 30 nights, the most recent first.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="output(java.util.UUID)">
+<h3>output</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="ReportOutput.html" title="class in com.lemarketjames.reports.overnight">ReportOutput</a>&gt;</span>&nbsp;<span class="element-name">output</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/UUID.html" title="class or interface in java.util" class="external-link">UUID</a>&nbsp;runId)</span></div>
+<div class="block">The file a run produced, for download.</div>
 </section>
 </li>
 </ul>

@@ -54,13 +54,17 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.auth">com.lemarketjames.auth</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.audit">com.lemarketjames.audit</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.cash">com.lemarketjames.cash</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.auth">com.lemarketjames.auth</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.cash">com.lemarketjames.cash</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.reports.insight">com.lemarketjames.reports.insight</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
 <div class="col-first even-row-color"><a href="#com.lemarketjames.reports.overnight">com.lemarketjames.reports.overnight</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
@@ -71,6 +75,21 @@ loadScripts(document, 'script');</script>
 </div>
 <section class="class-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.audit">
+<h2>Uses of <a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a> in <a href="../../../audit/package-summary.html">com.lemarketjames.audit</a></h2>
+<div class="caption"><span>Constructors in <a href="../../../audit/package-summary.html">com.lemarketjames.audit</a> with parameters of type <a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../audit/AuditRetention.html#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings,java.time.Clock)" class="member-name-link">AuditRetention</a><wbr>(<a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.auth">
 <h2>Uses of <a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a> in <a href="../../../auth/package-summary.html">com.lemarketjames.auth</a></h2>
@@ -140,10 +159,25 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../../../orders/service/TradingRestrictions.html#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,java.time.Clock)" class="member-name-link">TradingRestrictions</a><wbr>(<a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
+<div class="col-second even-row-color"><code><a href="../../../orders/service/TradingRestrictions.html#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,com.lemarketjames.orders.repository.InstrumentLocationRestrictionRepository,java.time.Clock)" class="member-name-link">TradingRestrictions</a><wbr>(<a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
  <a href="../../domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accounts,
  <a href="../../domain/AddressRepository.html" title="interface in com.lemarketjames.common.domain">AddressRepository</a>&nbsp;addresses,
+ <a href="../../../orders/repository/InstrumentLocationRestrictionRepository.html" title="interface in com.lemarketjames.orders.repository">InstrumentLocationRestrictionRepository</a>&nbsp;instrumentRules,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="com.lemarketjames.reports.insight">
+<h2>Uses of <a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a> in <a href="../../../reports/insight/package-summary.html">com.lemarketjames.reports.insight</a></h2>
+<div class="caption"><span>Constructors in <a href="../../../reports/insight/package-summary.html">com.lemarketjames.reports.insight</a> with parameters of type <a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../reports/insight/InsightFlagRule.html#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings)" class="member-name-link">InsightFlagRule</a><wbr>(<a href="../PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>

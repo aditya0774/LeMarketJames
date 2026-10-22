@@ -104,13 +104,14 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.orders.repository.OrderRepository,com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.orders.submission.SubmissionValidator,com.lemarketjames.orders.submission.SubmissionRecorder,com.lemarketjames.orders.execution.OrderTransitions,com.lemarketjames.common.audit.AuditEventRepository,com.lemarketjames.common.instruments.InstrumentRepository)" class="member-name-link">OrderService</a><wbr>(<a href="../repository/OrderRepository.html" title="interface in com.lemarketjames.orders.repository">OrderRepository</a>&nbsp;orderRepository,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.orders.repository.OrderRepository,com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.orders.submission.OrderPlacement,com.lemarketjames.orders.submission.SubmissionRecorder,com.lemarketjames.orders.execution.OrderTransitions,com.lemarketjames.common.audit.AuditEventRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.audit.AuditRetention)" class="member-name-link">OrderService</a><wbr>(<a href="../repository/OrderRepository.html" title="interface in com.lemarketjames.orders.repository">OrderRepository</a>&nbsp;orderRepository,
  <a href="AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
- <a href="../submission/SubmissionValidator.html" title="class in com.lemarketjames.orders.submission">SubmissionValidator</a>&nbsp;validator,
+ <a href="../submission/OrderPlacement.html" title="class in com.lemarketjames.orders.submission">OrderPlacement</a>&nbsp;placement,
  <a href="../submission/SubmissionRecorder.html" title="class in com.lemarketjames.orders.submission">SubmissionRecorder</a>&nbsp;submissions,
  <a href="../execution/OrderTransitions.html" title="class in com.lemarketjames.orders.execution">OrderTransitions</a>&nbsp;transitions,
  <a href="../../common/audit/AuditEventRepository.html" title="interface in com.lemarketjames.common.audit">AuditEventRepository</a>&nbsp;auditEventRepository,
- <a href="../../common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository)</code></div>
+ <a href="../../common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository,
+ <a href="../../audit/AuditRetention.html" title="class in com.lemarketjames.audit">AuditRetention</a>&nbsp;retention)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -227,15 +228,16 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.orders.repository.OrderRepository,com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.orders.submission.SubmissionValidator,com.lemarketjames.orders.submission.SubmissionRecorder,com.lemarketjames.orders.execution.OrderTransitions,com.lemarketjames.common.audit.AuditEventRepository,com.lemarketjames.common.instruments.InstrumentRepository)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.orders.repository.OrderRepository,com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.orders.submission.OrderPlacement,com.lemarketjames.orders.submission.SubmissionRecorder,com.lemarketjames.orders.execution.OrderTransitions,com.lemarketjames.common.audit.AuditEventRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.audit.AuditRetention)">
 <h3>OrderService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OrderService</span><wbr><span class="parameters">(<a href="../repository/OrderRepository.html" title="interface in com.lemarketjames.orders.repository">OrderRepository</a>&nbsp;orderRepository,
  <a href="AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
- <a href="../submission/SubmissionValidator.html" title="class in com.lemarketjames.orders.submission">SubmissionValidator</a>&nbsp;validator,
+ <a href="../submission/OrderPlacement.html" title="class in com.lemarketjames.orders.submission">OrderPlacement</a>&nbsp;placement,
  <a href="../submission/SubmissionRecorder.html" title="class in com.lemarketjames.orders.submission">SubmissionRecorder</a>&nbsp;submissions,
  <a href="../execution/OrderTransitions.html" title="class in com.lemarketjames.orders.execution">OrderTransitions</a>&nbsp;transitions,
  <a href="../../common/audit/AuditEventRepository.html" title="interface in com.lemarketjames.common.audit">AuditEventRepository</a>&nbsp;auditEventRepository,
- <a href="../../common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository)</span></div>
+ <a href="../../common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository,
+ <a href="../../audit/AuditRetention.html" title="class in com.lemarketjames.audit">AuditRetention</a>&nbsp;retention)</span></div>
 </section>
 </li>
 </ul>
@@ -255,9 +257,9 @@ loadScripts(document, 'script');</script>
  Submission does not execute a trade.
 
  <p>Every submission leaves an audit trail under <code>requestId</code> (contract C2): an accepted
- order's is saved in the same transaction as the order, and a refused order's is saved on its
- own. Deliberately not transactional itself: the checks only read, and with no transaction
- around them a refusal has nothing to roll its trail back.</div>
+ order's is saved in the same transaction as the order (<a href="../submission/OrderPlacement.html" title="class in com.lemarketjames.orders.submission"><code>OrderPlacement</code></a>), and a refused
+ order's is saved on its own. Deliberately not transactional itself: the placement transaction
+ has ended before a refusal's trail is saved, so nothing can roll that trail back.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>requestId</code> - the server-generated ID of this submission</dd>

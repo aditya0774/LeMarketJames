@@ -102,7 +102,8 @@ loadScripts(document, 'script');</script>
  is audited as a <code>RULE_CHECKED</code> event carrying its name (contract C2), so this enum is the
  list the trade timeline displays.
 
- <p>Mirrors: the seeded checks in database/schema/015.</div>
+ <p>Mirrors: the seeded checks in database/schema/015, which list the rules as they were before
+ QUANTITY was added (seeded orders were all placed by whole shares).</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -133,26 +134,32 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><code><a href="#CASH" class="member-name-link">CASH</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">BUY only: the account has enough cash at that price.</div>
+<div class="block">BUY only: the cash not reserved by open BUYs covers the order at that price.</div>
 </div>
 <div class="col-first odd-row-color"><code><a href="#HOLDINGS" class="member-name-link">HOLDINGS</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">SELL only: the account holds enough shares.</div>
+<div class="block">SELL only: the account holds enough shares not already in open SELLs.</div>
 </div>
 <div class="col-first even-row-color"><code><a href="#LOCATION" class="member-name-link">LOCATION</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">The client doesn't live somewhere trading is restricted.</div>
+<div class="block">The client doesn't live where this instrument, or every instrument, may not be traded
+ (instrument_location_restrictions, lmj.orders.restricted-locations).</div>
 </div>
 <div class="col-first odd-row-color"><code><a href="#PRICE_AVAILABLE" class="member-name-link">PRICE_AVAILABLE</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">BUY only: the feed has a usable ask price.</div>
+<div class="block">A BUY, or an order placed by amount (BR-04): the feed has a usable price, the ask for a BUY and
+ the bid for a SELL.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#QUOTE_FRESH" class="member-name-link">QUOTE_FRESH</a></code></div>
+<div class="col-first even-row-color"><code><a href="#QUANTITY" class="member-name-link">QUANTITY</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">BUY only: that quote is within the staleness limit.</div>
+<div class="block">The order is for a whole number of shares, at least one (BR-04).</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#TRADABLE" class="member-name-link">TRADABLE</a></code></div>
+<div class="col-first odd-row-color"><code><a href="#QUOTE_FRESH" class="member-name-link">QUOTE_FRESH</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">Whenever PRICE_AVAILABLE ran: that quote is within the staleness limit.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="#TRADABLE" class="member-name-link">TRADABLE</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">The instrument exists and isn't suspended.</div>
 </div>
 </div>
@@ -218,7 +225,8 @@ the order they are declared.</div>
 <section class="detail" id="LOCATION">
 <h3>LOCATION</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">LOCATION</span></div>
-<div class="block">The client doesn't live somewhere trading is restricted. Fails with <code>LOCATION_RESTRICTED</code>.</div>
+<div class="block">The client doesn't live where this instrument, or every instrument, may not be traded
+ (instrument_location_restrictions, lmj.orders.restricted-locations). Fails with <code>LOCATION_RESTRICTED</code>.</div>
 </section>
 </li>
 <li>
@@ -229,31 +237,41 @@ the order they are declared.</div>
 </section>
 </li>
 <li>
-<section class="detail" id="HOLDINGS">
-<h3>HOLDINGS</h3>
-<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">HOLDINGS</span></div>
-<div class="block">SELL only: the account holds enough shares. Fails with <code>INSUFFICIENT_HOLDINGS</code>.</div>
-</section>
-</li>
-<li>
 <section class="detail" id="PRICE_AVAILABLE">
 <h3>PRICE_AVAILABLE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">PRICE_AVAILABLE</span></div>
-<div class="block">BUY only: the feed has a usable ask price. Fails with <code>PRICE_UNAVAILABLE</code>.</div>
+<div class="block">A BUY, or an order placed by amount (BR-04): the feed has a usable price, the ask for a BUY and
+ the bid for a SELL. Fails with <code>PRICE_UNAVAILABLE</code>.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="QUOTE_FRESH">
 <h3>QUOTE_FRESH</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">QUOTE_FRESH</span></div>
-<div class="block">BUY only: that quote is within the staleness limit. Fails with <code>STALE_QUOTE</code>.</div>
+<div class="block">Whenever PRICE_AVAILABLE ran: that quote is within the staleness limit. Fails with <code>STALE_QUOTE</code>.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="QUANTITY">
+<h3>QUANTITY</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">QUANTITY</span></div>
+<div class="block">The order is for a whole number of shares, at least one (BR-04). An order by amount is first
+ turned into as many whole shares as the amount covers at that price, which is why this rule
+ runs after the price checks. Fails with <code>INVALID_QUANTITY</code>.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="HOLDINGS">
+<h3>HOLDINGS</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">HOLDINGS</span></div>
+<div class="block">SELL only: the account holds enough shares not already in open SELLs. Fails with <code>INSUFFICIENT_HOLDINGS</code>.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="CASH">
 <h3>CASH</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission">ValidationRule</a></span>&nbsp;<span class="element-name">CASH</span></div>
-<div class="block">BUY only: the account has enough cash at that price. Fails with <code>INSUFFICIENT_CASH</code>.</div>
+<div class="block">BUY only: the cash not reserved by open BUYs covers the order at that price. Fails with <code>INSUFFICIENT_CASH</code>.</div>
 </section>
 </li>
 </ul>

@@ -108,8 +108,13 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Field</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#ROLES_CLAIM" class="member-name-link">ROLES_CLAIM</a></code></div>
+<div class="col-second even-row-color"><code><a href="#AUTH_TIME_CLAIM" class="member-name-link">AUTH_TIME_CLAIM</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">The claim holding when the holder signed in (the OpenID Connect name).</div>
+</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#ROLES_CLAIM" class="member-name-link">ROLES_CLAIM</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">The claim holding the token holder's <a href="Role.html" title="enum class in com.lemarketjames.common.security"><code>Role</code></a> names.</div>
 </div>
 </div>
@@ -127,6 +132,13 @@ loadScripts(document, 'script');</script>
  long&nbsp;expirationMs)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Constructs a JwtService with the provided secret key and expiration time.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,long,java.time.Clock)" class="member-name-link">JwtService</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;secret,
+ long&nbsp;expirationMs,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Takes the clock tokens are issued and checked against, so tests can move time instead of
+ waiting for a token to expire.</div>
 </div>
 </div>
 </section>
@@ -171,9 +183,19 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Generates a token whose issue time is explicitly after a session invalidation cutoff.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExpirationSeconds()" class="member-name-link">getExpirationSeconds</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#generateToken(java.lang.String,java.util.Set,java.time.Instant,java.time.Instant,java.time.Instant)" class="member-name-link">generateToken</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a>&gt;&nbsp;roles,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;issuedAt,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;authTime,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;expiresAt)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Generates a session token with every time stated: auth-service uses it to make a token last
+ only as long as the inactivity timeout, and to carry the sign-in time over on refresh (BR-03).</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExpirationSeconds()" class="member-name-link">getExpirationSeconds</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets the token expiration time in seconds.</div>
 </div>
 </div>
@@ -208,6 +230,22 @@ loadScripts(document, 'script');</script>
 </dl>
 </section>
 </li>
+<li>
+<section class="detail" id="AUTH_TIME_CLAIM">
+<h3>AUTH_TIME_CLAIM</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">AUTH_TIME_CLAIM</span></div>
+<div class="block">The claim holding when the holder signed in (the OpenID Connect name). A refreshed token
+ keeps it, so a session can be capped however often it is refreshed (BR-03).</div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="tag-list">
+<li><a href="../../../../constant-values.html#com.lemarketjames.common.security.JwtService.AUTH_TIME_CLAIM">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
 </ul>
 </section>
 </li>
@@ -219,7 +257,8 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String,long)">
 <h3>JwtService</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JwtService</span><wbr><span class="parameters">(@Value("${jwt.secret}")
+<div class="member-signature"><span class="annotations">@Autowired
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">JwtService</span><wbr><span class="parameters">(@Value("${jwt.secret}")
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;secret,
  @Value("${jwt.expiration-ms}")
  long&nbsp;expirationMs)</span></div>
@@ -227,8 +266,20 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>secret</code> - the secret key string for signing tokens</dd>
-<dd><code>expirationMs</code> - the token expiration time in milliseconds</dd>
+<dd><code>expirationMs</code> - the longest a session may last, in milliseconds: auth-service caps every
+                     session at this however often it is refreshed (BR-03); tokens issued
+                     without an explicit expiry also last this long</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,long,java.time.Clock)">
+<h3>JwtService</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">JwtService</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;secret,
+ long&nbsp;expirationMs,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</span></div>
+<div class="block">Takes the clock tokens are issued and checked against, so tests can move time instead of
+ waiting for a token to expire.</div>
 </section>
 </li>
 </ul>
@@ -279,6 +330,28 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="generateToken(java.lang.String,java.util.Set,java.time.Instant,java.time.Instant,java.time.Instant)">
+<h3>generateToken</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">generateToken</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="Role.html" title="enum class in com.lemarketjames.common.security">Role</a>&gt;&nbsp;roles,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;issuedAt,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;authTime,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;expiresAt)</span></div>
+<div class="block">Generates a session token with every time stated: auth-service uses it to make a token last
+ only as long as the inactivity timeout, and to carry the sign-in time over on refresh (BR-03).</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>username</code> - the token subject</dd>
+<dd><code>roles</code> - the holder's roles</dd>
+<dd><code>issuedAt</code> - the issue time; must be after the account's last sign-out to be accepted</dd>
+<dd><code>authTime</code> - when the holder signed in, stored in the <a href="#AUTH_TIME_CLAIM">"auth_time"</a> claim</dd>
+<dd><code>expiresAt</code> - when the token stops being accepted</dd>
+<dt>Returns:</dt>
+<dd>a signed JWT token string</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="getExpirationSeconds()">
 <h3>getExpirationSeconds</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">long</span>&nbsp;<span class="element-name">getExpirationSeconds</span>()</div>
@@ -308,7 +381,8 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a>&lt;<a href="TokenClaims.html" title="class in com.lemarketjames.common.security">TokenClaims</a>&gt;</span>&nbsp;<span class="element-name">extractClaims</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;token)</span></div>
 <div class="block">Extracts the username and roles from a JWT token if the token is valid and unexpired.
  Tokens issued before roles existed carry no <a href="#ROLES_CLAIM">"roles"</a> claim and count as
- <a href="Role.html#CLIENT"><code>Role.CLIENT</code></a>, since only clients could log in then.</div>
+ <a href="Role.html#CLIENT"><code>Role.CLIENT</code></a>, since only clients could log in then. Tokens without
+ <a href="#AUTH_TIME_CLAIM">"auth_time"</a> were issued at sign-in, so their sign-in time is their issue time.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>token</code> - the JWT token to parse</dd>

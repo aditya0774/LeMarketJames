@@ -67,15 +67,13 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="class-use/SubmissionRecorder.html#com.lemarketjames.orders.service">SubmissionRecorder</a></div>
+<div class="col-first even-row-color"><a href="class-use/OrderPlacement.html#com.lemarketjames.orders.service">OrderPlacement</a></div>
 <div class="col-last even-row-color">
-<div class="block">Commits the outcome of an order submission (contract C2).</div>
+<div class="block">Checks an order and, if it passes, saves it, in one transaction (BR-05).</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/SubmissionValidator.html#com.lemarketjames.orders.service">SubmissionValidator</a></div>
+<div class="col-first odd-row-color"><a href="class-use/SubmissionRecorder.html#com.lemarketjames.orders.service">SubmissionRecorder</a></div>
 <div class="col-last odd-row-color">
-<div class="block">The checks an order must pass before it is saved, in the order of <a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission"><code>ValidationRule</code></a>:
- ownership, account status, location, tradability, then holdings for a SELL or price and cash for
- a BUY.</div>
+<div class="block">Commits the outcome of an order submission (contract C2).</div>
 </div>
 </div>
 </section>
@@ -86,6 +84,14 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/OrderPlacement.Result.html#com.lemarketjames.orders.submission">OrderPlacement.Result</a></div>
+<div class="col-last even-row-color">
+<div class="block">The outcome of one placement: the saved order, or the refusal to report.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/SubmissionRecorder.html#com.lemarketjames.orders.submission">SubmissionRecorder</a></div>
+<div class="col-last odd-row-color">
+<div class="block">Commits the outcome of an order submission (contract C2).</div>
+</div>
 <div class="col-first even-row-color"><a href="class-use/SubmissionTrail.html#com.lemarketjames.orders.submission">SubmissionTrail</a></div>
 <div class="col-last even-row-color">
 <div class="block">What happened during one order submission, collected in memory while the checks run and written
@@ -99,13 +105,20 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">How a check ended.</div>
 </div>
-<div class="col-first odd-row-color"><a href="class-use/ValidationOutcome.html#com.lemarketjames.orders.submission">ValidationOutcome</a></div>
+<div class="col-first odd-row-color"><a href="class-use/SubmissionValidator.html#com.lemarketjames.orders.submission">SubmissionValidator</a></div>
 <div class="col-last odd-row-color">
-<div class="block">What the submission checks decided: the order may be saved (at <code>price</code>, null for a SELL),
- or it is refused with the response the caller gets.</div>
+<div class="block">The checks an order must pass before it is saved, in the order of <a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission"><code>ValidationRule</code></a>:
+ ownership, account status, location, tradability, the price for a BUY or an order by amount,
+ whole shares (BR-04), then holdings for a SELL or cash for a BUY.</div>
 </div>
-<div class="col-first even-row-color"><a href="class-use/ValidationRule.html#com.lemarketjames.orders.submission">ValidationRule</a></div>
+<div class="col-first even-row-color"><a href="class-use/ValidationOutcome.html#com.lemarketjames.orders.submission">ValidationOutcome</a></div>
 <div class="col-last even-row-color">
+<div class="block">What the submission checks decided: the order may be saved for <code>quantity</code> whole shares (as
+ asked for, or worked out from an amount, BR-04) at <code>price</code> (null for a SELL), or it is
+ refused with the response the caller gets.</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/ValidationRule.html#com.lemarketjames.orders.submission">ValidationRule</a></div>
+<div class="col-last odd-row-color">
 <div class="block">The checks an order goes through before it is saved, in the order they run.</div>
 </div>
 </div>

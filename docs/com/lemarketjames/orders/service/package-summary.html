@@ -97,16 +97,22 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">CashValidationService
 
- Validates that an account has sufficient cash balance to execute an order.</div>
+ Validates that an account has enough available cash for a BUY order: the cash balance less what
+ its open BUY orders already reserve (BR-05, <a href="OpenOrderReservations.html" title="class in com.lemarketjames.orders.service"><code>OpenOrderReservations</code></a>).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab4"><a href="OrderHistoryPeriod.html" title="class in com.lemarketjames.orders.service">OrderHistoryPeriod</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab4">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">What an account's open orders have already promised (BR-05): cash for open BUYs and shares for
+ open SELLs.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab4"><a href="OrderHistoryPeriod.html" title="class in com.lemarketjames.orders.service">OrderHistoryPeriod</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab4">
 <div class="block">Converts a client's calendar period to a half-open UTC range for stored order timestamps.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OrderService.html" title="class in com.lemarketjames.orders.service">OrderService</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TradingRestrictions.html" title="class in com.lemarketjames.orders.service">TradingRestrictions</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OrderService.html" title="class in com.lemarketjames.orders.service">OrderService</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TradingRestrictions.html" title="class in com.lemarketjames.orders.service">TradingRestrictions</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Shared placement/execution policy, driven by the platform contract settings.</div>
 </div>
 </div>

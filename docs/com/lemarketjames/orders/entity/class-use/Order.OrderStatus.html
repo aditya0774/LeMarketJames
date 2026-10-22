@@ -249,9 +249,19 @@ the order they are declared.</div>
  <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
  <a href="../RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><code>static <a href="../../execution/ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">ExecutionResult.</span><code><a href="../../execution/ExecutionResult.html#waiting(com.lemarketjames.orders.entity.Order.OrderStatus)" class="member-name-link">waiting</a><wbr>(<a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status)</code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>void</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderTransitions.</span><code><a href="../../execution/OrderTransitions.html#move(com.lemarketjames.orders.entity.Order,com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">move</a><wbr>(<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;order,
+ <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
+ <a href="../RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="../../execution/QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Moves the order and audits the step (contract C2), every status but SUBMITTED: placement
+ audits that.</div>
+</div>
+<div class="col-first even-row-color"><code>static <a href="../../execution/ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ExecutionResult.</span><code><a href="../../execution/ExecutionResult.html#waiting(com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">waiting</a><wbr>(<a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;status,
+ <a href="../RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;why)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <div class="caption"><span>Constructors in <a href="../../execution/package-summary.html">com.lemarketjames.orders.execution</a> with parameters of type <a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a></span></div>
 <div class="summary-table three-column-summary">
@@ -300,6 +310,21 @@ the order they are declared.</div>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findByAccountIdAndInstrumentIdAndOrderTypeAndOrderStatusIn(java.lang.Integer,java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderType,java.util.Collection)" class="member-name-link">findByAccountIdAndInstrumentIdAndOrderTypeAndOrderStatusIn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;instrumentId,
+ <a href="../Order.OrderType.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderType</a>&nbsp;orderType,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&gt;&nbsp;statuses)</code></div>
+<div class="col-last even-row-color">
+<div class="block">As above, for one instrument: an account's open SELLs of a stock.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="../Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&gt;</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findByAccountIdAndOrderTypeAndOrderStatusIn(java.lang.Integer,com.lemarketjames.orders.entity.Order.OrderType,java.util.Collection)" class="member-name-link">findByAccountIdAndOrderTypeAndOrderStatusIn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="../Order.OrderType.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderType</a>&nbsp;orderType,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;<a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&gt;&nbsp;statuses)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">One side of an account's orders in the given statuses, e.g.</div>
+</div>
 <div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
 <div class="col-second even-row-color"><span class="type-name-label">OrderRepository.</span><code><a href="../../repository/OrderRepository.html#findExecutionCandidates(java.util.List)" class="member-name-link">findExecutionCandidates</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&gt;&nbsp;statuses)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>

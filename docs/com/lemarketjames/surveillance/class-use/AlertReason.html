@@ -71,18 +71,23 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color"><span class="type-name-label">OrderAlert.</span><code><a href="../OrderAlert.html#getReason()" class="member-name-link">getReason</a>()</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><code><a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">OrderAlertController.AlertView.</span><code><a href="../OrderAlertController.AlertView.html#reason()" class="member-name-link">reason</a>()</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">AlertFilter.</span><code><a href="../AlertFilter.html#reason()" class="member-name-link">reason</a>()</code></div>
 <div class="col-last odd-row-color">
+<div class="block">Returns the value of the <a href="../../../../com/lemarketjames/surveillance/AlertFilter.html#param-reason"><code>reason</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color"><code><a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">OrderAlertController.AlertView.</span><code><a href="../OrderAlertController.AlertView.html#reason()" class="member-name-link">reason</a>()</code></div>
+<div class="col-last even-row-color">
 <div class="block">Returns the value of the <a href="../../../../com/lemarketjames/surveillance/OrderAlertController.AlertView.html#param-reason"><code>reason</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color"><code>static <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">AlertReason.</span><code><a href="../AlertReason.html#valueOf(java.lang.String)" class="member-name-link">valueOf</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">AlertReason.</span><code><a href="../AlertReason.html#valueOf(java.lang.String)" class="member-name-link">valueOf</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </div>
-<div class="col-first odd-row-color"><code>static <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>[]</code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">AlertReason.</span><code><a href="../AlertReason.html#values()" class="member-name-link">values</a>()</code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>[]</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AlertReason.</span><code><a href="../AlertReason.html#values()" class="member-name-link">values</a>()</code></div>
+<div class="col-last even-row-color">
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </div>
@@ -92,10 +97,15 @@ the order they are declared.</div>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>boolean</code></div>
-<div class="col-second even-row-color"><span class="type-name-label">OrderAlertRepository.</span><code><a href="../OrderAlertRepository.html#existsByOrderIdAndReason(java.lang.Integer,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">existsByOrderIdAndReason</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
- <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason)</code></div>
+<div class="col-first even-row-color"><code><a href="../OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">OrderAlertController.</span><code><a href="../OrderAlertController.html#alerts(com.lemarketjames.surveillance.AlertReason,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">alerts</a><wbr>(<a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;from,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;to)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>boolean</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderAlertRepository.</span><code><a href="../OrderAlertRepository.html#existsByOrderIdAndReason(java.lang.Integer,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">existsByOrderIdAndReason</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
+ <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 <div class="caption"><span>Constructors in <a href="../package-summary.html">com.lemarketjames.surveillance</a> with parameters of type <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a></span></div>
 <div class="summary-table three-column-summary">
@@ -103,7 +113,14 @@ the order they are declared.</div>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../OrderAlertController.AlertView.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.lang.Integer,java.lang.Integer,java.lang.String,java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.surveillance.AlertReason,java.time.Instant,java.lang.String,java.time.Instant)" class="member-name-link">AlertView</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;alertId,
+<div class="col-second even-row-color"><code><a href="../AlertFilter.html#%3Cinit%3E(com.lemarketjames.surveillance.AlertReason,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">AlertFilter</a><wbr>(<a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;from,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;to)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates an instance of a <code>AlertFilter</code> record class.</div>
+</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../OrderAlertController.AlertView.html#%3Cinit%3E(java.lang.Integer,java.lang.Integer,java.lang.Integer,java.lang.Integer,java.lang.String,java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.surveillance.AlertReason,java.time.Instant,java.lang.String,java.time.Instant)" class="member-name-link">AlertView</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;alertId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;instrumentId,
@@ -114,19 +131,19 @@ the order they are declared.</div>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;submittedAt,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rejectionReason,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;occurredAt)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Creates an instance of a <code>AlertView</code> record class.</div>
 </div>
-<div class="col-first odd-row-color"><code>&nbsp;</code></div>
-<div class="col-second odd-row-color"><code><a href="../OrderAlert.html#%3Cinit%3E(com.lemarketjames.surveillance.OrderStatusChangedMessage,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">OrderAlert</a><wbr>(<a href="../OrderStatusChangedMessage.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedMessage</a>&nbsp;rejection,
- <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason)</code></div>
-<div class="col-last odd-row-color">
-<div class="block">An alert about an order that was rejected, so it happened when the order changed status.</div>
-</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../OrderAlert.html#%3Cinit%3E(com.lemarketjames.surveillance.OrderSubmittedMessage,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">OrderAlert</a><wbr>(<a href="../OrderSubmittedMessage.html" title="class in com.lemarketjames.surveillance">OrderSubmittedMessage</a>&nbsp;order,
+<div class="col-second even-row-color"><code><a href="../OrderAlert.html#%3Cinit%3E(com.lemarketjames.surveillance.OrderStatusChangedMessage,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">OrderAlert</a><wbr>(<a href="../OrderStatusChangedMessage.html" title="class in com.lemarketjames.surveillance">OrderStatusChangedMessage</a>&nbsp;rejection,
  <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason)</code></div>
 <div class="col-last even-row-color">
+<div class="block">An alert about an order that was rejected, so it happened when the order changed status.</div>
+</div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="../OrderAlert.html#%3Cinit%3E(com.lemarketjames.surveillance.OrderSubmittedMessage,com.lemarketjames.surveillance.AlertReason)" class="member-name-link">OrderAlert</a><wbr>(<a href="../OrderSubmittedMessage.html" title="class in com.lemarketjames.surveillance">OrderSubmittedMessage</a>&nbsp;order,
+ <a href="../AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">An alert about an order as it was placed, so it happened when the order was submitted.</div>
 </div>
 </div>

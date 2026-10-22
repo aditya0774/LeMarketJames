@@ -96,7 +96,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Builds the daily count of distinct trading clients over the last 30 days,
  today included (counted so far). Each day is its own range from <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period"><code>ReportCalendar</code></a>, so days,
  evenings that are already "tomorrow" in UTC and daylight-saving changes follow the same rules as
- every other report; a quiet day is a <code>0</code>, never a gap. Nothing is cached.</div>
+ every other report; a quiet day is a <code>0</code>, never a gap. Nothing is cached.
+
+ <p>The flag (BR-17) compares the last seven whole days with the seven before. Whole weeks, so a
+ weekend without trades is in both, and today, still running, is in neither.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -108,8 +111,9 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.insight.ActiveClientTrendRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">ActiveClientTrendService</a><wbr>(<a href="ActiveClientTrendRepository.html" title="interface in com.lemarketjames.reports.insight">ActiveClientTrendRepository</a>&nbsp;repository,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.insight.ActiveClientTrendRepository,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.reports.insight.InsightFlagRule,java.time.Clock)" class="member-name-link">ActiveClientTrendService</a><wbr>(<a href="ActiveClientTrendRepository.html" title="interface in com.lemarketjames.reports.insight">ActiveClientTrendRepository</a>&nbsp;repository,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="InsightFlagRule.html" title="class in com.lemarketjames.reports.insight">InsightFlagRule</a>&nbsp;flagRule,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
@@ -147,10 +151,11 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.insight.ActiveClientTrendRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.insight.ActiveClientTrendRepository,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.reports.insight.InsightFlagRule,java.time.Clock)">
 <h3>ActiveClientTrendService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ActiveClientTrendService</span><wbr><span class="parameters">(<a href="ActiveClientTrendRepository.html" title="interface in com.lemarketjames.reports.insight">ActiveClientTrendRepository</a>&nbsp;repository,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="InsightFlagRule.html" title="class in com.lemarketjames.reports.insight">InsightFlagRule</a>&nbsp;flagRule,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</span></div>
 </section>
 </li>

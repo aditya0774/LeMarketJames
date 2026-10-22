@@ -126,34 +126,40 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><code><a href="#INSUFFICIENT_CASH" class="member-name-link">INSUFFICIENT_CASH</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">A BUY costs more than the account's cash.</div>
+<div class="block">A BUY costs more than the account's cash less what its open BUYs reserve.</div>
 </div>
 <div class="col-first even-row-color"><code><a href="#INSUFFICIENT_HOLDINGS" class="member-name-link">INSUFFICIENT_HOLDINGS</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">A SELL is for more shares than the account holds.</div>
+<div class="block">A SELL is for more shares than the account holds outside its open SELLs.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#LOCATION_RESTRICTED" class="member-name-link">LOCATION_RESTRICTED</a></code></div>
+<div class="col-first odd-row-color"><code><a href="#INVALID_QUANTITY" class="member-name-link">INVALID_QUANTITY</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">The client lives somewhere trading isn't allowed (lmj.orders.restricted-locations).</div>
+<div class="block">BR-04: the order isn't for a whole number of shares (at least one), or its dollar amount
+ doesn't cover the price of one share.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#MARKET_CLOSED" class="member-name-link">MARKET_CLOSED</a></code></div>
+<div class="col-first even-row-color"><code><a href="#LOCATION_RESTRICTED" class="member-name-link">LOCATION_RESTRICTED</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">The client lives where this stock may not be traded: a location in lmj.orders.restricted-locations
+ (every stock) or in the stock's instrument_location_restrictions rows.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#MARKET_CLOSED" class="member-name-link">MARKET_CLOSED</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">The market is closed and the order can't wait for the open.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#NOT_TRADABLE" class="member-name-link">NOT_TRADABLE</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="#NOT_TRADABLE" class="member-name-link">NOT_TRADABLE</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">The stock is suspended (instruments.tradable = false).</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#PRICE_UNAVAILABLE" class="member-name-link">PRICE_UNAVAILABLE</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="#PRICE_UNAVAILABLE" class="member-name-link">PRICE_UNAVAILABLE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">No usable quote: the feed is down or returned no price.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#REJECTED_BY_OPERATIONS" class="member-name-link">REJECTED_BY_OPERATIONS</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="#REJECTED_BY_OPERATIONS" class="member-name-link">REJECTED_BY_OPERATIONS</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Operations rejected the order by hand.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#STALE_QUOTE" class="member-name-link">STALE_QUOTE</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="#STALE_QUOTE" class="member-name-link">STALE_QUOTE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">The quote is older than the staleness limit (lmj.market.staleness-limit).</div>
 </div>
 </div>
@@ -205,14 +211,14 @@ the order they are declared.</div>
 <section class="detail" id="INSUFFICIENT_CASH">
 <h3>INSUFFICIENT_CASH</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">INSUFFICIENT_CASH</span></div>
-<div class="block">A BUY costs more than the account's cash.</div>
+<div class="block">A BUY costs more than the account's cash less what its open BUYs reserve.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="INSUFFICIENT_HOLDINGS">
 <h3>INSUFFICIENT_HOLDINGS</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">INSUFFICIENT_HOLDINGS</span></div>
-<div class="block">A SELL is for more shares than the account holds.</div>
+<div class="block">A SELL is for more shares than the account holds outside its open SELLs.</div>
 </section>
 </li>
 <li>
@@ -220,6 +226,14 @@ the order they are declared.</div>
 <h3>NOT_TRADABLE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">NOT_TRADABLE</span></div>
 <div class="block">The stock is suspended (instruments.tradable = false).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="INVALID_QUANTITY">
+<h3>INVALID_QUANTITY</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">INVALID_QUANTITY</span></div>
+<div class="block">BR-04: the order isn't for a whole number of shares (at least one), or its dollar amount
+ doesn't cover the price of one share.</div>
 </section>
 </li>
 <li>
@@ -240,7 +254,8 @@ the order they are declared.</div>
 <section class="detail" id="MARKET_CLOSED">
 <h3>MARKET_CLOSED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">MARKET_CLOSED</span></div>
-<div class="block">The market is closed and the order can't wait for the open.</div>
+<div class="block">The market is closed and the order can't wait for the open. Also the <code>reason</code> on a
+ DELAYED audit event, when execution makes an order wait for the open (contract C2).</div>
 </section>
 </li>
 <li>
@@ -254,7 +269,8 @@ the order they are declared.</div>
 <section class="detail" id="LOCATION_RESTRICTED">
 <h3>LOCATION_RESTRICTED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a></span>&nbsp;<span class="element-name">LOCATION_RESTRICTED</span></div>
-<div class="block">The client lives somewhere trading isn't allowed (lmj.orders.restricted-locations).</div>
+<div class="block">The client lives where this stock may not be traded: a location in lmj.orders.restricted-locations
+ (every stock) or in the stock's instrument_location_restrictions rows.</div>
 </section>
 </li>
 <li>

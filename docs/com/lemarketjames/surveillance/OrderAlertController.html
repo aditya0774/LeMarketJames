@@ -146,7 +146,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#alerts()" class="member-name-link">alerts</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#alerts(com.lemarketjames.surveillance.AlertReason,java.time.LocalDate,java.time.LocalDate)" class="member-name-link">alerts</a><wbr>(<a href="AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;from,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;to)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
@@ -180,13 +182,22 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="alerts()">
+<section class="detail" id="alerts(com.lemarketjames.surveillance.AlertReason,java.time.LocalDate,java.time.LocalDate)">
 <h3>alerts</h3>
 <div class="member-signature"><span class="annotations">@GetMapping("/alerts")
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></span>&nbsp;<span class="element-name">alerts</span>()</div>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OrderAlertController.AlertList.html" title="class in com.lemarketjames.surveillance">OrderAlertController.AlertList</a></span>&nbsp;<span class="element-name">alerts</span><wbr><span class="parameters">(@RequestParam(required=false)
+ <a href="AlertReason.html" title="enum class in com.lemarketjames.surveillance">AlertReason</a>&nbsp;reason,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;from,
+ @RequestParam(required=false) @DateTimeFormat(iso=DATE)
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html" title="class or interface in java.time" class="external-link">LocalDate</a>&nbsp;to)</span></div>
 <dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>reason</code> - only alerts raised for this <a href="AlertReason.html" title="enum class in com.lemarketjames.surveillance"><code>AlertReason</code></a>; an unknown name is answered with 400</dd>
+<dd><code>from</code> - first UTC day, included</dd>
+<dd><code>to</code> - last UTC day, included; before <code>from</code> is answered with 400</dd>
 <dt>Returns:</dt>
-<dd>the newest alerts, newest first, with the quantity at which an order counts as large</dd>
+<dd>the newest matching alerts, newest first, with the quantity at which an order counts as large</dd>
 </dl>
 </section>
 </li>

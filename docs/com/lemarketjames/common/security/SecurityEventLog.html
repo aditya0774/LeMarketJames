@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">SecurityEventLog</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">Writes security events that cut off access (LMKT-57, AC3), so sign-in and every service's
- request filter log them in one format. Names the account by username only: never a password,
+ request filter log them in one format, and the account status changes that cause them (BR-03). Names the account by username only: never a password,
  token or email.</div>
 </section>
 <section class="summary">
@@ -140,6 +140,16 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;at)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Records that an account was refused access.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#accountStatusChanged(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.time.Instant)" class="member-name-link">accountStatusChanged</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;from,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;to,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;at)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Records that a client's account status changed (BR-03): by Trading Ops, or by the client
+ closing their own account.</div>
 </div>
 </div>
 </div>
@@ -222,6 +232,27 @@ loadScripts(document, 'script');</script>
 <dd><code>username</code> - the account's username</dd>
 <dd><code>reason</code> - why: the client's status name, <a href="#REASON_DEACTIVATED"><code>REASON_DEACTIVATED</code></a> or <a href="#REASON_NOT_FOUND"><code>REASON_NOT_FOUND</code></a></dd>
 <dd><code>at</code> - when; <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html#toString()" title="class or interface in java.time" class="external-link"><code>Instant.toString()</code></a> prints it in UTC (ISO-8601, ending in Z)</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="accountStatusChanged(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.time.Instant)">
+<h3>accountStatusChanged</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">accountStatusChanged</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;from,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;to,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;at)</span></div>
+<div class="block">Records that a client's account status changed (BR-03): by Trading Ops, or by the client
+ closing their own account. The reason stays in the status history, not the log, because staff
+ may write personal details into it.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>username</code> - the client's username</dd>
+<dd><code>from</code> - the status before</dd>
+<dd><code>to</code> - the status after</dd>
+<dd><code>changedBy</code> - the username of whoever changed it</dd>
+<dd><code>at</code> - when, in UTC</dd>
 </dl>
 </section>
 </li>

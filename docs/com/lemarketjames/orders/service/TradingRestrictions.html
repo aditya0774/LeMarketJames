@@ -105,9 +105,10 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,java.time.Clock)" class="member-name-link">TradingRestrictions</a><wbr>(<a href="../../common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,com.lemarketjames.orders.repository.InstrumentLocationRestrictionRepository,java.time.Clock)" class="member-name-link">TradingRestrictions</a><wbr>(<a href="../../common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accounts,
  <a href="../../common/domain/AddressRepository.html" title="interface in com.lemarketjames.common.domain">AddressRepository</a>&nbsp;addresses,
+ <a href="../repository/InstrumentLocationRestrictionRepository.html" title="interface in com.lemarketjames.orders.repository">InstrumentLocationRestrictionRepository</a>&nbsp;instrumentRules,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
@@ -125,8 +126,13 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#locationRestricted(int)" class="member-name-link">locationRestricted</a><wbr>(int&nbsp;accountId)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#locationRestricted(int,int)" class="member-name-link">locationRestricted</a><wbr>(int&nbsp;accountId,
+ int&nbsp;instrumentId)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Whether the account's client lives where this instrument may not be traded (BR-05): a location
+ in the platform-wide list (every instrument) or one of the instrument's own rules
+ (instrument_location_restrictions), matched against a residential address's state or country.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#stale(com.lemarketjames.market.model.QuoteSnapshot)" class="member-name-link">stale</a><wbr>(<a href="../../market/model/QuoteSnapshot.html" title="class in com.lemarketjames.market.model">QuoteSnapshot</a>&nbsp;quote)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -148,11 +154,12 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,java.time.Clock)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.config.PlatformSettings,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.AddressRepository,com.lemarketjames.orders.repository.InstrumentLocationRestrictionRepository,java.time.Clock)">
 <h3>TradingRestrictions</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">TradingRestrictions</span><wbr><span class="parameters">(<a href="../../common/config/PlatformSettings.html" title="class in com.lemarketjames.common.config">PlatformSettings</a>&nbsp;settings,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accounts,
  <a href="../../common/domain/AddressRepository.html" title="interface in com.lemarketjames.common.domain">AddressRepository</a>&nbsp;addresses,
+ <a href="../repository/InstrumentLocationRestrictionRepository.html" title="interface in com.lemarketjames.orders.repository">InstrumentLocationRestrictionRepository</a>&nbsp;instrumentRules,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</span></div>
 </section>
 </li>
@@ -165,9 +172,13 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="locationRestricted(int)">
+<section class="detail" id="locationRestricted(int,int)">
 <h3>locationRestricted</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">locationRestricted</span><wbr><span class="parameters">(int&nbsp;accountId)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">locationRestricted</span><wbr><span class="parameters">(int&nbsp;accountId,
+ int&nbsp;instrumentId)</span></div>
+<div class="block">Whether the account's client lives where this instrument may not be traded (BR-05): a location
+ in the platform-wide list (every instrument) or one of the instrument's own rules
+ (instrument_location_restrictions), matched against a residential address's state or country.</div>
 </section>
 </li>
 <li>

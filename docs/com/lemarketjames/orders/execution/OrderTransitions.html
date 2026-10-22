@@ -127,6 +127,15 @@ loadScripts(document, 'script');</script>
  <a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
  <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#move(com.lemarketjames.orders.entity.Order,com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">move</a><wbr>(<a href="../entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;order,
+ <a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
+ <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Moves the order and audits the step (contract C2), every status but SUBMITTED: placement
+ audits that.</div>
+</div>
 </div>
 </div>
 </div>
@@ -165,6 +174,18 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">move</span><wbr><span class="parameters">(<a href="../entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;order,
  <a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
  <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="move(com.lemarketjames.orders.entity.Order,com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)">
+<h3>move</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">move</span><wbr><span class="parameters">(<a href="../entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;order,
+ <a href="../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
+ <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote)</span></div>
+<div class="block">Moves the order and audits the step (contract C2), every status but SUBMITTED: placement
+ audits that. <code>reason</code> is the rejection reason for REJECTED, and why it waits for DELAYED;
+ <code>quote</code> is the quote a rejection was made on, when there was one.</div>
 </section>
 </li>
 </ul>

@@ -54,13 +54,49 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.common.audit">com.lemarketjames.common.audit</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.audit">com.lemarketjames.audit</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.dto">com.lemarketjames.orders.dto</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.audit">com.lemarketjames.common.audit</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.dto">com.lemarketjames.orders.dto</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.audit">
+<h2>Uses of <a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a> in <a href="../../../audit/package-summary.html">com.lemarketjames.audit</a></h2>
+<div class="caption"><span>Methods in <a href="../../../audit/package-summary.html">com.lemarketjames.audit</a> that return <a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ArchiveService.Event.</span><code><a href="../../../audit/ArchiveService.Event.html#eventType()" class="member-name-link">eventType</a>()</code></div>
+<div class="col-last even-row-color">
+<div class="block">Returns the value of the <code>eventType</code> record component.</div>
+</div>
+</div>
+<div class="caption"><span>Constructors in <a href="../../../audit/package-summary.html">com.lemarketjames.audit</a> with parameters of type <a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../audit/ArchiveService.Event.html#%3Cinit%3E(java.lang.Long,com.lemarketjames.common.audit.AuditEventType,java.lang.Integer,java.lang.Integer,java.lang.Integer,java.lang.String,java.time.Instant,java.util.Map)" class="member-name-link">Event</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;auditId,
+ <a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a>&nbsp;eventType,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;orderId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;clientId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;requestId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;occurredAt,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;details)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates an instance of a <code>Event</code> record class.</div>
+</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.common.audit">
 <h2>Uses of <a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a> in <a href="../package-summary.html">com.lemarketjames.common.audit</a></h2>
@@ -164,9 +200,10 @@ the order they are declared.</div>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../../../orders/dto/AuditEventDto.html#%3Cinit%3E(com.lemarketjames.common.audit.AuditEventType,java.time.Instant,java.util.Map)" class="member-name-link">AuditEventDto</a><wbr>(<a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a>&nbsp;eventType,
+<div class="col-second even-row-color"><code><a href="../../../orders/dto/AuditEventDto.html#%3Cinit%3E(com.lemarketjames.common.audit.AuditEventType,java.time.Instant,java.util.Map,boolean)" class="member-name-link">AuditEventDto</a><wbr>(<a href="../AuditEventType.html" title="enum class in com.lemarketjames.common.audit">AuditEventType</a>&nbsp;eventType,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Instant.html" title="class or interface in java.time" class="external-link">Instant</a>&nbsp;occurredAt,
- <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;details)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;details,
+ boolean&nbsp;archived)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Creates an instance of a <code>AuditEventDto</code> record class.</div>
 </div>

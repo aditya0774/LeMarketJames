@@ -100,7 +100,12 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Enum.html" title="class or interface in java.lang" class="external-link">Enum</a>&lt;<a href="AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&gt;</span></div>
 <div class="block">A client's standing (contract C3/C7). Decides whether the client may log in and trade.
 
- <p>Mirrors: the <code>clients.account_status</code> CHECK constraint (database/schema/010).</div>
+ <p>Who changes it (BR-03): Trading Ops, through auth-service's account status endpoint, and a client
+ closing their own account. Each change gets a row in <code>account_status_changes</code>.
+
+ <p>Mirrors: the <code>clients.account_status</code> CHECK constraint (database/schema/010), the
+ <code>account_status_changes</code> CHECK constraints (027) and the staff app's <code>AccountStatus</code>
+ type (apps/frontend/projects/staff/src/app/core/clients/client-status.service.ts).</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

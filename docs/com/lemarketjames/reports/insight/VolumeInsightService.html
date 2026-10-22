@@ -96,7 +96,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Compares the traded volume of the last completed period with the period before it. Both are
  whole periods, because a period still in progress would always look like a drop against a
  finished one. Nothing is cached: every call reads the view, so the figures move forward by
- themselves as each report-time-zone day ends.</div>
+ themselves as each report-time-zone day ends. Share volume is the figure that is flagged (BR-17),
+ as it is the one the staff tile shows.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -108,8 +109,9 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.insight.VolumeInsightRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)" class="member-name-link">VolumeInsightService</a><wbr>(<a href="VolumeInsightRepository.html" title="interface in com.lemarketjames.reports.insight">VolumeInsightRepository</a>&nbsp;repository,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.reports.insight.VolumeInsightRepository,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.reports.insight.InsightFlagRule,java.time.Clock)" class="member-name-link">VolumeInsightService</a><wbr>(<a href="VolumeInsightRepository.html" title="interface in com.lemarketjames.reports.insight">VolumeInsightRepository</a>&nbsp;repository,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="InsightFlagRule.html" title="class in com.lemarketjames.reports.insight">InsightFlagRule</a>&nbsp;flagRule,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
@@ -155,10 +157,11 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.insight.VolumeInsightRepository,com.lemarketjames.reports.period.ReportCalendar,java.time.Clock)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.reports.insight.VolumeInsightRepository,com.lemarketjames.reports.period.ReportCalendar,com.lemarketjames.reports.insight.InsightFlagRule,java.time.Clock)">
 <h3>VolumeInsightService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">VolumeInsightService</span><wbr><span class="parameters">(<a href="VolumeInsightRepository.html" title="interface in com.lemarketjames.reports.insight">VolumeInsightRepository</a>&nbsp;repository,
  <a href="../period/ReportCalendar.html" title="class in com.lemarketjames.reports.period">ReportCalendar</a>&nbsp;calendar,
+ <a href="InsightFlagRule.html" title="class in com.lemarketjames.reports.insight">InsightFlagRule</a>&nbsp;flagRule,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Clock.html" title="class or interface in java.time" class="external-link">Clock</a>&nbsp;clock)</span></div>
 </section>
 </li>

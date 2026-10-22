@@ -105,7 +105,8 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.trades.TradeSearchRepository)" class="member-name-link">TradeSearchService</a><wbr>(<a href="TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a>&nbsp;trades)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.trades.TradeSearchRepository,com.lemarketjames.audit.AuditRetention)" class="member-name-link">TradeSearchService</a><wbr>(<a href="TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a>&nbsp;trades,
+ <a href="../audit/AuditRetention.html" title="class in com.lemarketjames.audit">AuditRetention</a>&nbsp;retention)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -129,7 +130,9 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;clientId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;from,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;to)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Finds filled trades, each marked when it is older than the online retention window (BR-14).</div>
+</div>
 </div>
 </div>
 </div>
@@ -148,9 +151,10 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.trades.TradeSearchRepository)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.trades.TradeSearchRepository,com.lemarketjames.audit.AuditRetention)">
 <h3>TradeSearchService</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">TradeSearchService</span><wbr><span class="parameters">(<a href="TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a>&nbsp;trades)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">TradeSearchService</span><wbr><span class="parameters">(<a href="TradeSearchRepository.html" title="interface in com.lemarketjames.trades">TradeSearchRepository</a>&nbsp;trades,
+ <a href="../audit/AuditRetention.html" title="class in com.lemarketjames.audit">AuditRetention</a>&nbsp;retention)</span></div>
 </section>
 </li>
 </ul>
@@ -168,6 +172,7 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;clientId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;from,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;to)</span></div>
+<div class="block">Finds filled trades, each marked when it is older than the online retention window (BR-14).</div>
 </section>
 </li>
 <li>

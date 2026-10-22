@@ -54,21 +54,39 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.auth">com.lemarketjames.auth</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.accountstatus">com.lemarketjames.accountstatus</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.security">com.lemarketjames.common.security</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.auth">com.lemarketjames.auth</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.common.security">com.lemarketjames.common.security</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.execution">com.lemarketjames.orders.execution</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.orders.service">com.lemarketjames.orders.service</a></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.orders.submission">com.lemarketjames.orders.submission</a></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><a href="#com.lemarketjames.profile">com.lemarketjames.profile</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.accountstatus">
+<h2>Uses of <a href="../ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a> in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a></h2>
+<div class="caption"><span>Constructors in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> with parameters of type <a href="../ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier</div>
+<div class="table-header col-second">Constructor</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="../../../accountstatus/AccountStatusService.html#%3Cinit%3E(com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.accountstatus.ClientStatusRepository,com.lemarketjames.accountstatus.AccountStatusChangeRepository)" class="member-name-link">AccountStatusService</a><wbr>(<a href="../ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a>&nbsp;clients,
+ <a href="../../../accountstatus/ClientStatusRepository.html" title="interface in com.lemarketjames.accountstatus">ClientStatusRepository</a>&nbsp;lockedClients,
+ <a href="../../../accountstatus/AccountStatusChangeRepository.html" title="interface in com.lemarketjames.accountstatus">AccountStatusChangeRepository</a>&nbsp;changes)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.auth">
 <h2>Uses of <a href="../ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a> in <a href="../../../auth/package-summary.html">com.lemarketjames.auth</a></h2>
@@ -150,14 +168,15 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="../../../orders/submission/SubmissionValidator.html#%3Cinit%3E(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService)" class="member-name-link">SubmissionValidator</a><wbr>(<a href="../../../orders/service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
+<div class="col-second even-row-color"><code><a href="../../../orders/submission/SubmissionValidator.html#%3Cinit%3E(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService,com.lemarketjames.orders.service.OpenOrderReservations)" class="member-name-link">SubmissionValidator</a><wbr>(<a href="../../../orders/service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
  <a href="../AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a>&nbsp;clientRepository,
  <a href="../../instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository,
  <a href="../../../orders/service/TradingRestrictions.html" title="class in com.lemarketjames.orders.service">TradingRestrictions</a>&nbsp;restrictions,
  <a href="../../../holdings/client/HoldingsValidationClient.html" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a>&nbsp;holdingsValidationClient,
  <a href="../../../market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketDataService,
- <a href="../../../orders/service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService)</code></div>
+ <a href="../../../orders/service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService,
+ <a href="../../../orders/service/OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a>&nbsp;reservations)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>

@@ -92,10 +92,11 @@ loadScripts(document, 'script');</script>
 </div>
 <section class="class-description" id="class-description">
 <hr>
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">ValidationOutcome</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price, <a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&nbsp;refusal)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">ValidationOutcome</span>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price, <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity, <a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&nbsp;refusal)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
-<div class="block">What the submission checks decided: the order may be saved (at <code>price</code>, null for a SELL),
- or it is refused with the response the caller gets.</div>
+<div class="block">What the submission checks decided: the order may be saved for <code>quantity</code> whole shares (as
+ asked for, or worked out from an amount, BR-04) at <code>price</code> (null for a SELL), or it is
+ refused with the response the caller gets.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -107,7 +108,8 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.math.BigDecimal,com.lemarketjames.orders.dto.OrderResponse)" class="member-name-link">ValidationOutcome</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.orders.dto.OrderResponse)" class="member-name-link">ValidationOutcome</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity,
  <a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&nbsp;refusal)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Creates an instance of a <code>ValidationOutcome</code> record class.</div>
@@ -140,25 +142,31 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isRefused()" class="member-name-link">isRefused</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#passed(java.math.BigDecimal)" class="member-name-link">passed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#passed(java.math.BigDecimal,java.math.BigDecimal)" class="member-name-link">passed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#price()" class="member-name-link">price</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <code>price</code> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refusal()" class="member-name-link">refusal</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#quantity()" class="member-name-link">quantity</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <code>quantity</code> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refusal()" class="member-name-link">refusal</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <code>refusal</code> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#refused(java.lang.String,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">refused</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#refused(java.lang.String,com.lemarketjames.orders.entity.RejectionReason)" class="member-name-link">refused</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;message,
  <a href="../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
 </div>
@@ -179,14 +187,16 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.math.BigDecimal,com.lemarketjames.orders.dto.OrderResponse)">
+<section class="detail" id="&lt;init&gt;(java.math.BigDecimal,java.math.BigDecimal,com.lemarketjames.orders.dto.OrderResponse)">
 <h3>ValidationOutcome</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ValidationOutcome</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity,
  <a href="../dto/OrderResponse.html" title="class in com.lemarketjames.orders.dto">OrderResponse</a>&nbsp;refusal)</span></div>
 <div class="block">Creates an instance of a <code>ValidationOutcome</code> record class.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>price</code> - the value for the <code>price</code> record component</dd>
+<dd><code>quantity</code> - the value for the <code>quantity</code> record component</dd>
 <dd><code>refusal</code> - the value for the <code>refusal</code> record component</dd>
 </dl>
 </section>
@@ -200,9 +210,10 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="passed(java.math.BigDecimal)">
+<section class="detail" id="passed(java.math.BigDecimal,java.math.BigDecimal)">
 <h3>passed</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></span>&nbsp;<span class="element-name">passed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price)</span></div>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></span>&nbsp;<span class="element-name">passed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;price,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;quantity)</span></div>
 </section>
 </li>
 <li>
@@ -267,6 +278,17 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <code>price</code> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="quantity()">
+<h3>quantity</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></span>&nbsp;<span class="element-name">quantity</span>()</div>
+<div class="block">Returns the value of the <code>quantity</code> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <code>quantity</code> record component</dd>
 </dl>
 </section>
 </li>

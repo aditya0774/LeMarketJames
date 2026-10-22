@@ -95,7 +95,8 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">CashValidationService
 
- Validates that an account has sufficient cash balance to execute an order.
+ Validates that an account has enough available cash for a BUY order: the cash balance less what
+ its open BUY orders already reserve (BR-05, <a href="OpenOrderReservations.html" title="class in com.lemarketjames.orders.service"><code>OpenOrderReservations</code></a>).
  Uses authoritative data from the database (AccountEntity.cashBalance).
  All monetary calculations use BigDecimal for precision.</div>
 </section>
@@ -109,7 +110,8 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository)" class="member-name-link">CashValidationService</a><wbr>(<a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.orders.service.OpenOrderReservations)" class="member-name-link">CashValidationService</a><wbr>(<a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
+ <a href="OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a>&nbsp;reservations)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -126,15 +128,15 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCashBalance(java.lang.Integer)" class="member-name-link">getCashBalance</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#availableCash(java.lang.Integer)" class="member-name-link">availableCash</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Retrieves the current cash balance for an account.</div>
+<div class="block">The cash a new BUY may spend: the balance less the open BUY orders' reservations.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateSufficientCash(java.lang.Integer,java.math.BigDecimal)" class="member-name-link">validateSufficientCash</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;orderCost)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Validates that an account has sufficient cash balance for an order.</div>
+<div class="block">Validates that an account has enough available cash for an order.</div>
 </div>
 </div>
 </div>
@@ -154,9 +156,10 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.domain.AccountRepository)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.orders.service.OpenOrderReservations)">
 <h3>CashValidationService</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">CashValidationService</span><wbr><span class="parameters">(<a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">CashValidationService</span><wbr><span class="parameters">(<a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
+ <a href="OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a>&nbsp;reservations)</span></div>
 </section>
 </li>
 </ul>
@@ -172,28 +175,29 @@ loadScripts(document, 'script');</script>
 <h3>validateSufficientCash</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">validateSufficientCash</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;orderCost)</span></div>
-<div class="block">Validates that an account has sufficient cash balance for an order.</div>
+<div class="block">Validates that an account has enough available cash for an order.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>accountId</code> - the account to validate</dd>
 <dd><code>orderCost</code> - the total cost of the order (quantity * pricePerUnit)</dd>
 <dt>Returns:</dt>
-<dd>true if cashBalance &gt;= orderCost; false otherwise</dd>
+<dd>true if availableCash &gt;= orderCost; false otherwise</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if accountId does not exist</dd>
 </dl>
 </section>
 </li>
 <li>
-<section class="detail" id="getCashBalance(java.lang.Integer)">
-<h3>getCashBalance</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></span>&nbsp;<span class="element-name">getCashBalance</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId)</span></div>
-<div class="block">Retrieves the current cash balance for an account.</div>
+<section class="detail" id="availableCash(java.lang.Integer)">
+<h3>availableCash</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a></span>&nbsp;<span class="element-name">availableCash</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId)</span></div>
+<div class="block">The cash a new BUY may spend: the balance less the open BUY orders' reservations. The same
+ figure the client sees as buying power.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>accountId</code> - the account to query</dd>
 <dt>Returns:</dt>
-<dd>the BigDecimal cash balance</dd>
+<dd>the available cash; negative if open orders already promise more than the balance</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if accountId does not exist</dd>
 </dl>

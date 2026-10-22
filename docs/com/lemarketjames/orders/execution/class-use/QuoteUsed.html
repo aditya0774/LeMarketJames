@@ -81,6 +81,21 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static <a href="../ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
 <div class="col-second even-row-color"><span class="type-name-label">ExecutionResult.</span><code><a href="../ExecutionResult.html#filled(com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">filled</a><wbr>(<a href="../QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>void</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderTransitions.</span><code><a href="../OrderTransitions.html#move(com.lemarketjames.orders.entity.Order,com.lemarketjames.orders.entity.Order.OrderStatus,com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">move</a><wbr>(<a href="../../entity/Order.html" title="class in com.lemarketjames.orders.entity">Order</a>&nbsp;order,
+ <a href="../../entity/Order.OrderStatus.html" title="enum class in com.lemarketjames.orders.entity">Order.OrderStatus</a>&nbsp;next,
+ <a href="../../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="../QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;quote)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Moves the order and audits the step (contract C2), every status but SUBMITTED: placement
+ audits that.</div>
+</div>
+<div class="col-first even-row-color"><code>static <a href="../ExecutionResult.html" title="class in com.lemarketjames.orders.execution">ExecutionResult</a></code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ExecutionResult.</span><code><a href="../ExecutionResult.html#rejected(com.lemarketjames.orders.entity.RejectionReason,com.lemarketjames.orders.execution.QuoteUsed)" class="member-name-link">rejected</a><wbr>(<a href="../../entity/RejectionReason.html" title="enum class in com.lemarketjames.orders.entity">RejectionReason</a>&nbsp;reason,
+ <a href="../QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a>&nbsp;refusedQuote)</code></div>
+<div class="col-last even-row-color">
+<div class="block">A refusal on a quote the feed did return, kept so the audit trail can show it.</div>
+</div>
 </div>
 <div class="caption"><span>Constructors in <a href="../package-summary.html">com.lemarketjames.orders.execution</a> with parameters of type <a href="../QuoteUsed.html" title="class in com.lemarketjames.orders.execution">QuoteUsed</a></span></div>
 <div class="summary-table three-column-summary">

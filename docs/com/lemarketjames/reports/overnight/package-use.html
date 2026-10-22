@@ -65,6 +65,15 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><a href="class-use/DailySummaryWriter.html#com.lemarketjames.reports.overnight">DailySummaryWriter</a></div>
+<div class="col-last even-row-color">
+<div class="block">Refreshes the nightly trade summary, <code>reporting_daily_trades</code> (migration 030), the separated
+ read side of the long-range reports (BR-16).</div>
+</div>
+<div class="col-first odd-row-color"><a href="class-use/DailySummaryWriter.SummarizedDays.html#com.lemarketjames.reports.overnight">DailySummaryWriter.SummarizedDays</a></div>
+<div class="col-last odd-row-color">
+<div class="block">The days a refresh rebuilt, both included.</div>
+</div>
 <div class="col-first even-row-color"><a href="class-use/OvernightReportJob.html#com.lemarketjames.reports.overnight">OvernightReportJob</a></div>
 <div class="col-last even-row-color">
 <div class="block">A report heavy enough to run overnight.</div>
@@ -85,6 +94,15 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Runs each night's overnight reports and records how each run went (LMKT-45).</div>
 </div>
+<div class="col-first odd-row-color"><a href="class-use/ReportOutput.html#com.lemarketjames.reports.overnight">ReportOutput</a></div>
+<div class="col-last odd-row-color">
+<div class="block">The file an overnight run produced, stored with the run (<code>report_outputs</code>, migration 030)
+ and downloaded from the Analyst dashboard (<code>GET /api/v1/reports/overnight/{runId}/output</code>).</div>
+</div>
+<div class="col-first even-row-color"><a href="class-use/ReportOutputs.html#com.lemarketjames.reports.overnight">ReportOutputs</a></div>
+<div class="col-last even-row-color">
+<div class="block">Reads the files overnight runs produced (<code>report_outputs</code>, migration 030).</div>
+</div>
 <div class="col-first odd-row-color"><a href="class-use/ReportRun.html#com.lemarketjames.reports.overnight">ReportRun</a></div>
 <div class="col-last odd-row-color">
 <div class="block">One overnight run of one report (<code>report_runs</code>, migration 023).</div>
@@ -95,7 +113,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><a href="class-use/ReportRunWriter.html#com.lemarketjames.reports.overnight">ReportRunWriter</a></div>
 <div class="col-last odd-row-color">
-<div class="block">The only report code that writes, and it writes only <code>report_runs</code>.</div>
+<div class="block">The report code that writes <code>report_runs</code> and the run's <code>report_outputs</code>.</div>
 </div>
 <div class="col-first even-row-color"><a href="class-use/RunStatus.html#com.lemarketjames.reports.overnight">RunStatus</a></div>
 <div class="col-last even-row-color">

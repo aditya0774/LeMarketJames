@@ -131,7 +131,7 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#largeOrderQuantity()" class="member-name-link">largeOrderQuantity</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#latest()" class="member-name-link">latest</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#latest(com.lemarketjames.surveillance.AlertFilter)" class="member-name-link">latest</a><wbr>(<a href="AlertFilter.html" title="class in com.lemarketjames.surveillance">AlertFilter</a>&nbsp;filter)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#review(com.lemarketjames.surveillance.OrderSubmittedMessage)" class="member-name-link">review</a><wbr>(<a href="OrderSubmittedMessage.html" title="class in com.lemarketjames.surveillance">OrderSubmittedMessage</a>&nbsp;order)</code></div>
@@ -208,13 +208,13 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="latest()">
+<section class="detail" id="latest(com.lemarketjames.surveillance.AlertFilter)">
 <h3>latest</h3>
 <div class="member-signature"><span class="annotations">@Transactional(readOnly=true)
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a>&gt;</span>&nbsp;<span class="element-name">latest</span>()</div>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="OrderAlert.html" title="class in com.lemarketjames.surveillance">OrderAlert</a>&gt;</span>&nbsp;<span class="element-name">latest</span><wbr><span class="parameters">(<a href="AlertFilter.html" title="class in com.lemarketjames.surveillance">AlertFilter</a>&nbsp;filter)</span></div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the newest alerts, newest first</dd>
+<dd>the newest alerts that match the filter, newest first, at most 100</dd>
 </dl>
 </section>
 </li>

@@ -140,6 +140,16 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">AC2: Validate that user has sufficient holdings to sell a given quantity.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateSufficientHoldings(java.lang.Integer,java.lang.String,java.lang.Integer,java.math.BigDecimal,java.math.BigDecimal)" class="member-name-link">validateSufficientHoldings</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;instrumentId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;sellQuantity,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;reservedQuantity)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">As above, less the shares the account's open SELL orders already promise (BR-05), so the same
+ shares can't be sold twice before the first sale settles.</div>
+</div>
 </div>
 </div>
 </div>
@@ -216,6 +226,22 @@ loadScripts(document, 'script');</script>
 <dt>Throws:</dt>
 <dd><code><a href="../exception/UnauthorizedException.html" title="class in com.lemarketjames.holdings.exception">UnauthorizedException</a></code> - if user doesn't own the account</dd>
 <dd><code><a href="../exception/InsufficientHoldingsException.html" title="class in com.lemarketjames.holdings.exception">InsufficientHoldingsException</a></code> - if holding does not exist or quantity insufficient</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="validateSufficientHoldings(java.lang.Integer,java.lang.String,java.lang.Integer,java.math.BigDecimal,java.math.BigDecimal)">
+<h3>validateSufficientHoldings</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">validateSufficientHoldings</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;accountId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;instrumentId,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;sellQuantity,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html" title="class or interface in java.math" class="external-link">BigDecimal</a>&nbsp;reservedQuantity)</span></div>
+<div class="block">As above, less the shares the account's open SELL orders already promise (BR-05), so the same
+ shares can't be sold twice before the first sale settles.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>reservedQuantity</code> - shares of this stock in open SELL orders; null means none</dd>
 </dl>
 </section>
 </li>

@@ -73,15 +73,21 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Saves an order that passed its checks: SUBMITTED, one RULE_CHECKED per rule, then VALIDATED.</div>
 </div>
-<div class="col-first odd-row-color"><code>void</code></div>
-<div class="col-second odd-row-color"><span class="type-name-label">SubmissionRecorder.</span><code><a href="../SubmissionRecorder.html#refuse(com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">refuse</a><wbr>(<a href="../SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</code></div>
+<div class="col-first odd-row-color"><code><a href="../OrderPlacement.Result.html" title="class in com.lemarketjames.orders.submission">OrderPlacement.Result</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">OrderPlacement.</span><code><a href="../OrderPlacement.html#place(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">place</a><wbr>(<a href="../../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
+ <a href="../SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</code></div>
 <div class="col-last odd-row-color">
+<div class="block">Runs the checks under the account lock and saves the order if they pass.</div>
+</div>
+<div class="col-first even-row-color"><code>void</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">SubmissionRecorder.</span><code><a href="../SubmissionRecorder.html#refuse(com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">refuse</a><wbr>(<a href="../SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</code></div>
+<div class="col-last even-row-color">
 <div class="block">Records a refused submission: SUBMITTED, then each check that ran, the last one not a PASS.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
-<div class="col-second even-row-color"><span class="type-name-label">SubmissionValidator.</span><code><a href="../SubmissionValidator.html#validate(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">validate</a><wbr>(<a href="../../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
+<div class="col-first odd-row-color"><code><a href="../ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">SubmissionValidator.</span><code><a href="../SubmissionValidator.html#validate(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)" class="member-name-link">validate</a><wbr>(<a href="../../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
  <a href="../SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block">Runs the checks for one order, stopping at the first that fails.</div>
 </div>
 </div>

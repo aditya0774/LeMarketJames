@@ -94,12 +94,17 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">SubmissionValidator</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">The checks an order must pass before it is saved, in the order of <a href="ValidationRule.html" title="enum class in com.lemarketjames.orders.submission"><code>ValidationRule</code></a>:
- ownership, account status, location, tradability, then holdings for a SELL or price and cash for
- a BUY. Kept apart from <code>OrderService</code> so deciding whether an order may be placed is
- separate from saving it.
+ ownership, account status, location, tradability, the price for a BUY or an order by amount,
+ whole shares (BR-04), then holdings for a SELL or cash for a BUY. Kept apart from
+ <code>OrderService</code> so deciding whether an order may be placed is separate from saving it.
 
  <p>Every check that runs is noted on the <a href="SubmissionTrail.html" title="class in com.lemarketjames.orders.submission"><code>SubmissionTrail</code></a>, pass or fail, before its
- result is acted on, so the trail is complete however the submission ends.</div>
+ result is acted on, so the trail is complete however the submission ends.
+
+ <p>Cash and holdings are checked net of the account's open orders (BR-05). The account row is
+ locked from the account status check until the caller's transaction ends (<a href="OrderPlacement.html" title="class in com.lemarketjames.orders.submission"><code>OrderPlacement</code></a>
+ saves the order in it), so two orders on one account are checked one after the other: the second
+ sees the first as open and can't spend what it reserves.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -111,14 +116,15 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService)" class="member-name-link">SubmissionValidator</a><wbr>(<a href="../service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService,com.lemarketjames.orders.service.OpenOrderReservations)" class="member-name-link">SubmissionValidator</a><wbr>(<a href="../service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
  <a href="../../common/domain/ClientRepository.html" title="interface in com.lemarketjames.common.domain">ClientRepository</a>&nbsp;clientRepository,
  <a href="../../common/instruments/InstrumentRepository.html" title="interface in com.lemarketjames.common.instruments">InstrumentRepository</a>&nbsp;instrumentRepository,
  <a href="../service/TradingRestrictions.html" title="class in com.lemarketjames.orders.service">TradingRestrictions</a>&nbsp;restrictions,
  <a href="../../holdings/client/HoldingsValidationClient.html" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a>&nbsp;holdingsValidationClient,
  <a href="../../market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketDataService,
- <a href="../service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService)</code></div>
+ <a href="../service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService,
+ <a href="../service/OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a>&nbsp;reservations)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -158,7 +164,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService)">
+<section class="detail" id="&lt;init&gt;(com.lemarketjames.orders.service.AccountAccess,com.lemarketjames.common.domain.AccountRepository,com.lemarketjames.common.domain.ClientRepository,com.lemarketjames.common.instruments.InstrumentRepository,com.lemarketjames.orders.service.TradingRestrictions,com.lemarketjames.holdings.client.HoldingsValidationClient,com.lemarketjames.market.service.MarketDataService,com.lemarketjames.orders.service.CashValidationService,com.lemarketjames.orders.service.OpenOrderReservations)">
 <h3>SubmissionValidator</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SubmissionValidator</span><wbr><span class="parameters">(<a href="../service/AccountAccess.html" title="class in com.lemarketjames.orders.service">AccountAccess</a>&nbsp;accountAccess,
  <a href="../../common/domain/AccountRepository.html" title="interface in com.lemarketjames.common.domain">AccountRepository</a>&nbsp;accountRepository,
@@ -167,7 +173,8 @@ loadScripts(document, 'script');</script>
  <a href="../service/TradingRestrictions.html" title="class in com.lemarketjames.orders.service">TradingRestrictions</a>&nbsp;restrictions,
  <a href="../../holdings/client/HoldingsValidationClient.html" title="class in com.lemarketjames.holdings.client">HoldingsValidationClient</a>&nbsp;holdingsValidationClient,
  <a href="../../market/service/MarketDataService.html" title="interface in com.lemarketjames.market.service">MarketDataService</a>&nbsp;marketDataService,
- <a href="../service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService)</span></div>
+ <a href="../service/CashValidationService.html" title="class in com.lemarketjames.orders.service">CashValidationService</a>&nbsp;cashValidationService,
+ <a href="../service/OpenOrderReservations.html" title="class in com.lemarketjames.orders.service">OpenOrderReservations</a>&nbsp;reservations)</span></div>
 </section>
 </li>
 </ul>
@@ -181,18 +188,20 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="validate(com.lemarketjames.orders.dto.CreateOrderRequest,com.lemarketjames.orders.submission.SubmissionTrail)">
 <h3>validate</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></span>&nbsp;<span class="element-name">validate</span><wbr><span class="parameters">(<a href="../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
+<div class="member-signature"><span class="annotations">@Transactional(propagation=MANDATORY)
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ValidationOutcome.html" title="class in com.lemarketjames.orders.submission">ValidationOutcome</a></span>&nbsp;<span class="element-name">validate</span><wbr><span class="parameters">(<a href="../dto/CreateOrderRequest.html" title="class in com.lemarketjames.orders.dto">CreateOrderRequest</a>&nbsp;request,
  <a href="SubmissionTrail.html" title="class in com.lemarketjames.orders.submission">SubmissionTrail</a>&nbsp;trail)</span></div>
 <div class="block">Runs the checks for one order, stopping at the first that fails. SELL orders require
  sufficient holdings; BUY orders are priced from the market, never from the browser, and
- require sufficient cash at that price.</div>
+ require sufficient cash at that price. An order by amount becomes the whole shares the amount
+ covers at the market price, and is then checked like an order for that many shares.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>trail</code> - receives the result of every check that runs</dd>
 <dt>Throws:</dt>
 <dd><code>org.springframework.security.access.AccessDeniedException</code> - if the account isn't the caller's</dd>
 <dd><code><a href="../exception/NotTradableException.html" title="class in com.lemarketjames.orders.exception">NotTradableException</a></code> - if the instrument is suspended</dd>
-<dd><code><a href="../exception/InsufficientHoldingsException.html" title="class in com.lemarketjames.orders.exception">InsufficientHoldingsException</a></code> - if a SELL exceeds the holding</dd>
+<dd><code><a href="../exception/InsufficientHoldingsException.html" title="class in com.lemarketjames.orders.exception">InsufficientHoldingsException</a></code> - if a SELL exceeds the holding less open SELLs</dd>
 </dl>
 </section>
 </li>

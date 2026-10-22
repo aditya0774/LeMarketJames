@@ -1,5 +1,7 @@
 com.lemarketjames
+com.lemarketjames.accountstatus
 com.lemarketjames.activity
+com.lemarketjames.audit
 com.lemarketjames.auth
 com.lemarketjames.auth.dto
 com.lemarketjames.cash
@@ -57,6 +59,7 @@ com.lemarketjames.reports.overnight
 com.lemarketjames.reports.period
 com.lemarketjames.reports.repository
 com.lemarketjames.reports.service
+com.lemarketjames.reports.summary
 com.lemarketjames.sessions
 com.lemarketjames.sessions.dto
 com.lemarketjames.sessions.entity

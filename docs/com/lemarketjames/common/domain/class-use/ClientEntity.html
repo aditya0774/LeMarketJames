@@ -54,13 +54,46 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Package</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><a href="#com.lemarketjames.common.domain">com.lemarketjames.common.domain</a></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><a href="#com.lemarketjames.accountstatus">com.lemarketjames.accountstatus</a></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><a href="#com.lemarketjames.common.domain">com.lemarketjames.common.domain</a></div>
+<div class="col-last odd-row-color">
 <div class="block">Shared JPA mappings for clients, addresses, and accounts (database/schema/001_core_schema.sql).</div>
 </div>
 </div>
 <section class="class-uses">
 <ul class="block-list">
+<li>
+<section class="detail" id="com.lemarketjames.accountstatus">
+<h2>Uses of <a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a> in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a></h2>
+<div class="caption"><span>Methods in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> that return types with arguments of type <a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a>&gt;</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">ClientStatusRepository.</span><code><a href="../../../accountstatus/ClientStatusRepository.html#findLockedById(java.lang.Integer)" class="member-name-link">findLockedById</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;clientId)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html" title="class or interface in java.util" class="external-link">Optional</a><wbr>&lt;<a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a>&gt;</code></div>
+<div class="col-second odd-row-color"><span class="type-name-label">ClientStatusRepository.</span><code><a href="../../../accountstatus/ClientStatusRepository.html#findLockedByUsername(java.lang.String)" class="member-name-link">findLockedByUsername</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;username)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+</div>
+<div class="caption"><span>Methods in <a href="../../../accountstatus/package-summary.html">com.lemarketjames.accountstatus</a> with parameters of type <a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a></span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>void</code></div>
+<div class="col-second even-row-color"><span class="type-name-label">AccountStatusService.</span><code><a href="../../../accountstatus/AccountStatusService.html#record(com.lemarketjames.common.domain.ClientEntity,com.lemarketjames.common.domain.AccountStatus,java.lang.String,java.lang.String)" class="member-name-link">record</a><wbr>(<a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a>&nbsp;client,
+ <a href="../AccountStatus.html" title="enum class in com.lemarketjames.common.domain">AccountStatus</a>&nbsp;next,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;reason,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;changedBy)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Sets the client's status and writes its history row.</div>
+</div>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="com.lemarketjames.common.domain">
 <h2>Uses of <a href="../ClientEntity.html" title="class in com.lemarketjames.common.domain">ClientEntity</a> in <a href="../package-summary.html">com.lemarketjames.common.domain</a></h2>
