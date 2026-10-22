@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchiveQuery.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.audit</a> &gt; <span class="el_source">ArchiveQuery.java</span></div><h1>ArchiveQuery.java</h1><pre class="source lang-java linenums">package com.lemarketjames.audit;
+
+import java.time.Instant;
+
+/**
+ * One archive search (contract C6, &quot;Audit archive&quot;). Every filter is optional and they combine
+ * with AND; {@code from} is inclusive and {@code to} exclusive. Validated on construction, so a
+ * query that exists is one the repository can run.
+ */
+public record ArchiveQuery(Integer orderId, String requestId, Integer clientId, Instant from, Instant to,
+                           int limit, int offset) {
+
+    public static final int DEFAULT_LIMIT = 100;
+    public static final int MAX_LIMIT = 500;
+
+<span class="fc" id="L16">    public ArchiveQuery {</span>
+<span class="fc bfc" id="L17" title="All 8 branches covered.">        if ((orderId != null &amp;&amp; orderId &lt;= 0) || (clientId != null &amp;&amp; clientId &lt;= 0)) {</span>
+<span class="fc" id="L18">            throw new IllegalArgumentException(&quot;IDs must be positive integers&quot;);</span>
+        }
+        // request_id is a UUID string, at most 36 characters (audit_log.request_id).
+<span class="pc bpc" id="L21" title="2 of 6 branches missed.">        if (requestId != null &amp;&amp; (requestId.isBlank() || requestId.length() &gt; 36)) {</span>
+<span class="nc" id="L22">            throw new IllegalArgumentException(&quot;requestId must be 1 to 36 characters&quot;);</span>
+        }
+<span class="pc bpc" id="L24" title="1 of 6 branches missed.">        if (from != null &amp;&amp; to != null &amp;&amp; !from.isBefore(to)) {</span>
+<span class="fc" id="L25">            throw new IllegalArgumentException(&quot;from must be before to&quot;);</span>
+        }
+<span class="fc bfc" id="L27" title="All 6 branches covered.">        if (limit &lt; 1 || limit &gt; MAX_LIMIT || offset &lt; 0) {</span>
+<span class="fc" id="L28">            throw new IllegalArgumentException(&quot;limit must be 1 to &quot; + MAX_LIMIT + &quot; and offset 0 or more&quot;);</span>
+        }
+<span class="fc" id="L30">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

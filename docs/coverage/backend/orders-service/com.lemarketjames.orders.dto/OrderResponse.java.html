@@ -24,143 +24,150 @@ public class OrderResponse {
     private LocalDateTime filledAt;
     private String quoteSource;
     private Instant quoteTime;
+    private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     // Constructor from Order entity (success case)
-<span class="fc" id="L31">    public OrderResponse(Order order) {</span>
-<span class="fc" id="L32">        this.success = true;</span>
-<span class="fc" id="L33">        this.orderId = order.getOrderId();</span>
-<span class="fc" id="L34">        this.accountId = order.getAccountId();</span>
-<span class="fc" id="L35">        this.instrumentId = order.getInstrumentId();</span>
-<span class="fc" id="L36">        this.orderType = order.getOrderType();</span>
-<span class="fc" id="L37">        this.quantity = order.getQuantity();</span>
-<span class="fc" id="L38">        this.pricePerUnit = order.getPricePerUnit();</span>
-<span class="fc" id="L39">        this.orderStatus = order.getOrderStatus();</span>
-<span class="fc" id="L40">        this.rejectionReason = order.getRejectionReason();</span>
-<span class="fc" id="L41">        this.submittedAt = order.getSubmittedAt();</span>
-<span class="fc" id="L42">        this.acceptedAt = order.getAcceptedAt();</span>
-<span class="fc" id="L43">        this.filledAt = order.getFilledAt();</span>
-<span class="fc" id="L44">        this.quoteSource = order.getQuoteSource();</span>
-<span class="fc" id="L45">        this.quoteTime = order.getQuoteTime();</span>
-<span class="fc" id="L46">        this.createdAt = order.getCreatedAt();</span>
-<span class="fc" id="L47">        this.updatedAt = order.getUpdatedAt();</span>
-<span class="fc" id="L48">    }</span>
+<span class="fc" id="L32">    public OrderResponse(Order order) {</span>
+<span class="fc" id="L33">        this.success = true;</span>
+<span class="fc" id="L34">        this.orderId = order.getOrderId();</span>
+<span class="fc" id="L35">        this.accountId = order.getAccountId();</span>
+<span class="fc" id="L36">        this.instrumentId = order.getInstrumentId();</span>
+<span class="fc" id="L37">        this.orderType = order.getOrderType();</span>
+<span class="fc" id="L38">        this.quantity = order.getQuantity();</span>
+<span class="fc" id="L39">        this.pricePerUnit = order.getPricePerUnit();</span>
+<span class="fc" id="L40">        this.orderStatus = order.getOrderStatus();</span>
+<span class="fc" id="L41">        this.rejectionReason = order.getRejectionReason();</span>
+<span class="fc" id="L42">        this.submittedAt = order.getSubmittedAt();</span>
+<span class="fc" id="L43">        this.acceptedAt = order.getAcceptedAt();</span>
+<span class="fc" id="L44">        this.filledAt = order.getFilledAt();</span>
+<span class="fc" id="L45">        this.quoteSource = order.getQuoteSource();</span>
+<span class="fc" id="L46">        this.quoteTime = order.getQuoteTime();</span>
+<span class="fc" id="L47">        this.requestedAmount = order.getRequestedAmount();</span>
+<span class="fc" id="L48">        this.createdAt = order.getCreatedAt();</span>
+<span class="fc" id="L49">        this.updatedAt = order.getUpdatedAt();</span>
+<span class="fc" id="L50">    }</span>
     
     // Constructor for failed validation cases
-<span class="fc" id="L51">    public OrderResponse(boolean success, String reason) {</span>
-<span class="fc" id="L52">        this.success = success;</span>
-<span class="fc" id="L53">        this.reason = reason;</span>
-<span class="fc" id="L54">    }</span>
+<span class="fc" id="L53">    public OrderResponse(boolean success, String reason) {</span>
+<span class="fc" id="L54">        this.success = success;</span>
+<span class="fc" id="L55">        this.reason = reason;</span>
+<span class="fc" id="L56">    }</span>
 
     public OrderResponse(boolean success, String reason, String code) {
-<span class="fc" id="L57">        this(success, reason);</span>
-<span class="fc" id="L58">        this.code = code;</span>
-<span class="fc" id="L59">    }</span>
+<span class="fc" id="L59">        this(success, reason);</span>
+<span class="fc" id="L60">        this.code = code;</span>
+<span class="fc" id="L61">    }</span>
 
     public String getCode() {
-<span class="fc" id="L62">        return code;</span>
+<span class="fc" id="L64">        return code;</span>
     }
     
     // Empty constructor
-<span class="fc" id="L66">    public OrderResponse() {</span>
-<span class="fc" id="L67">        this.success = true;</span>
-<span class="fc" id="L68">    }</span>
+<span class="fc" id="L68">    public OrderResponse() {</span>
+<span class="fc" id="L69">        this.success = true;</span>
+<span class="fc" id="L70">    }</span>
     
     // Getters
     public boolean isSuccess() {
-<span class="fc" id="L72">        return success;</span>
+<span class="fc" id="L74">        return success;</span>
     }
     
     public String getReason() {
-<span class="fc" id="L76">        return reason;</span>
+<span class="fc" id="L78">        return reason;</span>
     }
     
     public Integer getOrderId() {
-<span class="fc" id="L80">        return orderId;</span>
+<span class="fc" id="L82">        return orderId;</span>
     }
     
     public Integer getAccountId() {
-<span class="fc" id="L84">        return accountId;</span>
+<span class="fc" id="L86">        return accountId;</span>
     }
     
     public Integer getInstrumentId() {
-<span class="fc" id="L88">        return instrumentId;</span>
+<span class="fc" id="L90">        return instrumentId;</span>
     }
 
     public String getSymbol() {
-<span class="fc" id="L92">        return symbol;</span>
+<span class="fc" id="L94">        return symbol;</span>
     }
 
     public String getInstrumentName() {
-<span class="fc" id="L96">        return instrumentName;</span>
+<span class="fc" id="L98">        return instrumentName;</span>
     }
     
     public Order.OrderType getOrderType() {
-<span class="fc" id="L100">        return orderType;</span>
+<span class="fc" id="L102">        return orderType;</span>
     }
     
     public BigDecimal getQuantity() {
-<span class="fc" id="L104">        return quantity;</span>
+<span class="fc" id="L106">        return quantity;</span>
     }
     
     public BigDecimal getPricePerUnit() {
-<span class="fc" id="L108">        return pricePerUnit;</span>
+<span class="fc" id="L110">        return pricePerUnit;</span>
     }
     
     public Order.OrderStatus getOrderStatus() {
-<span class="fc" id="L112">        return orderStatus;</span>
+<span class="fc" id="L114">        return orderStatus;</span>
     }
     
     public String getRejectionReason() {
-<span class="fc" id="L116">        return rejectionReason;</span>
+<span class="fc" id="L118">        return rejectionReason;</span>
     }
     
     public LocalDateTime getSubmittedAt() {
-<span class="fc" id="L120">        return submittedAt;</span>
+<span class="fc" id="L122">        return submittedAt;</span>
     }
     
     public LocalDateTime getAcceptedAt() {
-<span class="fc" id="L124">        return acceptedAt;</span>
+<span class="fc" id="L126">        return acceptedAt;</span>
     }
     
     public LocalDateTime getFilledAt() {
-<span class="fc" id="L128">        return filledAt;</span>
+<span class="fc" id="L130">        return filledAt;</span>
     }
 
     /** The feed the execution quote came from; null until the order has been priced for execution. */
     public String getQuoteSource() {
-<span class="fc" id="L133">        return quoteSource;</span>
+<span class="fc" id="L135">        return quoteSource;</span>
     }
 
     /** When the feed produced the execution quote (UTC); null until the order has been priced for execution. */
     public Instant getQuoteTime() {
-<span class="fc" id="L138">        return quoteTime;</span>
+<span class="fc" id="L140">        return quoteTime;</span>
+    }
+
+    /** The dollar amount the order was placed for (BR-04); null for an order placed by shares. */
+    public BigDecimal getRequestedAmount() {
+<span class="fc" id="L145">        return requestedAmount;</span>
     }
 
     public LocalDateTime getCreatedAt() {
-<span class="fc" id="L142">        return createdAt;</span>
+<span class="fc" id="L149">        return createdAt;</span>
     }
     
     public LocalDateTime getUpdatedAt() {
-<span class="fc" id="L146">        return updatedAt;</span>
+<span class="fc" id="L153">        return updatedAt;</span>
     }
     
     // Setters
     public void setSuccess(boolean success) {
-<span class="fc" id="L151">        this.success = success;</span>
-<span class="fc" id="L152">    }</span>
+<span class="fc" id="L158">        this.success = success;</span>
+<span class="fc" id="L159">    }</span>
     
     public void setReason(String reason) {
-<span class="nc" id="L155">        this.reason = reason;</span>
-<span class="nc" id="L156">    }</span>
+<span class="nc" id="L162">        this.reason = reason;</span>
+<span class="nc" id="L163">    }</span>
 
     public void setSymbol(String symbol) {
-<span class="fc" id="L159">        this.symbol = symbol;</span>
-<span class="fc" id="L160">    }</span>
+<span class="fc" id="L166">        this.symbol = symbol;</span>
+<span class="fc" id="L167">    }</span>
 
     public void setInstrumentName(String instrumentName) {
-<span class="fc" id="L163">        this.instrumentName = instrumentName;</span>
-<span class="fc" id="L164">    }</span>
+<span class="fc" id="L170">        this.instrumentName = instrumentName;</span>
+<span class="fc" id="L171">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -63,27 +63,32 @@ public class SubmissionRecorder {
 <span class="fc" id="L63">        submitted.put(&quot;quantity&quot;, trail.quantity());</span>
 <span class="fc" id="L64">        submitted.put(&quot;price&quot;, trail.price());</span>
 <span class="fc" id="L65">        submitted.put(&quot;instrumentId&quot;, trail.instrumentId());</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!trail.ownsAccount()) {</span>
-            // The account column stays empty for an account that isn't the caller's; keep what was asked for.
-<span class="fc" id="L68">            submitted.put(&quot;requestedAccountId&quot;, trail.requestedAccountId());</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (trail.amount() != null) {</span>
+            // BR-04: an order by amount; quantity is then the whole shares worked out from it, or
+            // null when it was refused before that.
+<span class="fc" id="L69">            submitted.put(&quot;amount&quot;, trail.amount());</span>
         }
-<span class="fc" id="L70">        record(trail, AuditEventType.SUBMITTED, null, orderId, submitted);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (!trail.ownsAccount()) {</span>
+            // The account column stays empty for an account that isn't the caller's; keep what was asked for.
+<span class="fc" id="L73">            submitted.put(&quot;requestedAccountId&quot;, trail.requestedAccountId());</span>
+        }
+<span class="fc" id="L75">        record(trail, AuditEventType.SUBMITTED, null, orderId, submitted);</span>
 
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (SubmissionTrail.Check check : trail.checks()) {</span>
-<span class="fc" id="L73">            Map&lt;String, Object&gt; details = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L74">            details.put(&quot;rule&quot;, check.rule().name());</span>
-<span class="fc" id="L75">            details.put(&quot;result&quot;, check.result().name());</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (check.reason() != null) {</span>
-<span class="fc" id="L77">                details.put(&quot;reason&quot;, check.reason());</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (SubmissionTrail.Check check : trail.checks()) {</span>
+<span class="fc" id="L78">            Map&lt;String, Object&gt; details = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L79">            details.put(&quot;rule&quot;, check.rule().name());</span>
+<span class="fc" id="L80">            details.put(&quot;result&quot;, check.result().name());</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (check.reason() != null) {</span>
+<span class="fc" id="L82">                details.put(&quot;reason&quot;, check.reason());</span>
             }
-<span class="fc" id="L79">            record(trail, AuditEventType.RULE_CHECKED, check.rule().name(), orderId, details);</span>
-<span class="fc" id="L80">        }</span>
-<span class="fc" id="L81">    }</span>
+<span class="fc" id="L84">            record(trail, AuditEventType.RULE_CHECKED, check.rule().name(), orderId, details);</span>
+<span class="fc" id="L85">        }</span>
+<span class="fc" id="L86">    }</span>
 
     private void record(SubmissionTrail trail, AuditEventType type, String rule, Integer orderId,
                         Map&lt;String, Object&gt; details) {
-<span class="fc" id="L85">        audit.recordSubmission(new SubmissionAuditEvent(trail.requestId(), type, rule, orderId,</span>
-<span class="fc" id="L86">            trail.accountId(), trail.clientId(), details));</span>
-<span class="fc" id="L87">    }</span>
+<span class="fc" id="L90">        audit.recordSubmission(new SubmissionAuditEvent(trail.requestId(), type, rule, orderId,</span>
+<span class="fc" id="L91">            trail.accountId(), trail.clientId(), details));</span>
+<span class="fc" id="L92">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

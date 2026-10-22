@@ -14,16 +14,19 @@ import java.time.LocalDate;
  * @param inProgress the period still running, totalled up to today. Not part of {@code change}: an
  *                   unfinished period would always look like a drop against a finished one
  * @param change     {@code current} minus {@code previous}
+ * @param flag       whether the share volume moved enough to be flagged (BR-17); like {@code change},
+ *                   it leaves {@code inProgress} out
  * @param generatedAt when the figures were computed
  */
-<span class="fc" id="L19">public record VolumeInsightResponse(String periodType, PeriodVolume current, PeriodVolume previous,</span>
-                                    PeriodVolume inProgress, VolumeChange change, Instant generatedAt) {
+<span class="fc" id="L21">public record VolumeInsightResponse(String periodType, PeriodVolume current, PeriodVolume previous,</span>
+                                    PeriodVolume inProgress, VolumeChange change, InsightFlag flag,
+                                    Instant generatedAt) {
 
     /**
      * One period's totals. {@code startDate} and {@code endDate} are both included and are days in
      * the reports time zone.
      */
-<span class="fc" id="L26">    public record PeriodVolume(LocalDate startDate, LocalDate endDate, long tradeCount,</span>
+<span class="fc" id="L29">    public record PeriodVolume(LocalDate startDate, LocalDate endDate, long tradeCount,</span>
                                BigDecimal shareVolume, BigDecimal grossAmount) {
     }
 
@@ -31,7 +34,7 @@ import java.time.LocalDate;
      * The difference between the two periods. A percent is {@code null} when the previous period
      * had none to compare with (it would be a division by zero).
      */
-<span class="fc" id="L34">    public record VolumeChange(BigDecimal shareVolume, BigDecimal shareVolumePercent,</span>
+<span class="fc" id="L37">    public record VolumeChange(BigDecimal shareVolume, BigDecimal shareVolumePercent,</span>
                                BigDecimal grossAmount, BigDecimal grossAmountPercent) {
     }
 }

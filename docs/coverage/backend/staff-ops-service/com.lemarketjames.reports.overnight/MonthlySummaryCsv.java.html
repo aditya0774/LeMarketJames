@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MonthlySummaryCsv.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">MonthlySummaryCsv.java</span></div><h1>MonthlySummaryCsv.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.reports.summary.DailyTradeSummary.StockSegmentTotals;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * Writes the monthly trading summary as CSV: one line per stock and client segment, money in USD
+ * (the platform's only currency, BR-12). Aggregates only; nothing identifies a client (README, rule 3).
+ */
+final class MonthlySummaryCsv {
+
+    static final String CONTENT_TYPE = &quot;text/csv&quot;;
+    static final String HEADER = &quot;symbol,segment,trades,buys,sells,shares,gross_amount_usd&quot;;
+
+    private MonthlySummaryCsv() {
+    }
+
+    /** {@code monthly-trading-summary-2026-10-01-to-2026-10-20.csv}: the days it covers, both included. */
+    static String fileName(LocalDate from, LocalDate to) {
+<span class="fc" id="L22">        return &quot;monthly-trading-summary-&quot; + from + &quot;-to-&quot; + to + &quot;.csv&quot;;</span>
+    }
+
+    static String write(List&lt;StockSegmentTotals&gt; rows) {
+<span class="fc" id="L26">        StringBuilder csv = new StringBuilder(HEADER).append(&quot;\r\n&quot;);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        for (StockSegmentTotals row : rows) {</span>
+<span class="fc" id="L28">            csv.append(field(row.symbol())).append(',')</span>
+<span class="fc" id="L29">                    .append(field(row.segment())).append(',')</span>
+<span class="fc" id="L30">                    .append(row.tradeCount()).append(',')</span>
+<span class="fc" id="L31">                    .append(row.buyCount()).append(',')</span>
+<span class="fc" id="L32">                    .append(row.sellCount()).append(',')</span>
+<span class="fc" id="L33">                    .append(row.quantity().stripTrailingZeros().toPlainString()).append(',')</span>
+                    // Cents, as the money is shown everywhere else; the summary keeps the exact sum.
+<span class="fc" id="L35">                    .append(row.grossAmount().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString())</span>
+<span class="fc" id="L36">                    .append(&quot;\r\n&quot;);</span>
+<span class="fc" id="L37">        }</span>
+<span class="fc" id="L38">        return csv.toString();</span>
+    }
+
+    /**
+     * RFC 4180 quoting when a value needs it. A value a spreadsheet would run as a formula (one that
+     * starts with =, +, - or @) gets a leading apostrophe; symbols and segments never do today.
+     */
+    static String field(String value) {
+<span class="pc bpc" id="L46" title="1 of 4 branches missed.">        String safe = !value.isEmpty() &amp;&amp; &quot;=+-@&quot;.indexOf(value.charAt(0)) &gt;= 0 ? &quot;'&quot; + value : value;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        return safe.matches(&quot;.*[\&quot;,\r\n].*&quot;) ? '&quot;' + safe.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + '&quot;' : safe;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

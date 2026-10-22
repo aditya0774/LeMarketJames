@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderAlertController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.surveillance</a> &gt; <span class="el_source">OrderAlertController.java</span></div><h1>OrderAlertController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.surveillance;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -18,16 +21,24 @@ public class OrderAlertController {
 
     private final SurveillanceService surveillance;
 
-<span class="fc" id="L21">    public OrderAlertController(SurveillanceService surveillance) {</span>
-<span class="fc" id="L22">        this.surveillance = surveillance;</span>
-<span class="fc" id="L23">    }</span>
+<span class="fc" id="L24">    public OrderAlertController(SurveillanceService surveillance) {</span>
+<span class="fc" id="L25">        this.surveillance = surveillance;</span>
+<span class="fc" id="L26">    }</span>
 
-    /** @return the newest alerts, newest first, with the quantity at which an order counts as large */
+    /**
+     * @param reason only alerts raised for this {@link AlertReason}; an unknown name is answered with 400
+     * @param from   first UTC day, included
+     * @param to     last UTC day, included; before {@code from} is answered with 400
+     * @return the newest matching alerts, newest first, with the quantity at which an order counts as large
+     */
     @GetMapping(&quot;/alerts&quot;)
-    public AlertList alerts() {
-<span class="fc" id="L28">        return new AlertList(true, surveillance.largeOrderQuantity(), surveillance.latest().stream()</span>
-<span class="fc" id="L29">            .map(AlertView::of)</span>
-<span class="fc" id="L30">            .toList());</span>
+    public AlertList alerts(@RequestParam(required = false) AlertReason reason,
+                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+<span class="fc" id="L38">        AlertFilter filter = new AlertFilter(reason, from, to);</span>
+<span class="fc" id="L39">        return new AlertList(true, surveillance.largeOrderQuantity(), surveillance.latest(filter).stream()</span>
+<span class="fc" id="L40">            .map(AlertView::of)</span>
+<span class="fc" id="L41">            .toList());</span>
     }
 
     /**
@@ -37,7 +48,7 @@ public class OrderAlertController {
      * @param largeOrderQuantity shares at which an order counts as large in this environment
      * @param alerts             the alerts
      */
-<span class="fc" id="L40">    public record AlertList(boolean success, BigDecimal largeOrderQuantity, List&lt;AlertView&gt; alerts) {</span>
+<span class="fc" id="L51">    public record AlertList(boolean success, BigDecimal largeOrderQuantity, List&lt;AlertView&gt; alerts) {</span>
     }
 
     /**
@@ -55,14 +66,14 @@ public class OrderAlertController {
      * @param rejectionReason why the order was rejected, for an alert about a rejection; otherwise null
      * @param occurredAt      when what the alert is about happened (UTC); the list is newest first by it
      */
-<span class="fc" id="L58">    public record AlertView(Integer alertId, Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
+<span class="fc" id="L69">    public record AlertView(Integer alertId, Integer orderId, Integer accountId, Integer instrumentId, String side,</span>
                             BigDecimal quantity, BigDecimal price, AlertReason reason, Instant submittedAt,
                             String rejectionReason, Instant occurredAt) {
 
         static AlertView of(OrderAlert alert) {
-<span class="fc" id="L63">            return new AlertView(alert.getAlertId(), alert.getOrderId(), alert.getAccountId(),</span>
-<span class="fc" id="L64">                alert.getInstrumentId(), alert.getSide(), alert.getQuantity(), alert.getPrice(), alert.getReason(),</span>
-<span class="fc" id="L65">                alert.getSubmittedAt(), alert.getRejectionReason(), alert.getOccurredAt());</span>
+<span class="fc" id="L74">            return new AlertView(alert.getAlertId(), alert.getOrderId(), alert.getAccountId(),</span>
+<span class="fc" id="L75">                alert.getInstrumentId(), alert.getSide(), alert.getQuantity(), alert.getPrice(), alert.getReason(),</span>
+<span class="fc" id="L76">                alert.getSubmittedAt(), alert.getRejectionReason(), alert.getOccurredAt());</span>
         }
     }
 }

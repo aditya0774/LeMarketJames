@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportOutputs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">ReportOutputs.java</span></div><h1>ReportOutputs.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.config.ReportingDataSourceConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Reads the files overnight runs produced ({@code report_outputs}, migration 030). Read only;
+ * {@link ReportRunWriter} stores them. Through the reports' pool, like the run list it belongs to.
+ */
+@Component
+public class ReportOutputs {
+
+    private final JdbcTemplate jdbc;
+
+<span class="fc" id="L23">    public ReportOutputs(@Qualifier(ReportingDataSourceConfig.JDBC) JdbcTemplate jdbc) {</span>
+<span class="fc" id="L24">        this.jdbc = jdbc;</span>
+<span class="fc" id="L25">    }</span>
+
+    /** The file names of the runs on or after {@code since}, by run: the list shows a download for each. */
+    public Map&lt;UUID, String&gt; fileNamesSince(LocalDate since) {
+<span class="nc" id="L29">        Map&lt;UUID, String&gt; names = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L30">        jdbc.query(&quot;&quot;&quot;</span>
+                SELECT o.run_id, o.file_name FROM report_outputs o JOIN report_runs r ON r.run_id = o.run_id
+                WHERE r.run_date &gt;= ?
+                &quot;&quot;&quot;, rs -&gt; {
+<span class="nc" id="L34">            names.put(rs.getObject(&quot;run_id&quot;, UUID.class), rs.getString(&quot;file_name&quot;));</span>
+<span class="nc" id="L35">        }, since);</span>
+<span class="nc" id="L36">        return names;</span>
+    }
+
+    /** The file one run produced, if it produced one. */
+    public Optional&lt;ReportOutput&gt; find(UUID runId) {
+<span class="nc" id="L41">        return jdbc.query(&quot;SELECT file_name, content_type, body FROM report_outputs WHERE run_id = ?&quot;,</span>
+<span class="nc" id="L42">                (rs, i) -&gt; new ReportOutput(rs.getString(&quot;file_name&quot;), rs.getString(&quot;content_type&quot;), rs.getString(&quot;body&quot;)),</span>
+<span class="nc" id="L43">                runId).stream().findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

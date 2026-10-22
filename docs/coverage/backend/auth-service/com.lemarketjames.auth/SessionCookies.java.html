@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SessionCookies.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.auth</a> &gt; <span class="el_source">SessionCookies.java</span></div><h1>SessionCookies.java</h1><pre class="source lang-java linenums">package com.lemarketjames.auth;
+
+import com.lemarketjames.common.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
+import org.springframework.stereotype.Component;
+
+/**
+ * Builds the session cookie auth-service sets and clears. One place for its attributes, because
+ * sign-in, refresh, sign-out and closing an account all set it and must agree on them, or the
+ * browser keeps a second cookie instead of replacing the first.
+ */
+@Component
+public class SessionCookies {
+
+    private final boolean secure;
+
+    /**
+     * @param secure whether the cookie is marked Secure (HTTPS-only); disable only for plain-HTTP environments
+     */
+<span class="fc" id="L21">    public SessionCookies(@Value(&quot;${auth.cookie.secure:true}&quot;) boolean secure) {</span>
+<span class="fc" id="L22">        this.secure = secure;</span>
+<span class="fc" id="L23">    }</span>
+
+    /** An HTTP-only cookie holding the token, lasting as long as the token. */
+    public ResponseCookie issue(String token, long maxAgeSeconds) {
+<span class="fc" id="L27">        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)</span>
+<span class="fc" id="L28">                .httpOnly(true)</span>
+<span class="fc" id="L29">                .secure(secure)</span>
+<span class="fc" id="L30">                .sameSite(&quot;Lax&quot;)</span>
+<span class="fc" id="L31">                .path(&quot;/&quot;)</span>
+<span class="fc" id="L32">                .maxAge(maxAgeSeconds)</span>
+<span class="fc" id="L33">                .build();</span>
+    }
+
+    /** A cookie that makes the browser forget the session. */
+    public ResponseCookie clear() {
+<span class="fc" id="L38">        return issue(&quot;&quot;, 0);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

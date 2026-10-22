@@ -10,26 +10,34 @@ import java.math.BigDecimal;
  * depending on it, the quote it fills at or the rejection reason.
  *
  * @param nextStatus FILLED, REJECTED, or PENDING/DELAYED when it can't execute yet
- * @param quote      the quote the order fills at; set only when nextStatus is FILLED
- * @param reason     why it was refused; set only when nextStatus is REJECTED
+ * @param quote      the quote behind the outcome: the one the order fills at (FILLED), or the one it
+ *                   was refused on (REJECTED with STALE_QUOTE, or PRICE_UNAVAILABLE for an unusable
+ *                   price) so the audit trail shows it; otherwise null
+ * @param reason     why it was refused (REJECTED), or why it has to wait (DELAYED: MARKET_CLOSED);
+ *                   otherwise null
  */
-<span class="fc" id="L16">public record ExecutionResult(OrderStatus nextStatus, QuoteUsed quote, RejectionReason reason) {</span>
+<span class="fc" id="L19">public record ExecutionResult(OrderStatus nextStatus, QuoteUsed quote, RejectionReason reason) {</span>
 
     public static ExecutionResult filled(QuoteUsed quote) {
-<span class="fc" id="L19">        return new ExecutionResult(OrderStatus.FILLED, quote, null);</span>
+<span class="fc" id="L22">        return new ExecutionResult(OrderStatus.FILLED, quote, null);</span>
     }
 
     public static ExecutionResult rejected(RejectionReason reason) {
-<span class="fc" id="L23">        return new ExecutionResult(OrderStatus.REJECTED, null, reason);</span>
+<span class="fc" id="L26">        return new ExecutionResult(OrderStatus.REJECTED, null, reason);</span>
     }
 
-    public static ExecutionResult waiting(OrderStatus status) {
-<span class="fc" id="L27">        return new ExecutionResult(status, null, null);</span>
+    /** A refusal on a quote the feed did return, kept so the audit trail can show it. */
+    public static ExecutionResult rejected(RejectionReason reason, QuoteUsed refusedQuote) {
+<span class="fc" id="L31">        return new ExecutionResult(OrderStatus.REJECTED, refusedQuote, reason);</span>
+    }
+
+    public static ExecutionResult waiting(OrderStatus status, RejectionReason why) {
+<span class="fc" id="L35">        return new ExecutionResult(status, null, why);</span>
     }
 
     /** Price per share to fill at, or null when the order isn't filling. */
     public BigDecimal fillPrice() {
-<span class="fc bfc" id="L32" title="All 2 branches covered.">        return quote == null ? null : quote.price();</span>
+<span class="pc bpc" id="L40" title="1 of 4 branches missed.">        return nextStatus != OrderStatus.FILLED || quote == null ? null : quote.price();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

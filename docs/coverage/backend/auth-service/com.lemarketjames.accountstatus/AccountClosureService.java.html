@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountClosureService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">AccountClosureService.java</span></div><h1>AccountClosureService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import com.lemarketjames.auth.AuthService;
+import com.lemarketjames.common.domain.AccountStatus;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.error.ValidationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+
+/**
+ * A client closing their own account (BR-03). Allowed only once nothing on the account can still
+ * move: no stocks held and no order in progress. Any cash stays on the closed account, never
+ * deleted; operations pay it out, which is outside the platform (BRS 4.2).
+ */
+@Service
+public class AccountClosureService {
+
+    /** The reason the history shows for a client's own closing. */
+    public static final String SELF_CLOSE_REASON = &quot;Closed by the client&quot;;
+
+    private final ClientStatusRepository lockedClients;
+    private final AccountContents contents;
+    private final AccountStatusService statuses;
+    private final AuthService auth;
+
+    public AccountClosureService(ClientStatusRepository lockedClients, AccountContents contents,
+<span class="fc" id="L30">                                 AccountStatusService statuses, AuthService auth) {</span>
+<span class="fc" id="L31">        this.lockedClients = lockedClients;</span>
+<span class="fc" id="L32">        this.contents = contents;</span>
+<span class="fc" id="L33">        this.statuses = statuses;</span>
+<span class="fc" id="L34">        this.auth = auth;</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * What is left on the caller's account and whether it may be closed now, so the trading app can
+     * say what to do first, and how much cash stays, before asking for the password.
+     */
+    @Transactional(readOnly = true)
+    public AccountContents.Contents check(String username) {
+<span class="pc" id="L43">        return contents.of(username).orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+    }
+
+    /**
+     * Closes the caller's account. The client row stays locked until the transaction ends, so a
+     * staff status change at the same moment waits for this one.
+     *
+     * @param username the signed-in client
+     * @param password their password, asked again because closing cannot be undone by the client
+     * @return what was left on the account; its cash stays there
+     * @throws ValidationException     if the password is wrong
+     * @throws AccountNotEmptyException if stocks or open orders remain
+     */
+    @Transactional
+    public AccountContents.Contents close(String username, String password) {
+<span class="fc" id="L58">        ClientEntity client = lockedClients.findLockedByUsername(username)</span>
+<span class="pc" id="L59">                .orElseThrow(() -&gt; new AccessDeniedException(&quot;Account access is not allowed&quot;));</span>
+<span class="pc bpc" id="L60" title="2 of 6 branches missed.">        if (password == null || password.isEmpty() || !auth.matchesPassword(password, client.getPassword())) {</span>
+<span class="fc" id="L61">            throw new ValidationException(Map.of(&quot;password&quot;, &quot;The password is not correct.&quot;));</span>
+        }
+<span class="fc" id="L63">        AccountContents.Contents left = check(username);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!left.closable()) {</span>
+<span class="fc" id="L65">            throw new AccountNotEmptyException(left);</span>
+        }
+<span class="fc" id="L67">        statuses.record(client, AccountStatus.CLOSED, SELF_CLOSE_REASON, username);</span>
+<span class="fc" id="L68">        return left;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

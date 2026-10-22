@@ -42,7 +42,7 @@ LeMarketJames Trading Service,com.lemarketjames.holdings,HoldingsExceptionHandle
 LeMarketJames Trading Service,com.lemarketjames.holdings,SettlementControlController.FaultState,0,12,0,0,0,1,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.holdings,HoldingsController,0,52,0,0,0,18,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.holdings,HoldingsSettlementController,0,15,0,0,0,4,0,2,0,2
-LeMarketJames Trading Service,com.lemarketjames.holdings,HoldingsValidationInternalController,0,35,0,0,0,14,0,2,0,2
+LeMarketJames Trading Service,com.lemarketjames.holdings,HoldingsValidationInternalController,0,37,0,0,0,15,0,2,0,2
 LeMarketJames Trading Service,com.lemarketjames.quotes,QuoteService.QuoteFeedUnavailableException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.quotes,QuoteService,0,122,1,9,0,35,1,10,0,6
 LeMarketJames Trading Service,com.lemarketjames.quotes,QuoteService.SymbolNotFoundException,0,4,0,0,0,2,0,1,0,1
@@ -52,7 +52,7 @@ LeMarketJames Trading Service,com.lemarketjames.holdings.dto,ValidateHoldingRequ
 LeMarketJames Trading Service,com.lemarketjames.holdings.dto,HoldingDto,35,51,0,0,17,18,9,9,9,9
 LeMarketJames Trading Service,com.lemarketjames.holdings.dto,SettlementRequest.OrderType,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.holdings.dto,SettlementRequest,0,45,0,0,0,19,0,13,0,13
-LeMarketJames Trading Service,com.lemarketjames.holdings.dto,InternalHoldingsValidationRequest,0,31,0,0,0,13,0,9,0,9
+LeMarketJames Trading Service,com.lemarketjames.holdings.dto,InternalHoldingsValidationRequest,0,38,0,0,0,16,0,11,0,11
 LeMarketJames Trading Service,com.lemarketjames.holdings.dto,HoldingsResponse,27,18,0,0,12,7,5,4,5,4
 LeMarketJames Trading Service,com.lemarketjames.activity,MarketActivityService,0,84,0,4,0,18,0,7,0,5
 LeMarketJames Trading Service,com.lemarketjames.activity,RecordedFill,0,48,0,0,0,16,0,8,0,8
@@ -97,7 +97,7 @@ LeMarketJames Trading Service,com.lemarketjames.market,MarketControlController.P
 LeMarketJames Trading Service,com.lemarketjames.market,MarketControlController.FeedRequest,0,6,0,0,0,1,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.holdings.service,HoldingsSettlementService,32,371,2,26,6,70,5,19,3,7
 LeMarketJames Trading Service,com.lemarketjames.holdings.service,SettlementFaults,0,71,0,4,0,17,0,8,0,6
-LeMarketJames Trading Service,com.lemarketjames.holdings.service,HoldingsService,11,190,1,5,2,41,1,12,0,10
+LeMarketJames Trading Service,com.lemarketjames.holdings.service,HoldingsService,13,232,3,9,2,47,3,14,0,11
 LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementService,8,236,2,16,0,47,3,14,1,7
 LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementReceipt,0,30,0,0,0,12,0,4,0,4
 LeMarketJames Trading Service,com.lemarketjames.cash,CashMovementResult,0,9,0,0,0,1,0,1,0,1
@@ -116,7 +116,7 @@ LeMarketJames Trading Service,com.lemarketjames.market.service,MarketSimulator,2
 LeMarketJames Trading Service,com.lemarketjames.market.service,MarketInitializer,0,181,1,23,0,38,1,19,0,8
 LeMarketJames Trading Service,com.lemarketjames.holdings.exception,InsufficientHoldingsException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.holdings.exception,UnauthorizedException,0,4,0,0,0,2,0,1,0,1
-LeMarketJames Trading Service,com.lemarketjames.config,SecurityConfig,0,147,0,0,0,23,0,8,0,8
+LeMarketJames Trading Service,com.lemarketjames.config,SecurityConfig,0,169,0,0,0,26,0,8,0,8
 LeMarketJames Trading Service,com.lemarketjames.config,ApplicationConfig,0,5,0,0,0,2,0,2,0,2
 LeMarketJames Trading Service,com.lemarketjames.market.entity,PriceHistoryEntity.Key,0,56,0,8,0,12,0,8,0,4
 LeMarketJames Trading Service,com.lemarketjames.market.entity,MarketQuoteEntity,9,67,0,0,3,30,3,19,3,19

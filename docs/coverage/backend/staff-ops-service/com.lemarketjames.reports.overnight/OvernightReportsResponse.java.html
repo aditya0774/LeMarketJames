@@ -20,17 +20,20 @@ import java.util.UUID;
      * @param readyAt       when it finished: set when {@code READY}, and when {@code LATE} once the
      *                      late run has finished; otherwise null
      * @param failureReason set only when {@code FAILED}, otherwise null
+     * @param outputFileName the file the run produced, downloaded from
+     *                       {@code /api/v1/reports/overnight/{id}/output}; null when there is none
      */
-<span class="fc" id="L24">    public record Run(UUID id, String name, LocalDate runDate, RunStatus status, Instant scheduledFor,</span>
-                      Instant readyBy, Instant readyAt, String failureReason) {
+<span class="fc" id="L26">    public record Run(UUID id, String name, LocalDate runDate, RunStatus status, Instant scheduledFor,</span>
+                      Instant readyBy, Instant readyAt, String failureReason, String outputFileName) {
 
-        static Run of(ReportRun run) {
+        static Run of(ReportRun run, String outputFileName) {
             // Enforced here as well as by the writer, so the contract holds even for a hand-edited row.
-<span class="fc bfc" id="L29" title="All 4 branches covered.">            boolean finished = run.getStatus() == RunStatus.READY || run.getStatus() == RunStatus.LATE;</span>
-<span class="fc" id="L30">            return new Run(run.getId(), run.getReportName(), run.getRunDate(), run.getStatus(),</span>
-<span class="fc" id="L31">                    run.getScheduledFor(), run.getReadyBy(),</span>
-<span class="fc bfc" id="L32" title="All 2 branches covered.">                    finished ? run.getReadyAt() : null,</span>
-<span class="fc bfc" id="L33" title="All 2 branches covered.">                    run.getStatus() == RunStatus.FAILED ? run.getFailureReason() : null);</span>
+<span class="fc bfc" id="L31" title="All 4 branches covered.">            boolean finished = run.getStatus() == RunStatus.READY || run.getStatus() == RunStatus.LATE;</span>
+<span class="fc" id="L32">            return new Run(run.getId(), run.getReportName(), run.getRunDate(), run.getStatus(),</span>
+<span class="fc" id="L33">                    run.getScheduledFor(), run.getReadyBy(),</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                    finished ? run.getReadyAt() : null,</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                    run.getStatus() == RunStatus.FAILED ? run.getFailureReason() : null,</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">                    finished ? outputFileName : null);</span>
         }
     }
 }

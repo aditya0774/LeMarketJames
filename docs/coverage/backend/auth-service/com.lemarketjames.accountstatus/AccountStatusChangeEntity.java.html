@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountStatusChangeEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">AccountStatusChangeEntity.java</span></div><h1>AccountStatusChangeEntity.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import com.lemarketjames.common.domain.AccountStatus;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+
+/**
+ * One change to a client's account status (database/schema/027): who changed it, from what, to
+ * what and why. Rows are only ever added, so there are no setters; the database lets the services
+ * read and insert them, nothing more.
+ */
+@Entity
+@Table(name = &quot;account_status_changes&quot;)
+public class AccountStatusChangeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = &quot;change_id&quot;)
+    private Long changeId;
+
+    @Column(name = &quot;client_id&quot;, nullable = false)
+    private Integer clientId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;old_status&quot;, nullable = false, length = 20)
+    private AccountStatus oldStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;new_status&quot;, nullable = false, length = 20)
+    private AccountStatus newStatus;
+
+    @Column(nullable = false, length = AccountStatusService.MAX_REASON_LENGTH)
+    private String reason;
+
+    @Column(name = &quot;changed_by&quot;, nullable = false, length = 100)
+    private String changedBy;
+
+    @Column(name = &quot;changed_at&quot;, nullable = false)
+    private Instant changedAt;
+
+<span class="fc" id="L49">    protected AccountStatusChangeEntity() {</span>
+        // for JPA
+<span class="fc" id="L51">    }</span>
+
+    public AccountStatusChangeEntity(Integer clientId, AccountStatus oldStatus, AccountStatus newStatus,
+<span class="fc" id="L54">                                     String reason, String changedBy, Instant changedAt) {</span>
+<span class="fc" id="L55">        this.clientId = clientId;</span>
+<span class="fc" id="L56">        this.oldStatus = oldStatus;</span>
+<span class="fc" id="L57">        this.newStatus = newStatus;</span>
+<span class="fc" id="L58">        this.reason = reason;</span>
+<span class="fc" id="L59">        this.changedBy = changedBy;</span>
+<span class="fc" id="L60">        this.changedAt = changedAt;</span>
+<span class="fc" id="L61">    }</span>
+
+    public Long getChangeId() {
+<span class="nc" id="L64">        return changeId;</span>
+    }
+
+    public Integer getClientId() {
+<span class="nc" id="L68">        return clientId;</span>
+    }
+
+    public AccountStatus getOldStatus() {
+<span class="fc" id="L72">        return oldStatus;</span>
+    }
+
+    public AccountStatus getNewStatus() {
+<span class="fc" id="L76">        return newStatus;</span>
+    }
+
+    public String getReason() {
+<span class="fc" id="L80">        return reason;</span>
+    }
+
+    public String getChangedBy() {
+<span class="fc" id="L84">        return changedBy;</span>
+    }
+
+    public Instant getChangedAt() {
+<span class="fc" id="L88">        return changedAt;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegistrationRules.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.auth</a> &gt; <span class="el_source">RegistrationRules.java</span></div><h1>RegistrationRules.java</h1><pre class="source lang-java linenums">package com.lemarketjames.auth;
+
+import com.lemarketjames.auth.dto.RegisterRequest;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/**
+ * The rules a registration must meet (BR-01, contract C6). The server is authoritative: a client
+ * that skips the form (curl, a script, a modified browser) gets the same rules. The trading app's
+ * form (apps/frontend/.../register/register.schema.ts) mirrors them, with the same messages, so a
+ * mistake is caught before the request is sent. Change both together.
+ *
+ * &lt;p&gt;Each field reports only its first broken rule, as the form does, so the caller gets one
+ * message per field in a {@code 400 { errors }} body.
+ */
+final class RegistrationRules {
+
+    /** Letters, spaces, hyphens and apostrophes (&quot;Mary-Jane O'Neil&quot;), as the form's name fields. */
+<span class="fc" id="L26">    private static final Pattern NAME = Pattern.compile(&quot;[A-Za-z' -]{2,60}&quot;);</span>
+    /**
+     * The form sends first, middle and last name joined with spaces, each up to 60 characters of
+     * the name characters above.
+     */
+<span class="fc" id="L31">    private static final Pattern FULL_NAME = Pattern.compile(&quot;[A-Za-z' -]{2,182}&quot;);</span>
+    /** Letters, digits, spaces and . , # - (&quot;123 Main St #4B&quot;). */
+<span class="fc" id="L33">    private static final Pattern ADDRESS = Pattern.compile(&quot;[A-Za-z0-9\\s.,#-]{2,100}&quot;);</span>
+<span class="fc" id="L34">    private static final Pattern USERNAME = Pattern.compile(&quot;[A-Za-z0-9_-]+&quot;);</span>
+    /** The format the form types for the user: (XXX) XXX-XXXX. */
+<span class="fc" id="L36">    private static final Pattern PHONE = Pattern.compile(&quot;\\(\\d{3}\\) \\d{3}-\\d{4}&quot;);</span>
+<span class="fc" id="L37">    private static final Pattern SSN = Pattern.compile(&quot;\\d{3}-\\d{2}-\\d{4}&quot;);</span>
+<span class="fc" id="L38">    private static final Pattern ZIP = Pattern.compile(&quot;\\d{5}&quot;);</span>
+    /** One @, no spaces, ending in .com. */
+<span class="fc" id="L40">    private static final Pattern EMAIL = Pattern.compile(&quot;[^\\s@]+@[^\\s@]+\\.com&quot;, Pattern.CASE_INSENSITIVE);</span>
+
+<span class="fc" id="L42">    private static final BigDecimal MINIMUM_DEPOSIT = new BigDecimal(&quot;5000&quot;);</span>
+    /** A client may call themselves experienced only with at least this much at stake. */
+<span class="fc" id="L44">    private static final BigDecimal EXPERIENCED_MINIMUM_DEPOSIT = new BigDecimal(&quot;100000&quot;);</span>
+    /** The form offers &quot;beginner&quot; and &quot;experienced&quot;; the database accepts only these. */
+<span class="fc" id="L46">    private static final Set&lt;String&gt; EXPERIENCE = Set.of(&quot;beginner&quot;, &quot;experienced&quot;);</span>
+    /** What the form's &quot;Employed&quot; and &quot;Not employed&quot; choices send. */
+<span class="fc" id="L48">    private static final Set&lt;String&gt; EMPLOYMENT = Set.of(&quot;EMPLOYED&quot;, &quot;UNEMPLOYED&quot;);</span>
+    /** The form requires an age above this, in whole years. */
+    private static final int MINIMUM_AGE_EXCLUSIVE = 18;
+
+    private static final String PASSWORD_MESSAGE = &quot;Password must be at least 8 characters and include an &quot;
+            + &quot;uppercase letter, a lowercase letter, and a special character.&quot;;
+
+    private final Clock clock;
+
+<span class="fc" id="L57">    RegistrationRules(Clock clock) {</span>
+<span class="fc" id="L58">        this.clock = clock;</span>
+<span class="fc" id="L59">    }</span>
+
+    /** Every field that breaks a rule, mapped to its message; empty when the request is valid. */
+    Map&lt;String, String&gt; check(RegisterRequest request) {
+<span class="fc" id="L63">        Map&lt;String, String&gt; errors = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L64">        username(errors, request.getUsername());</span>
+<span class="fc" id="L65">        password(errors, request.getPassword());</span>
+<span class="fc" id="L66">        text(errors, &quot;email&quot;, request.getEmail(), &quot;Email is required.&quot;, EMAIL, &quot;Email must contain @ and end in .com.&quot;);</span>
+<span class="fc" id="L67">        text(errors, &quot;fullName&quot;, request.getFullName(), &quot;Full name is required.&quot;, FULL_NAME,</span>
+                &quot;Name may only contain letters, spaces, hyphens, and apostrophes.&quot;);
+<span class="fc" id="L69">        text(errors, &quot;streetAddress&quot;, request.getStreetAddress(), &quot;Street address is required.&quot;, ADDRESS,</span>
+                &quot;Street address may only contain letters, numbers, spaces, and . , # -.&quot;);
+<span class="fc" id="L71">        optionalText(errors, &quot;apartment&quot;, request.getApartment(), ADDRESS,</span>
+                &quot;Apartment may only contain letters, numbers, spaces, and . , # -.&quot;);
+<span class="fc" id="L73">        text(errors, &quot;city&quot;, request.getCity(), &quot;City is required.&quot;, NAME,</span>
+                &quot;City may only contain letters, spaces, hyphens, and apostrophes.&quot;);
+<span class="fc" id="L75">        text(errors, &quot;state&quot;, request.getState(), &quot;State is required.&quot;, NAME,</span>
+                &quot;State may only contain letters, spaces, hyphens, and apostrophes.&quot;);
+<span class="fc" id="L77">        text(errors, &quot;zipCode&quot;, request.getZipCode(), &quot;ZIP code is required.&quot;, ZIP, &quot;ZIP code must be exactly 5 digits.&quot;);</span>
+<span class="fc" id="L78">        text(errors, &quot;ssn&quot;, request.getSsn(), &quot;SSN is required.&quot;, SSN, &quot;SSN must be 9 digits in the format xxx-xx-xxxx.&quot;);</span>
+<span class="fc" id="L79">        text(errors, &quot;phoneNumber&quot;, request.getPhoneNumber(), &quot;Phone is required.&quot;, PHONE,</span>
+                &quot;Phone number must be 10 digits.&quot;);
+<span class="fc" id="L81">        dateOfBirth(errors, request.getDateOfBirth());</span>
+<span class="fc" id="L82">        deposit(errors, request.getInitialDeposit());</span>
+<span class="fc" id="L83">        oneOf(errors, &quot;employmentStatus&quot;, upper(request.getEmploymentStatus()), &quot;Employment status is required.&quot;,</span>
+                EMPLOYMENT, &quot;Employment status must be EMPLOYED or UNEMPLOYED.&quot;);
+<span class="fc" id="L85">        oneOf(errors, &quot;investmentExperience&quot;, lower(request.getInvestmentExperience()), &quot;Investment experience is required.&quot;,</span>
+                EXPERIENCE, &quot;Investment experience must be beginner or experienced.&quot;);
+<span class="fc" id="L87">        experiencedNeedsDeposit(errors, request);</span>
+<span class="fc" id="L88">        return errors;</span>
+    }
+
+    private static void text(Map&lt;String, String&gt; errors, String field, String value, String required,
+            Pattern pattern, String invalid) {
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L94">            errors.put(field, required);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        } else if (!pattern.matcher(value.trim()).matches()) {</span>
+<span class="fc" id="L96">            errors.put(field, invalid);</span>
+        }
+<span class="fc" id="L98">    }</span>
+
+    // Length first, then characters, with the form's two messages.
+    private static void username(Map&lt;String, String&gt; errors, String value) {
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L103">            errors.put(&quot;username&quot;, &quot;Username is required.&quot;);</span>
+<span class="fc bfc" id="L104" title="All 4 branches covered.">        } else if (value.trim().length() &lt; 3 || value.trim().length() &gt; 20) {</span>
+<span class="fc" id="L105">            errors.put(&quot;username&quot;, &quot;Username must be between 3 and 20 characters.&quot;);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        } else if (!USERNAME.matcher(value.trim()).matches()) {</span>
+<span class="fc" id="L107">            errors.put(&quot;username&quot;, &quot;Username may only contain letters, numbers, underscores, and hyphens.&quot;);</span>
+        }
+<span class="fc" id="L109">    }</span>
+
+    private static void optionalText(Map&lt;String, String&gt; errors, String field, String value, Pattern pattern,
+            String invalid) {
+<span class="pc bpc" id="L113" title="1 of 6 branches missed.">        if (value != null &amp;&amp; !value.isBlank() &amp;&amp; !pattern.matcher(value.trim()).matches()) {</span>
+<span class="fc" id="L114">            errors.put(field, invalid);</span>
+        }
+<span class="fc" id="L116">    }</span>
+
+    // Not trimmed: a space is a character the user chose, as in the form.
+    private static void password(Map&lt;String, String&gt; errors, String password) {
+<span class="pc bpc" id="L120" title="1 of 4 branches missed.">        if (password == null || password.isEmpty()) {</span>
+<span class="fc" id="L121">            errors.put(&quot;password&quot;, &quot;Password is required.&quot;);</span>
+<span class="fc bfc" id="L122" title="All 4 branches covered.">        } else if (password.length() &lt; 8 || !password.matches(&quot;(?s).*[A-Z].*&quot;)</span>
+<span class="fc bfc" id="L123" title="All 4 branches covered.">                || !password.matches(&quot;(?s).*[a-z].*&quot;) || !password.matches(&quot;(?s).*[^A-Za-z0-9].*&quot;)) {</span>
+<span class="fc" id="L124">            errors.put(&quot;password&quot;, PASSWORD_MESSAGE);</span>
+        }
+<span class="fc" id="L126">    }</span>
+
+    private void dateOfBirth(Map&lt;String, String&gt; errors, LocalDate dateOfBirth) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (dateOfBirth == null) {</span>
+<span class="fc" id="L130">            errors.put(&quot;dateOfBirth&quot;, &quot;Date of birth is required.&quot;);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        } else if (Period.between(dateOfBirth, LocalDate.now(clock)).getYears() &lt;= MINIMUM_AGE_EXCLUSIVE) {</span>
+<span class="fc" id="L132">            errors.put(&quot;dateOfBirth&quot;, &quot;You must be older than 18 to register.&quot;);</span>
+        }
+<span class="fc" id="L134">    }</span>
+
+    private static void deposit(Map&lt;String, String&gt; errors, BigDecimal deposit) {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (deposit == null) {</span>
+<span class="fc" id="L138">            errors.put(&quot;initialDeposit&quot;, &quot;Initial deposit amount is required.&quot;);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        } else if (deposit.compareTo(MINIMUM_DEPOSIT) &lt; 0) {</span>
+<span class="fc" id="L140">            errors.put(&quot;initialDeposit&quot;, &quot;Initial deposit must be at least $5,000.&quot;);</span>
+        }
+<span class="fc" id="L142">    }</span>
+
+    // The service stores these normalized (upper or lower case), so any case is accepted here.
+    private static String upper(String value) {
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        return value == null ? null : value.trim().toUpperCase(Locale.ROOT);</span>
+    }
+
+    private static String lower(String value) {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        return value == null ? null : value.trim().toLowerCase(Locale.ROOT);</span>
+    }
+
+    private static void oneOf(Map&lt;String, String&gt; errors, String field, String normalized, String required,
+            Set&lt;String&gt; allowed, String invalid) {
+<span class="pc bpc" id="L155" title="1 of 4 branches missed.">        if (normalized == null || normalized.isEmpty()) {</span>
+<span class="fc" id="L156">            errors.put(field, required);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        } else if (!allowed.contains(normalized)) {</span>
+<span class="fc" id="L158">            errors.put(field, invalid);</span>
+        }
+<span class="fc" id="L160">    }</span>
+
+    private static void experiencedNeedsDeposit(Map&lt;String, String&gt; errors, RegisterRequest request) {
+<span class="fc" id="L163">        BigDecimal deposit = request.getInitialDeposit();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (!errors.containsKey(&quot;investmentExperience&quot;)</span>
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">                &amp;&amp; &quot;experienced&quot;.equals(lower(request.getInvestmentExperience()))</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                &amp;&amp; (deposit == null || deposit.compareTo(EXPERIENCED_MINIMUM_DEPOSIT) &lt; 0)) {</span>
+<span class="fc" id="L167">            errors.put(&quot;investmentExperience&quot;, &quot;Experienced requires an initial deposit of $100,000 or more.&quot;);</span>
+        }
+<span class="fc" id="L169">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

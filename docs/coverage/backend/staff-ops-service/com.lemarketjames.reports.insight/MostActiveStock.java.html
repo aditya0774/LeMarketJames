@@ -2,8 +2,14 @@
 
 import java.math.BigDecimal;
 
-/** One stock's aggregate activity for the current reports week. */
-<span class="fc" id="L6">public record MostActiveStock(int rank, String symbol, BigDecimal tradedValue,</span>
-                              long tradeCount, BigDecimal shareVolume) {
+/**
+ * One stock's aggregate activity for the current reports week so far.
+ *
+ * @param previousTradedValue the stock's traded value over the same days of the week before; 0 when it did not trade
+ * @param flag                whether {@code tradedValue} moved enough against it to be flagged (BR-17)
+ */
+<span class="fc" id="L11">public record MostActiveStock(int rank, String symbol, BigDecimal tradedValue,</span>
+                              long tradeCount, BigDecimal shareVolume,
+                              BigDecimal previousTradedValue, InsightFlag flag) {
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

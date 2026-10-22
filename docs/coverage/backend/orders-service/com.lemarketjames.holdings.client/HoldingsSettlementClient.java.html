@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsSettlementClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.client</a> &gt; <span class="el_source">HoldingsSettlementClient.java</span></div><h1>HoldingsSettlementClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.client;
 
+import com.lemarketjames.common.security.InternalApiTokenFilter;
 import com.lemarketjames.orders.entity.Order;
 import com.lemarketjames.orders.execution.ExecutionSettings;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,35 +21,37 @@ public class HoldingsSettlementClient {
     private final ExecutionSettings settings;
 
     public HoldingsSettlementClient(@Value(&quot;${holdings.service.url}&quot;) String holdingsServiceUrl,
-<span class="fc" id="L23">            ExecutionSettings settings) {</span>
-<span class="fc" id="L24">        this.settings = settings;</span>
-<span class="fc" id="L25">        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();</span>
-<span class="fc" id="L26">        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));</span>
-<span class="fc" id="L27">        factory.setReadTimeout(java.time.Duration.ofSeconds(5));</span>
-<span class="fc" id="L28">        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(holdingsServiceUrl).build();</span>
-<span class="fc" id="L29">    }</span>
+<span class="fc" id="L24">            @Value(&quot;${internal.api-token}&quot;) String internalApiToken, ExecutionSettings settings) {</span>
+<span class="fc" id="L25">        this.settings = settings;</span>
+<span class="fc" id="L26">        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L27">        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));</span>
+<span class="fc" id="L28">        factory.setReadTimeout(java.time.Duration.ofSeconds(5));</span>
+        // trading-service lets only a holder of the shared token settle (BR-02).
+<span class="fc" id="L30">        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(holdingsServiceUrl)</span>
+<span class="fc" id="L31">                .defaultHeader(InternalApiTokenFilter.HEADER, internalApiToken).build();</span>
+<span class="fc" id="L32">    }</span>
 
-<span class="nc" id="L31">    private record Outcome(String rejectionReason) {}</span>
+<span class="fc" id="L34">    private record Outcome(String rejectionReason) {}</span>
 
     public void settle(Order order) {
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (!settings.isSettlementAvailable()) {</span>
-<span class="nc" id="L35">            throw new IllegalStateException(&quot;Settlement service unavailable&quot;);</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (!settings.isSettlementAvailable()) {</span>
+<span class="nc" id="L38">            throw new IllegalStateException(&quot;Settlement service unavailable&quot;);</span>
         }
-<span class="fc" id="L37">        SettlementRequest request = new SettlementRequest(</span>
-<span class="fc" id="L38">                order.getOrderId(), order.getAccountId(), order.getInstrumentId(),</span>
-<span class="fc" id="L39">                order.getOrderType(), order.getQuantity(), order.getPricePerUnit());</span>
+<span class="fc" id="L40">        SettlementRequest request = new SettlementRequest(</span>
+<span class="fc" id="L41">                order.getOrderId(), order.getAccountId(), order.getInstrumentId(),</span>
+<span class="fc" id="L42">                order.getOrderType(), order.getQuantity(), order.getPricePerUnit());</span>
         try {
-<span class="fc" id="L41">            Outcome outcome = restClient.post()</span>
-<span class="fc" id="L42">                    .uri(&quot;/internal/holdings/settle&quot;)</span>
-<span class="fc" id="L43">                    .body(request)</span>
-<span class="fc" id="L44">                    .retrieve()</span>
-<span class="nc" id="L45">                    .body(Outcome.class);</span>
-<span class="nc bnc" id="L46" title="All 2 branches missed.">            if (outcome == null) throw new IllegalStateException(&quot;Missing settlement receipt for &quot; + order.getOrderId());</span>
-<span class="nc bnc" id="L47" title="All 2 branches missed.">            if (outcome.rejectionReason() != null) throw new SettlementRejectedException(</span>
-<span class="nc" id="L48">                com.lemarketjames.orders.entity.RejectionReason.valueOf(outcome.rejectionReason()));</span>
-<span class="fc" id="L49">        } catch (RestClientException e) {</span>
-<span class="fc" id="L50">            throw new IllegalStateException(&quot;Failed to settle order &quot; + order.getOrderId() + &quot; with trading-service&quot;, e);</span>
-<span class="nc" id="L51">        }</span>
-<span class="nc" id="L52">    }</span>
+<span class="fc" id="L44">            Outcome outcome = restClient.post()</span>
+<span class="fc" id="L45">                    .uri(&quot;/internal/holdings/settle&quot;)</span>
+<span class="fc" id="L46">                    .body(request)</span>
+<span class="fc" id="L47">                    .retrieve()</span>
+<span class="fc" id="L48">                    .body(Outcome.class);</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            if (outcome == null) throw new IllegalStateException(&quot;Missing settlement receipt for &quot; + order.getOrderId());</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">            if (outcome.rejectionReason() != null) throw new SettlementRejectedException(</span>
+<span class="nc" id="L51">                com.lemarketjames.orders.entity.RejectionReason.valueOf(outcome.rejectionReason()));</span>
+<span class="fc" id="L52">        } catch (RestClientException e) {</span>
+<span class="fc" id="L53">            throw new IllegalStateException(&quot;Failed to settle order &quot; + order.getOrderId() + &quot; with trading-service&quot;, e);</span>
+<span class="fc" id="L54">        }</span>
+<span class="fc" id="L55">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

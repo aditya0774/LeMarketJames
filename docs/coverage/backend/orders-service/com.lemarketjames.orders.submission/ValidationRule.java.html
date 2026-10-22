@@ -5,24 +5,37 @@
  * is audited as a {@code RULE_CHECKED} event carrying its name (contract C2), so this enum is the
  * list the trade timeline displays.
  *
- * &lt;p&gt;Mirrors: the seeded checks in database/schema/015.
+ * &lt;p&gt;Mirrors: the seeded checks in database/schema/015, which list the rules as they were before
+ * QUANTITY was added (seeded orders were all placed by whole shares).
  */
-<span class="fc" id="L10">public enum ValidationRule {</span>
+<span class="fc" id="L11">public enum ValidationRule {</span>
     /** The account belongs to the caller. Fails with {@code ACCOUNT_ACCESS_DENIED}. */
-<span class="fc" id="L12">    ACCOUNT_ACCESS,</span>
+<span class="fc" id="L13">    ACCOUNT_ACCESS,</span>
     /** Trading is enabled on the account and the client is ACTIVE. Fails with {@code ACCOUNT_RESTRICTED}. */
-<span class="fc" id="L14">    ACCOUNT_STATUS,</span>
-    /** The client doesn't live somewhere trading is restricted. Fails with {@code LOCATION_RESTRICTED}. */
-<span class="fc" id="L16">    LOCATION,</span>
+<span class="fc" id="L15">    ACCOUNT_STATUS,</span>
+    /**
+     * The client doesn't live where this instrument, or every instrument, may not be traded
+     * (instrument_location_restrictions, lmj.orders.restricted-locations). Fails with {@code LOCATION_RESTRICTED}.
+     */
+<span class="fc" id="L20">    LOCATION,</span>
     /** The instrument exists and isn't suspended. Fails with {@code NOT_TRADABLE}. */
-<span class="fc" id="L18">    TRADABLE,</span>
-    /** SELL only: the account holds enough shares. Fails with {@code INSUFFICIENT_HOLDINGS}. */
-<span class="fc" id="L20">    HOLDINGS,</span>
-    /** BUY only: the feed has a usable ask price. Fails with {@code PRICE_UNAVAILABLE}. */
-<span class="fc" id="L22">    PRICE_AVAILABLE,</span>
-    /** BUY only: that quote is within the staleness limit. Fails with {@code STALE_QUOTE}. */
-<span class="fc" id="L24">    QUOTE_FRESH,</span>
-    /** BUY only: the account has enough cash at that price. Fails with {@code INSUFFICIENT_CASH}. */
-<span class="fc" id="L26">    CASH</span>
+<span class="fc" id="L22">    TRADABLE,</span>
+    /**
+     * A BUY, or an order placed by amount (BR-04): the feed has a usable price, the ask for a BUY and
+     * the bid for a SELL. Fails with {@code PRICE_UNAVAILABLE}.
+     */
+<span class="fc" id="L27">    PRICE_AVAILABLE,</span>
+    /** Whenever PRICE_AVAILABLE ran: that quote is within the staleness limit. Fails with {@code STALE_QUOTE}. */
+<span class="fc" id="L29">    QUOTE_FRESH,</span>
+    /**
+     * The order is for a whole number of shares, at least one (BR-04). An order by amount is first
+     * turned into as many whole shares as the amount covers at that price, which is why this rule
+     * runs after the price checks. Fails with {@code INVALID_QUANTITY}.
+     */
+<span class="fc" id="L35">    QUANTITY,</span>
+    /** SELL only: the account holds enough shares not already in open SELLs. Fails with {@code INSUFFICIENT_HOLDINGS}. */
+<span class="fc" id="L37">    HOLDINGS,</span>
+    /** BUY only: the cash not reserved by open BUYs covers the order at that price. Fails with {@code INSUFFICIENT_CASH}. */
+<span class="fc" id="L39">    CASH</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -2,11 +2,16 @@
 
 import java.math.BigDecimal;
 
-/** Body posted to trading-service's {@code POST /internal/holdings/validate}. */
-<span class="fc" id="L6">public record HoldingsValidationRequest(</span>
+/**
+ * Body posted to trading-service's {@code POST /internal/holdings/validate}. {@code reservedQuantity}
+ * is what the account's open SELLs of the stock already promise (BR-05), so trading-service checks
+ * the sale against the holding less that.
+ */
+<span class="fc" id="L10">public record HoldingsValidationRequest(</span>
         Integer accountId,
         String username,
         Integer instrumentId,
-        BigDecimal sellQuantity) {
+        BigDecimal sellQuantity,
+        BigDecimal reservedQuantity) {
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

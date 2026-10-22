@@ -37,7 +37,7 @@ public class OrderExecutionTransactions {
         try {
 <span class="fc" id="L38">            result = executor.execute(order);</span>
 <span class="fc" id="L39">        } catch (RuntimeException failure) {</span>
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">            if (order.getOrderStatus() != OrderStatus.PENDING) {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            if (order.getOrderStatus() != OrderStatus.PENDING) {</span>
 <span class="fc" id="L41">                transitions.move(order, OrderStatus.PENDING, null);</span>
             }
 <span class="fc" id="L43">            return null;</span>
@@ -51,16 +51,18 @@ public class OrderExecutionTransactions {
 <span class="fc" id="L51">            order.setSettlementPending(true);</span>
 <span class="fc" id="L52">            return order;</span>
         }
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (order.getOrderStatus() != result.nextStatus()) transitions.move(order, result.nextStatus(), result.reason());</span>
-<span class="fc" id="L55">        return null;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (order.getOrderStatus() != result.nextStatus()) {</span>
+<span class="fc" id="L55">            transitions.move(order, result.nextStatus(), result.reason(), result.quote());</span>
+        }
+<span class="fc" id="L57">        return null;</span>
     }
     @Transactional
     public void finish(int id, RejectionReason rejection) {
-<span class="fc" id="L59">        Order order = orders.findLockedById(id).orElseThrow();</span>
+<span class="fc" id="L61">        Order order = orders.findLockedById(id).orElseThrow();</span>
         // Idempotent completion: if another worker already reconciled, do nothing.
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (!order.isSettlementPending()) return;</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">        transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);</span>
-<span class="fc" id="L63">        order.setSettlementPending(false);</span>
-<span class="fc" id="L64">    }</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (!order.isSettlementPending()) return;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        transitions.move(order, rejection == null ? OrderStatus.FILLED : OrderStatus.REJECTED, rejection);</span>
+<span class="fc" id="L65">        order.setSettlementPending(false);</span>
+<span class="fc" id="L66">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

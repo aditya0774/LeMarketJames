@@ -8,7 +8,6 @@ import com.lemarketjames.reports.period.ReportPeriod;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,21 +17,22 @@ import java.util.Locale;
  * Compares the traded volume of the last completed period with the period before it. Both are
  * whole periods, because a period still in progress would always look like a drop against a
  * finished one. Nothing is cached: every call reads the view, so the figures move forward by
- * themselves as each report-time-zone day ends.
+ * themselves as each report-time-zone day ends. Share volume is the figure that is flagged (BR-17),
+ * as it is the one the staff tile shows.
  */
 @Service
 public class VolumeInsightService {
 
-<span class="fc" id="L26">    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);</span>
-    private static final int PERCENT_SCALE = 2;
-
     private final VolumeInsightRepository repository;
     private final ReportCalendar calendar;
+    private final InsightFlagRule flagRule;
     private final Clock clock;
 
-<span class="fc" id="L33">    public VolumeInsightService(VolumeInsightRepository repository, ReportCalendar calendar, Clock clock) {</span>
-<span class="fc" id="L34">        this.repository = repository;</span>
-<span class="fc" id="L35">        this.calendar = calendar;</span>
+    public VolumeInsightService(VolumeInsightRepository repository, ReportCalendar calendar,
+<span class="fc" id="L32">                                InsightFlagRule flagRule, Clock clock) {</span>
+<span class="fc" id="L33">        this.repository = repository;</span>
+<span class="fc" id="L34">        this.calendar = calendar;</span>
+<span class="fc" id="L35">        this.flagRule = flagRule;</span>
 <span class="fc" id="L36">        this.clock = clock;</span>
 <span class="fc" id="L37">    }</span>
 
@@ -56,7 +56,7 @@ public class VolumeInsightService {
 <span class="fc" id="L56">        PeriodVolume inProgressVolume = volumeOf(inProgress, today);</span>
 
 <span class="fc" id="L58">        return new VolumeInsightResponse(bucket.name(), currentVolume, previousVolume, inProgressVolume,</span>
-<span class="fc" id="L59">                change(currentVolume, previousVolume), Instant.now(clock));</span>
+<span class="fc" id="L59">                change(currentVolume, previousVolume), flag(currentVolume, previousVolume), Instant.now(clock));</span>
     }
 
     /**
@@ -74,7 +74,7 @@ public class VolumeInsightService {
 <span class="fc" id="L74">        PeriodVolume previousVolume = volumeOf(previous, previousTo);</span>
 
 <span class="fc" id="L76">        return new VolumeComparisonResponse(currentVolume, previousVolume,</span>
-<span class="fc" id="L77">                change(currentVolume, previousVolume), Instant.now(clock));</span>
+<span class="fc" id="L77">                change(currentVolume, previousVolume), flag(currentVolume, previousVolume), Instant.now(clock));</span>
     }
 
     private PeriodVolume volumeOf(ReportPeriod period) {
@@ -91,26 +91,22 @@ public class VolumeInsightService {
     private static VolumeChange change(PeriodVolume current, PeriodVolume previous) {
 <span class="fc" id="L92">        BigDecimal shares = current.shareVolume().subtract(previous.shareVolume());</span>
 <span class="fc" id="L93">        BigDecimal amount = current.grossAmount().subtract(previous.grossAmount());</span>
-<span class="fc" id="L94">        return new VolumeChange(shares, percent(shares, previous.shareVolume()),</span>
-<span class="fc" id="L95">                amount, percent(amount, previous.grossAmount()));</span>
+<span class="fc" id="L94">        return new VolumeChange(shares, InsightFlagRule.percentOf(shares, previous.shareVolume()),</span>
+<span class="fc" id="L95">                amount, InsightFlagRule.percentOf(amount, previous.grossAmount()));</span>
     }
 
-    /** The change as a percent of the previous value, or null when there was nothing to compare with. */
-    private static BigDecimal percent(BigDecimal change, BigDecimal previous) {
-<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (previous.signum() == 0) {</span>
-<span class="fc" id="L101">            return null;</span>
-        }
-<span class="fc" id="L103">        return change.multiply(HUNDRED).divide(previous, PERCENT_SCALE, RoundingMode.HALF_UP);</span>
+    private InsightFlag flag(PeriodVolume current, PeriodVolume previous) {
+<span class="fc" id="L99">        return flagRule.judge(current.shareVolume(), previous.shareVolume());</span>
     }
 
     private static ReportBucket parse(String periodType) {
-<span class="fc bfc" id="L107" title="All 4 branches covered.">        if (periodType == null || periodType.isBlank()) {</span>
-<span class="fc" id="L108">            throw new IllegalArgumentException(&quot;periodType is required (DAY, WEEK, MONTH or YEAR)&quot;);</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">        if (periodType == null || periodType.isBlank()) {</span>
+<span class="fc" id="L104">            throw new IllegalArgumentException(&quot;periodType is required (DAY, WEEK, MONTH or YEAR)&quot;);</span>
         }
         try {
-<span class="fc" id="L111">            return ReportBucket.valueOf(periodType.trim().toUpperCase(Locale.ROOT));</span>
-<span class="fc" id="L112">        } catch (IllegalArgumentException e) {</span>
-<span class="fc" id="L113">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L107">            return ReportBucket.valueOf(periodType.trim().toUpperCase(Locale.ROOT));</span>
+<span class="fc" id="L108">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L109">            throw new IllegalArgumentException(</span>
                     &quot;Invalid periodType: &quot; + periodType + &quot;. Valid values: DAY, WEEK, MONTH, YEAR&quot;);
         }
     }

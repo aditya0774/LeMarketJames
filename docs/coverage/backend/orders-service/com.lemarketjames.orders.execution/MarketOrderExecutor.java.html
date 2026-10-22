@@ -44,7 +44,7 @@ public class MarketOrderExecutor implements OrderExecutor {
 <span class="pc bpc" id="L44" title="1 of 2 branches missed.">                || !clients.findById(account.get().getClientId()).map(c -&gt; c.getAccountStatus().canTrade()).orElse(false)) {</span>
 <span class="nc" id="L45">            return ExecutionResult.rejected(RejectionReason.ACCOUNT_RESTRICTED);</span>
         }
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (restrictions.locationRestricted(order.getAccountId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (restrictions.locationRestricted(order.getAccountId(), order.getInstrumentId())) return ExecutionResult.rejected(RejectionReason.LOCATION_RESTRICTED);</span>
 <span class="fc" id="L48">        var instrument = instruments.findById(order.getInstrumentId());</span>
 <span class="pc bpc" id="L49" title="1 of 4 branches missed.">        if (instrument.isEmpty() || !instrument.get().isTradable()) {</span>
 <span class="fc" id="L50">            return ExecutionResult.rejected(RejectionReason.NOT_TRADABLE);</span>
@@ -53,18 +53,19 @@ public class MarketOrderExecutor implements OrderExecutor {
 <span class="fc bfc" id="L53" title="All 2 branches covered.">        if (settings.isRespectMarketHours() &amp;&amp; !MarketHours.forInstrument(stock.getAssetClass().name(),</span>
 <span class="fc bfc" id="L54" title="All 2 branches covered.">                stock.getLocation()).isOpen(clock.instant(), settings.getHolidays())) {</span>
 <span class="pc bpc" id="L55" title="1 of 2 branches missed.">            return ExecutionResult.waiting(order.getOrderStatus() == OrderStatus.PENDING</span>
-<span class="pc" id="L56">                ? OrderStatus.PENDING : OrderStatus.DELAYED);</span>
+<span class="pc" id="L56">                ? OrderStatus.PENDING : OrderStatus.DELAYED, RejectionReason.MARKET_CLOSED);</span>
         }
 <span class="fc" id="L58">        var quote = market.findByInstrumentId(order.getInstrumentId());</span>
 <span class="fc bfc" id="L59" title="All 2 branches covered.">        if (quote.isEmpty()) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {</span>
-<span class="fc" id="L61">            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();</span>
+        // A refusal keeps the quote it was refused on, so the audit trail can show a dispute why (BR-15).
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        BigDecimal price = Double.isFinite(raw) ? BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP) : null;</span>
+<span class="fc" id="L63">        var used = new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated());</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (QuoteFreshness.isStale(quote.get(), platform.getMarket().getStalenessLimit(), clock)) {</span>
+<span class="fc" id="L65">            return ExecutionResult.rejected(RejectionReason.STALE_QUOTE, used);</span>
         }
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        double raw = order.getOrderType() == Order.OrderType.BUY ? quote.get().askPrice() : quote.get().bidPrice();</span>
-<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (!Double.isFinite(raw) || raw &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
-<span class="fc" id="L65">        BigDecimal price = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (price.signum() &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE);</span>
-<span class="fc" id="L67">        return ExecutionResult.filled(new QuoteUsed(price, QUOTE_SOURCE, quote.get().lastUpdated()));</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">        if (price == null || price.signum() &lt;= 0) return ExecutionResult.rejected(RejectionReason.PRICE_UNAVAILABLE, used);</span>
+<span class="fc" id="L68">        return ExecutionResult.filled(used);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -8,7 +8,8 @@ import java.math.BigDecimal;
 /**
  * CashValidationService
  *
- * Validates that an account has sufficient cash balance to execute an order.
+ * Validates that an account has enough available cash for a BUY order: the cash balance less what
+ * its open BUY orders already reserve (BR-05, {@link OpenOrderReservations}).
  * Uses authoritative data from the database (AccountEntity.cashBalance).
  * All monetary calculations use BigDecimal for precision.
  */
@@ -16,44 +17,42 @@ import java.math.BigDecimal;
 public class CashValidationService {
 
     private final AccountRepository accountRepository;
+    private final OpenOrderReservations reservations;
 
-<span class="fc" id="L20">    public CashValidationService(AccountRepository accountRepository) {</span>
-<span class="fc" id="L21">        this.accountRepository = accountRepository;</span>
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L22">    public CashValidationService(AccountRepository accountRepository, OpenOrderReservations reservations) {</span>
+<span class="fc" id="L23">        this.accountRepository = accountRepository;</span>
+<span class="fc" id="L24">        this.reservations = reservations;</span>
+<span class="fc" id="L25">    }</span>
 
     /**
-     * Validates that an account has sufficient cash balance for an order.
+     * Validates that an account has enough available cash for an order.
      *
      * @param accountId the account to validate
      * @param orderCost the total cost of the order (quantity * pricePerUnit)
-     * @return true if cashBalance &gt;= orderCost; false otherwise
+     * @return true if availableCash &gt;= orderCost; false otherwise
      * @throws IllegalArgumentException if accountId does not exist
      */
     public boolean validateSufficientCash(Integer accountId, BigDecimal orderCost) {
-<span class="fc bfc" id="L33" title="All 4 branches covered.">        if (orderCost == null || orderCost.compareTo(BigDecimal.ZERO) &lt;= 0) {</span>
+<span class="fc bfc" id="L36" title="All 4 branches covered.">        if (orderCost == null || orderCost.compareTo(BigDecimal.ZERO) &lt;= 0) {</span>
             // Cost is zero or negative; no validation needed
-<span class="fc" id="L35">            return true;</span>
+<span class="fc" id="L38">            return true;</span>
         }
-
-<span class="fc" id="L38">        AccountEntity account = accountRepository.findById(accountId)</span>
-<span class="fc" id="L39">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
-
-<span class="fc" id="L41">        BigDecimal cashBalance = account.getCashBalance();</span>
         // Compare using BigDecimal to avoid floating-point precision errors
-<span class="fc bfc" id="L43" title="All 2 branches covered.">        return cashBalance.compareTo(orderCost) &gt;= 0;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        return availableCash(accountId).compareTo(orderCost) &gt;= 0;</span>
     }
 
     /**
-     * Retrieves the current cash balance for an account.
+     * The cash a new BUY may spend: the balance less the open BUY orders' reservations. The same
+     * figure the client sees as buying power.
      *
      * @param accountId the account to query
-     * @return the BigDecimal cash balance
+     * @return the available cash; negative if open orders already promise more than the balance
      * @throws IllegalArgumentException if accountId does not exist
      */
-    public BigDecimal getCashBalance(Integer accountId) {
-<span class="fc" id="L54">        AccountEntity account = accountRepository.findById(accountId)</span>
-<span class="fc" id="L55">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
-<span class="fc" id="L56">        return account.getCashBalance();</span>
+    public BigDecimal availableCash(Integer accountId) {
+<span class="fc" id="L53">        AccountEntity account = accountRepository.findById(accountId)</span>
+<span class="fc" id="L54">            .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Account not found with ID: &quot; + accountId));</span>
+<span class="fc" id="L55">        return account.getCashBalance().subtract(reservations.reservedCash(accountId));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

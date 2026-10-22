@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountStatusService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">AccountStatusService.java</span></div><h1>AccountStatusService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import com.lemarketjames.common.domain.AccountStatus;
+import com.lemarketjames.common.domain.ClientEntity;
+import com.lemarketjames.common.domain.ClientRepository;
+import com.lemarketjames.common.error.ValidationException;
+import com.lemarketjames.common.security.SecurityEventLog;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Changes a client's account status and keeps its history (BR-03, contract C7): Trading Ops
+ * suspend, reinstate, close or expire an account with a reason, and every change, the client's own
+ * closing included, gets a row in {@code account_status_changes} in the same transaction.
+ *
+ * &lt;p&gt;Nothing here ends a session directly: every service checks the status on each request
+ * (JpaAccountAccessCheck), so a client who loses access is refused on their next request.
+ */
+@Service
+public class AccountStatusService {
+
+    /** The longest reason the history keeps: the length of {@code account_status_changes.reason} (027). */
+    public static final int MAX_REASON_LENGTH = 500;
+
+    private final ClientRepository clients;
+    private final ClientStatusRepository lockedClients;
+    private final AccountStatusChangeRepository changes;
+    private final Clock clock;
+
+    @Autowired
+    public AccountStatusService(ClientRepository clients, ClientStatusRepository lockedClients,
+                                AccountStatusChangeRepository changes) {
+<span class="fc" id="L43">        this(clients, lockedClients, changes, Clock.systemUTC());</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Takes the clock changes are stamped with, so tests can fix the time. */
+    AccountStatusService(ClientRepository clients, ClientStatusRepository lockedClients,
+<span class="fc" id="L48">                         AccountStatusChangeRepository changes, Clock clock) {</span>
+<span class="fc" id="L49">        this.clients = clients;</span>
+<span class="fc" id="L50">        this.lockedClients = lockedClients;</span>
+<span class="fc" id="L51">        this.changes = changes;</span>
+<span class="fc" id="L52">        this.clock = clock;</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * A client's status and its history, newest change first.
+     *
+     * @throws ClientNotFoundException if no client has this id
+     */
+    @Transactional(readOnly = true)
+    public ClientStatusView view(int clientId) {
+<span class="fc" id="L62">        return viewOf(clients.findById(clientId).orElseThrow(ClientNotFoundException::new));</span>
+    }
+
+    /**
+     * Trading Ops changes a client's status.
+     *
+     * @param clientId  the client
+     * @param status    the new status, an {@link AccountStatus} name (any case)
+     * @param reason    why, kept in the history
+     * @param changedBy the staff member's username
+     * @return the client's status and history after the change
+     * @throws ClientNotFoundException if no client has this id
+     * @throws ValidationException     if the status or reason is missing or wrong, or the status is unchanged
+     */
+    @Transactional
+    public ClientStatusView change(int clientId, String status, String reason, String changedBy) {
+<span class="fc" id="L78">        AccountStatus next = parseStatus(status);</span>
+<span class="fc" id="L79">        String why = checkReason(reason);</span>
+<span class="fc" id="L80">        ClientEntity client = lockedClients.findLockedById(clientId).orElseThrow(ClientNotFoundException::new);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (client.getAccountStatus() == next) {</span>
+<span class="fc" id="L82">            throw new ValidationException(Map.of(&quot;status&quot;, &quot;The account is already &quot; + next.name() + &quot;.&quot;));</span>
+        }
+<span class="fc" id="L84">        record(client, next, why, changedBy);</span>
+<span class="fc" id="L85">        return viewOf(client);</span>
+    }
+
+    /**
+     * Sets the client's status and writes its history row. Call it inside a transaction, on a
+     * client loaded with its row locked, and only for a real change.
+     *
+     * &lt;p&gt;It also marks every session issued so far as signed out. A status other than ACTIVE
+     * refuses them anyway, but a later reinstatement must not bring those old sessions back.
+     */
+    public void record(ClientEntity client, AccountStatus next, String reason, String changedBy) {
+<span class="fc" id="L96">        AccountStatus previous = client.getAccountStatus();</span>
+        // PostgreSQL keeps microseconds; the reply then shows the time the history will show.
+<span class="fc" id="L98">        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);</span>
+<span class="fc" id="L99">        client.setAccountStatus(next);</span>
+<span class="fc" id="L100">        Instant invalidatedAt = client.getSessionInvalidatedAt();</span>
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">        client.setSessionInvalidatedAt(invalidatedAt == null || invalidatedAt.isBefore(now) ? now : invalidatedAt);</span>
+<span class="fc" id="L102">        clients.save(client);</span>
+<span class="fc" id="L103">        changes.save(new AccountStatusChangeEntity(client.getClientId(), previous, next, reason, changedBy, now));</span>
+<span class="fc" id="L104">        SecurityEventLog.accountStatusChanged(client.getUsername(), previous.name(), next.name(), changedBy, now);</span>
+<span class="fc" id="L105">    }</span>
+
+    private ClientStatusView viewOf(ClientEntity client) {
+<span class="fc" id="L108">        List&lt;StatusChangeView&gt; history = changes.findByClientIdOrderByChangedAtDescChangeIdDesc(client.getClientId())</span>
+<span class="fc" id="L109">                .stream()</span>
+<span class="fc" id="L110">                .map(change -&gt; new StatusChangeView(change.getOldStatus(), change.getNewStatus(), change.getReason(),</span>
+<span class="fc" id="L111">                        change.getChangedBy(), change.getChangedAt()))</span>
+<span class="fc" id="L112">                .toList();</span>
+<span class="fc" id="L113">        return new ClientStatusView(client.getClientId(), client.getFullName(), client.getAccountStatus(), history);</span>
+    }
+
+    private static AccountStatus parseStatus(String status) {
+<span class="pc bpc" id="L117" title="2 of 4 branches missed.">        if (status == null || status.isBlank()) {</span>
+<span class="nc" id="L118">            throw new ValidationException(Map.of(&quot;status&quot;, &quot;Choose a status.&quot;));</span>
+        }
+        try {
+<span class="fc" id="L121">            return AccountStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));</span>
+<span class="fc" id="L122">        } catch (IllegalArgumentException unknown) {</span>
+            // Named from the enum, so the message never falls behind the list of statuses.
+<span class="fc" id="L124">            String allowed = Arrays.stream(AccountStatus.values()).map(Enum::name).collect(Collectors.joining(&quot;, &quot;));</span>
+<span class="fc" id="L125">            throw new ValidationException(Map.of(&quot;status&quot;, &quot;Choose one of &quot; + allowed + &quot;.&quot;));</span>
+        }
+    }
+
+    private static String checkReason(String reason) {
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        String why = reason == null ? &quot;&quot; : reason.trim();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (why.isEmpty()) {</span>
+<span class="fc" id="L132">            throw new ValidationException(Map.of(&quot;reason&quot;, &quot;Give a reason for the change.&quot;));</span>
+        }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (why.length() &gt; MAX_REASON_LENGTH) {</span>
+<span class="fc" id="L135">            throw new ValidationException(Map.of(&quot;reason&quot;,</span>
+                    &quot;Keep the reason to &quot; + MAX_REASON_LENGTH + &quot; characters or fewer.&quot;));
+        }
+<span class="fc" id="L138">        return why;</span>
+    }
+
+    /** What Trading Ops see about a client's standing; no personal details beyond the name trade search shows. */
+<span class="fc" id="L142">    public record ClientStatusView(int clientId, String fullName, AccountStatus status, List&lt;StatusChangeView&gt; changes) {</span>
+    }
+
+    /** One history row as the staff app shows it. */
+<span class="fc" id="L146">    public record StatusChangeView(AccountStatus oldStatus, AccountStatus newStatus, String reason,</span>
+                                   String changedBy, Instant changedAt) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

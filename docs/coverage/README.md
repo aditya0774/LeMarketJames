@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `a302a7d8` on 2026-10-21 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `71853069` on 2026-10-22 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -8,15 +8,15 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
 | Area | Line % | Branch % | Lines missed / total |
 |---|---:|---:|---:|
-| [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 54.33 | 76.67 | 216 / 473 |
+| [common](https://aditya0774.github.io/LeMarketJames/coverage/backend/common/index.html) | 57.88 | 77.63 | 211 / 501 |
 | [market-client](https://aditya0774.github.io/LeMarketJames/coverage/backend/market-client/index.html) | 83.82 | 76.00 | 22 / 136 |
-| [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 97.20 | 76.47 | 9 / 322 |
-| [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 92.53 | 84.59 | 70 / 937 |
-| [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 85.40 | 89.06 | 93 / 637 |
-| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 90.52 | 88.76 | 170 / 1794 |
-| **Back end (all modules)** | 86.51 | 85.19 | 580 / 4299 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.33 | 92.13 | 86 / 3225 |
-| **Everything** | 91.15 | 90.05 | 666 / 7524 |
+| [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 98.38 | 83.75 | 9 / 554 |
+| [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 93.74 | 87.41 | 70 / 1118 |
+| [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 83.66 | 86.74 | 133 / 814 |
+| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 90.59 | 88.39 | 170 / 1807 |
+| **Back end (all modules)** | 87.53 | 86.03 | 615 / 4930 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.22 | 91.87 | 97 / 3494 |
+| **Everything** | 91.55 | 89.88 | 712 / 8424 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -26,14 +26,14 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 |---|---|---:|---:|
 | common | `com.lemarketjames.common.domain.ClientEntity` | 59 | 0.00 |
 | common | `com.lemarketjames.common.domain.StaffUserEntity` | 37 | 0.00 |
+| staff-ops-service | `com.lemarketjames.reports.overnight.ReportRunWriter` | 34 | 8.11 |
 | trading-service | `com.lemarketjames.market.entity.InstrumentMarketParamsEntity` | 32 | 0.00 |
-| staff-ops-service | `com.lemarketjames.reports.overnight.ReportRunWriter` | 29 | 9.38 |
 | common | `com.lemarketjames.common.instruments.Instrument` | 23 | 0.00 |
 | common | `com.lemarketjames.common.domain.AddressEntity` | 23 | 0.00 |
 | common | `com.lemarketjames.common.error.GlobalExceptionHandler` | 19 | 0.00 |
 | trading-service | `com.lemarketjames.holdings.dto.HoldingDto` | 17 | 51.43 |
-| orders-service | `com.lemarketjames.orders.entity.Order` | 16 | 79.22 |
-| trading-service | `com.lemarketjames.sessions.entity.SessionEntity` | 15 | 0.00 |
+| orders-service | `com.lemarketjames.orders.entity.Order` | 16 | 80.00 |
+| staff-ops-service | `com.lemarketjames.reports.overnight.DailySummaryWriter` | 15 | 28.57 |
 
 ## Lowest-covered front-end files (most missed lines)
 
@@ -41,19 +41,20 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 |---|---:|---:|
 | `src/app/features/auth/register/register.ts` | 22 | 81.51 |
 | `src/app/features/orders/order-form/order-form.html` | 9 | 86.15 |
-| `src/app/core/orders/order.service.ts` | 7 | 86.54 |
+| `src/app/core/orders/order.service.ts` | 7 | 87.04 |
 | `src/app/features/holdings/by-stock-report/by-stock-detail.component.ts` | 7 | 87.50 |
+| `projects/shared-ui/src/lib/session-timeout/idle-session.ts` | 5 | 94.05 |
 | `src/app/core/holdings/holdings.service.ts` | 5 | 92.19 |
 | `src/app/features/holdings/by-stock-report/by-stock-report.component.html` | 5 | 85.71 |
 | `src/app/features/orders/order-form/order-form.ts` | 5 | 92.42 |
+| `src/app/features/account/account-page.ts` | 4 | 91.49 |
 | `src/app/core/orders/account-orders.ts` | 3 | 94.12 |
-| `src/app/features/holdings/by-stock-report/by-stock-trades-table.ts` | 3 | 91.18 |
-| `src/app/features/auth/login/login.html` | 2 | 95.24 |
 
 ## History (newest first)
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-22 | `71853069` | 87.53 | 86.03 | 97.22 | 91.87 |
 | 2026-10-21 | `a302a7d8` | 86.51 | 85.19 | 97.33 | 92.13 |
 | 2026-10-20 | `da93a04c` | 86.51 | 85.19 | 97.33 | 92.13 |
 | 2026-10-20 | `e4295008` | 86.31 | 85.08 | 97.34 | 92.15 |

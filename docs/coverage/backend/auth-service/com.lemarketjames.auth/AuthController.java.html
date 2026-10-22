@@ -5,10 +5,8 @@ import com.lemarketjames.auth.dto.RegisterRequest;
 import com.lemarketjames.common.security.JwtAuthenticationFilter;
 import com.lemarketjames.common.security.Role;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,25 +25,25 @@ import java.util.stream.Collectors;
 
 /**
  * REST controller for handling authentication-related endpoints.
- * Provides endpoints for user registration, login, logout, and retrieving current user information.
+ * Provides endpoints for user registration, login, logout, session refresh, and retrieving current
+ * user information.
  */
 @RestController
 @RequestMapping(&quot;/api/auth&quot;)
 public class AuthController {
 
     private final AuthService authService;
-    private final boolean secureCookie;
+    private final SessionCookies cookies;
 
     /**
      * Constructs an AuthController with the given AuthService.
      *
      * @param authService the authentication service to use
-     * @param secureCookie whether the auth cookie is marked Secure (HTTPS-only); disable only for plain-HTTP environments
+     * @param cookies builds the session cookie
      */
-    public AuthController(AuthService authService,
-<span class="fc" id="L44">                          @Value(&quot;${auth.cookie.secure:true}&quot;) boolean secureCookie) {</span>
+<span class="fc" id="L44">    public AuthController(AuthService authService, SessionCookies cookies) {</span>
 <span class="fc" id="L45">        this.authService = authService;</span>
-<span class="fc" id="L46">        this.secureCookie = secureCookie;</span>
+<span class="fc" id="L46">        this.cookies = cookies;</span>
 <span class="fc" id="L47">    }</span>
 
     /**
@@ -68,12 +68,12 @@ public class AuthController {
     @PostMapping(&quot;/login&quot;)
     public ResponseEntity&lt;?&gt; login(@RequestBody LoginRequest request) {
 <span class="fc" id="L70">        AuthService.LoginResult result = authService.login(request);</span>
-<span class="fc" id="L71">        ResponseCookie cookie = buildAuthCookie(result.getToken(), authService.getTokenExpirySeconds());</span>
-
-<span class="fc" id="L73">        Map&lt;String, Object&gt; body = sessionBody(result.getUsername(), result.getRoles());</span>
-<span class="fc" id="L74">        body.put(&quot;message&quot;, result.getMessage());</span>
-<span class="fc" id="L75">        return ResponseEntity.ok()</span>
-<span class="fc" id="L76">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L71">        Map&lt;String, Object&gt; body = sessionBody(result.getUsername(), result.getRoles());</span>
+<span class="fc" id="L72">        putSessionTiming(body, result.getExpiresAt());</span>
+<span class="fc" id="L73">        body.put(&quot;message&quot;, result.getMessage());</span>
+<span class="fc" id="L74">        return ResponseEntity.ok()</span>
+<span class="fc" id="L75">                .header(HttpHeaders.SET_COOKIE,</span>
+<span class="fc" id="L76">                        cookies.issue(result.getToken(), secondsUntil(result.getExpiresAt())).toString())</span>
 <span class="fc" id="L77">                .body(body);</span>
     }
 
@@ -88,25 +88,69 @@ public class AuthController {
 <span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (token != null) {</span>
 <span class="fc" id="L89">            authService.logout(token);</span>
         }
-<span class="fc" id="L91">        ResponseCookie cookie = buildAuthCookie(&quot;&quot;, 0);</span>
-<span class="fc" id="L92">        return ResponseEntity.ok()</span>
-<span class="fc" id="L93">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
-<span class="fc" id="L94">                .body(Map.of(&quot;message&quot;, &quot;Logged out&quot;));</span>
+<span class="fc" id="L91">        return ResponseEntity.ok()</span>
+<span class="fc" id="L92">                .header(HttpHeaders.SET_COOKIE, cookies.clear().toString())</span>
+<span class="fc" id="L93">                .body(Map.of(&quot;message&quot;, &quot;Logged out&quot;));</span>
+    }
+
+    /**
+     * Extends the session the cookie belongs to by another inactivity timeout (BR-03) and sets the
+     * new cookie. The web apps call it while the user is active, never from background polling, so
+     * an unattended session still ends. A signed-out or cut-off session is refused before this
+     * runs (JwtAuthenticationFilter); an expired one, or one past the session cap, gets 401 here.
+     *
+     * @param token the current session cookie
+     * @return the session's new timing, with the new cookie; 401 if it can't be extended
+     */
+    @PostMapping(&quot;/refresh&quot;)
+    public ResponseEntity&lt;?&gt; refresh(
+            @CookieValue(name = JwtAuthenticationFilter.COOKIE_NAME, required = false) String token) {
+<span class="fc" id="L108">        return java.util.Optional.ofNullable(token)</span>
+<span class="fc" id="L109">                .flatMap(authService::refresh)</span>
+<span class="fc" id="L110">                .&lt;ResponseEntity&lt;?&gt;&gt;map(session -&gt; {</span>
+<span class="fc" id="L111">                    Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L112">                    putSessionTiming(body, session.expiresAt());</span>
+<span class="fc" id="L113">                    return ResponseEntity.ok()</span>
+<span class="fc" id="L114">                            .header(HttpHeaders.SET_COOKIE,</span>
+<span class="fc" id="L115">                                    cookies.issue(session.value(), secondsUntil(session.expiresAt())).toString())</span>
+<span class="fc" id="L116">                            .body(body);</span>
+                })
+<span class="pc" id="L118">                .orElseGet(() -&gt; ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());</span>
     }
 
     /**
      * Retrieves information about the currently authenticated user.
      *
      * @param authentication the current user's authentication principal
+     * @param token the session cookie, read for when it runs out
      * @return a response entity containing the username of the current user
      */
     @GetMapping(&quot;/me&quot;)
-    public ResponseEntity&lt;?&gt; me(Authentication authentication) {
-<span class="fc" id="L105">        Set&lt;Role&gt; roles = authentication.getAuthorities().stream()</span>
-<span class="fc" id="L106">                .map(authority -&gt; authority.getAuthority().substring(&quot;ROLE_&quot;.length()))</span>
-<span class="fc" id="L107">                .map(Role::valueOf)</span>
-<span class="fc" id="L108">                .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
-<span class="fc" id="L109">        return ResponseEntity.ok(sessionBody(authentication.getName(), roles));</span>
+    public ResponseEntity&lt;?&gt; me(Authentication authentication,
+            @CookieValue(name = JwtAuthenticationFilter.COOKIE_NAME, required = false) String token) {
+<span class="fc" id="L131">        Set&lt;Role&gt; roles = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L132">                .map(authority -&gt; authority.getAuthority().substring(&quot;ROLE_&quot;.length()))</span>
+<span class="fc" id="L133">                .map(Role::valueOf)</span>
+<span class="fc" id="L134">                .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
+<span class="fc" id="L135">        Map&lt;String, Object&gt; body = sessionBody(authentication.getName(), roles);</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (token != null) {</span>
+<span class="fc" id="L137">            authService.sessionExpiry(token).ifPresent(expiresAt -&gt; putSessionTiming(body, expiresAt));</span>
+        }
+<span class="fc" id="L139">        return ResponseEntity.ok(body);</span>
+    }
+
+    /**
+     * When the session ends unless it is refreshed, and how long the idle limit is (BR-03): the web
+     * apps time their &quot;Stay signed in&quot; warning from these. Sent as durations rather than times so
+     * the browser's clock being off doesn't matter.
+     */
+    private void putSessionTiming(Map&lt;String, Object&gt; body, Instant expiresAt) {
+<span class="fc" id="L148">        body.put(&quot;expiresInSeconds&quot;, secondsUntil(expiresAt));</span>
+<span class="fc" id="L149">        body.put(&quot;inactivityTimeoutSeconds&quot;, authService.inactivityTimeout().toSeconds());</span>
+<span class="fc" id="L150">    }</span>
+
+    private long secondsUntil(Instant expiresAt) {
+<span class="fc" id="L153">        return Math.max(0, Duration.between(authService.now(), expiresAt).toSeconds());</span>
     }
 
     /**
@@ -115,35 +159,18 @@ public class AuthController {
      * instead they get their own email and full name for the staff app's Employee information page.
      */
     private Map&lt;String, Object&gt; sessionBody(String username, Set&lt;Role&gt; roles) {
-<span class="fc" id="L118">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L119">        body.put(&quot;username&quot;, username);</span>
-<span class="fc" id="L120">        body.put(&quot;roles&quot;, roles.stream().map(Role::name).sorted().toList());</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (roles.contains(Role.CLIENT)) {</span>
-<span class="fc" id="L122">            body.put(&quot;accountId&quot;, authService.getAccountId(username));</span>
+<span class="fc" id="L162">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L163">        body.put(&quot;username&quot;, username);</span>
+<span class="fc" id="L164">        body.put(&quot;roles&quot;, roles.stream().map(Role::name).sorted().toList());</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (roles.contains(Role.CLIENT)) {</span>
+<span class="fc" id="L166">            body.put(&quot;accountId&quot;, authService.getAccountId(username));</span>
         } else {
-<span class="fc" id="L124">            authService.getStaffProfile(username).ifPresent(profile -&gt; {</span>
-<span class="fc" id="L125">                body.put(&quot;email&quot;, profile.email());</span>
-<span class="fc" id="L126">                body.put(&quot;fullName&quot;, profile.fullName());</span>
-<span class="fc" id="L127">            });</span>
+<span class="fc" id="L168">            authService.getStaffProfile(username).ifPresent(profile -&gt; {</span>
+<span class="fc" id="L169">                body.put(&quot;email&quot;, profile.email());</span>
+<span class="fc" id="L170">                body.put(&quot;fullName&quot;, profile.fullName());</span>
+<span class="fc" id="L171">            });</span>
         }
-<span class="fc" id="L129">        return body;</span>
-    }
-
-    /**
-     * Builds an HTTP-only, secure authentication cookie containing the JWT token.
-     *
-     * @param token the JWT token to store in the cookie
-     * @param maxAgeSeconds the maximum age of the cookie in seconds
-     * @return a ResponseCookie configured with appropriate security settings
-     */
-    private ResponseCookie buildAuthCookie(String token, long maxAgeSeconds) {
-<span class="fc" id="L140">        return ResponseCookie.from(JwtAuthenticationFilter.COOKIE_NAME, token)</span>
-<span class="fc" id="L141">                .httpOnly(true)</span>
-<span class="fc" id="L142">                .secure(secureCookie)</span>
-<span class="fc" id="L143">                .sameSite(&quot;Lax&quot;)</span>
-<span class="fc" id="L144">                .path(&quot;/&quot;)</span>
-<span class="fc" id="L145">                .maxAge(maxAgeSeconds)</span>
-<span class="fc" id="L146">                .build();</span>
+<span class="fc" id="L173">        return body;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

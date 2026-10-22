@@ -133,23 +133,29 @@ public class OvernightRunner {
 <span class="fc bfc" id="L133" title="All 2 branches covered.">        if (!writer.start(runId, clock.instant())) {</span>
 <span class="fc" id="L134">            return; // already started, finished or failed: nothing left to run</span>
         }
+        Optional&lt;ReportOutput&gt; output;
         try {
-<span class="fc" id="L137">            job.run(runDate);</span>
-<span class="fc" id="L138">        } catch (RuntimeException failure) {</span>
+<span class="fc" id="L138">            output = job.run(runDate);</span>
+<span class="fc" id="L139">        } catch (RuntimeException failure) {</span>
             // The analyst sees the message; the stack trace is for the log only.
-<span class="fc" id="L140">            log.error(&quot;Overnight report '{}' for {} failed&quot;, job.name(), runDate, failure);</span>
-<span class="fc" id="L141">            writer.fail(runId, reasonFor(failure));</span>
-<span class="fc" id="L142">            return;</span>
-<span class="fc" id="L143">        }</span>
+<span class="fc" id="L141">            log.error(&quot;Overnight report '{}' for {} failed&quot;, job.name(), runDate, failure);</span>
+<span class="fc" id="L142">            writer.fail(runId, reasonFor(failure));</span>
+<span class="fc" id="L143">            return;</span>
+<span class="fc" id="L144">        }</span>
         // READY, or LATE if this is after the run's ready-by time: the writer decides, against the stored time.
-<span class="fc" id="L145">        writer.finish(runId, clock.instant());</span>
-<span class="fc" id="L146">    }</span>
+        // A file is stored in the same transaction, so a finished run and its output never disagree.
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (output.isPresent()) {</span>
+<span class="fc" id="L148">            writer.finish(runId, clock.instant(), output.get());</span>
+        } else {
+<span class="fc" id="L150">            writer.finish(runId, clock.instant());</span>
+        }
+<span class="fc" id="L152">    }</span>
 
     /** A reason an analyst can read: the exception's message, or its kind when it has none. */
     static String reasonFor(RuntimeException failure) {
-<span class="fc" id="L150">        String message = failure.getMessage();</span>
-<span class="fc bfc" id="L151" title="All 4 branches covered.">        String reason = message == null || message.isBlank() ? failure.getClass().getSimpleName() : message.strip();</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        return reason.length() &lt;= MAX_REASON_LENGTH ? reason : reason.substring(0, MAX_REASON_LENGTH);</span>
+<span class="fc" id="L156">        String message = failure.getMessage();</span>
+<span class="fc bfc" id="L157" title="All 4 branches covered.">        String reason = message == null || message.isBlank() ? failure.getClass().getSimpleName() : message.strip();</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        return reason.length() &lt;= MAX_REASON_LENGTH ? reason : reason.substring(0, MAX_REASON_LENGTH);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

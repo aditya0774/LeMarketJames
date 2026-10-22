@@ -138,19 +138,35 @@ public class HoldingsService {
      */
     public void validateSufficientHoldings(Integer accountId, String username,
                                           Integer instrumentId, BigDecimal sellQuantity) {
+<span class="fc" id="L141">        validateSufficientHoldings(accountId, username, instrumentId, sellQuantity, BigDecimal.ZERO);</span>
+<span class="fc" id="L142">    }</span>
+
+    /**
+     * As above, less the shares the account's open SELL orders already promise (BR-05), so the same
+     * shares can't be sold twice before the first sale settles.
+     *
+     * @param reservedQuantity shares of this stock in open SELL orders; null means none
+     */
+    public void validateSufficientHoldings(Integer accountId, String username, Integer instrumentId,
+                                          BigDecimal sellQuantity, BigDecimal reservedQuantity) {
         // AC1: Validate user owns this account before proceeding
-<span class="fc" id="L142">        validateAccountOwnership(accountId, username);</span>
+<span class="fc" id="L153">        validateAccountOwnership(accountId, username);</span>
         
-<span class="fc" id="L144">        HoldingsEntity holding = holdingsRepository</span>
-<span class="fc" id="L145">            .findByAccountIdAndInstrumentId(accountId, instrumentId)</span>
-<span class="fc" id="L146">            .orElseThrow(() -&gt; new InsufficientHoldingsException(</span>
+<span class="fc" id="L155">        HoldingsEntity holding = holdingsRepository</span>
+<span class="fc" id="L156">            .findByAccountIdAndInstrumentId(accountId, instrumentId)</span>
+<span class="fc" id="L157">            .orElseThrow(() -&gt; new InsufficientHoldingsException(</span>
                 &quot;No holdings found for this instrument&quot;));
 
-<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (!holding.canSell(sellQuantity)) {</span>
-<span class="fc" id="L150">            throw new InsufficientHoldingsException(</span>
-<span class="fc" id="L151">                String.format(&quot;Insufficient holdings. Available: %s, Requested: %s&quot;,</span>
-<span class="fc" id="L152">                    holding.getQuantity(), sellQuantity));</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        BigDecimal reserved = reservedQuantity == null ? BigDecimal.ZERO : reservedQuantity;</span>
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">        if (sellQuantity == null || !holding.canSell(sellQuantity.add(reserved))) {</span>
+<span class="fc" id="L162">            BigDecimal available = holding.getQuantity().subtract(reserved).max(BigDecimal.ZERO);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            String inOpenOrders = reserved.signum() &gt; 0</span>
+<span class="fc" id="L164">                ? String.format(&quot; (%s already in open sell orders)&quot;, reserved.stripTrailingZeros().toPlainString())</span>
+<span class="fc" id="L165">                : &quot;&quot;;</span>
+<span class="fc" id="L166">            throw new InsufficientHoldingsException(</span>
+<span class="fc" id="L167">                String.format(&quot;Insufficient holdings. Available: %s%s, Requested: %s&quot;,</span>
+                    available, inOpenOrders, sellQuantity));
         }
-<span class="fc" id="L154">    }</span>
+<span class="fc" id="L170">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

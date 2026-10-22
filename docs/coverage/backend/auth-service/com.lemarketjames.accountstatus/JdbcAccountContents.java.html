@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdbcAccountContents.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">JdbcAccountContents.java</span></div><h1>JdbcAccountContents.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+/**
+ * Reads an account's contents straight from the shared database. auth-service maps neither
+ * holdings nor orders and calls no other service (AGENTS.md: Auth is self-contained), so it reads
+ * the two tables with plain SQL, in the caller's transaction.
+ *
+ * &lt;p&gt;An order is open unless it is FILLED or REJECTED, the two final statuses of
+ * {@code OrderStatus.isOpen()} in orders-service (contract C1). Listing the final statuses rather
+ * than the open ones means a status added later counts as open, so it blocks closing until someone
+ * decides otherwise.
+ */
+@Component
+public class JdbcAccountContents implements AccountContents {
+
+    private static final String SQL = &quot;&quot;&quot;
+            SELECT a.cash_balance, a.currency,
+                   (SELECT COUNT(*) FROM holdings h WHERE h.account_id = a.account_id AND h.quantity &gt; 0) AS holdings,
+                   (SELECT COUNT(*) FROM orders o
+                     WHERE o.account_id = a.account_id AND o.order_status NOT IN ('FILLED', 'REJECTED')) AS open_orders
+            FROM accounts a
+            JOIN clients c ON c.client_id = a.client_id
+            WHERE c.username = ?
+            &quot;&quot;&quot;;
+
+    private final JdbcTemplate jdbc;
+
+<span class="fc" id="L33">    public JdbcAccountContents(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L34">        this.jdbc = jdbc;</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public Optional&lt;Contents&gt; of(String username) {
+<span class="fc" id="L39">        return jdbc.query(SQL, (row, i) -&gt; new Contents(</span>
+<span class="fc" id="L40">                        row.getBigDecimal(&quot;cash_balance&quot;),</span>
+<span class="fc" id="L41">                        row.getString(&quot;currency&quot;),</span>
+<span class="fc" id="L42">                        row.getLong(&quot;holdings&quot;),</span>
+<span class="fc" id="L43">                        row.getLong(&quot;open_orders&quot;)), username)</span>
+<span class="fc" id="L44">                .stream()</span>
+<span class="fc" id="L45">                .findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

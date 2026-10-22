@@ -70,170 +70,190 @@ import java.util.List;
 
     /** Logged-in sessions. */
 <span class="fc" id="L72">    public static class Session {</span>
-        /** How long a session may sit idle before the user must log in again. */
-<span class="fc" id="L74">        private Duration inactivityTimeout = Duration.ofMinutes(30);</span>
+        /**
+         * How long a session may sit idle before the user must log in again (BR-03). A session
+         * token lasts only this long; the web apps refresh it while the user is active and warn
+         * 30 seconds before it runs out. One minute is the business's choice, short because the
+         * apps show money and trades on screen; tests that pause longer set it higher.
+         */
+<span class="fc" id="L79">        private Duration inactivityTimeout = Duration.ofMinutes(1);</span>
 
         public Duration getInactivityTimeout() {
-<span class="fc" id="L77">            return inactivityTimeout;</span>
+<span class="fc" id="L82">            return inactivityTimeout;</span>
         }
 
         public void setInactivityTimeout(Duration inactivityTimeout) {
-<span class="nc" id="L81">            this.inactivityTimeout = inactivityTimeout;</span>
-<span class="nc" id="L82">        }</span>
+<span class="fc" id="L86">            this.inactivityTimeout = inactivityTimeout;</span>
+<span class="fc" id="L87">        }</span>
     }
 
     /** Login protection. */
-<span class="fc" id="L86">    public static class Auth {</span>
-<span class="fc" id="L87">        private final Lockout lockout = new Lockout();</span>
+<span class="fc" id="L91">    public static class Auth {</span>
+<span class="fc" id="L92">        private final Lockout lockout = new Lockout();</span>
 
         public Lockout getLockout() {
-<span class="fc" id="L90">            return lockout;</span>
+<span class="fc" id="L95">            return lockout;</span>
         }
 
         /** Locks a login after repeated wrong passwords; applies to clients and staff alike. */
-<span class="fc" id="L94">        public static class Lockout {</span>
+<span class="fc" id="L99">        public static class Lockout {</span>
             /** Consecutive failed logins that lock the account. */
-<span class="fc" id="L96">            private int maxAttempts = 3;</span>
+<span class="fc" id="L101">            private int maxAttempts = 3;</span>
             /** How long a locked account stays locked. */
-<span class="fc" id="L98">            private Duration duration = Duration.ofMinutes(15);</span>
+<span class="fc" id="L103">            private Duration duration = Duration.ofMinutes(15);</span>
 
             public int getMaxAttempts() {
-<span class="fc" id="L101">                return maxAttempts;</span>
+<span class="fc" id="L106">                return maxAttempts;</span>
             }
 
             public void setMaxAttempts(int maxAttempts) {
-<span class="fc" id="L105">                this.maxAttempts = maxAttempts;</span>
-<span class="fc" id="L106">            }</span>
+<span class="fc" id="L110">                this.maxAttempts = maxAttempts;</span>
+<span class="fc" id="L111">            }</span>
 
             public Duration getDuration() {
-<span class="fc" id="L109">                return duration;</span>
+<span class="fc" id="L114">                return duration;</span>
             }
 
             public void setDuration(Duration duration) {
-<span class="nc" id="L113">                this.duration = duration;</span>
-<span class="nc" id="L114">            }</span>
+<span class="nc" id="L118">                this.duration = duration;</span>
+<span class="nc" id="L119">            }</span>
         }
     }
 
     /** How quotes are consumed (the feed itself is trading-service's). */
-<span class="fc" id="L119">    public static class Market {</span>
+<span class="fc" id="L124">    public static class Market {</span>
         /**
          * Oldest a quote may be and still be used to price an order; older quotes are stale.
          * Check with QuoteFreshness in libs/market-client.
          */
-<span class="fc" id="L124">        private Duration stalenessLimit = Duration.ofSeconds(5);</span>
+<span class="fc" id="L129">        private Duration stalenessLimit = Duration.ofSeconds(5);</span>
 
         public Duration getStalenessLimit() {
-<span class="fc" id="L127">            return stalenessLimit;</span>
+<span class="fc" id="L132">            return stalenessLimit;</span>
         }
 
         public void setStalenessLimit(Duration stalenessLimit) {
-<span class="fc" id="L131">            this.stalenessLimit = stalenessLimit;</span>
-<span class="fc" id="L132">        }</span>
+<span class="fc" id="L136">            this.stalenessLimit = stalenessLimit;</span>
+<span class="fc" id="L137">        }</span>
     }
 
     /** Order placement rules. */
-<span class="fc" id="L136">    public static class Orders {</span>
+<span class="fc" id="L141">    public static class Orders {</span>
         /**
          * Client residence locations (US state names as stored in addresses.state, or ISO country
-         * codes) that may not place orders. Empty means no restriction.
+         * codes) that may not trade any instrument. Empty means no platform-wide restriction.
+         * Restrictions on single instruments are rows of instrument_location_restrictions (028).
          */
-<span class="fc" id="L141">        private List&lt;String&gt; restrictedLocations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L147">        private List&lt;String&gt; restrictedLocations = new ArrayList&lt;&gt;();</span>
 
         public List&lt;String&gt; getRestrictedLocations() {
-<span class="fc" id="L144">            return restrictedLocations;</span>
+<span class="fc" id="L150">            return restrictedLocations;</span>
         }
 
         public void setRestrictedLocations(List&lt;String&gt; restrictedLocations) {
-<span class="fc" id="L148">            this.restrictedLocations = restrictedLocations;</span>
-<span class="fc" id="L149">        }</span>
+<span class="fc" id="L154">            this.restrictedLocations = restrictedLocations;</span>
+<span class="fc" id="L155">        }</span>
     }
 
     /** The audit trail (audit_log). */
-<span class="fc" id="L153">    public static class Audit {</span>
+<span class="fc" id="L159">    public static class Audit {</span>
         /**
          * How long audit events stay online (queryable in the app) before they count as
          * archived. Archived events are kept, not deleted, and their rows are not changed: an
          * event's age is what makes it archived (contract C2).
          */
-<span class="fc" id="L159">        private Duration onlineRetention = Duration.ofDays(365);</span>
+<span class="fc" id="L165">        private Duration onlineRetention = Duration.ofDays(365);</span>
 
         public Duration getOnlineRetention() {
-<span class="fc" id="L162">            return onlineRetention;</span>
+<span class="fc" id="L168">            return onlineRetention;</span>
         }
 
         public void setOnlineRetention(Duration onlineRetention) {
-<span class="nc" id="L166">            this.onlineRetention = onlineRetention;</span>
-<span class="nc" id="L167">        }</span>
+<span class="nc" id="L172">            this.onlineRetention = onlineRetention;</span>
+<span class="nc" id="L173">        }</span>
     }
 
     /** Scheduled reporting. */
-<span class="fc" id="L171">    public static class Reports {</span>
+<span class="fc" id="L177">    public static class Reports {</span>
         /** Local time of day the overnight reports run: after the market closes and before it opens. */
-<span class="fc" id="L173">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
+<span class="fc" id="L179">        private LocalTime overnightRunTime = LocalTime.of(2, 0);</span>
         /**
          * Local time of day a successful overnight run must be ready by, the same night. A run not
          * finished by then is marked late, so the Analyst dashboard shows it is missing.
          * Must be after overnightRunTime.
          */
-<span class="fc" id="L179">        private LocalTime readyBy = LocalTime.of(7, 0);</span>
+<span class="fc" id="L185">        private LocalTime readyBy = LocalTime.of(7, 0);</span>
         /** Time zone overnightRunTime and readyBy are in. */
-<span class="fc" id="L181">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
+<span class="fc" id="L187">        private ZoneId timeZone = ZoneId.of(&quot;America/New_York&quot;);</span>
+        /**
+         * How far, in percent of the previous period, an insight must move (up or down) to be
+         * flagged for analysts (BR-17). A move from nothing to something is always flagged.
+         * Must be above zero.
+         */
+<span class="fc" id="L193">        private BigDecimal insightFlagPercent = new BigDecimal(&quot;25&quot;);</span>
 
         public LocalTime getOvernightRunTime() {
-<span class="fc" id="L184">            return overnightRunTime;</span>
+<span class="fc" id="L196">            return overnightRunTime;</span>
         }
 
         public void setOvernightRunTime(LocalTime overnightRunTime) {
-<span class="fc" id="L188">            this.overnightRunTime = overnightRunTime;</span>
-<span class="fc" id="L189">        }</span>
+<span class="fc" id="L200">            this.overnightRunTime = overnightRunTime;</span>
+<span class="fc" id="L201">        }</span>
 
         public LocalTime getReadyBy() {
-<span class="fc" id="L192">            return readyBy;</span>
+<span class="fc" id="L204">            return readyBy;</span>
         }
 
         public void setReadyBy(LocalTime readyBy) {
-<span class="fc" id="L196">            this.readyBy = readyBy;</span>
-<span class="fc" id="L197">        }</span>
+<span class="fc" id="L208">            this.readyBy = readyBy;</span>
+<span class="fc" id="L209">        }</span>
 
         public ZoneId getTimeZone() {
-<span class="nc" id="L200">            return timeZone;</span>
+<span class="nc" id="L212">            return timeZone;</span>
         }
 
         public void setTimeZone(ZoneId timeZone) {
-<span class="nc" id="L204">            this.timeZone = timeZone;</span>
-<span class="nc" id="L205">        }</span>
+<span class="nc" id="L216">            this.timeZone = timeZone;</span>
+<span class="nc" id="L217">        }</span>
+
+        public BigDecimal getInsightFlagPercent() {
+<span class="nc" id="L220">            return insightFlagPercent;</span>
+        }
+
+        public void setInsightFlagPercent(BigDecimal insightFlagPercent) {
+<span class="nc" id="L224">            this.insightFlagPercent = insightFlagPercent;</span>
+<span class="nc" id="L225">        }</span>
     }
 
     /** Order surveillance: which new orders Trading Operations are alerted to. */
-<span class="fc" id="L209">    public static class Surveillance {</span>
+<span class="fc" id="L229">    public static class Surveillance {</span>
         /**
          * Shares in one order at which it counts as large. An order of this many shares or more
          * raises an alert for Trading Operations when it is placed; a smaller one raises none.
          */
-<span class="fc" id="L214">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
+<span class="fc" id="L234">        private BigDecimal largeOrderQuantity = new BigDecimal(&quot;100&quot;);</span>
 
         public BigDecimal getLargeOrderQuantity() {
-<span class="fc" id="L217">            return largeOrderQuantity;</span>
+<span class="fc" id="L237">            return largeOrderQuantity;</span>
         }
 
         public void setLargeOrderQuantity(BigDecimal largeOrderQuantity) {
-<span class="fc" id="L221">            this.largeOrderQuantity = largeOrderQuantity;</span>
-<span class="fc" id="L222">        }</span>
+<span class="fc" id="L241">            this.largeOrderQuantity = largeOrderQuantity;</span>
+<span class="fc" id="L242">        }</span>
     }
 
     /** Deposits and withdrawals made after an account has been opened. */
-<span class="fc" id="L226">    public static class Cash {</span>
+<span class="fc" id="L246">    public static class Cash {</span>
         /** Largest amount a client may deposit or withdraw in one movement. */
-<span class="fc" id="L228">        private BigDecimal movementLimit = new BigDecimal(&quot;50000.00&quot;);</span>
+<span class="fc" id="L248">        private BigDecimal movementLimit = new BigDecimal(&quot;50000.00&quot;);</span>
 
         public BigDecimal getMovementLimit() {
-<span class="fc" id="L231">            return movementLimit;</span>
+<span class="fc" id="L251">            return movementLimit;</span>
         }
 
         public void setMovementLimit(BigDecimal movementLimit) {
-<span class="fc" id="L235">            this.movementLimit = movementLimit;</span>
-<span class="fc" id="L236">        }</span>
+<span class="fc" id="L255">            this.movementLimit = movementLimit;</span>
+<span class="fc" id="L256">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

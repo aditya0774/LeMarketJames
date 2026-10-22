@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountStatusExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">AccountStatusExceptionHandler.java</span></div><h1>AccountStatusExceptionHandler.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
+
+/** The error bodies of the account status endpoints (contract C6), in the shared {success, code, error} shape. */
+@RestControllerAdvice
+<span class="fc" id="L12">public class AccountStatusExceptionHandler {</span>
+
+    @ExceptionHandler(ClientNotFoundException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; clientNotFound(ClientNotFoundException ex) {
+<span class="fc" id="L16">        return ResponseEntity.status(HttpStatus.NOT_FOUND)</span>
+<span class="fc" id="L17">                .body(Map.of(&quot;success&quot;, false, &quot;code&quot;, ClientNotFoundException.CODE, &quot;error&quot;, ex.getMessage()));</span>
+    }
+
+    @ExceptionHandler(AccountNotEmptyException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; accountNotEmpty(AccountNotEmptyException ex) {
+<span class="fc" id="L22">        return ResponseEntity.status(HttpStatus.CONFLICT)</span>
+<span class="fc" id="L23">                .body(Map.of(&quot;success&quot;, false, &quot;code&quot;, AccountNotEmptyException.CODE, &quot;error&quot;, ex.getMessage(),</span>
+<span class="fc" id="L24">                        &quot;holdings&quot;, ex.getContents().holdings(), &quot;openOrders&quot;, ex.getContents().openOrders()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReadSplit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.summary</a> &gt; <span class="el_source">ReadSplit.java</span></div><h1>ReadSplit.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.summary;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+/**
+ * Which days of a report's range come from the nightly summary and which from the live view
+ * (BR-16, README &quot;Read side&quot;). The summary covers every day up to its {@code summarizedThrough}
+ * day; the rest of the range (today, and any night not summarized yet) is read live.
+ *
+ * @param summarized the days read from {@code reporting_daily_trades}, if any
+ * @param live       the days read from {@code reporting_trades}, if any
+ */
+<span class="fc" id="L14">public record ReadSplit(Optional&lt;DayRange&gt; summarized, Optional&lt;DayRange&gt; live) {</span>
+
+    /** Days {@code from} to {@code to}, both included, in the reports time zone. */
+<span class="fc" id="L17">    public record DayRange(LocalDate from, LocalDate to) {</span>
+    }
+
+    /**
+     * @param from               first day of the report, included
+     * @param to                 last day of the report, included
+     * @param summarizedThrough the last day the summary covers, or empty when there is no summary yet
+     */
+    public static ReadSplit of(LocalDate from, LocalDate to, Optional&lt;LocalDate&gt; summarizedThrough) {
+<span class="fc bfc" id="L26" title="All 4 branches covered.">        if (summarizedThrough.isEmpty() || summarizedThrough.get().isBefore(from)) {</span>
+<span class="fc" id="L27">            return new ReadSplit(Optional.empty(), Optional.of(new DayRange(from, to)));</span>
+        }
+<span class="fc" id="L29">        LocalDate through = summarizedThrough.get();</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (!through.isBefore(to)) {</span>
+<span class="fc" id="L31">            return new ReadSplit(Optional.of(new DayRange(from, to)), Optional.empty());</span>
+        }
+<span class="fc" id="L33">        return new ReadSplit(Optional.of(new DayRange(from, through)), Optional.of(new DayRange(through.plusDays(1), to)));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

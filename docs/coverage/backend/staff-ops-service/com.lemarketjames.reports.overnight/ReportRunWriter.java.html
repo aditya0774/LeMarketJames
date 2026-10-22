@@ -15,7 +15,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The only report code that writes, and it writes only {@code report_runs}.
+ * The report code that writes {@code report_runs} and the run's {@code report_outputs}. Its one
+ * sibling is {@link DailySummaryWriter}, which refreshes the nightly trade summary (README, rule 5).
  *
  * &lt;p&gt;It goes through the reports' own pool ({@link ReportingDataSourceConfig}), whose every
  * connection is read-only by default (README, &quot;Read-side safeguards&quot;), so a report can never write
@@ -32,9 +33,9 @@ public class ReportRunWriter {
 
     private final JdbcTemplate jdbc;
 
-<span class="fc" id="L35">    public ReportRunWriter(@Qualifier(ReportingDataSourceConfig.JDBC) JdbcTemplate jdbc) {</span>
-<span class="fc" id="L36">        this.jdbc = jdbc;</span>
-<span class="fc" id="L37">    }</span>
+<span class="fc" id="L36">    public ReportRunWriter(@Qualifier(ReportingDataSourceConfig.JDBC) JdbcTemplate jdbc) {</span>
+<span class="fc" id="L37">        this.jdbc = jdbc;</span>
+<span class="fc" id="L38">    }</span>
 
     /**
      * Creates a SCHEDULED run unless the report already has one for that night.
@@ -43,15 +44,15 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public Optional&lt;UUID&gt; schedule(String reportName, LocalDate runDate, Instant scheduledFor, Instant readyBy) {
-<span class="nc" id="L46">        readWrite();</span>
+<span class="nc" id="L47">        readWrite();</span>
         // ON CONFLICT rather than a check first: the unique key decides, even with two schedulers.
-<span class="nc" id="L48">        List&lt;UUID&gt; created = jdbc.queryForList(&quot;&quot;&quot;</span>
+<span class="nc" id="L49">        List&lt;UUID&gt; created = jdbc.queryForList(&quot;&quot;&quot;</span>
                 INSERT INTO report_runs (report_name, run_date, status, scheduled_for, ready_by)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (report_name, run_date) DO NOTHING
                 RETURNING run_id
-<span class="nc" id="L53">                &quot;&quot;&quot;, UUID.class, reportName, runDate, RunStatus.SCHEDULED.name(), utc(scheduledFor), utc(readyBy));</span>
-<span class="nc" id="L54">        return created.stream().findFirst();</span>
+<span class="nc" id="L54">                &quot;&quot;&quot;, UUID.class, reportName, runDate, RunStatus.SCHEDULED.name(), utc(scheduledFor), utc(readyBy));</span>
+<span class="nc" id="L55">        return created.stream().findFirst();</span>
     }
 
     /**
@@ -62,12 +63,12 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public boolean recordMissed(String reportName, LocalDate runDate, Instant scheduledFor, Instant readyBy, String reason) {
-<span class="nc" id="L65">        readWrite();</span>
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
+<span class="nc" id="L66">        readWrite();</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
                 INSERT INTO report_runs (report_name, run_date, status, scheduled_for, ready_by, failure_reason)
                 VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (report_name, run_date) DO NOTHING
-<span class="nc" id="L70">                &quot;&quot;&quot;, reportName, runDate, RunStatus.FAILED.name(), utc(scheduledFor), utc(readyBy), reason) == 1;</span>
+<span class="nc" id="L71">                &quot;&quot;&quot;, reportName, runDate, RunStatus.FAILED.name(), utc(scheduledFor), utc(readyBy), reason) == 1;</span>
     }
 
     /**
@@ -78,12 +79,12 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public int failInterrupted(String reason) {
-<span class="nc" id="L81">        readWrite();</span>
-<span class="nc" id="L82">        return jdbc.update(&quot;&quot;&quot;</span>
+<span class="nc" id="L82">        readWrite();</span>
+<span class="nc" id="L83">        return jdbc.update(&quot;&quot;&quot;</span>
                 UPDATE report_runs SET status = ?, failure_reason = ?
                 WHERE status IN (?, ?, ?) AND ready_at IS NULL
-<span class="nc" id="L85">                &quot;&quot;&quot;, RunStatus.FAILED.name(), reason,</span>
-<span class="nc" id="L86">                RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), RunStatus.LATE.name());</span>
+<span class="nc" id="L86">                &quot;&quot;&quot;, RunStatus.FAILED.name(), reason,</span>
+<span class="nc" id="L87">                RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), RunStatus.LATE.name());</span>
     }
 
     /**
@@ -93,13 +94,13 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public boolean start(UUID runId, Instant now) {
-<span class="nc" id="L96">        readWrite();</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
+<span class="nc" id="L97">        readWrite();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
                 UPDATE report_runs
                 SET status = CASE WHEN status = ? THEN ? ELSE status END, started_at = ?
                 WHERE run_id = ? AND status IN (?, ?) AND started_at IS NULL
-<span class="nc" id="L101">                &quot;&quot;&quot;, RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), utc(now),</span>
-<span class="nc" id="L102">                runId, RunStatus.SCHEDULED.name(), RunStatus.LATE.name()) == 1;</span>
+<span class="nc" id="L102">                &quot;&quot;&quot;, RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), utc(now),</span>
+<span class="nc" id="L103">                runId, RunStatus.SCHEDULED.name(), RunStatus.LATE.name()) == 1;</span>
     }
 
     /**
@@ -109,24 +110,38 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public boolean finish(UUID runId, Instant now) {
-<span class="nc" id="L112">        readWrite();</span>
-<span class="nc bnc" id="L113" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
+<span class="nc" id="L113">        readWrite();</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
                 UPDATE report_runs
                 SET status = CASE WHEN ? &lt;= ready_by THEN ? ELSE ? END, ready_at = ?
                 WHERE run_id = ? AND status IN (?, ?) AND started_at IS NOT NULL AND ready_at IS NULL
-<span class="nc" id="L117">                &quot;&quot;&quot;, utc(now), RunStatus.READY.name(), RunStatus.LATE.name(), utc(now),</span>
-<span class="nc" id="L118">                runId, RunStatus.RUNNING.name(), RunStatus.LATE.name()) == 1;</span>
+<span class="nc" id="L118">                &quot;&quot;&quot;, utc(now), RunStatus.READY.name(), RunStatus.LATE.name(), utc(now),</span>
+<span class="nc" id="L119">                runId, RunStatus.RUNNING.name(), RunStatus.LATE.name()) == 1;</span>
+    }
+
+    /**
+     * {@link #finish(UUID, Instant)}, storing the file the run produced in the same transaction:
+     * only when the run did finish, so a failed or already finished run gets no file.
+     */
+    @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
+    public boolean finish(UUID runId, Instant now, ReportOutput output) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (!finish(runId, now)) {</span>
+<span class="nc" id="L129">            return false;</span>
+        }
+<span class="nc" id="L131">        jdbc.update(&quot;INSERT INTO report_outputs (run_id, file_name, content_type, body) VALUES (?, ?, ?, ?)&quot;,</span>
+<span class="nc" id="L132">                runId, output.fileName(), output.contentType(), output.body());</span>
+<span class="nc" id="L133">        return true;</span>
     }
 
     /** An unfinished run to FAILED with a reason. False when it had already finished or failed. */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public boolean fail(UUID runId, String reason) {
-<span class="nc" id="L124">        readWrite();</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
+<span class="nc" id="L139">        readWrite();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        return jdbc.update(&quot;&quot;&quot;</span>
                 UPDATE report_runs SET status = ?, failure_reason = ?
                 WHERE run_id = ? AND status IN (?, ?, ?) AND ready_at IS NULL
-<span class="nc" id="L128">                &quot;&quot;&quot;, RunStatus.FAILED.name(), reason,</span>
-<span class="nc" id="L129">                runId, RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), RunStatus.LATE.name()) == 1;</span>
+<span class="nc" id="L143">                &quot;&quot;&quot;, RunStatus.FAILED.name(), reason,</span>
+<span class="nc" id="L144">                runId, RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), RunStatus.LATE.name()) == 1;</span>
     }
 
     /**
@@ -137,19 +152,19 @@ public class ReportRunWriter {
      */
     @Transactional(transactionManager = ReportingDataSourceConfig.TRANSACTION_MANAGER)
     public int markLate(Instant now) {
-<span class="nc" id="L140">        readWrite();</span>
-<span class="nc" id="L141">        return jdbc.update(&quot;UPDATE report_runs SET status = ? WHERE status IN (?, ?) AND ready_by &lt;= ?&quot;,</span>
-<span class="nc" id="L142">                RunStatus.LATE.name(), RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), utc(now));</span>
+<span class="nc" id="L155">        readWrite();</span>
+<span class="nc" id="L156">        return jdbc.update(&quot;UPDATE report_runs SET status = ? WHERE status IN (?, ?) AND ready_by &lt;= ?&quot;,</span>
+<span class="nc" id="L157">                RunStatus.LATE.name(), RunStatus.SCHEDULED.name(), RunStatus.RUNNING.name(), utc(now));</span>
     }
 
     private void readWrite() {
         // Must be the transaction's first statement; the connection's default is read-only.
-<span class="nc" id="L147">        jdbc.execute(&quot;SET TRANSACTION READ WRITE&quot;);</span>
-<span class="nc" id="L148">    }</span>
+<span class="nc" id="L162">        jdbc.execute(&quot;SET TRANSACTION READ WRITE&quot;);</span>
+<span class="nc" id="L163">    }</span>
 
     /** The PostgreSQL driver binds OffsetDateTime to timestamptz, but not Instant. */
     private static OffsetDateTime utc(Instant instant) {
-<span class="nc" id="L152">        return instant.atOffset(ZoneOffset.UTC);</span>
+<span class="nc" id="L167">        return instant.atOffset(ZoneOffset.UTC);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

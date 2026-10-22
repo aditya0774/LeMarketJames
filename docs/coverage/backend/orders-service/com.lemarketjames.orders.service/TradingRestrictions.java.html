@@ -5,7 +5,9 @@ import com.lemarketjames.common.domain.AccountRepository;
 import com.lemarketjames.common.domain.AddressRepository;
 import com.lemarketjames.market.model.QuoteFreshness;
 import com.lemarketjames.market.model.QuoteSnapshot;
+import com.lemarketjames.orders.repository.InstrumentLocationRestrictionRepository;
 import java.time.Clock;
+import java.util.ArrayList;
 import org.springframework.stereotype.Service;
 
 /** Shared placement/execution policy, driven by the platform contract settings. */
@@ -14,21 +16,30 @@ public class TradingRestrictions {
     private final PlatformSettings settings;
     private final AccountRepository accounts;
     private final AddressRepository addresses;
+    private final InstrumentLocationRestrictionRepository instrumentRules;
     private final Clock clock;
-<span class="fc" id="L18">    public TradingRestrictions(PlatformSettings settings, AccountRepository accounts, AddressRepository addresses, Clock clock) {</span>
-<span class="fc" id="L19">        this.settings = settings; this.accounts = accounts; this.addresses = addresses; this.clock = clock;</span>
-<span class="fc" id="L20">    }</span>
-    public boolean locationRestricted(int accountId) {
-<span class="fc" id="L22">        var denied = settings.getOrders().getRestrictedLocations();</span>
-<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (denied.isEmpty()) return false;</span>
-<span class="fc" id="L24">        var account = accounts.findById(accountId).orElseThrow();</span>
-<span class="fc" id="L25">        return addresses.findByClientId(account.getClientId()).stream()</span>
-<span class="fc" id="L26">            .filter(a -&gt; &quot;RESIDENTIAL&quot;.equals(a.getAddressType()))</span>
-<span class="fc bfc" id="L27" title="All 2 branches covered.">            .anyMatch(a -&gt; denied.stream().anyMatch(location -&gt; location.equalsIgnoreCase(a.getState())</span>
-<span class="fc bfc" id="L28" title="All 2 branches covered.">                || location.equalsIgnoreCase(a.getCountry())));</span>
+    public TradingRestrictions(PlatformSettings settings, AccountRepository accounts, AddressRepository addresses,
+<span class="fc" id="L22">            InstrumentLocationRestrictionRepository instrumentRules, Clock clock) {</span>
+<span class="fc" id="L23">        this.settings = settings; this.accounts = accounts; this.addresses = addresses;</span>
+<span class="fc" id="L24">        this.instrumentRules = instrumentRules; this.clock = clock;</span>
+<span class="fc" id="L25">    }</span>
+    /**
+     * Whether the account's client lives where this instrument may not be traded (BR-05): a location
+     * in the platform-wide list (every instrument) or one of the instrument's own rules
+     * (instrument_location_restrictions), matched against a residential address's state or country.
+     */
+    public boolean locationRestricted(int accountId, int instrumentId) {
+<span class="fc" id="L32">        var denied = new ArrayList&lt;&gt;(settings.getOrders().getRestrictedLocations());</span>
+<span class="fc" id="L33">        denied.addAll(instrumentRules.findLocationsByInstrumentId(instrumentId));</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (denied.isEmpty()) return false;</span>
+<span class="fc" id="L35">        var account = accounts.findById(accountId).orElseThrow();</span>
+<span class="fc" id="L36">        return addresses.findByClientId(account.getClientId()).stream()</span>
+<span class="fc" id="L37">            .filter(a -&gt; &quot;RESIDENTIAL&quot;.equals(a.getAddressType()))</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            .anyMatch(a -&gt; denied.stream().anyMatch(location -&gt; location.equalsIgnoreCase(a.getState())</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                || location.equalsIgnoreCase(a.getCountry())));</span>
     }
     public boolean stale(QuoteSnapshot quote) {
-<span class="fc" id="L31">        return QuoteFreshness.isStale(quote, settings.getMarket().getStalenessLimit(), clock);</span>
+<span class="fc" id="L42">        return QuoteFreshness.isStale(quote, settings.getMarket().getStalenessLimit(), clock);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

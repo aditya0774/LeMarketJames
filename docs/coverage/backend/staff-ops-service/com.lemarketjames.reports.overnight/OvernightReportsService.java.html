@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /** Builds the overnight reports list the Analyst dashboard shows (LMKT-45). */
 @Service
@@ -14,23 +17,31 @@ public class OvernightReportsService {
     static final int RECENT_NIGHTS = 30;
 
     private final ReportRunRepository runs;
+    private final ReportOutputs outputs;
     private final ReportCalendar calendar;
     private final Clock clock;
 
-<span class="fc" id="L20">    public OvernightReportsService(ReportRunRepository runs, ReportCalendar calendar, Clock clock) {</span>
-<span class="fc" id="L21">        this.runs = runs;</span>
-<span class="fc" id="L22">        this.calendar = calendar;</span>
-<span class="fc" id="L23">        this.clock = clock;</span>
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L24">    public OvernightReportsService(ReportRunRepository runs, ReportOutputs outputs, ReportCalendar calendar, Clock clock) {</span>
+<span class="fc" id="L25">        this.runs = runs;</span>
+<span class="fc" id="L26">        this.outputs = outputs;</span>
+<span class="fc" id="L27">        this.calendar = calendar;</span>
+<span class="fc" id="L28">        this.clock = clock;</span>
+<span class="fc" id="L29">    }</span>
 
     /** Runs of the last {@value #RECENT_NIGHTS} nights, the most recent first. */
     public OvernightReportsResponse recentRuns() {
-<span class="fc" id="L28">        LocalDate today = calendar.reportDay(clock.instant());</span>
-<span class="fc" id="L29">        var data = runs.findByRunDateGreaterThanEqualOrderByRunDateDescReportNameAsc(today.minusDays(RECENT_NIGHTS))</span>
-<span class="fc" id="L30">                .stream()</span>
-<span class="fc" id="L31">                .map(OvernightReportsResponse.Run::of)</span>
-<span class="fc" id="L32">                .toList();</span>
-<span class="fc" id="L33">        return new OvernightReportsResponse(true, calendar.zone().getId(), data);</span>
+<span class="fc" id="L33">        LocalDate since = calendar.reportDay(clock.instant()).minusDays(RECENT_NIGHTS);</span>
+<span class="fc" id="L34">        Map&lt;UUID, String&gt; files = outputs.fileNamesSince(since);</span>
+<span class="fc" id="L35">        var data = runs.findByRunDateGreaterThanEqualOrderByRunDateDescReportNameAsc(since)</span>
+<span class="fc" id="L36">                .stream()</span>
+<span class="fc" id="L37">                .map(run -&gt; OvernightReportsResponse.Run.of(run, files.get(run.getId())))</span>
+<span class="fc" id="L38">                .toList();</span>
+<span class="fc" id="L39">        return new OvernightReportsResponse(true, calendar.zone().getId(), data);</span>
+    }
+
+    /** The file a run produced, for download. */
+    public Optional&lt;ReportOutput&gt; output(UUID runId) {
+<span class="nc" id="L44">        return outputs.find(runId);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

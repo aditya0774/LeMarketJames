@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MonthlyTradingSummaryJob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.overnight</a> &gt; <span class="el_source">MonthlyTradingSummaryJob.java</span></div><h1>MonthlyTradingSummaryJob.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.overnight;
+
+import com.lemarketjames.reports.period.ReportCalendar;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+/**
+ * The overnight &quot;Monthly trading summary&quot; (BR-16). Each night it
+ * &lt;ol&gt;
+ *   &lt;li&gt;brings the nightly trade summary up to the run date ({@link DailySummaryWriter}): the
+ *       separated read side the long-range reports read in the day, and&lt;/li&gt;
+ *   &lt;li&gt;writes the month so far, from the 1st through the run date, as a CSV per stock and client
+ *       segment ({@link MonthlySummaryCsv}), read from that summary rather than from live orders.&lt;/li&gt;
+ * &lt;/ol&gt;
+ * The analyst downloads the file from the overnight reports list. It runs at the overnight run
+ * time, outside trading hours, like every overnight report (OvernightScheduleConfig).
+ *
+ * &lt;p&gt;{@code reporting.overnight.fail-with} makes it fail with that message before doing anything:
+ * how a failed run is shown on a running stack and in tests.
+ */
+@Component
+public class MonthlyTradingSummaryJob implements OvernightReportJob {
+
+    static final String NAME = &quot;Monthly trading summary&quot;;
+<span class="fc" id="L31">    private static final Logger log = LoggerFactory.getLogger(MonthlyTradingSummaryJob.class);</span>
+
+    private final DailySummaryWriter refresher;
+    private final DailyTradeSummary summary;
+    private final ReportCalendar calendar;
+    private final String failWith;
+
+    public MonthlyTradingSummaryJob(DailySummaryWriter refresher, DailyTradeSummary summary, ReportCalendar calendar,
+<span class="fc" id="L39">                                    @Value(&quot;${reporting.overnight.fail-with:}&quot;) String failWith) {</span>
+<span class="fc" id="L40">        this.refresher = refresher;</span>
+<span class="fc" id="L41">        this.summary = summary;</span>
+<span class="fc" id="L42">        this.calendar = calendar;</span>
+<span class="fc" id="L43">        this.failWith = failWith;</span>
+<span class="fc" id="L44">    }</span>
+
+    @Override
+    public String name() {
+<span class="nc" id="L48">        return NAME;</span>
+    }
+
+    @Override
+    public Optional&lt;ReportOutput&gt; run(LocalDate runDate) {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (!failWith.isBlank()) {</span>
+<span class="fc" id="L54">            throw new IllegalStateException(failWith);</span>
+        }
+<span class="fc" id="L56">        DailySummaryWriter.SummarizedDays rebuilt = refresher.refreshThrough(runDate);</span>
+<span class="fc" id="L57">        log.info(&quot;Trade summary rebuilt for {} to {}&quot;, rebuilt.from(), rebuilt.to());</span>
+
+<span class="fc" id="L59">        LocalDate monthStart = runDate.withDayOfMonth(1);</span>
+<span class="fc" id="L60">        var rows = summary.byStockAndSegment(calendar.zone().getId(), monthStart, runDate);</span>
+<span class="fc" id="L61">        return Optional.of(new ReportOutput(MonthlySummaryCsv.fileName(monthStart, runDate),</span>
+<span class="fc" id="L62">                MonthlySummaryCsv.CONTENT_TYPE, MonthlySummaryCsv.write(rows)));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

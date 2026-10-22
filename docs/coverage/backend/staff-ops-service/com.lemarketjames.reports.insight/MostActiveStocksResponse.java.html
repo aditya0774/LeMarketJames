@@ -4,8 +4,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Top stocks by gross traded value for the current reports-time-zone week. */
-<span class="fc" id="L8">public record MostActiveStocksResponse(LocalDate startDate, LocalDate endDate,</span>
+/**
+ * Top stocks by gross traded value for the current reports-time-zone week so far, each compared
+ * with the same days of the week before ({@code previousStartDate} to {@code previousEndDate}), so
+ * a Tuesday is never set against a whole week.
+ */
+<span class="fc" id="L12">public record MostActiveStocksResponse(LocalDate startDate, LocalDate endDate,</span>
+                                       LocalDate previousStartDate, LocalDate previousEndDate,
                                        List&lt;MostActiveStock&gt; stocks, Instant generatedAt) {
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

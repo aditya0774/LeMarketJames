@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OpenOrderReservations.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.service</a> &gt; <span class="el_source">OpenOrderReservations.java</span></div><h1>OpenOrderReservations.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.service;
+
+import com.lemarketjames.orders.entity.Order;
+import com.lemarketjames.orders.entity.Order.OrderStatus;
+import com.lemarketjames.orders.entity.Order.OrderType;
+import com.lemarketjames.orders.repository.OrderRepository;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.stereotype.Service;
+
+/**
+ * What an account's open orders have already promised (BR-05): cash for open BUYs and shares for
+ * open SELLs. Settlement only moves cash and shares when an order fills, so without this a client
+ * could place several orders that each fit the balance but together exceed it.
+ *
+ * &lt;p&gt;An order counts while it is open ({@link OrderStatus#isOpen()}), including the moment between
+ * its settlement and its FILLED step, when the cash or shares have already moved. Counting it twice
+ * for that instant can only refuse an order, never let one overspend; settlement rechecks anyway.
+ */
+@Service
+public class OpenOrderReservations {
+
+<span class="fc" id="L24">    private static final List&lt;OrderStatus&gt; OPEN = Arrays.stream(OrderStatus.values())</span>
+<span class="fc" id="L25">        .filter(OrderStatus::isOpen).toList();</span>
+
+    private final OrderRepository orders;
+
+<span class="fc" id="L29">    public OpenOrderReservations(OrderRepository orders) {</span>
+<span class="fc" id="L30">        this.orders = orders;</span>
+<span class="fc" id="L31">    }</span>
+
+    /**
+     * Cash held for the account's open BUYs: quantity × the ask each was placed at. The same sum as
+     * trading-service's {@code buyingPower} (cash − this), so the client is refused exactly when an
+     * order costs more than the buying power they see.
+     */
+    public BigDecimal reservedCash(int accountId) {
+<span class="fc" id="L39">        return orders.findByAccountIdAndOrderTypeAndOrderStatusIn(accountId, OrderType.BUY, OPEN).stream()</span>
+            // Every BUY is priced at placement; a missing price counts as zero, as in buyingPower.
+<span class="fc" id="L41">            .map(order -&gt; order.getQuantity().multiply(</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">                order.getPricePerUnit() == null ? BigDecimal.ZERO : order.getPricePerUnit()))</span>
+<span class="fc" id="L43">            .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+    }
+
+    /** Shares of one stock already promised to the account's open SELLs. */
+    public BigDecimal reservedShares(int accountId, int instrumentId) {
+<span class="fc" id="L48">        return orders.findByAccountIdAndInstrumentIdAndOrderTypeAndOrderStatusIn(</span>
+<span class="fc" id="L49">                accountId, instrumentId, OrderType.SELL, OPEN).stream()</span>
+<span class="fc" id="L50">            .map(Order::getQuantity)</span>
+<span class="fc" id="L51">            .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

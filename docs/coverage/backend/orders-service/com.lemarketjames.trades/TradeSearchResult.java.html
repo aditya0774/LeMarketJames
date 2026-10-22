@@ -4,8 +4,25 @@ import com.lemarketjames.orders.entity.Order.OrderType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** Stored execution details for operations; searching never requires a live market quote. */
-<span class="fc" id="L8">public record TradeSearchResult(Integer orderId, Integer clientId, Integer accountId,</span>
+/**
+ * Stored execution details for operations; searching never requires a live market quote.
+ * {@code archived}: the trade filled before the online retention window, so its audit trail is
+ * archived (BR-14, contract C2). Archived trades are still found; they are never deleted.
+ */
+<span class="fc" id="L12">public record TradeSearchResult(Integer orderId, Integer clientId, Integer accountId,</span>
         Integer instrumentId, String symbol, OrderType side, BigDecimal quantity,
-        BigDecimal pricePerUnit, LocalDateTime filledAt) {}
+        BigDecimal pricePerUnit, LocalDateTime filledAt, boolean archived) {
+
+    /** The repository's projection; the service marks archived trades afterwards. */
+    public TradeSearchResult(Integer orderId, Integer clientId, Integer accountId,
+            Integer instrumentId, String symbol, OrderType side, BigDecimal quantity,
+            BigDecimal pricePerUnit, LocalDateTime filledAt) {
+<span class="fc" id="L20">        this(orderId, clientId, accountId, instrumentId, symbol, side, quantity, pricePerUnit, filledAt, false);</span>
+<span class="fc" id="L21">    }</span>
+
+    TradeSearchResult archived(boolean value) {
+<span class="fc" id="L24">        return new TradeSearchResult(orderId, clientId, accountId, instrumentId, symbol, side, quantity,</span>
+                pricePerUnit, filledAt, value);
+    }
+}
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

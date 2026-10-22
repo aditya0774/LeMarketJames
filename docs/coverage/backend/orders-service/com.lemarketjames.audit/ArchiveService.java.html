@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchiveService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.audit</a> &gt; <span class="el_source">ArchiveService.java</span></div><h1>ArchiveService.java</h1><pre class="source lang-java linenums">package com.lemarketjames.audit;
+
+import com.lemarketjames.common.audit.AuditEventEntity;
+import com.lemarketjames.common.audit.AuditEventType;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Retrieves archived audit events for Risk and Compliance, through Trading Ops (BR-14, contract C2).
+ * Only events older than the online window come back, with no lower age bound: nothing is deleted,
+ * so a seven-year-old event is found like a one-year-old one. Refused submissions, which have no
+ * order and so no timeline, are found by {@code requestId} or {@code clientId}.
+ */
+@Service
+@Transactional(readOnly = true)
+public class ArchiveService {
+
+    private final ArchiveRepository archive;
+    private final AuditRetention retention;
+
+<span class="fc" id="L24">    public ArchiveService(ArchiveRepository archive, AuditRetention retention) {</span>
+<span class="fc" id="L25">        this.archive = archive;</span>
+<span class="fc" id="L26">        this.retention = retention;</span>
+<span class="fc" id="L27">    }</span>
+
+    public List&lt;Event&gt; search(ArchiveQuery query) {
+<span class="fc" id="L30">        return archive.search(retention.cutoff(), query).stream().map(Event::from).toList();</span>
+    }
+
+    /** An archived event exactly as it was recorded. */
+<span class="fc" id="L34">    public record Event(Long auditId, AuditEventType eventType, Integer orderId, Integer accountId,</span>
+                        Integer clientId, String requestId, Instant occurredAt, Map&lt;String, Object&gt; details) {
+        static Event from(AuditEventEntity event) {
+<span class="fc" id="L37">            return new Event(event.getAuditId(), event.getEventType(), event.getOrderId(), event.getAccountId(),</span>
+<span class="fc" id="L38">                    event.getClientId(), event.getRequestId(), event.getOccurredAt(), event.getDetails());</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

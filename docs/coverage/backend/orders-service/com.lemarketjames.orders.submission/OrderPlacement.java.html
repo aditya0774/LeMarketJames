@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderPlacement.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">OrderPlacement.java</span></div><h1>OrderPlacement.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import com.lemarketjames.orders.dto.CreateOrderRequest;
+import com.lemarketjames.orders.entity.Order;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Checks an order and, if it passes, saves it, in one transaction (BR-05). The checks lock the
+ * account ({@link SubmissionValidator}), and the lock is held until the order is saved, so the next
+ * order on the account sees this one among its open orders.
+ *
+ * &lt;p&gt;A refusal saves nothing here: the transaction only releases the lock. The refusal's trail is
+ * recorded afterwards, in a transaction of its own ({@link SubmissionRecorder#refuse}), so a check
+ * that throws can't roll its trail back.
+ */
+@Service
+public class OrderPlacement {
+
+    private final SubmissionValidator validator;
+    private final SubmissionRecorder submissions;
+
+<span class="fc" id="L23">    public OrderPlacement(SubmissionValidator validator, SubmissionRecorder submissions) {</span>
+<span class="fc" id="L24">        this.validator = validator;</span>
+<span class="fc" id="L25">        this.submissions = submissions;</span>
+<span class="fc" id="L26">    }</span>
+
+    /** The outcome of one placement: the saved order, or the refusal to report. */
+<span class="fc" id="L29">    public record Result(Order saved, ValidationOutcome refusal) {</span>
+        public boolean isRefused() {
+<span class="fc bfc" id="L31" title="All 2 branches covered.">            return refusal != null;</span>
+        }
+    }
+
+    /**
+     * Runs the checks under the account lock and saves the order if they pass.
+     *
+     * @param trail receives the result of every check that runs
+     * @throws RuntimeException whatever a check or the save throws (see {@link SubmissionValidator#validate}),
+     *         after rolling back; {@link SubmissionTrail#hasPassedAll()} tells which
+     */
+    @Transactional
+    public Result place(CreateOrderRequest request, SubmissionTrail trail) {
+<span class="fc" id="L44">        ValidationOutcome outcome = validator.validate(request, trail);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (outcome.isRefused()) {</span>
+<span class="fc" id="L46">            return new Result(null, outcome);</span>
+        }
+<span class="fc" id="L48">        trail.passedAll();</span>
+
+        // Persist only after all submission checks pass, for the shares the checks settled on.
+<span class="fc" id="L51">        Order order = new Order(</span>
+<span class="fc" id="L52">            request.getAccountId(),</span>
+<span class="fc" id="L53">            request.getInstrumentId(),</span>
+<span class="fc" id="L54">            request.getOrderType(),</span>
+<span class="fc" id="L55">            outcome.quantity()</span>
+        );
+<span class="fc" id="L57">        order.setRequestedAmount(request.getAmount());</span>
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (outcome.price() != null) {</span>
+<span class="fc" id="L60">            order.setPricePerUnit(outcome.price());</span>
+        }
+
+<span class="fc" id="L63">        return new Result(submissions.accept(order, trail), null);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

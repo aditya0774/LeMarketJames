@@ -17,20 +17,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExecutionControlController {
     private final ExecutionSettings settings;
 
-<span class="nc" id="L20">    public ExecutionControlController(ExecutionSettings settings) {</span>
-<span class="nc" id="L21">        this.settings = settings;</span>
-<span class="nc" id="L22">    }</span>
+<span class="fc" id="L20">    public ExecutionControlController(ExecutionSettings settings) {</span>
+<span class="fc" id="L21">        this.settings = settings;</span>
+<span class="fc" id="L22">    }</span>
 
     @GetMapping
     public ControlState state() {
-<span class="nc" id="L26">        return new ControlState(settings.isEnabled(), settings.isSettlementAvailable());</span>
+<span class="fc" id="L26">        return new ControlState(settings.isEnabled(), settings.isSettlementAvailable());</span>
     }
 
     @PutMapping
     public ControlState update(@RequestBody ControlRequest request) {
-<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (request.enabled() != null) settings.setEnabled(request.enabled());</span>
-<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (request.settlementAvailable() != null) settings.setSettlementAvailable(request.settlementAvailable());</span>
-<span class="nc" id="L33">        return state();</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (request.enabled() != null) settings.setEnabled(request.enabled());</span>
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (request.settlementAvailable() != null) settings.setSettlementAvailable(request.settlementAvailable());</span>
+<span class="fc" id="L33">        return state();</span>
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -38,7 +38,7 @@ public class ExecutionControlController {
 <span class="nc" id="L38">        return ResponseEntity.badRequest().body(Map.of(&quot;message&quot;, ex.getMessage()));</span>
     }
 
-<span class="nc" id="L41">    public record ControlRequest(Boolean enabled, Boolean settlementAvailable) {}</span>
-<span class="nc" id="L42">    public record ControlState(boolean enabled, boolean settlementAvailable) {}</span>
+<span class="fc" id="L41">    public record ControlRequest(Boolean enabled, Boolean settlementAvailable) {}</span>
+<span class="fc" id="L42">    public record ControlState(boolean enabled, boolean settlementAvailable) {}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

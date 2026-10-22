@@ -7,6 +7,9 @@ import com.lemarketjames.reports.period.ReportBucket;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.ReportingTradeRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.PeriodTotals;
+import com.lemarketjames.reports.summary.ReadSplit;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -14,27 +17,35 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.IsoFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /**
  * Business logic for trade aggregation reports.
  * Counts and totals settled trades per period (day, week, month, year); the grouping itself
- * runs in the database ({@link ReportingTradeRepository#aggregateByPeriod}), and this class
- * validates the request and labels each period.
+ * runs in the database, and this class validates the request and labels each period.
+ *
+ * &lt;p&gt;A long-range report (a year by default): the days the nightly summary covers are read from it
+ * ({@link DailyTradeSummary}), and only the days after them from the live view
+ * ({@link ReportingTradeRepository#aggregateByPeriod}), so a year's report no longer scans a year of
+ * orders on the database live trading uses (BR-16, README &quot;Read side&quot;).
  */
 @Service
 public class TradeReportService {
 
     private final ReportingTradeRepository tradeRepository;
+    private final DailyTradeSummary summary;
     private final ReportCalendar reportCalendar;
     private final Clock clock;
 
-<span class="fc" id="L33">    public TradeReportService(ReportingTradeRepository tradeRepository, ReportCalendar reportCalendar, Clock clock) {</span>
-<span class="fc" id="L34">        this.tradeRepository = tradeRepository;</span>
-<span class="fc" id="L35">        this.reportCalendar = reportCalendar;</span>
-<span class="fc" id="L36">        this.clock = clock;</span>
-<span class="fc" id="L37">    }</span>
+    public TradeReportService(ReportingTradeRepository tradeRepository, DailyTradeSummary summary,
+<span class="fc" id="L43">                              ReportCalendar reportCalendar, Clock clock) {</span>
+<span class="fc" id="L44">        this.tradeRepository = tradeRepository;</span>
+<span class="fc" id="L45">        this.summary = summary;</span>
+<span class="fc" id="L46">        this.reportCalendar = reportCalendar;</span>
+<span class="fc" id="L47">        this.clock = clock;</span>
+<span class="fc" id="L48">    }</span>
 
     /**
      * Generate a trade aggregation report.
@@ -45,53 +56,62 @@ public class TradeReportService {
      */
     public TradeReportResponse generateReport(TradeReportRequest request) {
         // Validate periodType
-<span class="fc" id="L48">        String periodTypeStr = request.getPeriodType();</span>
-<span class="pc bpc" id="L49" title="1 of 4 branches missed.">        if (periodTypeStr == null || periodTypeStr.isBlank()) {</span>
-<span class="fc" id="L50">            throw new IllegalArgumentException(&quot;periodType is required (DAILY, WEEKLY, MONTHLY, YEARLY)&quot;);</span>
+<span class="fc" id="L59">        String periodTypeStr = request.getPeriodType();</span>
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">        if (periodTypeStr == null || periodTypeStr.isBlank()) {</span>
+<span class="fc" id="L61">            throw new IllegalArgumentException(&quot;periodType is required (DAILY, WEEKLY, MONTHLY, YEARLY)&quot;);</span>
         }
 
         ReportBucket periodType;
         try {
-<span class="fc" id="L55">            periodType = ReportBucket.valueOf(periodTypeStr.toUpperCase());</span>
-<span class="fc" id="L56">        } catch (IllegalArgumentException e) {</span>
-<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;Invalid periodType: &quot; + periodTypeStr + </span>
+<span class="fc" id="L66">            periodType = ReportBucket.valueOf(periodTypeStr.toUpperCase());</span>
+<span class="fc" id="L67">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L68">            throw new IllegalArgumentException(&quot;Invalid periodType: &quot; + periodTypeStr + </span>
                     &quot;. Valid values: DAILY, WEEKLY, MONTHLY, YEARLY&quot;);
-<span class="fc" id="L59">        }</span>
+<span class="fc" id="L70">        }</span>
 
         // Apply defaults
-<span class="fc" id="L62">        LocalDate from = request.getFrom();</span>
-<span class="fc" id="L63">        LocalDate to = request.getTo();</span>
-<span class="fc" id="L64">        String timeZoneStr = request.getTimeZone();</span>
+<span class="fc" id="L73">        LocalDate from = request.getFrom();</span>
+<span class="fc" id="L74">        LocalDate to = request.getTo();</span>
+<span class="fc" id="L75">        String timeZoneStr = request.getTimeZone();</span>
 
-<span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if (from == null || to == null) {</span>
-<span class="nc" id="L67">            LocalDate today = LocalDate.now(reportCalendar.zone());</span>
-<span class="nc" id="L68">            from = today.minusDays(365);</span>
-<span class="nc" id="L69">            to = today;</span>
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">        if (from == null || to == null) {</span>
+<span class="nc" id="L78">            LocalDate today = LocalDate.now(reportCalendar.zone());</span>
+<span class="nc" id="L79">            from = today.minusDays(365);</span>
+<span class="nc" id="L80">            to = today;</span>
         }
 
         // Get query time zone (report zone, not for display)
-<span class="fc" id="L73">        ZoneId queryZone = reportCalendar.zone();</span>
+<span class="fc" id="L84">        ZoneId queryZone = reportCalendar.zone();</span>
 
         // Group in the database, so only one row per period comes back instead of every trade.
         // Loading every trade held a pooled connection and the shared database long enough to
         // slow live order execution under report load (LMKT-44).
-<span class="fc" id="L78">        ReportPeriod queryRange = reportCalendar.between(from, to);</span>
         // ReportBucket's names are date_trunc's units: day, week, month, year.
-<span class="fc" id="L80">        String unit = periodType.name().toLowerCase(Locale.ROOT);</span>
-<span class="fc" id="L81">        List&lt;PeriodAggregation&gt; data = tradeRepository</span>
-<span class="fc" id="L82">                .aggregateByPeriod(unit, queryZone.getId(), queryRange.start(), queryRange.end())</span>
-<span class="fc" id="L83">                .stream()</span>
-<span class="fc" id="L84">                .map(row -&gt; new PeriodAggregation(</span>
-<span class="fc" id="L85">                        formatPeriod(LocalDate.parse(row.getPeriodStart()), periodType),</span>
-<span class="fc" id="L86">                        Math.toIntExact(row.getTradeCount()),</span>
-<span class="fc" id="L87">                        Math.toIntExact(row.getBuyCount()),</span>
-<span class="fc" id="L88">                        Math.toIntExact(row.getSellCount()),</span>
-<span class="fc" id="L89">                        row.getTotalValue()))</span>
-<span class="fc" id="L90">                .toList();</span>
+<span class="fc" id="L90">        String unit = periodType.name().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L91">        String zone = queryZone.getId();</span>
+<span class="fc" id="L92">        ReadSplit split = ReadSplit.of(from, to, summary.summarizedThrough(zone));</span>
+<span class="fc" id="L93">        List&lt;PeriodTotals&gt; rows = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L94">        split.summarized().ifPresent(days -&gt; rows.addAll(summary.byPeriod(unit, zone, days.from(), days.to())));</span>
+<span class="fc" id="L95">        split.live().ifPresent(days -&gt; {</span>
+<span class="fc" id="L96">            ReportPeriod queryRange = reportCalendar.between(days.from(), days.to());</span>
+<span class="fc" id="L97">            tradeRepository.aggregateByPeriod(unit, zone, queryRange.start(), queryRange.end()).forEach(row -&gt;</span>
+<span class="fc" id="L98">                    rows.add(new PeriodTotals(row.getPeriodStart(), row.getTradeCount(), row.getBuyCount(),</span>
+<span class="fc" id="L99">                            row.getSellCount(), row.getTotalValue())));</span>
+<span class="fc" id="L100">        });</span>
+        // A period on both sides of the summary's last day (a week, a month) is added up here.
+<span class="fc" id="L102">        List&lt;PeriodAggregation&gt; data = PeriodTotals.merge(rows)</span>
+<span class="fc" id="L103">                .stream()</span>
+<span class="fc" id="L104">                .map(row -&gt; new PeriodAggregation(</span>
+<span class="fc" id="L105">                        formatPeriod(LocalDate.parse(row.periodStart()), periodType),</span>
+<span class="fc" id="L106">                        Math.toIntExact(row.tradeCount()),</span>
+<span class="fc" id="L107">                        Math.toIntExact(row.buyCount()),</span>
+<span class="fc" id="L108">                        Math.toIntExact(row.sellCount()),</span>
+<span class="fc" id="L109">                        row.totalValue()))</span>
+<span class="fc" id="L110">                .toList();</span>
 
-<span class="fc" id="L92">        LocalDateTime generatedAt = LocalDateTime.now(clock);</span>
+<span class="fc" id="L112">        LocalDateTime generatedAt = LocalDateTime.now(clock);</span>
 
-<span class="fc" id="L94">        return new TradeReportResponse(data, generatedAt);</span>
+<span class="fc" id="L114">        return new TradeReportResponse(data, generatedAt);</span>
     }
 
     /**
@@ -102,14 +122,14 @@ public class TradeReportService {
      * @return formatted period string (YYYY-MM-DD, YYYY-Www, YYYY-MM, YYYY)
      */
     private String formatPeriod(LocalDate firstDay, ReportBucket bucket) {
-<span class="fc bfc" id="L105" title="All 4 branches covered.">        return switch (bucket) {</span>
-<span class="fc" id="L106">            case DAY -&gt; firstDay.toString();</span>
+<span class="fc bfc" id="L125" title="All 4 branches covered.">        return switch (bucket) {</span>
+<span class="fc" id="L126">            case DAY -&gt; firstDay.toString();</span>
             case WEEK -&gt; {
-<span class="fc" id="L108">                int week = firstDay.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);</span>
-<span class="fc" id="L109">                yield String.format(&quot;%d-W%02d&quot;, firstDay.getYear(), week);</span>
+<span class="fc" id="L128">                int week = firstDay.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);</span>
+<span class="fc" id="L129">                yield String.format(&quot;%d-W%02d&quot;, firstDay.getYear(), week);</span>
             }
-<span class="fc" id="L111">            case MONTH -&gt; String.format(&quot;%d-%02d&quot;, firstDay.getYear(), firstDay.getMonthValue());</span>
-<span class="fc" id="L112">            case YEAR -&gt; String.valueOf(firstDay.getYear());</span>
+<span class="fc" id="L131">            case MONTH -&gt; String.format(&quot;%d-%02d&quot;, firstDay.getYear(), firstDay.getMonthValue());</span>
+<span class="fc" id="L132">            case YEAR -&gt; String.valueOf(firstDay.getYear());</span>
         };
     }
 }

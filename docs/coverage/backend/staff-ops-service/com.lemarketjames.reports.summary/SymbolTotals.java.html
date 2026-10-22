@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolTotals.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.summary</a> &gt; <span class="el_source">SymbolTotals.java</span></div><h1>SymbolTotals.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.summary;
+
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+/**
+ * One stock's trade totals over a range, from the summary or from the live view; a stock traded
+ * on both sides of the summary's last day arrives twice and is {@link #merge merged}.
+ */
+<span class="fc" id="L13">public record SymbolTotals(String symbol, BigDecimal totalQuantity, BigDecimal totalGrossAmount, long buyCount, long sellCount) {</span>
+
+    SymbolTotals plus(SymbolTotals other) {
+<span class="fc" id="L16">        return new SymbolTotals(symbol, totalQuantity.add(other.totalQuantity),</span>
+<span class="fc" id="L17">                totalGrossAmount.add(other.totalGrossAmount), buyCount + other.buyCount, sellCount + other.sellCount);</span>
+    }
+
+    /** Adds up rows of the same stock; sorted by symbol, as the report is. */
+    public static List&lt;SymbolTotals&gt; merge(Collection&lt;SymbolTotals&gt; rows) {
+<span class="fc" id="L22">        Map&lt;String, SymbolTotals&gt; bySymbol = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L23">        rows.forEach(row -&gt; bySymbol.merge(row.symbol(), row, SymbolTotals::plus));</span>
+<span class="fc" id="L24">        return List.copyOf(bySymbol.values());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

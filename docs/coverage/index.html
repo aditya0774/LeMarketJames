@@ -9,20 +9,20 @@
 <body>
 <main>
 <h1>Code coverage</h1>
-<p class="meta">Generated at commit <code>a302a7d8</code> on 2026-10-21. Click an area to open its full report.</p>
+<p class="meta">Generated at commit <code>71853069</code> on 2026-10-22. Click an area to open its full report.</p>
 <h2>Summary</h2>
 <div class="scroll"><table>
 <thead><tr><th>Area</th><th class="num">Line %</th><th class="num">Branch %</th><th class="num">Lines missed / total</th></tr></thead>
 <tbody>
-<tr><td><a href="backend/common/index.html">common</a></td><td class="num"><progress max="100" value="54.3"></progress>54.33</td><td class="num"><progress max="100" value="76.7"></progress>76.67</td><td class="num">216 / 473</td></tr>
+<tr><td><a href="backend/common/index.html">common</a></td><td class="num"><progress max="100" value="57.9"></progress>57.88</td><td class="num"><progress max="100" value="77.6"></progress>77.63</td><td class="num">211 / 501</td></tr>
 <tr><td><a href="backend/market-client/index.html">market-client</a></td><td class="num"><progress max="100" value="83.8"></progress>83.82</td><td class="num"><progress max="100" value="76.0"></progress>76.00</td><td class="num">22 / 136</td></tr>
-<tr><td><a href="backend/auth-service/index.html">auth-service</a></td><td class="num"><progress max="100" value="97.2"></progress>97.20</td><td class="num"><progress max="100" value="76.5"></progress>76.47</td><td class="num">9 / 322</td></tr>
-<tr><td><a href="backend/orders-service/index.html">orders-service</a></td><td class="num"><progress max="100" value="92.5"></progress>92.53</td><td class="num"><progress max="100" value="84.6"></progress>84.59</td><td class="num">70 / 937</td></tr>
-<tr><td><a href="backend/staff-ops-service/index.html">staff-ops-service</a></td><td class="num"><progress max="100" value="85.4"></progress>85.40</td><td class="num"><progress max="100" value="89.1"></progress>89.06</td><td class="num">93 / 637</td></tr>
-<tr><td><a href="backend/trading-service/index.html">trading-service</a></td><td class="num"><progress max="100" value="90.5"></progress>90.52</td><td class="num"><progress max="100" value="88.8"></progress>88.76</td><td class="num">170 / 1794</td></tr>
-<tr class="total"><td>Back end (all modules)</td><td class="num"><progress max="100" value="86.5"></progress>86.51</td><td class="num"><progress max="100" value="85.2"></progress>85.19</td><td class="num">580 / 4299</td></tr>
-<tr class="total"><td><a href="frontend/index.html">Front end (Angular)</a></td><td class="num"><progress max="100" value="97.3"></progress>97.33</td><td class="num"><progress max="100" value="92.1"></progress>92.13</td><td class="num">86 / 3225</td></tr>
-<tr class="total"><td>Everything</td><td class="num"><progress max="100" value="91.1"></progress>91.15</td><td class="num"><progress max="100" value="90.0"></progress>90.05</td><td class="num">666 / 7524</td></tr>
+<tr><td><a href="backend/auth-service/index.html">auth-service</a></td><td class="num"><progress max="100" value="98.4"></progress>98.38</td><td class="num"><progress max="100" value="83.8"></progress>83.75</td><td class="num">9 / 554</td></tr>
+<tr><td><a href="backend/orders-service/index.html">orders-service</a></td><td class="num"><progress max="100" value="93.7"></progress>93.74</td><td class="num"><progress max="100" value="87.4"></progress>87.41</td><td class="num">70 / 1118</td></tr>
+<tr><td><a href="backend/staff-ops-service/index.html">staff-ops-service</a></td><td class="num"><progress max="100" value="83.7"></progress>83.66</td><td class="num"><progress max="100" value="86.7"></progress>86.74</td><td class="num">133 / 814</td></tr>
+<tr><td><a href="backend/trading-service/index.html">trading-service</a></td><td class="num"><progress max="100" value="90.6"></progress>90.59</td><td class="num"><progress max="100" value="88.4"></progress>88.39</td><td class="num">170 / 1807</td></tr>
+<tr class="total"><td>Back end (all modules)</td><td class="num"><progress max="100" value="87.5"></progress>87.53</td><td class="num"><progress max="100" value="86.0"></progress>86.03</td><td class="num">615 / 4930</td></tr>
+<tr class="total"><td><a href="frontend/index.html">Front end (Angular)</a></td><td class="num"><progress max="100" value="97.2"></progress>97.22</td><td class="num"><progress max="100" value="91.9"></progress>91.87</td><td class="num">97 / 3494</td></tr>
+<tr class="total"><td>Everything</td><td class="num"><progress max="100" value="91.5"></progress>91.55</td><td class="num"><progress max="100" value="89.9"></progress>89.88</td><td class="num">712 / 8424</td></tr>
 </tbody>
 </table></div>
 <p class="note">JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported.</p>
@@ -32,14 +32,14 @@
 <tbody>
 <tr><td>common</td><td><code>com.lemarketjames.common.domain.ClientEntity</code></td><td class="num">59</td><td class="num">0.00</td></tr>
 <tr><td>common</td><td><code>com.lemarketjames.common.domain.StaffUserEntity</code></td><td class="num">37</td><td class="num">0.00</td></tr>
+<tr><td>staff-ops-service</td><td><code>com.lemarketjames.reports.overnight.ReportRunWriter</code></td><td class="num">34</td><td class="num">8.11</td></tr>
 <tr><td>trading-service</td><td><code>com.lemarketjames.market.entity.InstrumentMarketParamsEntity</code></td><td class="num">32</td><td class="num">0.00</td></tr>
-<tr><td>staff-ops-service</td><td><code>com.lemarketjames.reports.overnight.ReportRunWriter</code></td><td class="num">29</td><td class="num">9.38</td></tr>
 <tr><td>common</td><td><code>com.lemarketjames.common.instruments.Instrument</code></td><td class="num">23</td><td class="num">0.00</td></tr>
 <tr><td>common</td><td><code>com.lemarketjames.common.domain.AddressEntity</code></td><td class="num">23</td><td class="num">0.00</td></tr>
 <tr><td>common</td><td><code>com.lemarketjames.common.error.GlobalExceptionHandler</code></td><td class="num">19</td><td class="num">0.00</td></tr>
 <tr><td>trading-service</td><td><code>com.lemarketjames.holdings.dto.HoldingDto</code></td><td class="num">17</td><td class="num">51.43</td></tr>
-<tr><td>orders-service</td><td><code>com.lemarketjames.orders.entity.Order</code></td><td class="num">16</td><td class="num">79.22</td></tr>
-<tr><td>trading-service</td><td><code>com.lemarketjames.sessions.entity.SessionEntity</code></td><td class="num">15</td><td class="num">0.00</td></tr>
+<tr><td>orders-service</td><td><code>com.lemarketjames.orders.entity.Order</code></td><td class="num">16</td><td class="num">80.00</td></tr>
+<tr><td>staff-ops-service</td><td><code>com.lemarketjames.reports.overnight.DailySummaryWriter</code></td><td class="num">15</td><td class="num">28.57</td></tr>
 </tbody>
 </table></div>
 <h2>Lowest-covered front-end files</h2>
@@ -48,20 +48,21 @@
 <tbody>
 <tr><td><code>src/app/features/auth/register/register.ts</code></td><td class="num">22</td><td class="num">81.51</td></tr>
 <tr><td><code>src/app/features/orders/order-form/order-form.html</code></td><td class="num">9</td><td class="num">86.15</td></tr>
-<tr><td><code>src/app/core/orders/order.service.ts</code></td><td class="num">7</td><td class="num">86.54</td></tr>
+<tr><td><code>src/app/core/orders/order.service.ts</code></td><td class="num">7</td><td class="num">87.04</td></tr>
 <tr><td><code>src/app/features/holdings/by-stock-report/by-stock-detail.component.ts</code></td><td class="num">7</td><td class="num">87.50</td></tr>
+<tr><td><code>projects/shared-ui/src/lib/session-timeout/idle-session.ts</code></td><td class="num">5</td><td class="num">94.05</td></tr>
 <tr><td><code>src/app/core/holdings/holdings.service.ts</code></td><td class="num">5</td><td class="num">92.19</td></tr>
 <tr><td><code>src/app/features/holdings/by-stock-report/by-stock-report.component.html</code></td><td class="num">5</td><td class="num">85.71</td></tr>
 <tr><td><code>src/app/features/orders/order-form/order-form.ts</code></td><td class="num">5</td><td class="num">92.42</td></tr>
+<tr><td><code>src/app/features/account/account-page.ts</code></td><td class="num">4</td><td class="num">91.49</td></tr>
 <tr><td><code>src/app/core/orders/account-orders.ts</code></td><td class="num">3</td><td class="num">94.12</td></tr>
-<tr><td><code>src/app/features/holdings/by-stock-report/by-stock-trades-table.ts</code></td><td class="num">3</td><td class="num">91.18</td></tr>
-<tr><td><code>src/app/features/auth/login/login.html</code></td><td class="num">2</td><td class="num">95.24</td></tr>
 </tbody>
 </table></div>
 <h2>History</h2>
 <div class="scroll"><table>
 <thead><tr><th>Date</th><th>Commit</th><th class="num">Back-end line %</th><th class="num">Back-end branch %</th><th class="num">Front-end line %</th><th class="num">Front-end branch %</th></tr></thead>
 <tbody>
+<tr><td>2026-10-22</td><td><code>71853069</code></td><td class="num">87.53</td><td class="num">86.03</td><td class="num">97.22</td><td class="num">91.87</td></tr>
 <tr><td>2026-10-21</td><td><code>a302a7d8</code></td><td class="num">86.51</td><td class="num">85.19</td><td class="num">97.33</td><td class="num">92.13</td></tr>
 <tr><td>2026-10-20</td><td><code>da93a04c</code></td><td class="num">86.51</td><td class="num">85.19</td><td class="num">97.33</td><td class="num">92.13</td></tr>
 <tr><td>2026-10-20</td><td><code>e4295008</code></td><td class="num">86.31</td><td class="num">85.08</td><td class="num">97.34</td><td class="num">92.15</td></tr>

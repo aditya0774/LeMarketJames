@@ -4,11 +4,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.EnumSet;
@@ -26,20 +28,39 @@ public class JwtService {
     /** The claim holding the token holder's {@link Role} names. */
     public static final String ROLES_CLAIM = &quot;roles&quot;;
 
+    /**
+     * The claim holding when the holder signed in (the OpenID Connect name). A refreshed token
+     * keeps it, so a session can be capped however often it is refreshed (BR-03).
+     */
+    public static final String AUTH_TIME_CLAIM = &quot;auth_time&quot;;
+
     private final SecretKey signingKey;
     private final long expirationMs;
+    private final Clock clock;
 
     /**
      * Constructs a JwtService with the provided secret key and expiration time.
      *
      * @param secret the secret key string for signing tokens
-     * @param expirationMs the token expiration time in milliseconds
+     * @param expirationMs the longest a session may last, in milliseconds: auth-service caps every
+     *                     session at this however often it is refreshed (BR-03); tokens issued
+     *                     without an explicit expiry also last this long
      */
+    @Autowired
     public JwtService(@Value(&quot;${jwt.secret}&quot;) String secret,
-<span class="fc" id="L39">                       @Value(&quot;${jwt.expiration-ms}&quot;) long expirationMs) {</span>
-<span class="fc" id="L40">        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L41">        this.expirationMs = expirationMs;</span>
-<span class="fc" id="L42">    }</span>
+                       @Value(&quot;${jwt.expiration-ms}&quot;) long expirationMs) {
+<span class="fc" id="L52">        this(secret, expirationMs, Clock.systemUTC());</span>
+<span class="fc" id="L53">    }</span>
+
+    /**
+     * Takes the clock tokens are issued and checked against, so tests can move time instead of
+     * waiting for a token to expire.
+     */
+<span class="fc" id="L59">    public JwtService(String secret, long expirationMs, Clock clock) {</span>
+<span class="fc" id="L60">        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L61">        this.expirationMs = expirationMs;</span>
+<span class="fc" id="L62">        this.clock = clock;</span>
+<span class="fc" id="L63">    }</span>
 
     /**
      * Generates a JWT token for a client (the {@link Role#CLIENT} role).
@@ -48,7 +69,7 @@ public class JwtService {
      * @return a signed JWT token string
      */
     public String generateToken(String username) {
-<span class="fc" id="L51">        return generateToken(username, Set.of(Role.CLIENT));</span>
+<span class="fc" id="L72">        return generateToken(username, Set.of(Role.CLIENT));</span>
     }
 
     /**
@@ -61,31 +82,37 @@ public class JwtService {
      * @return a signed JWT token string
      */
     public String generateToken(String username, Set&lt;Role&gt; roles) {
-<span class="fc" id="L64">        Date now = new Date();</span>
-<span class="fc" id="L65">        Date expiry = new Date(now.getTime() + expirationMs);</span>
-
-<span class="fc" id="L67">        return Jwts.builder()</span>
-<span class="fc" id="L68">                .subject(username)</span>
-<span class="fc" id="L69">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
-<span class="fc" id="L70">                .issuedAt(now)</span>
-<span class="fc" id="L71">                .expiration(expiry)</span>
-<span class="fc" id="L72">                .signWith(signingKey)</span>
-<span class="fc" id="L73">                .compact();</span>
+<span class="fc" id="L85">        Instant now = clock.instant();</span>
+<span class="fc" id="L86">        return generateToken(username, roles, now, now, now.plusMillis(expirationMs));</span>
     }
 
     /** Generates a token whose issue time is explicitly after a session invalidation cutoff. */
     public String generateToken(String username, Set&lt;Role&gt; roles, Instant issuedAt) {
-<span class="nc" id="L78">        Date now = new Date();</span>
-<span class="nc" id="L79">        Date issued = Date.from(issuedAt);</span>
-<span class="nc" id="L80">        Date expiry = new Date(Math.max(now.getTime(), issued.getTime()) + expirationMs);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        Instant expiry = (issuedAt.isAfter(clock.instant()) ? issuedAt : clock.instant()).plusMillis(expirationMs);</span>
+<span class="nc" id="L92">        return generateToken(username, roles, issuedAt, issuedAt, expiry);</span>
+    }
 
-<span class="nc" id="L82">        return Jwts.builder()</span>
-<span class="nc" id="L83">                .subject(username)</span>
-<span class="nc" id="L84">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
-<span class="nc" id="L85">                .issuedAt(issued)</span>
-<span class="nc" id="L86">                .expiration(expiry)</span>
-<span class="nc" id="L87">                .signWith(signingKey)</span>
-<span class="nc" id="L88">                .compact();</span>
+    /**
+     * Generates a session token with every time stated: auth-service uses it to make a token last
+     * only as long as the inactivity timeout, and to carry the sign-in time over on refresh (BR-03).
+     *
+     * @param username  the token subject
+     * @param roles     the holder's roles
+     * @param issuedAt  the issue time; must be after the account's last sign-out to be accepted
+     * @param authTime  when the holder signed in, stored in the {@value #AUTH_TIME_CLAIM} claim
+     * @param expiresAt when the token stops being accepted
+     * @return a signed JWT token string
+     */
+    public String generateToken(String username, Set&lt;Role&gt; roles, Instant issuedAt, Instant authTime,
+                                Instant expiresAt) {
+<span class="fc" id="L108">        return Jwts.builder()</span>
+<span class="fc" id="L109">                .subject(username)</span>
+<span class="fc" id="L110">                .claim(ROLES_CLAIM, roles.stream().map(Role::name).sorted().toList())</span>
+<span class="fc" id="L111">                .claim(AUTH_TIME_CLAIM, authTime.getEpochSecond())</span>
+<span class="fc" id="L112">                .issuedAt(Date.from(issuedAt))</span>
+<span class="fc" id="L113">                .expiration(Date.from(expiresAt))</span>
+<span class="fc" id="L114">                .signWith(signingKey)</span>
+<span class="fc" id="L115">                .compact();</span>
     }
 
     /**
@@ -94,7 +121,7 @@ public class JwtService {
      * @return the expiration time in seconds
      */
     public long getExpirationSeconds() {
-<span class="fc" id="L97">        return expirationMs / 1000;</span>
+<span class="fc" id="L124">        return expirationMs / 1000;</span>
     }
 
     /**
@@ -104,37 +131,44 @@ public class JwtService {
      * @return an Optional containing the username if valid, or empty if the token is invalid or expired
      */
     public java.util.Optional&lt;String&gt; extractUsername(String token) {
-<span class="fc" id="L107">        return extractClaims(token).map(TokenClaims::username);</span>
+<span class="fc" id="L134">        return extractClaims(token).map(TokenClaims::username);</span>
     }
 
     /**
      * Extracts the username and roles from a JWT token if the token is valid and unexpired.
      * Tokens issued before roles existed carry no {@value #ROLES_CLAIM} claim and count as
-     * {@link Role#CLIENT}, since only clients could log in then.
+     * {@link Role#CLIENT}, since only clients could log in then. Tokens without
+     * {@value #AUTH_TIME_CLAIM} were issued at sign-in, so their sign-in time is their issue time.
      *
      * @param token the JWT token to parse
      * @return the token's claims, or empty if the token is invalid, expired, or names an unknown role
      */
     public java.util.Optional&lt;TokenClaims&gt; extractClaims(String token) {
         try {
-<span class="fc" id="L120">            Claims claims = Jwts.parser()</span>
-<span class="fc" id="L121">                    .verifyWith(signingKey)</span>
-<span class="fc" id="L122">                    .build()</span>
-<span class="fc" id="L123">                    .parseSignedClaims(token)</span>
-<span class="fc" id="L124">                    .getPayload();</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (claims.getSubject() == null) {</span>
-<span class="nc" id="L126">                return java.util.Optional.empty();</span>
+<span class="fc" id="L148">            Claims claims = Jwts.parser()</span>
+<span class="fc" id="L149">                    .verifyWith(signingKey)</span>
+<span class="fc" id="L150">                    .clock(() -&gt; Date.from(clock.instant()))</span>
+<span class="fc" id="L151">                    .build()</span>
+<span class="fc" id="L152">                    .parseSignedClaims(token)</span>
+<span class="fc" id="L153">                    .getPayload();</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">            if (claims.getSubject() == null) {</span>
+<span class="nc" id="L155">                return java.util.Optional.empty();</span>
             }
-<span class="fc" id="L128">            List&lt;?&gt; names = claims.get(ROLES_CLAIM, List.class);</span>
-<span class="pc bpc" id="L129" title="1 of 4 branches missed.">            Set&lt;Role&gt; roles = names == null || names.isEmpty()</span>
-<span class="fc" id="L130">                    ? EnumSet.of(Role.CLIENT)</span>
-<span class="fc" id="L131">                    : names.stream().map(name -&gt; Role.valueOf(String.valueOf(name)))</span>
-<span class="fc" id="L132">                            .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
-<span class="fc" id="L133">            Date issuedAt = claims.getIssuedAt();</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">            Instant issuedInstant = issuedAt == null ? Instant.MIN : issuedAt.toInstant();</span>
-<span class="fc" id="L135">            return java.util.Optional.of(new TokenClaims(claims.getSubject(), roles, issuedInstant));</span>
-<span class="fc" id="L136">        } catch (JwtException | IllegalArgumentException e) {</span>
-<span class="fc" id="L137">            return java.util.Optional.empty();</span>
+<span class="fc" id="L157">            List&lt;?&gt; names = claims.get(ROLES_CLAIM, List.class);</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">            Set&lt;Role&gt; roles = names == null || names.isEmpty()</span>
+<span class="fc" id="L159">                    ? EnumSet.of(Role.CLIENT)</span>
+<span class="fc" id="L160">                    : names.stream().map(name -&gt; Role.valueOf(String.valueOf(name)))</span>
+<span class="fc" id="L161">                            .collect(Collectors.toCollection(() -&gt; EnumSet.noneOf(Role.class)));</span>
+<span class="fc" id="L162">            Date issuedAt = claims.getIssuedAt();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            Instant issuedInstant = issuedAt == null ? Instant.MIN : issuedAt.toInstant();</span>
+<span class="fc" id="L164">            Number authTime = claims.get(AUTH_TIME_CLAIM, Number.class);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            Instant authInstant = authTime == null ? issuedInstant : Instant.ofEpochSecond(authTime.longValue());</span>
+<span class="fc" id="L166">            Date expiration = claims.getExpiration();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            Instant expiresInstant = expiration == null ? Instant.MAX : expiration.toInstant();</span>
+<span class="fc" id="L168">            return java.util.Optional.of(</span>
+<span class="fc" id="L169">                    new TokenClaims(claims.getSubject(), roles, issuedInstant, authInstant, expiresInstant));</span>
+<span class="fc" id="L170">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="fc" id="L171">            return java.util.Optional.empty();</span>
         }
     }
 }

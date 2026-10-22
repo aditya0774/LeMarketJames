@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InsightFlagRule.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.insight</a> &gt; <span class="el_source">InsightFlagRule.java</span></div><h1>InsightFlagRule.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.insight;
+
+import com.lemarketjames.common.config.PlatformSettings;
+import com.lemarketjames.reports.insight.InsightFlag.Direction;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+/**
+ * Decides whether an insight is flagged (BR-17): it moved by at least the configured percent
+ * ({@code lmj.reports.insight-flag-percent}, contract C5) against the period it is compared with.
+ * Kept apart from the insights so each one only says what it compares, and all of them flag alike.
+ */
+@Component
+public class InsightFlagRule {
+
+<span class="fc" id="L18">    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);</span>
+    private static final int PERCENT_SCALE = 2;
+
+    private final BigDecimal thresholdPercent;
+
+    /** @throws IllegalStateException when the setting is not above zero: every insight would be flagged */
+<span class="fc" id="L24">    public InsightFlagRule(PlatformSettings settings) {</span>
+<span class="fc" id="L25">        this.thresholdPercent = settings.getReports().getInsightFlagPercent();</span>
+<span class="pc bpc" id="L26" title="1 of 4 branches missed.">        if (thresholdPercent == null || thresholdPercent.signum() &lt;= 0) {</span>
+<span class="fc" id="L27">            throw new IllegalStateException(&quot;lmj.reports.insight-flag-percent must be above zero, was &quot;</span>
+                    + thresholdPercent);
+        }
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * @param current  the figure for the period looked at
+     * @param previous the same figure for the period it is compared with
+     */
+    public InsightFlag judge(BigDecimal current, BigDecimal previous) {
+<span class="fc" id="L37">        BigDecimal change = current.subtract(previous);</span>
+<span class="fc" id="L38">        BigDecimal percent = percentOf(change, previous);</span>
+        // From nothing to something has no percent, but it is the largest move there is.
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        boolean flagged = percent == null</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">                ? change.signum() != 0</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">                : percent.abs().compareTo(thresholdPercent) &gt;= 0;</span>
+<span class="fc" id="L43">        return new InsightFlag(flagged, percent, direction(change), thresholdPercent);</span>
+    }
+
+    /** The change as a percent of the previous value, two decimals, or null when there was nothing to compare with. */
+    static BigDecimal percentOf(BigDecimal change, BigDecimal previous) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (previous.signum() == 0) {</span>
+<span class="fc" id="L49">            return null;</span>
+        }
+<span class="fc" id="L51">        return change.multiply(HUNDRED).divide(previous, PERCENT_SCALE, RoundingMode.HALF_UP);</span>
+    }
+
+    private static Direction direction(BigDecimal change) {
+<span class="fc bfc" id="L55" title="All 3 branches covered.">        return switch (change.signum()) {</span>
+<span class="fc" id="L56">            case 1 -&gt; Direction.UP;</span>
+<span class="fc" id="L57">            case -1 -&gt; Direction.DOWN;</span>
+<span class="fc" id="L58">            default -&gt; Direction.FLAT;</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

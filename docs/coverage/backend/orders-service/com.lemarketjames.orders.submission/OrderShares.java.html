@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderShares.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.orders.submission</a> &gt; <span class="el_source">OrderShares.java</span></div><h1>OrderShares.java</h1><pre class="source lang-java linenums">package com.lemarketjames.orders.submission;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+/**
+ * The share arithmetic of the QUANTITY rule (BR-04): orders are for whole shares, and an order by
+ * amount buys or sells as many whole shares as the amount covers. Kept apart from the validator so
+ * the rounding is written, and tested, in one place.
+ */
+final class OrderShares {
+
+    private OrderShares() {
+    }
+
+    /** As many whole shares as {@code amount} covers at {@code price}; zero when it doesn't cover one. */
+    static BigDecimal forAmount(BigDecimal amount, BigDecimal price) {
+        // Always round down: rounding up would spend more than the client asked for.
+<span class="fc" id="L19">        return amount.divide(price, 0, RoundingMode.DOWN);</span>
+    }
+
+    /** Whether {@code quantity} is a whole number of shares, at least one. */
+    static boolean isWholeShares(BigDecimal quantity) {
+        // stripTrailingZeros, so 2.0000 (the database scale) counts as the whole number it is.
+<span class="fc bfc" id="L25" title="All 6 branches covered.">        return quantity != null &amp;&amp; quantity.signum() &gt; 0 &amp;&amp; quantity.stripTrailingZeros().scale() &lt;= 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

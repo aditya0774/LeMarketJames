@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InternalApiTokenFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Common</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.common.security</a> &gt; <span class="el_source">InternalApiTokenFilter.java</span></div><h1>InternalApiTokenFilter.java</h1><pre class="source lang-java linenums">package com.lemarketjames.common.security;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.List;
+
+/**
+ * Authenticates server-to-server calls to {@code /internal/**} (BR-02: no endpoint without a
+ * credential). The calling service sends the shared internal token in {@link #HEADER}; a match
+ * grants {@link #AUTHORITY}, which each service's {@code SecurityConfig} requires on
+ * {@code /internal/**}. Settlement there moves cash and shares for any account, so a browser
+ * session, client or staff, never qualifies: it gets 403, and a request with no or a wrong token
+ * gets 401.
+ *
+ * &lt;p&gt;A dedicated authority rather than a {@link Role}: a service is not a person, never holds a
+ * JWT, and the roles in contract C7 stay the people's roles.
+ */
+public class InternalApiTokenFilter extends OncePerRequestFilter {
+
+    /** The header the calling service puts the token in. */
+    public static final String HEADER = &quot;X-Internal-Token&quot;;
+
+    /** Granted to a request that carries the right token. */
+    public static final String AUTHORITY = &quot;INTERNAL_SERVICE&quot;;
+
+    private static final String INTERNAL_PREFIX = &quot;/internal/&quot;;
+<span class="fc" id="L40">    private static final Logger log = LoggerFactory.getLogger(InternalApiTokenFilter.class);</span>
+
+    private final byte[] token;
+
+    /**
+     * @param token the shared internal token ({@code internal.api-token}); a blank one stops the
+     *              service from starting rather than leaving {@code /internal/**} unusable or open
+     */
+<span class="fc" id="L48">    public InternalApiTokenFilter(String token) {</span>
+<span class="fc bfc" id="L49" title="All 4 branches covered.">        if (token == null || token.isBlank()) {</span>
+<span class="fc" id="L50">            throw new IllegalArgumentException(&quot;internal.api-token must be set&quot;);</span>
+        }
+<span class="fc" id="L52">        this.token = token.getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        return !path(request).startsWith(INTERNAL_PREFIX);</span>
+    }
+
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+<span class="fc" id="L64">        String sent = request.getHeader(HEADER);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (sent != null) {</span>
+            // Constant-time, so the response time says nothing about how much of the token matched.
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (MessageDigest.isEqual(token, sent.getBytes(StandardCharsets.UTF_8))) {</span>
+<span class="fc" id="L68">                var authentication = new UsernamePasswordAuthenticationToken(</span>
+<span class="fc" id="L69">                        &quot;internal-service&quot;, null, List.of(new SimpleGrantedAuthority(AUTHORITY)));</span>
+<span class="fc" id="L70">                SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="fc" id="L71">            } else {</span>
+                // Never the token itself: only that a wrong one was sent, and where.
+<span class="fc" id="L73">                log.warn(&quot;INTERNAL_TOKEN_REJECTED path={} remote={}&quot;, path(request), request.getRemoteAddr());</span>
+            }
+        }
+<span class="fc" id="L76">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L77">    }</span>
+
+    private static String path(HttpServletRequest request) {
+<span class="fc" id="L80">        return request.getRequestURI().substring(request.getContextPath().length());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

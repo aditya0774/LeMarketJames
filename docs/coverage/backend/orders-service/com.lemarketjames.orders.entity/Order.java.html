@@ -146,6 +146,11 @@ public class Order {
     @Column(name = &quot;quote_time&quot;)
     private Instant quoteTime;
 
+    // BR-04: the dollar amount the client asked for, when the order was placed by amount; quantity
+    // holds the whole shares it was turned into. Null for an order placed by shares.
+    @Column(name = &quot;requested_amount&quot;, precision = 15, scale = 2)
+    private BigDecimal requestedAmount;
+
     @Column(name = &quot;created_at&quot;, nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -154,84 +159,84 @@ public class Order {
     
     @PrePersist
     protected void onCreate() {
-<span class="fc" id="L157">        createdAt = LocalDateTime.now(ZoneOffset.UTC);</span>
-<span class="fc" id="L158">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (submittedAt == null) {</span>
-<span class="fc" id="L160">            submittedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L162">        createdAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L163">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (submittedAt == null) {</span>
+<span class="fc" id="L165">            submittedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
         }
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (orderStatus == null) {</span>
-<span class="nc" id="L163">            orderStatus = OrderStatus.SUBMITTED;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (orderStatus == null) {</span>
+<span class="nc" id="L168">            orderStatus = OrderStatus.SUBMITTED;</span>
         }
-<span class="fc" id="L165">    }</span>
+<span class="fc" id="L170">    }</span>
     
     @PreUpdate
     protected void onUpdate() {
-<span class="fc" id="L169">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
-<span class="fc" id="L170">    }</span>
+<span class="fc" id="L174">        updatedAt = LocalDateTime.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L175">    }</span>
     
     // Constructors
-<span class="fc" id="L173">    public Order() {}</span>
+<span class="fc" id="L178">    public Order() {}</span>
     
-<span class="fc" id="L175">    public Order(Integer accountId, Integer instrumentId, OrderType orderType, BigDecimal quantity) {</span>
-<span class="fc" id="L176">        this.accountId = accountId;</span>
-<span class="fc" id="L177">        this.instrumentId = instrumentId;</span>
-<span class="fc" id="L178">        this.orderType = orderType;</span>
-<span class="fc" id="L179">        this.quantity = quantity;</span>
+<span class="fc" id="L180">    public Order(Integer accountId, Integer instrumentId, OrderType orderType, BigDecimal quantity) {</span>
+<span class="fc" id="L181">        this.accountId = accountId;</span>
+<span class="fc" id="L182">        this.instrumentId = instrumentId;</span>
+<span class="fc" id="L183">        this.orderType = orderType;</span>
+<span class="fc" id="L184">        this.quantity = quantity;</span>
         // Every new order starts its lifecycle here (contract C1).
-<span class="fc" id="L181">        this.orderStatus = OrderStatus.SUBMITTED;</span>
-<span class="fc" id="L182">    }</span>
+<span class="fc" id="L186">        this.orderStatus = OrderStatus.SUBMITTED;</span>
+<span class="fc" id="L187">    }</span>
     
     // Getters and Setters
     public Integer getOrderId() {
-<span class="fc" id="L186">        return orderId;</span>
+<span class="fc" id="L191">        return orderId;</span>
     }
     
     public void setOrderId(Integer orderId) {
-<span class="fc" id="L190">        this.orderId = orderId;</span>
-<span class="fc" id="L191">    }</span>
+<span class="fc" id="L195">        this.orderId = orderId;</span>
+<span class="fc" id="L196">    }</span>
     
     public Integer getAccountId() {
-<span class="fc" id="L194">        return accountId;</span>
+<span class="fc" id="L199">        return accountId;</span>
     }
     
     public void setAccountId(Integer accountId) {
-<span class="nc" id="L198">        this.accountId = accountId;</span>
-<span class="nc" id="L199">    }</span>
+<span class="nc" id="L203">        this.accountId = accountId;</span>
+<span class="nc" id="L204">    }</span>
     
     public Integer getInstrumentId() {
-<span class="fc" id="L202">        return instrumentId;</span>
+<span class="fc" id="L207">        return instrumentId;</span>
     }
     
     public void setInstrumentId(Integer instrumentId) {
-<span class="nc" id="L206">        this.instrumentId = instrumentId;</span>
-<span class="nc" id="L207">    }</span>
+<span class="nc" id="L211">        this.instrumentId = instrumentId;</span>
+<span class="nc" id="L212">    }</span>
     
     public OrderType getOrderType() {
-<span class="fc" id="L210">        return orderType;</span>
+<span class="fc" id="L215">        return orderType;</span>
     }
     
     public void setOrderType(OrderType orderType) {
-<span class="fc" id="L214">        this.orderType = orderType;</span>
-<span class="fc" id="L215">    }</span>
+<span class="fc" id="L219">        this.orderType = orderType;</span>
+<span class="fc" id="L220">    }</span>
     
     public BigDecimal getQuantity() {
-<span class="fc" id="L218">        return quantity;</span>
+<span class="fc" id="L223">        return quantity;</span>
     }
     
     public void setQuantity(BigDecimal quantity) {
-<span class="nc" id="L222">        this.quantity = quantity;</span>
-<span class="nc" id="L223">    }</span>
+<span class="nc" id="L227">        this.quantity = quantity;</span>
+<span class="nc" id="L228">    }</span>
     
     public BigDecimal getPricePerUnit() {
-<span class="fc" id="L226">        return pricePerUnit;</span>
+<span class="fc" id="L231">        return pricePerUnit;</span>
     }
     
     public void setPricePerUnit(BigDecimal pricePerUnit) {
-<span class="fc" id="L230">        this.pricePerUnit = pricePerUnit;</span>
-<span class="fc" id="L231">    }</span>
+<span class="fc" id="L235">        this.pricePerUnit = pricePerUnit;</span>
+<span class="fc" id="L236">    }</span>
     
     public OrderStatus getOrderStatus() {
-<span class="fc" id="L234">        return orderStatus;</span>
+<span class="fc" id="L239">        return orderStatus;</span>
     }
     
     /**
@@ -239,76 +244,84 @@ public class Order {
      * (tests, fixtures); every real status change goes through {@link #transitionTo}.
      */
     public void setOrderStatus(OrderStatus orderStatus) {
-<span class="fc" id="L242">        this.orderStatus = orderStatus;</span>
-<span class="fc" id="L243">    }</span>
+<span class="fc" id="L247">        this.orderStatus = orderStatus;</span>
+<span class="fc" id="L248">    }</span>
     
     public String getRejectionReason() {
-<span class="fc" id="L246">        return rejectionReason;</span>
+<span class="fc" id="L251">        return rejectionReason;</span>
     }
     
     public void setRejectionReason(String rejectionReason) {
-<span class="nc" id="L250">        this.rejectionReason = rejectionReason;</span>
-<span class="nc" id="L251">    }</span>
+<span class="nc" id="L255">        this.rejectionReason = rejectionReason;</span>
+<span class="nc" id="L256">    }</span>
     
     public LocalDateTime getSubmittedAt() {
-<span class="fc" id="L254">        return submittedAt;</span>
+<span class="fc" id="L259">        return submittedAt;</span>
     }
     
     public void setSubmittedAt(LocalDateTime submittedAt) {
-<span class="fc" id="L258">        this.submittedAt = submittedAt;</span>
-<span class="fc" id="L259">    }</span>
+<span class="fc" id="L263">        this.submittedAt = submittedAt;</span>
+<span class="fc" id="L264">    }</span>
     
     public LocalDateTime getAcceptedAt() {
-<span class="fc" id="L262">        return acceptedAt;</span>
+<span class="fc" id="L267">        return acceptedAt;</span>
     }
     
     public void setAcceptedAt(LocalDateTime acceptedAt) {
-<span class="nc" id="L266">        this.acceptedAt = acceptedAt;</span>
-<span class="nc" id="L267">    }</span>
+<span class="nc" id="L271">        this.acceptedAt = acceptedAt;</span>
+<span class="nc" id="L272">    }</span>
     
     public LocalDateTime getFilledAt() {
-<span class="fc" id="L270">        return filledAt;</span>
+<span class="fc" id="L275">        return filledAt;</span>
     }
     
     public void setFilledAt(LocalDateTime filledAt) {
-<span class="fc" id="L274">        this.filledAt = filledAt;</span>
-<span class="fc" id="L275">    }</span>
+<span class="fc" id="L279">        this.filledAt = filledAt;</span>
+<span class="fc" id="L280">    }</span>
 
     public String getQuoteSource() {
-<span class="fc" id="L278">        return quoteSource;</span>
+<span class="fc" id="L283">        return quoteSource;</span>
     }
 
     public void setQuoteSource(String quoteSource) {
-<span class="fc" id="L282">        this.quoteSource = quoteSource;</span>
-<span class="fc" id="L283">    }</span>
+<span class="fc" id="L287">        this.quoteSource = quoteSource;</span>
+<span class="fc" id="L288">    }</span>
 
     public Instant getQuoteTime() {
-<span class="fc" id="L286">        return quoteTime;</span>
+<span class="fc" id="L291">        return quoteTime;</span>
     }
 
     public void setQuoteTime(Instant quoteTime) {
-<span class="fc" id="L290">        this.quoteTime = quoteTime;</span>
-<span class="fc" id="L291">    }</span>
+<span class="fc" id="L295">        this.quoteTime = quoteTime;</span>
+<span class="fc" id="L296">    }</span>
+
+    public BigDecimal getRequestedAmount() {
+<span class="fc" id="L299">        return requestedAmount;</span>
+    }
+
+    public void setRequestedAmount(BigDecimal requestedAmount) {
+<span class="fc" id="L303">        this.requestedAmount = requestedAmount;</span>
+<span class="fc" id="L304">    }</span>
 
     public LocalDateTime getCreatedAt() {
-<span class="fc" id="L294">        return createdAt;</span>
+<span class="fc" id="L307">        return createdAt;</span>
     }
     
     public void setCreatedAt(LocalDateTime createdAt) {
-<span class="nc" id="L298">        this.createdAt = createdAt;</span>
-<span class="nc" id="L299">    }</span>
+<span class="nc" id="L311">        this.createdAt = createdAt;</span>
+<span class="nc" id="L312">    }</span>
     
     public LocalDateTime getUpdatedAt() {
-<span class="fc" id="L302">        return updatedAt;</span>
+<span class="fc" id="L315">        return updatedAt;</span>
     }
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
-<span class="nc" id="L306">        this.updatedAt = updatedAt;</span>
-<span class="nc" id="L307">    }</span>
+<span class="nc" id="L319">        this.updatedAt = updatedAt;</span>
+<span class="nc" id="L320">    }</span>
     
     @Override
     public String toString() {
-<span class="nc" id="L311">        return &quot;Order{&quot; +</span>
+<span class="nc" id="L324">        return &quot;Order{&quot; +</span>
                 &quot;orderId=&quot; + orderId +
                 &quot;, accountId=&quot; + accountId +
                 &quot;, instrumentId=&quot; + instrumentId +

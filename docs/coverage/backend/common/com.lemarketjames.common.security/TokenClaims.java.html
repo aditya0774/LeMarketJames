@@ -8,12 +8,14 @@ import java.util.Set;
  *
  * @param username the login's username (the token subject); clients are looked up by it
  * @param roles    the holder's roles; never empty
- * @param issuedAt the time the token was issued
+ * @param issuedAt  the time the token was issued
+ * @param authTime  when the holder signed in; a refreshed token keeps it (BR-03)
+ * @param expiresAt when the token stops being accepted
  */
-<span class="fc" id="L13">public record TokenClaims(String username, Set&lt;Role&gt; roles, Instant issuedAt) {</span>
+<span class="fc" id="L15">public record TokenClaims(String username, Set&lt;Role&gt; roles, Instant issuedAt, Instant authTime, Instant expiresAt) {</span>
 
     public boolean hasRole(Role role) {
-<span class="nc" id="L16">        return roles.contains(role);</span>
+<span class="nc" id="L18">        return roles.contains(role);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

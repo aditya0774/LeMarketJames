@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchiveController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.audit</a> &gt; <span class="el_source">ArchiveController.java</span></div><h1>ArchiveController.java</h1><pre class="source lang-java linenums">package com.lemarketjames.audit;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * {@code GET /api/v1/audit/archive}: archived audit events, TRADING_OPS only (SecurityConfig,
+ * contract C6). Parameters arrive as text and are parsed here, so a malformed one is a 400 with a
+ * message rather than a conversion error.
+ */
+@RestController
+public class ArchiveController {
+
+    private final ArchiveService archive;
+
+<span class="fc" id="L20">    public ArchiveController(ArchiveService archive) {</span>
+<span class="fc" id="L21">        this.archive = archive;</span>
+<span class="fc" id="L22">    }</span>
+
+    @GetMapping(&quot;/api/v1/audit/archive&quot;)
+    public Result search(@RequestParam(required = false) String orderId,
+                         @RequestParam(required = false) String requestId,
+                         @RequestParam(required = false) String clientId,
+                         @RequestParam(required = false) String from,
+                         @RequestParam(required = false) String to,
+                         @RequestParam(required = false) String limit,
+                         @RequestParam(required = false) String offset) {
+<span class="fc" id="L32">        ArchiveQuery query = new ArchiveQuery(number(orderId, &quot;orderId&quot;), requestId, number(clientId, &quot;clientId&quot;),</span>
+<span class="fc" id="L33">                instant(from, &quot;from&quot;), instant(to, &quot;to&quot;),</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                limit == null ? ArchiveQuery.DEFAULT_LIMIT : number(limit, &quot;limit&quot;),</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                offset == null ? 0 : number(offset, &quot;offset&quot;));</span>
+<span class="fc" id="L36">        return new Result(true, archive.search(query));</span>
+    }
+
+<span class="fc" id="L39">    public record Result(boolean success, List&lt;ArchiveService.Event&gt; events) {}</span>
+
+    private static Integer number(String value, String name) {
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (value == null) return null;</span>
+        try {
+<span class="fc" id="L44">            return Integer.valueOf(value);</span>
+<span class="fc" id="L45">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L46">            throw new IllegalArgumentException(name + &quot; must be a whole number&quot;, ex);</span>
+        }
+    }
+
+    private static Instant instant(String value, String name) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (value == null) return null;</span>
+        try {
+<span class="fc" id="L53">            return Instant.parse(value);</span>
+<span class="fc" id="L54">        } catch (DateTimeParseException ex) {</span>
+<span class="fc" id="L55">            throw new IllegalArgumentException(name + &quot; must be an ISO-8601 instant, e.g. 2019-01-01T00:00:00Z&quot;, ex);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

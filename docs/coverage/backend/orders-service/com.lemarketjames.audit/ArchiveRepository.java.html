@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArchiveRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.audit</a> &gt; <span class="el_source">ArchiveRepository.java</span></div><h1>ArchiveRepository.java</h1><pre class="source lang-java linenums">package com.lemarketjames.audit;
+
+import com.lemarketjames.common.audit.AuditEventEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Reads archived audit events. Read-only and separate from the append-only writer
+ * (AuditRecorder): age alone makes an event archived, so nothing here writes to the trail.
+ */
+@Repository
+public class ArchiveRepository {
+
+    private final EntityManager entityManager;
+
+<span class="fc" id="L20">    public ArchiveRepository(EntityManager entityManager) {</span>
+<span class="fc" id="L21">        this.entityManager = entityManager;</span>
+<span class="fc" id="L22">    }</span>
+
+    /** Events older than {@code cutoff} matching every filter given, oldest first; audit ID breaks ties. */
+    public List&lt;AuditEventEntity&gt; search(Instant cutoff, ArchiveQuery query) {
+<span class="fc" id="L26">        var cb = entityManager.getCriteriaBuilder();</span>
+<span class="fc" id="L27">        var select = cb.createQuery(AuditEventEntity.class);</span>
+<span class="fc" id="L28">        var event = select.from(AuditEventEntity.class);</span>
+<span class="fc" id="L29">        var predicates = new ArrayList&lt;Predicate&gt;();</span>
+<span class="fc" id="L30">        predicates.add(cb.lessThan(event.get(&quot;occurredAt&quot;), cutoff));</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (query.orderId() != null) predicates.add(cb.equal(event.get(&quot;orderId&quot;), query.orderId()));</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (query.requestId() != null) predicates.add(cb.equal(event.get(&quot;requestId&quot;), query.requestId()));</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (query.clientId() != null) predicates.add(cb.equal(event.get(&quot;clientId&quot;), query.clientId()));</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (query.from() != null) predicates.add(cb.greaterThanOrEqualTo(event.get(&quot;occurredAt&quot;), query.from()));</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (query.to() != null) predicates.add(cb.lessThan(event.get(&quot;occurredAt&quot;), query.to()));</span>
+<span class="fc" id="L36">        select.select(event).where(predicates.toArray(Predicate[]::new))</span>
+<span class="fc" id="L37">                .orderBy(cb.asc(event.get(&quot;occurredAt&quot;)), cb.asc(event.get(&quot;auditId&quot;)));</span>
+<span class="fc" id="L38">        return entityManager.createQuery(select)</span>
+<span class="fc" id="L39">                .setFirstResult(query.offset())</span>
+<span class="fc" id="L40">                .setMaxResults(query.limit())</span>
+<span class="fc" id="L41">                .getResultList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

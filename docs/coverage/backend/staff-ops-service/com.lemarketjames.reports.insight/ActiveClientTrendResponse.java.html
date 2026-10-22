@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ActiveClientTrendResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.reports.insight</a> &gt; <span class="el_source">ActiveClientTrendResponse.java</span></div><h1>ActiveClientTrendResponse.java</h1><pre class="source lang-java linenums">package com.lemarketjames.reports.insight;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -8,16 +9,27 @@ import java.util.List;
  * The active-client trend: one count per report-time-zone day, oldest first. Counts only; nothing
  * here identifies a client.
  *
- * @param startDate   first day of the window (included)
- * @param endDate     last day of the window (included), today in the reports time zone
- * @param days        one entry for every day of the window, including days without trades
- * @param generatedAt when the figures were read
+ * @param startDate      first day of the window (included)
+ * @param endDate        last day of the window (included), today in the reports time zone
+ * @param days           one entry for every day of the window, including days without trades
+ * @param lastWeek       the last seven whole days, today left out
+ * @param weekBefore     the seven days before {@code lastWeek}
+ * @param flag           whether {@code lastWeek}'s average moved enough against {@code weekBefore}'s to be
+ *                       flagged (BR-17)
+ * @param generatedAt    when the figures were read
  */
-<span class="fc" id="L16">public record ActiveClientTrendResponse(LocalDate startDate, LocalDate endDate, List&lt;DayCount&gt; days,</span>
+<span class="fc" id="L21">public record ActiveClientTrendResponse(LocalDate startDate, LocalDate endDate, List&lt;DayCount&gt; days,</span>
+                                        WeekAverage lastWeek, WeekAverage weekBefore, InsightFlag flag,
                                         Instant generatedAt) {
 
     /** Distinct clients who traded on {@code date}. */
-<span class="fc" id="L20">    public record DayCount(LocalDate date, long activeClients) {</span>
+<span class="fc" id="L26">    public record DayCount(LocalDate date, long activeClients) {</span>
+    }
+
+    /**
+     * The average of the daily counts over seven days, both ends included, two decimals.
+     */
+<span class="fc" id="L32">    public record WeekAverage(LocalDate startDate, LocalDate endDate, BigDecimal averageActiveClients) {</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

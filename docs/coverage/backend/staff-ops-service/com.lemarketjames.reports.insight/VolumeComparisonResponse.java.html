@@ -11,9 +11,10 @@ import java.time.Instant;
  * @param current     the range being looked at
  * @param previous    the range it is compared with
  * @param change      {@code current} minus {@code previous}
+ * @param flag        whether the share volume moved enough to be flagged (BR-17)
  * @param generatedAt when the figures were computed
  */
-<span class="fc" id="L16">public record VolumeComparisonResponse(PeriodVolume current, PeriodVolume previous, VolumeChange change,</span>
-                                       Instant generatedAt) {
+<span class="fc" id="L17">public record VolumeComparisonResponse(PeriodVolume current, PeriodVolume previous, VolumeChange change,</span>
+                                       InsightFlag flag, Instant generatedAt) {
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

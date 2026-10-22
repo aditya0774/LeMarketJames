@@ -5,23 +5,34 @@
  * response and as the value stored in {@code orders.rejection_reason} when an order is rejected.
  */
 <span class="fc" id="L7">public enum RejectionReason {</span>
-    /** A BUY costs more than the account's cash. */
+    /** A BUY costs more than the account's cash less what its open BUYs reserve. */
 <span class="fc" id="L9">    INSUFFICIENT_CASH,</span>
-    /** A SELL is for more shares than the account holds. */
+    /** A SELL is for more shares than the account holds outside its open SELLs. */
 <span class="fc" id="L11">    INSUFFICIENT_HOLDINGS,</span>
     /** The stock is suspended (instruments.tradable = false). */
 <span class="fc" id="L13">    NOT_TRADABLE,</span>
+    /**
+     * BR-04: the order isn't for a whole number of shares (at least one), or its dollar amount
+     * doesn't cover the price of one share.
+     */
+<span class="fc" id="L18">    INVALID_QUANTITY,</span>
     /** No usable quote: the feed is down or returned no price. */
-<span class="fc" id="L15">    PRICE_UNAVAILABLE,</span>
+<span class="fc" id="L20">    PRICE_UNAVAILABLE,</span>
     /** The quote is older than the staleness limit (lmj.market.staleness-limit). */
-<span class="fc" id="L17">    STALE_QUOTE,</span>
-    /** The market is closed and the order can't wait for the open. */
-<span class="fc" id="L19">    MARKET_CLOSED,</span>
+<span class="fc" id="L22">    STALE_QUOTE,</span>
+    /**
+     * The market is closed and the order can't wait for the open. Also the {@code reason} on a
+     * DELAYED audit event, when execution makes an order wait for the open (contract C2).
+     */
+<span class="fc" id="L27">    MARKET_CLOSED,</span>
     /** The client or account may not trade: status isn't ACTIVE, or trading is disabled on the account. */
-<span class="fc" id="L21">    ACCOUNT_RESTRICTED,</span>
-    /** The client lives somewhere trading isn't allowed (lmj.orders.restricted-locations). */
-<span class="fc" id="L23">    LOCATION_RESTRICTED,</span>
+<span class="fc" id="L29">    ACCOUNT_RESTRICTED,</span>
+    /**
+     * The client lives where this stock may not be traded: a location in lmj.orders.restricted-locations
+     * (every stock) or in the stock's instrument_location_restrictions rows.
+     */
+<span class="fc" id="L34">    LOCATION_RESTRICTED,</span>
     /** Operations rejected the order by hand. */
-<span class="fc" id="L25">    REJECTED_BY_OPERATIONS</span>
+<span class="fc" id="L36">    REJECTED_BY_OPERATIONS</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

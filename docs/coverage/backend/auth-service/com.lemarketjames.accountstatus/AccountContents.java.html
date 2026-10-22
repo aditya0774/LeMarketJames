@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountContents.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Auth Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.accountstatus</a> &gt; <span class="el_source">AccountContents.java</span></div><h1>AccountContents.java</h1><pre class="source lang-java linenums">package com.lemarketjames.accountstatus;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+/**
+ * What a client's trading account still holds, for deciding whether it may be closed (BR-03).
+ * An interface so the closing rules can be tested without the holdings and orders tables, which
+ * belong to other services.
+ */
+public interface AccountContents {
+
+    /** The account of the client with this username; empty if the client has no account. */
+    Optional&lt;Contents&gt; of(String username);
+
+    /**
+     * @param cashBalance cash left on the account; it stays there after closing
+     * @param holdings    how many stocks the account holds any shares of
+     * @param openOrders  how many of its orders are not yet final
+     */
+<span class="fc" id="L23">    record Contents(BigDecimal cashBalance, String currency, long holdings, long openOrders) {</span>
+
+        /** Closing is allowed only with nothing left that could still move. Cash may remain. */
+        @JsonProperty(&quot;closable&quot;)
+        public boolean closable() {
+<span class="fc bfc" id="L28" title="All 4 branches covered.">            return holdings == 0 &amp;&amp; openOrders == 0;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

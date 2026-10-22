@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HoldingsValidationClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Orders Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.holdings.client</a> &gt; <span class="el_source">HoldingsValidationClient.java</span></div><h1>HoldingsValidationClient.java</h1><pre class="source lang-java linenums">package com.lemarketjames.holdings.client;
 
+import com.lemarketjames.common.security.InternalApiTokenFilter;
 import com.lemarketjames.orders.exception.InsufficientHoldingsException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,34 +21,42 @@ public class HoldingsValidationClient {
 
     private final RestClient restClient;
 
-<span class="fc" id="L23">    public HoldingsValidationClient(@Value(&quot;${holdings.service.url}&quot;) String holdingsServiceUrl) {</span>
-<span class="fc" id="L24">        this.restClient = RestClient.builder().baseUrl(holdingsServiceUrl).build();</span>
-<span class="fc" id="L25">    }</span>
+    public HoldingsValidationClient(@Value(&quot;${holdings.service.url}&quot;) String holdingsServiceUrl,
+<span class="fc" id="L25">            @Value(&quot;${internal.api-token}&quot;) String internalApiToken) {</span>
+        // trading-service answers /internal/** only to a holder of the shared token (BR-02).
+<span class="fc" id="L27">        this.restClient = RestClient.builder().baseUrl(holdingsServiceUrl)</span>
+<span class="fc" id="L28">                .defaultHeader(InternalApiTokenFilter.HEADER, internalApiToken).build();</span>
+<span class="fc" id="L29">    }</span>
 
-    public void validateSufficientHoldings(Integer accountId, String username,
-                                           Integer instrumentId, BigDecimal sellQuantity) {
-<span class="fc" id="L29">        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId, sellQuantity);</span>
+    /**
+     * @param reservedQuantity shares of the stock already in the account's open SELL orders
+     * @throws InsufficientHoldingsException if the holding less {@code reservedQuantity} is below {@code sellQuantity}
+     */
+    public void validateSufficientHoldings(Integer accountId, String username, Integer instrumentId,
+                                           BigDecimal sellQuantity, BigDecimal reservedQuantity) {
+<span class="fc" id="L37">        HoldingsValidationRequest request = new HoldingsValidationRequest(accountId, username, instrumentId,</span>
+            sellQuantity, reservedQuantity);
         try {
-<span class="fc" id="L31">            restClient.post()</span>
-<span class="fc" id="L32">                    .uri(&quot;/internal/holdings/validate&quot;)</span>
-<span class="fc" id="L33">                    .body(request)</span>
-<span class="fc" id="L34">                    .retrieve()</span>
-<span class="nc" id="L35">                    .toBodilessEntity();</span>
-<span class="nc" id="L36">        } catch (HttpClientErrorException.BadRequest e) {</span>
-<span class="nc" id="L37">            throw new InsufficientHoldingsException(extractError(e));</span>
-<span class="fc" id="L38">        } catch (RestClientException e) {</span>
-<span class="fc" id="L39">            throw new IllegalStateException(</span>
+<span class="fc" id="L40">            restClient.post()</span>
+<span class="fc" id="L41">                    .uri(&quot;/internal/holdings/validate&quot;)</span>
+<span class="fc" id="L42">                    .body(request)</span>
+<span class="fc" id="L43">                    .retrieve()</span>
+<span class="fc" id="L44">                    .toBodilessEntity();</span>
+<span class="nc" id="L45">        } catch (HttpClientErrorException.BadRequest e) {</span>
+<span class="nc" id="L46">            throw new InsufficientHoldingsException(extractError(e));</span>
+<span class="fc" id="L47">        } catch (RestClientException e) {</span>
+<span class="fc" id="L48">            throw new IllegalStateException(</span>
                 &quot;Failed to validate holdings for accountId &quot; + accountId + &quot; with trading-service&quot;, e);
-<span class="nc" id="L41">        }</span>
-<span class="nc" id="L42">    }</span>
+<span class="fc" id="L50">        }</span>
+<span class="fc" id="L51">    }</span>
 
     private String extractError(HttpClientErrorException.BadRequest e) {
         try {
-<span class="nc" id="L46">            Map&lt;?, ?&gt; body = e.getResponseBodyAs(Map.class);</span>
-<span class="nc bnc" id="L47" title="All 2 branches missed.">            Object error = body != null ? body.get(&quot;error&quot;) : null;</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">            return error != null ? error.toString() : &quot;Insufficient holdings&quot;;</span>
-<span class="nc" id="L49">        } catch (Exception parseFailure) {</span>
-<span class="nc" id="L50">            return &quot;Insufficient holdings&quot;;</span>
+<span class="nc" id="L55">            Map&lt;?, ?&gt; body = e.getResponseBodyAs(Map.class);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            Object error = body != null ? body.get(&quot;error&quot;) : null;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            return error != null ? error.toString() : &quot;Insufficient holdings&quot;;</span>
+<span class="nc" id="L58">        } catch (Exception parseFailure) {</span>
+<span class="nc" id="L59">            return &quot;Insufficient holdings&quot;;</span>
         }
     }
 }

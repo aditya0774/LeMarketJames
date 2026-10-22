@@ -3,29 +3,34 @@
 /**
  * A client's standing (contract C3/C7). Decides whether the client may log in and trade.
  *
- * &lt;p&gt;Mirrors: the {@code clients.account_status} CHECK constraint (database/schema/010).
+ * &lt;p&gt;Who changes it (BR-03): Trading Ops, through auth-service's account status endpoint, and a client
+ * closing their own account. Each change gets a row in {@code account_status_changes}.
+ *
+ * &lt;p&gt;Mirrors: the {@code clients.account_status} CHECK constraint (database/schema/010), the
+ * {@code account_status_changes} CHECK constraints (027) and the staff app's {@code AccountStatus}
+ * type (apps/frontend/projects/staff/src/app/core/clients/client-status.service.ts).
  */
-<span class="fc" id="L8">public enum AccountStatus {</span>
+<span class="fc" id="L13">public enum AccountStatus {</span>
     /** Normal: may log in and, if the account has trading enabled, trade. */
-<span class="fc" id="L10">    ACTIVE,</span>
+<span class="fc" id="L15">    ACTIVE,</span>
     /** Blocked by operations (e.g. under investigation): may not log in. */
-<span class="fc" id="L12">    SUSPENDED,</span>
+<span class="fc" id="L17">    SUSPENDED,</span>
     /** Closed at the client's request: may not log in. */
-<span class="fc" id="L14">    CLOSED,</span>
+<span class="fc" id="L19">    CLOSED,</span>
     /** Identity or KYC documents lapsed: may not log in (LMKT-57) and may not trade until renewed. */
-<span class="fc" id="L16">    EXPIRED;</span>
+<span class="fc" id="L21">    EXPIRED;</span>
 
     /**
      * Whether a client in this status may log in at all. Only ACTIVE may: every other status loses
      * access at sign-in and, for a session opened before the change, on its next request (LMKT-57).
      */
     public boolean canLogIn() {
-<span class="fc bfc" id="L23" title="All 2 branches covered.">        return this == ACTIVE;</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        return this == ACTIVE;</span>
     }
 
     /** Whether a client in this status may place orders (the account must also have trading enabled). */
     public boolean canTrade() {
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        return this == ACTIVE;</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        return this == ACTIVE;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

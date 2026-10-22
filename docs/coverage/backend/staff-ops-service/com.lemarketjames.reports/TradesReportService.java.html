@@ -4,26 +4,33 @@ import com.lemarketjames.reports.dto.TradesByStockReportRow;
 import com.lemarketjames.reports.period.ReportCalendar;
 import com.lemarketjames.reports.period.ReportPeriod;
 import com.lemarketjames.reports.repository.TradesReportRepository;
+import com.lemarketjames.reports.summary.DailyTradeSummary;
+import com.lemarketjames.reports.summary.ReadSplit;
+import com.lemarketjames.reports.summary.SymbolTotals;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Service for generating aggregate trading reports.
- * All queries are read-only and hit the reporting_trades view directly;
- * this service is fully isolated from trading and account services.
+ * All queries are read-only; this service is fully isolated from trading and account services.
+ * Days the nightly summary covers are read from it ({@link DailyTradeSummary}), later days from the
+ * reporting_trades view, so a long range does not scan live orders (BR-16, README &quot;Read side&quot;).
  */
 @Service
 public class TradesReportService {
 
     private final TradesReportRepository repository;
+    private final DailyTradeSummary summary;
     private final ReportCalendar reportCalendar;
 
-<span class="fc" id="L23">    public TradesReportService(TradesReportRepository repository, ReportCalendar reportCalendar) {</span>
-<span class="fc" id="L24">        this.repository = repository;</span>
-<span class="fc" id="L25">        this.reportCalendar = reportCalendar;</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L29">    public TradesReportService(TradesReportRepository repository, DailyTradeSummary summary, ReportCalendar reportCalendar) {</span>
+<span class="fc" id="L30">        this.repository = repository;</span>
+<span class="fc" id="L31">        this.summary = summary;</span>
+<span class="fc" id="L32">        this.reportCalendar = reportCalendar;</span>
+<span class="fc" id="L33">    }</span>
 
     /**
      * Aggregate all FILLED trades by stock symbol across all clients, filtered by date range.
@@ -36,33 +43,38 @@ public class TradesReportService {
      * @throws IllegalArgumentException if startDate is after endDate
      */
     public List&lt;TradesByStockReportRow&gt; getTradesAggregateByStock(LocalDate startDate, LocalDate endDate) {
-<span class="fc" id="L39">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L46">        LocalDate today = LocalDate.now();</span>
         
         // Apply defaults
-<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (startDate == null) {</span>
-<span class="fc" id="L43">            startDate = today.minusDays(30);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (startDate == null) {</span>
+<span class="fc" id="L50">            startDate = today.minusDays(30);</span>
         }
-<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (endDate == null) {</span>
-<span class="fc" id="L46">            endDate = today;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (endDate == null) {</span>
+<span class="fc" id="L53">            endDate = today;</span>
         }
         
         // Validate date range
-<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (startDate.isAfter(endDate)) {</span>
-<span class="fc" id="L51">            throw new IllegalArgumentException(&quot;Start date must not be after end date&quot;);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (startDate.isAfter(endDate)) {</span>
+<span class="fc" id="L58">            throw new IllegalArgumentException(&quot;Start date must not be after end date&quot;);</span>
         }
         
-        // Convert to UTC period using ReportCalendar for timezone-aware boundaries
-<span class="fc" id="L55">        ReportPeriod period = reportCalendar.between(startDate, endDate);</span>
-        
-<span class="fc" id="L57">        return repository.aggregateTradesBySymbol(period.start(), period.end()).stream()</span>
-<span class="fc" id="L58">                .map(projection -&gt; new TradesByStockReportRow(</span>
-<span class="fc" id="L59">                        projection.getSymbol(),</span>
-<span class="fc" id="L60">                        projection.getTotalQuantity(),</span>
-<span class="fc" id="L61">                        projection.getTotalGrossAmount(),</span>
-<span class="fc" id="L62">                        projection.getBuyCount(),</span>
-<span class="fc" id="L63">                        projection.getSellCount()</span>
-                ))
-<span class="fc" id="L65">                .toList();</span>
+<span class="fc" id="L61">        String zone = reportCalendar.zone().getId();</span>
+<span class="fc" id="L62">        ReadSplit split = ReadSplit.of(startDate, endDate, summary.summarizedThrough(zone));</span>
+<span class="fc" id="L63">        List&lt;SymbolTotals&gt; rows = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L64">        split.summarized().ifPresent(days -&gt; rows.addAll(summary.bySymbol(zone, days.from(), days.to())));</span>
+<span class="fc" id="L65">        split.live().ifPresent(days -&gt; {</span>
+            // Convert to UTC period using ReportCalendar for timezone-aware boundaries
+<span class="fc" id="L67">            ReportPeriod period = reportCalendar.between(days.from(), days.to());</span>
+<span class="fc" id="L68">            repository.aggregateTradesBySymbol(period.start(), period.end()).forEach(projection -&gt; rows.add(new SymbolTotals(</span>
+<span class="fc" id="L69">                    projection.getSymbol(), projection.getTotalQuantity(), projection.getTotalGrossAmount(),</span>
+<span class="fc" id="L70">                    projection.getBuyCount(), projection.getSellCount())));</span>
+<span class="fc" id="L71">        });</span>
+
+        // A stock traded on both sides of the summary's last day is added up here.
+<span class="fc" id="L74">        return SymbolTotals.merge(rows).stream()</span>
+<span class="fc" id="L75">                .map(totals -&gt; new TradesByStockReportRow(totals.symbol(), totals.totalQuantity(),</span>
+<span class="fc" id="L76">                        totals.totalGrossAmount(), totals.buyCount(), totals.sellCount()))</span>
+<span class="fc" id="L77">                .toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AlertFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">LeMarketJames Staff Ops Service</a> &gt; <a href="index.source.html" class="el_package">com.lemarketjames.surveillance</a> &gt; <span class="el_source">AlertFilter.java</span></div><h1>AlertFilter.java</h1><pre class="source lang-java linenums">package com.lemarketjames.surveillance;
+
+import org.springframework.data.jpa.domain.Specification;
+
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+
+/**
+ * What Trading Operations narrow the alert list to (contract C6). Every part is optional; an empty
+ * filter lists every alert. Days are whole UTC days, both included, like trade search's, since
+ * Trading Ops read every time in UTC.
+ *
+ * @param reason only alerts raised for this reason
+ * @param from   only alerts whose {@code occurredAt} is on or after this day
+ * @param to     only alerts whose {@code occurredAt} is on or before this day
+ */
+public record AlertFilter(AlertReason reason, LocalDate from, LocalDate to) {
+
+    /** Lists every alert. */
+<span class="fc" id="L20">    public static final AlertFilter NONE = new AlertFilter(null, null, null);</span>
+
+    /** @throws IllegalArgumentException when {@code to} is before {@code from}; answered with 400 */
+<span class="fc" id="L23">    public AlertFilter {</span>
+<span class="fc bfc" id="L24" title="All 6 branches covered.">        if (from != null &amp;&amp; to != null &amp;&amp; to.isBefore(from)) {</span>
+<span class="fc" id="L25">            throw new IllegalArgumentException(&quot;to must not be before from&quot;);</span>
+        }
+<span class="fc" id="L27">    }</span>
+
+    /** The filter as a query condition; a part that is not set adds none. */
+    Specification&lt;OrderAlert&gt; toSpecification() {
+<span class="fc" id="L31">        Specification&lt;OrderAlert&gt; spec = (root, query, cb) -&gt; cb.conjunction();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (reason != null) {</span>
+<span class="fc" id="L33">            spec = spec.and((root, query, cb) -&gt; cb.equal(root.get(&quot;reason&quot;), reason));</span>
+        }
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (from != null) {</span>
+<span class="fc" id="L36">            spec = spec.and((root, query, cb) -&gt; cb.greaterThanOrEqualTo(root.get(&quot;occurredAt&quot;),</span>
+<span class="fc" id="L37">                from.atStartOfDay(ZoneOffset.UTC).toInstant()));</span>
+        }
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (to != null) {</span>
+            // The whole last day: up to, not including, the next day's midnight.
+<span class="fc" id="L41">            spec = spec.and((root, query, cb) -&gt; cb.lessThan(root.get(&quot;occurredAt&quot;),</span>
+<span class="fc" id="L42">                to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));</span>
+        }
+<span class="fc" id="L44">        return spec;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
