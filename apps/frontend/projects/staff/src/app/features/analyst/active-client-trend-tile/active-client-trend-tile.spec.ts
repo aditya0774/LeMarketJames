@@ -117,7 +117,9 @@ describe('ActiveClientTrendTile', () => {
     (el().querySelector('button.refresh') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    httpMock.expectOne(URL).flush(trend());
+    const again = httpMock.expectOne(URL);
+    expect(again.request.method).toBe('GET');
+    again.flush(trend());
   });
 
   it('a background reload keeps the figures on screen, even when it fails', async () => {

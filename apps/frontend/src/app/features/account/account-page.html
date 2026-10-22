@@ -37,7 +37,7 @@
         }
 
         @if (confirming()) {
-          <form class="acct-confirm" (ngSubmit)="close()" novalidate>
+          <form method="post" class="acct-confirm" (ngSubmit)="close()" novalidate>
             <div class="field">
               <label for="acct-password">Enter your password to close your account</label>
               <input id="acct-password" name="password" type="password" autocomplete="current-password"
