@@ -1,6 +1,6 @@
 # Code coverage
 
-Generated at commit `cef12a6e` on 2026-10-22 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
+Generated at commit `e95b1467` on 2026-10-22 by [build-coverage-site.mjs](../../scripts/coverage/build-coverage-site.mjs). Do not edit by hand.
 
 Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 
@@ -13,10 +13,10 @@ Full clickable reports: https://aditya0774.github.io/LeMarketJames/coverage/
 | [auth-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/auth-service/index.html) | 98.38 | 83.75 | 9 / 554 |
 | [orders-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/orders-service/index.html) | 95.17 | 88.66 | 54 / 1118 |
 | [staff-ops-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/staff-ops-service/index.html) | 83.66 | 86.74 | 133 / 814 |
-| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 90.59 | 88.39 | 170 / 1807 |
-| **Back end (all modules)** | 87.88 | 86.49 | 599 / 4941 |
-| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.22 | 91.87 | 97 / 3494 |
-| **Everything** | 91.75 | 90.03 | 696 / 8435 |
+| [trading-service](https://aditya0774.github.io/LeMarketJames/coverage/backend/trading-service/index.html) | 90.68 | 88.39 | 168 / 1803 |
+| **Back end (all modules)** | 87.91 | 86.49 | 597 / 4937 |
+| **[Front end (Angular)](https://aditya0774.github.io/LeMarketJames/coverage/frontend/index.html)** | 97.14 | 91.87 | 100 / 3494 |
+| **Everything** | 91.73 | 90.03 | 697 / 8431 |
 
 _JaCoCo credits a module only for its own tests, so shared code in libs/ that the services’ tests exercise is under-reported._
 
@@ -54,6 +54,7 @@ _JaCoCo credits a module only for its own tests, so shared code in libs/ that th
 
 | Date | Commit | Back-end line % | Back-end branch % | Front-end line % | Front-end branch % |
 |---|---|---:|---:|---:|---:|
+| 2026-10-22 | `e95b1467` | 87.91 | 86.49 | 97.14 | 91.87 |
 | 2026-10-22 | `cef12a6e` | 87.88 | 86.49 | 97.22 | 91.87 |
 | 2026-10-22 | `f76e293b` | 87.88 | 86.49 | 97.22 | 91.87 |
 | 2026-10-22 | `7f843769` | 87.33 | 85.75 | 97.22 | 91.87 |

@@ -5,6 +5,7 @@ import com.lemarketjames.common.domain.AccountRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.lemarketjames.sessions.exception.SessionExpiredException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,10 +26,10 @@ public class SessionService {
   private final SecretKey signingKey;
   private final AccountRepository accounts;
 
-<span class="fc" id="L28">  public SessionService(@Value(&quot;${jwt.secret}&quot;) String secret, AccountRepository accounts) {</span>
-<span class="fc" id="L29">    this.accounts = accounts;</span>
-<span class="fc" id="L30">    this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L31">  }</span>
+<span class="fc" id="L29">  public SessionService(@Value(&quot;${jwt.secret}&quot;) String secret, AccountRepository accounts) {</span>
+<span class="fc" id="L30">    this.accounts = accounts;</span>
+<span class="fc" id="L31">    this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L32">  }</span>
 
   /**
    * AC1: Validate session (JWT token) is not expired.
@@ -42,41 +43,38 @@ public class SessionService {
   public SessionDto validateSession(Integer accountId, String token) {
     try {
       // Parse and validate JWT token
-<span class="fc" id="L45">      var claims = Jwts.parser()</span>
-<span class="fc" id="L46">          .verifyWith(signingKey)</span>
-<span class="fc" id="L47">          .build()</span>
-<span class="fc" id="L48">          .parseSignedClaims(token)</span>
-<span class="fc" id="L49">          .getPayload();</span>
+<span class="fc" id="L46">      var claims = Jwts.parser()</span>
+<span class="fc" id="L47">          .verifyWith(signingKey)</span>
+<span class="fc" id="L48">          .build()</span>
+<span class="fc" id="L49">          .parseSignedClaims(token)</span>
+<span class="fc" id="L50">          .getPayload();</span>
 
-<span class="fc" id="L51">      var authentication = SecurityContextHolder.getContext().getAuthentication();</span>
-<span class="pc bpc" id="L52" title="2 of 4 branches missed.">      if (authentication == null || !authentication.isAuthenticated()</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">          || !authentication.getName().equals(claims.getSubject())</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">          || !accounts.existsByAccountIdAndUsername(accountId, authentication.getName())) {</span>
-<span class="fc" id="L55">        throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
+<span class="fc" id="L52">      var authentication = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L53" title="2 of 4 branches missed.">      if (authentication == null || !authentication.isAuthenticated()</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">          || !authentication.getName().equals(claims.getSubject())</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">          || !accounts.existsByAccountIdAndUsername(accountId, authentication.getName())) {</span>
+<span class="fc" id="L56">        throw new AccessDeniedException(&quot;Account access is not allowed&quot;);</span>
       }
 
       // Check expiration
-<span class="fc" id="L59">      Date expiresAt = claims.getExpiration();</span>
-<span class="pc bpc" id="L60" title="2 of 4 branches missed.">      if (expiresAt != null &amp;&amp; expiresAt.before(new Date())) {</span>
-<span class="nc" id="L61">        throw new SessionExpiredException(&quot;Session token has expired&quot;);</span>
+<span class="fc" id="L60">      Date expiresAt = claims.getExpiration();</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">      if (expiresAt != null &amp;&amp; expiresAt.before(new Date())) {</span>
+<span class="nc" id="L62">        throw new SessionExpiredException(&quot;Session token has expired&quot;);</span>
       }
 
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">      LocalDateTime expiresAtLocal = expiresAt != null </span>
-<span class="fc" id="L65">          ? expiresAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()</span>
-<span class="pc" id="L66">          : null;</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">      LocalDateTime expiresAtLocal = expiresAt != null </span>
+<span class="fc" id="L66">          ? expiresAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()</span>
+<span class="pc" id="L67">          : null;</span>
 
-<span class="fc" id="L68">      return new SessionDto(</span>
+<span class="fc" id="L69">      return new SessionDto(</span>
           accountId,
           accountId,
           expiresAtLocal,
-<span class="fc" id="L72">          true</span>
+<span class="fc" id="L73">          true</span>
       );
-<span class="fc" id="L74">    } catch (AccessDeniedException e) {</span>
-<span class="fc" id="L75">      throw e;</span>
-<span class="nc" id="L76">    } catch (SessionExpiredException e) {</span>
-<span class="nc" id="L77">      throw e;</span>
-<span class="fc" id="L78">    } catch (Exception e) {</span>
-<span class="fc" id="L79">      throw new SessionExpiredException(&quot;Invalid or expired session token&quot;);</span>
+<span class="fc" id="L75">    } catch (JwtException | IllegalArgumentException e) {</span>
+      // The parser's refusals: a forged, malformed or expired token (JwtException), or an empty one.
+<span class="fc" id="L77">      throw new SessionExpiredException(&quot;Invalid or expired session token&quot;);</span>
     }
   }
 }
