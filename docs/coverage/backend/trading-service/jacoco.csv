@@ -1,8 +1,8 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 LeMarketJames Trading Service,com.lemarketjames.market.inprocess,InProcessMarketData,0,66,0,2,0,13,0,8,0,7
 LeMarketJames Trading Service,com.lemarketjames.market.inprocess,InProcessPriceHistory,0,34,0,4,0,6,0,5,0,3
-LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuotesListResponse,0,15,0,0,0,6,0,3,0,3
+LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteErrorResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteHistoryResponse,0,15,0,0,0,1,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,QuoteSuccessResponse,0,15,0,0,0,6,0,3,0,3
 LeMarketJames Trading Service,com.lemarketjames.quotes.dto,ChartPointDto,0,9,0,0,0,1,0,1,0,1
@@ -116,7 +116,7 @@ LeMarketJames Trading Service,com.lemarketjames.market.service,MarketSimulator,2
 LeMarketJames Trading Service,com.lemarketjames.market.service,MarketInitializer,0,181,1,23,0,38,1,19,0,8
 LeMarketJames Trading Service,com.lemarketjames.holdings.exception,InsufficientHoldingsException,0,4,0,0,0,2,0,1,0,1
 LeMarketJames Trading Service,com.lemarketjames.holdings.exception,UnauthorizedException,0,4,0,0,0,2,0,1,0,1
-LeMarketJames Trading Service,com.lemarketjames.config,SecurityConfig,0,169,0,0,0,26,0,8,0,8
+LeMarketJames Trading Service,com.lemarketjames.config,SecurityConfig,0,173,0,0,0,26,0,8,0,8
 LeMarketJames Trading Service,com.lemarketjames.config,ApplicationConfig,0,5,0,0,0,2,0,2,0,2
 LeMarketJames Trading Service,com.lemarketjames.market.entity,PriceHistoryEntity.Key,0,56,0,8,0,12,0,8,0,4
 LeMarketJames Trading Service,com.lemarketjames.market.entity,MarketQuoteEntity,9,67,0,0,3,30,3,19,3,19

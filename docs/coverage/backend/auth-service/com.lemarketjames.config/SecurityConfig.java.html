@@ -54,7 +54,7 @@ import java.util.List;
 <span class="fc" id="L54">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
 <span class="fc" id="L56">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L57">                .requestMatchers(&quot;/api/auth/register&quot;, &quot;/api/auth/login&quot;, &quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L57">                .requestMatchers(&quot;/api/auth/register&quot;, &quot;/api/auth/login&quot;, &quot;/actuator/health&quot;, &quot;/health&quot;).permitAll()</span>
 <span class="fc" id="L58">                .requestMatchers(&quot;/api/v1/clients/*/status&quot;).hasRole(Role.TRADING_OPS.name())</span>
 <span class="fc" id="L59">                .requestMatchers(&quot;/api/auth/close-account&quot;).hasRole(Role.CLIENT.name())</span>
 <span class="fc" id="L60">                .anyRequest().authenticated())</span>

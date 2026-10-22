@@ -80,7 +80,7 @@ import java.util.stream.Stream;
 <span class="fc" id="L80">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
 <span class="fc" id="L82">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L83">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L83">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/health&quot;).permitAll()</span>
 <span class="fc" id="L84">                .requestMatchers(HttpMethod.GET, &quot;/api/market/**&quot;).permitAll()</span>
                 // Only another service, by the shared token: a client or staff session gets 403 here.
 <span class="fc" id="L86">                .requestMatchers(&quot;/internal/**&quot;).hasAuthority(InternalApiTokenFilter.AUTHORITY)</span>

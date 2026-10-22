@@ -49,7 +49,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 <span class="fc" id="L49">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
 <span class="fc" id="L51">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L52">                .requestMatchers(&quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L52">                .requestMatchers(&quot;/actuator/health&quot;, &quot;/health&quot;).permitAll()</span>
                 // Reports cover every client's trades, so only analysts may read them.
 <span class="fc" id="L54">                .requestMatchers(REPORTS_PATHS).hasRole(Role.ANALYST.name())</span>
                 // An alert shows whose order it was and how big, so clients and analysts are refused.

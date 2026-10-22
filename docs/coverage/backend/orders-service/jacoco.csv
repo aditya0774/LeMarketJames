@@ -53,7 +53,7 @@ LeMarketJames Orders Service,com.lemarketjames.orders.entity,Order.OrderType,0,1
 LeMarketJames Orders Service,com.lemarketjames.orders.entity,InstrumentLocationRestriction.Key,48,0,6,0,10,0,7,0,4,0
 LeMarketJames Orders Service,com.lemarketjames.orders.entity,Order.OrderStatus,0,76,0,7,0,15,0,9,0,4
 LeMarketJames Orders Service,com.lemarketjames.orders.entity,Order,60,176,1,9,16,64,9,37,8,33
-LeMarketJames Orders Service,com.lemarketjames.config,SecurityConfig,0,220,0,0,0,30,0,8,0,8
+LeMarketJames Orders Service,com.lemarketjames.config,SecurityConfig,0,224,0,0,0,30,0,8,0,8
 LeMarketJames Orders Service,com.lemarketjames.audit,ArchiveService,0,21,0,0,0,5,0,2,0,2
 LeMarketJames Orders Service,com.lemarketjames.audit,ArchiveController.Result,0,9,0,0,0,1,0,1,0,1
 LeMarketJames Orders Service,com.lemarketjames.audit,ArchiveQuery,5,74,3,23,1,9,3,11,0,1

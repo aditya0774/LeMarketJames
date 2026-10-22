@@ -64,7 +64,7 @@ import java.util.stream.Stream;
 <span class="fc" id="L64">            .authorizeHttpRequests(auth -&gt; auth</span>
                 // Preserve the original failure status during the container's error dispatch.
 <span class="fc" id="L66">                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()</span>
-<span class="fc" id="L67">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L67">                .requestMatchers(&quot;/&quot;, &quot;/actuator/health&quot;, &quot;/health&quot;).permitAll()</span>
                 // Only another service or a test run, by the shared token: a session gets 403 here.
 <span class="fc" id="L69">                .requestMatchers(&quot;/internal/**&quot;).hasAuthority(InternalApiTokenFilter.AUTHORITY)</span>
                 // Dispute searches may read any client's fills, so only operations may call them.
