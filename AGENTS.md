@@ -51,6 +51,7 @@ LeMarketJames/
 │   │                        #   UI building blocks both use in projects/shared-ui/ (@lemarket/shared-ui)
 │   └── e2e/                 # Playwright end-to-end tests (tests/, tests-staff/, load/), run against a live stack
 ├── contracts/               # Shared contracts C1–C7 (read before coding)
+├── demo/                    # LEAP review demo: scripts (PDF), command files (Windows, Mac), demo database copy
 ├── database/schema/         # Shared schema, numbered SQL files (011 is the seed data set)
 ├── scripts/windows/         # Native Windows run scripts (no Docker): setup-db.ps1, start-all.ps1, stop-all.ps1
 ├── deploy/aws/              # Deployment to the class AWS stack: what it must provide, loading the schema

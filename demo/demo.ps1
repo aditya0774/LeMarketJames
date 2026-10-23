@@ -1,14 +1,14 @@
 # LEAP demo commands for Windows PowerShell (native stack, no Docker).
 #
-# Load once in each PowerShell window, from the folder this file is in:
+# Load once in each PowerShell window, from the repo folder:
 #     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-#     . .\demo.ps1
+#     . .\demo\demo.ps1
 # (the dot and the space matter: they load the commands into this window). Then type demo_help.
-#
-# The repo is expected at $HOME\LeMarketJames. If it's elsewhere, first run:
-#     $env:LMJ_REPO = 'C:\path\to\LeMarketJames'
+# See demo\README.md for the whole set-up.
 
-$Repo  = if ($env:LMJ_REPO) { $env:LMJ_REPO } else { Join-Path $HOME 'LeMarketJames' }
+# This file lives in the repo's demo folder, so the repo is the folder above it.
+# $env:LMJ_REPO overrides that, for a copy of this file kept somewhere else.
+$Repo  = if ($env:LMJ_REPO) { $env:LMJ_REPO } else { Split-Path -Parent $PSScriptRoot }
 $ACC_A = 49                                     # Client A, Lebron@lemarket.com
 $DbOwnerPassword = 'changeme'                   # setup-db.ps1 default for the lemarket owner
 $LmjHost = if ($env:LMJ_HOST) { $env:LMJ_HOST } else { 'localhost' }
@@ -17,7 +17,7 @@ $CurlExe = if ($IsLinux -or $IsMacOS) { 'curl' } else { 'curl.exe' }
 $NullDev = if ($IsLinux -or $IsMacOS) { '/dev/null' } else { 'NUL' }
 
 if (-not (Test-Path (Join-Path $Repo 'scripts\windows\start-all.ps1'))) {
-    Write-Warning "Repo not found at $Repo. Run: `$env:LMJ_REPO = 'C:\path\to\LeMarketJames'  then load demo.ps1 again."
+    Write-Warning "Repo not found at $Repo. Load the file from the repo's demo folder, or run: `$env:LMJ_REPO = 'C:\path\to\LeMarketJames'  then load it again."
 }
 
 # ---- Demo settings: every service window started from here inherits them -------------
